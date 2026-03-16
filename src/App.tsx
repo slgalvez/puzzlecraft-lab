@@ -17,7 +17,7 @@ import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import PrivateRoute from "./components/private/PrivateRoute";
 import Login from "./pages/private/Login";
-import AdminDashboard from "./pages/private/AdminDashboard";
+import PrivateHome from "./pages/private/PrivateHome";
 import AdminConversationView from "./pages/private/AdminConversationView";
 import AdminConversations from "./pages/private/AdminConversations";
 import AdminUsers from "./pages/private/AdminUsers";
@@ -47,7 +47,7 @@ const App = () => (
 
             {/* Private app */}
             <Route path="/p/login" element={<Login />} />
-            <Route path="/p" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
+            <Route path="/p" element={<PrivateRoute><PrivateHome /></PrivateRoute>} />
             <Route path="/p/conversations" element={<PrivateRoute><AdminConversations /></PrivateRoute>} />
             <Route path="/p/conversation" element={<PrivateRoute><UserConversation /></PrivateRoute>} />
             <Route path="/p/conversation/:conversationId" element={<PrivateRoute><AdminConversationView /></PrivateRoute>} />
