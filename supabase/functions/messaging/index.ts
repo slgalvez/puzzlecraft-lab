@@ -1,0 +1,261 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+interface JwtPayload {
+  sub: string;
+  role: string;
+  first_name: string;
+  last_name: string;
+  exp: number;
+}
+
+async function verifyToken(token: string): Promise<JwtPayload | null> {
+  if (!token || token.split(".").length !== 3) return null;
+  const [headerB64, payloadB64, sigB64] = token.split(".");
+  const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+  const sigRestored = sigB64.replace(/-/g, "+").replace(/_/g, "/");
+  const sigBytes = Uint8Array.from(atob(sigRestored), (c) => c.charCodeAt(0));
+  const valid = await crypto.subtle.verify("HMAC", key, sigBytes, encoder.encode(`${headerB64}.${payloadB64}`));
+  if (!valid) return null;
+  const payload = JSON.parse(atob(payloadB64)) as JwtPayload;
+  if (payload.exp < Math.floor(Date.now() / 1000)) return null;
+  return payload;
+}
+
+function json(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+}
+
+function err(msg: string, status = 403) {
+  return json({ error: msg }, status);
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const body = await req.json();
+    const { action, token } = body;
+
+    const user = await verifyToken(token);
+    if (!user) return err("Access unavailable", 401);
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const sb = createClient(supabaseUrl, serviceRoleKey);
+
+    const profileId = user.sub;
+    const isAdmin = user.role === "admin";
+
+    // ─── GET MY CONVERSATION (user) ───
+    if (action === "get-my-conversation") {
+      if (isAdmin) return err("Use admin actions");
+
+      // Find or create conversation
+      let { data: conv } = await sb
+        .from("conversations")
+        .select("id, admin_profile_id")
+        .eq("user_profile_id", profileId)
+        .maybeSingle();
+
+      if (!conv) {
+        // Find admin profile
+        const { data: admin } = await sb.from("profiles").select("id").eq("role", "admin").limit(1).single();
+        if (!admin) return err("System not ready");
+
+        const { data: newConv, error: convErr } = await sb
+          .from("conversations")
+          .insert({ user_profile_id: profileId, admin_profile_id: admin.id })
+          .select("id, admin_profile_id")
+          .single();
+        if (convErr) return err("Could not create conversation");
+        conv = newConv;
+      }
+
+      // Get messages
+      const { data: messages } = await sb
+        .from("messages")
+        .select("id, sender_profile_id, body, created_at, read_at")
+        .eq("conversation_id", conv.id)
+        .order("created_at", { ascending: true })
+        .limit(200);
+
+      return json({ conversation: { id: conv.id, admin_profile_id: conv.admin_profile_id }, messages: messages || [] });
+    }
+
+    // ─── SEND MESSAGE ───
+    if (action === "send-message") {
+      const { conversation_id, message } = body;
+      if (!conversation_id || !message || typeof message !== "string" || message.trim().length === 0) return err("Invalid message", 400);
+      if (message.length > 5000) return err("Message too long", 400);
+
+      // Verify access to conversation
+      const { data: conv } = await sb.from("conversations").select("id, user_profile_id, admin_profile_id").eq("id", conversation_id).single();
+      if (!conv) return err("Conversation not found");
+
+      if (!isAdmin && conv.user_profile_id !== profileId) return err("Access denied");
+
+      const { data: msg, error: msgErr } = await sb
+        .from("messages")
+        .insert({ conversation_id, sender_profile_id: profileId, body: message.trim() })
+        .select("id, sender_profile_id, body, created_at, read_at")
+        .single();
+
+      if (msgErr) return err("Could not send message");
+      return json({ message: msg });
+    }
+
+    // ─── MARK READ ───
+    if (action === "mark-read") {
+      const { conversation_id } = body;
+      if (!conversation_id) return err("Missing conversation_id", 400);
+
+      // Verify access
+      const { data: conv } = await sb.from("conversations").select("id, user_profile_id, admin_profile_id").eq("id", conversation_id).single();
+      if (!conv) return err("Not found");
+      if (!isAdmin && conv.user_profile_id !== profileId) return err("Access denied");
+
+      // Mark messages from the other party as read
+      await sb
+        .from("messages")
+        .update({ read_at: new Date().toISOString() })
+        .eq("conversation_id", conversation_id)
+        .neq("sender_profile_id", profileId)
+        .is("read_at", null);
+
+      return json({ ok: true });
+    }
+
+    // ─── ADMIN: LIST CONVERSATIONS ───
+    if (action === "list-conversations") {
+      if (!isAdmin) return err("Access denied");
+
+      const { data: convs } = await sb
+        .from("conversations")
+        .select(`
+          id,
+          user_profile_id,
+          created_at,
+          profiles!conversations_user_profile_id_fkey (first_name, last_name)
+        `)
+        .order("created_at", { ascending: false });
+
+      // For each conversation, get last message and unread count
+      const results = [];
+      for (const c of convs || []) {
+        const { data: lastMsg } = await sb
+          .from("messages")
+          .select("body, created_at, sender_profile_id")
+          .eq("conversation_id", c.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const { count: unreadCount } = await sb
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .eq("conversation_id", c.id)
+          .neq("sender_profile_id", profileId)
+          .is("read_at", null);
+
+        const profile = c.profiles as unknown as { first_name: string; last_name: string } | null;
+
+        results.push({
+          id: c.id,
+          user_profile_id: c.user_profile_id,
+          user_name: profile ? `${profile.first_name} ${profile.last_name}` : "Unknown",
+          last_message: lastMsg?.body || null,
+          last_message_at: lastMsg?.created_at || c.created_at,
+          unread_count: unreadCount || 0,
+        });
+      }
+
+      // Sort by last_message_at desc
+      results.sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
+
+      return json({ conversations: results });
+    }
+
+    // ─── ADMIN: GET CONVERSATION ───
+    if (action === "get-conversation") {
+      if (!isAdmin) return err("Access denied");
+      const { conversation_id } = body;
+      if (!conversation_id) return err("Missing conversation_id", 400);
+
+      const { data: conv } = await sb
+        .from("conversations")
+        .select(`id, user_profile_id, admin_profile_id, profiles!conversations_user_profile_id_fkey (first_name, last_name)`)
+        .eq("id", conversation_id)
+        .single();
+      if (!conv) return err("Not found");
+
+      const { data: messages } = await sb
+        .from("messages")
+        .select("id, sender_profile_id, body, created_at, read_at")
+        .eq("conversation_id", conversation_id)
+        .order("created_at", { ascending: true })
+        .limit(200);
+
+      const profile = conv.profiles as unknown as { first_name: string; last_name: string } | null;
+
+      return json({
+        conversation: {
+          id: conv.id,
+          user_profile_id: conv.user_profile_id,
+          admin_profile_id: conv.admin_profile_id,
+          user_name: profile ? `${profile.first_name} ${profile.last_name}` : "Unknown",
+        },
+        messages: messages || [],
+      });
+    }
+
+    // ─── ADMIN: TOGGLE USER ACTIVE ───
+    if (action === "toggle-user-active") {
+      if (!isAdmin) return err("Access denied");
+      const { authorized_user_id, is_active } = body;
+      if (!authorized_user_id || typeof is_active !== "boolean") return err("Invalid params", 400);
+
+      const { error: updateErr } = await sb
+        .from("authorized_users")
+        .update({ is_active })
+        .eq("id", authorized_user_id)
+        .neq("id", profileId); // Can't deactivate self
+
+      if (updateErr) return err("Update failed");
+      return json({ ok: true });
+    }
+
+    // ─── ADMIN: LIST USERS ───
+    if (action === "list-users") {
+      if (!isAdmin) return err("Access denied");
+
+      const { data: users } = await sb
+        .from("authorized_users")
+        .select("id, first_name, last_name, is_active, created_at")
+        .order("created_at", { ascending: true });
+
+      // Get profile ids and roles
+      const { data: profiles } = await sb.from("profiles").select("id, authorized_user_id, role");
+      const profileMap = new Map((profiles || []).map((p) => [p.authorized_user_id, p]));
+
+      const result = (users || []).map((u) => {
+        const p = profileMap.get(u.id);
+        return { ...u, profile_id: p?.id, role: p?.role || "user" };
+      });
+
+      return json({ users: result });
+    }
+
+    return err("Unknown action", 400);
+  } catch (e) {
+    console.error("Messaging error:", e);
+    return err("Internal error", 500);
+  }
+});
