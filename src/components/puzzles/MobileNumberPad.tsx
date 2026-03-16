@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { haptic } from "@/lib/haptic";
 
 interface Props {
   onNumber: (n: number) => void;
