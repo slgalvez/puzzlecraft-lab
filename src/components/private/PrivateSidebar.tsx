@@ -19,7 +19,7 @@ import {
 const adminNav = [
   { title: "Overview", url: "/p", icon: LayoutDashboard, badgeKey: "overview" as const },
   { title: "Conversations", url: "/p/conversations", icon: MessageSquare, badgeKey: "unread" as const },
-  { title: "Puzzles for You", url: "/p/for-you", icon: Gift, badgeKey: "puzzles" as const },
+  { title: "Puzzles for You", url: "/p/for-you", icon: Puzzle, badgeKey: "puzzles" as const },
   { title: "Users", url: "/p/users", icon: Users },
   { title: "Settings", url: "/p/settings", icon: Settings },
 ];
