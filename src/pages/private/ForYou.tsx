@@ -189,6 +189,7 @@ const ForYou = () => {
           puzzle_type: selectedType,
           puzzle_data: generatedData,
           reveal_message: revealMessage.trim() || null,
+          sent_to: selectedRecipientId,
         });
         await invokeMessaging("send-draft", token, { puzzle_id: editingDraftId });
       } else {
