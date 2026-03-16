@@ -3,6 +3,7 @@
  * to the main Puzzlecraft site puzzle components.
  */
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import GroupedEntryList from "@/components/puzzles/GroupedEntryList";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -427,24 +428,17 @@ export function GridSolver({ data, puzzleType, onComplete, savedState, onSavePro
         {puzzleType === "word-fill" && entries.length > 0 && (
           <>
             <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Words to Place</h4>
-            <div className="flex flex-wrap gap-2">
-              {entries.map(entry => (
-                <button
-                  key={entry}
-                  onClick={() => setUsedEntries(prev => {
-                    const next = new Set(prev);
-                    if (next.has(entry)) next.delete(entry); else next.add(entry);
-                    return next;
-                  })}
-                  className={cn(
-                    "rounded-md border px-2.5 py-1 text-xs font-medium transition-colors touch-manipulation",
-                    usedEntries.has(entry)
-                      ? "border-primary/30 bg-primary/10 text-primary line-through"
-                      : "border-border bg-puzzle-cell text-foreground hover:bg-puzzle-cell-highlight"
-                  )}
-                >{entry}</button>
-              ))}
-            </div>
+            <GroupedEntryList
+              entries={entries}
+              isNumbers={false}
+              interactive
+              usedEntries={usedEntries}
+              onToggle={(entry) => setUsedEntries(prev => {
+                const next = new Set(prev);
+                if (next.has(entry)) next.delete(entry); else next.add(entry);
+                return next;
+              })}
+            />
           </>
         )}
       </div>
@@ -854,9 +848,11 @@ export function PuzzlePreview({ data, puzzleType }: PuzzlePreviewProps) {
         </div>
       )}
       {puzzleType === "word-fill" && entries.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {entries.map((entry, i) => <Badge key={i} variant="outline" className="text-xs font-mono">{entry}</Badge>)}
-        </div>
+        <GroupedEntryList
+          entries={entries}
+          isNumbers={false}
+          badgeMode
+        />
       )}
     </div>
   );
