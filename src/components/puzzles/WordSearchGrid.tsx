@@ -193,7 +193,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
           </p>
         )}
 
-        <div className="max-w-full overflow-x-auto" style={{ touchAction: isMobile ? "none" : "auto" }}>
+        <div className="w-full overflow-x-auto pb-2" style={{ touchAction: isMobile ? "none" : "auto" }}>
         <div
           ref={gridRef}
           className="inline-grid border-2 border-puzzle-border select-none outline-none"
