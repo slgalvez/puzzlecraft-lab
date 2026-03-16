@@ -19,12 +19,14 @@ import {
 const adminNav = [
   { title: "Overview", url: "/p", icon: LayoutDashboard },
   { title: "Conversations", url: "/p/conversations", icon: MessageSquare, badgeKey: "unread" as const },
+  { title: "For You", url: "/p/for-you", icon: Gift },
   { title: "Users", url: "/p/users", icon: Users },
   { title: "Settings", url: "/p/settings", icon: Settings },
 ];
 
 const userNav = [
   { title: "Conversation", url: "/p/conversation", icon: MessageSquare, badgeKey: "unread" as const },
+  { title: "For You", url: "/p/for-you", icon: Gift },
   { title: "Settings", url: "/p/settings", icon: Settings },
 ];
 

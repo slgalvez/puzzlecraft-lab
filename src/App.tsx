@@ -52,6 +52,7 @@ const App = () => (
             <Route path="/p/conversation" element={<PrivateRoute><UserConversation /></PrivateRoute>} />
             <Route path="/p/conversation/:conversationId" element={<PrivateRoute><AdminConversationView /></PrivateRoute>} />
             <Route path="/p/users" element={<PrivateRoute><AdminUsers /></PrivateRoute>} />
+            <Route path="/p/for-you" element={<PrivateRoute><ForYou /></PrivateRoute>} />
             <Route path="/p/settings" element={<PrivateRoute><PrivateSettings /></PrivateRoute>} />
 
             <Route path="*" element={<NotFound />} />
