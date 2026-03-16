@@ -437,20 +437,26 @@ const ForYou = () => {
             clueEntries={clueEntries}
             setClueEntries={setClueEntries}
             revealMessage={revealMessage}
-            setRevealMessage={setRevealMessage}
+            setRevealMessage={(v) => { setRevealMessage(v); if (editingDraftId) triggerAutoSave({ reveal: v }); }}
             generatedData={generatedData}
             sending={sending}
             recipientName={activeRecipientName}
             recipients={recipients}
             selectedRecipientId={selectedRecipientId}
-            onSelectRecipient={(id) => { setSelectedRecipientId(id); setCreateStep(editingDraftId ? "preview" : "content"); }}
+            onSelectRecipient={(id) => {
+              setSelectedRecipientId(id);
+              setCreateStep(editingDraftId ? "preview" : "content");
+              if (editingDraftId) triggerAutoSave({ recipientId: id });
+            }}
             isEditingDraft={!!editingDraftId}
+            autoSaveStatus={autoSaveStatus}
             onSelectType={handleSelectType}
             onGenerate={handleGenerate}
             onRegenerate={handleRegenerate}
             onSend={handleSend}
             onSaveDraft={handleSaveDraft}
             onBack={() => {
+              clearTimeout(autoSaveTimerRef.current);
               resetCreate();
               setTab(editingDraftId ? "drafts" : "create");
             }}
