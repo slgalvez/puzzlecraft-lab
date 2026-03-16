@@ -181,9 +181,9 @@ const Index = () => {
                 <div className="mt-6 flex flex-wrap items-center gap-3">
                   {dailyCompletion ? (
                     <>
-                      <div className="flex items-center gap-1.5 rounded-lg border bg-green-50 border-green-200 px-3 py-2">
-                        <CheckCircle2 size={16} className="text-green-600" />
-                        <span className="text-sm font-medium text-green-700">
+                       <div className="flex items-center gap-1.5 rounded-lg border bg-primary/10 border-primary/30 px-3 py-2">
+                         <CheckCircle2 size={16} className="text-primary" />
+                         <span className="text-sm font-medium text-foreground">
                           Solved in {formatTime(dailyCompletion.time)}
                         </span>
                       </div>
