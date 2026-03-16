@@ -68,6 +68,8 @@ export default {
           "cell-active": "hsl(var(--puzzle-cell-active))",
           "cell-highlight": "hsl(var(--puzzle-cell-highlight))",
           "cell-black": "hsl(var(--puzzle-cell-black))",
+          "cell-error": "hsl(var(--puzzle-cell-error))",
+          "cell-correct": "hsl(var(--puzzle-cell-correct))",
           border: "hsl(var(--puzzle-border))",
           number: "hsl(var(--puzzle-number))",
         },
@@ -79,20 +81,12 @@ export default {
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
         },
       },
       animation: {

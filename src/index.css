@@ -54,6 +54,8 @@
     --puzzle-cell-black: 220 20% 14%;
     --puzzle-border: 220 15% 70%;
     --puzzle-number: 220 15% 40%;
+    --puzzle-cell-error: 0 72% 94%;
+    --puzzle-cell-correct: 142 60% 92%;
 
     font-family: 'DM Sans', sans-serif;
   }
@@ -78,6 +80,13 @@
     --border: 220 15% 22%;
     --input: 220 15% 22%;
     --ring: 32 80% 55%;
+
+    --puzzle-cell: 220 18% 16%;
+    --puzzle-cell-active: 32 60% 25%;
+    --puzzle-cell-highlight: 32 40% 20%;
+    --puzzle-cell-black: 220 15% 8%;
+    --puzzle-cell-error: 0 50% 20%;
+    --puzzle-cell-correct: 142 40% 18%;
   }
 
   * {
