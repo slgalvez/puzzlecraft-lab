@@ -6,7 +6,7 @@ import PrivateLayout from "@/components/private/PrivateLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Timer, Trash2 } from "lucide-react";
+import { Timer, Trash2, MessageSquare, Gift, Plus, Check, Clock, Send } from "lucide-react";
 
 interface ConversationSummary {
   id: string;
@@ -19,11 +19,40 @@ interface ConversationSummary {
   disappearing_duration: string;
 }
 
+interface PuzzleSummary {
+  id: string;
+  created_by: string;
+  sent_to: string;
+  puzzle_type: string;
+  solved_by: string | null;
+  solved_at: string | null;
+  solve_time: number | null;
+  created_at: string;
+  creator_name?: string;
+  recipient_name?: string;
+}
+
+interface ActivityItem {
+  id: string;
+  type: "message" | "puzzle_received" | "puzzle_sent" | "puzzle_solved";
+  description: string;
+  timestamp: string;
+}
+
+const PUZZLE_LABELS: Record<string, string> = {
+  "word-fill": "Word Fill-In",
+  cryptogram: "Cryptogram",
+  crossword: "Crossword",
+  "word-search": "Word Search",
+};
+
 const AdminDashboard = () => {
-  const { token, signOut } = useAuth();
+  const { user, token, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [puzzles, setPuzzles] = useState<PuzzleSummary[]>([]);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showClearAll, setShowClearAll] = useState(false);
@@ -34,28 +63,86 @@ const AdminDashboard = () => {
     navigate("/");
   }, [signOut, navigate]);
 
-  const fetchConversations = useCallback(async () => {
-    if (!token) return;
+  const fetchData = useCallback(async () => {
+    if (!token || !user) return;
     try {
-      const data = await invokeMessaging("list-conversations", token);
-      setConversations(data.conversations);
+      const [convData, puzzleData] = await Promise.all([
+        invokeMessaging("list-conversations", token),
+        invokeMessaging("list-puzzles", token),
+      ]);
+      setConversations(convData.conversations || []);
+      setPuzzles(puzzleData.puzzles || []);
+
+      // Build activity feed from puzzles
+      const items: ActivityItem[] = [];
+
+      const totalUnread = (convData.conversations || []).reduce(
+        (sum: number, c: ConversationSummary) => sum + c.unread_count,
+        0
+      );
+      if (totalUnread > 0) {
+        items.push({
+          id: "unread",
+          type: "message",
+          description: `${totalUnread} unread message${totalUnread > 1 ? "s" : ""} across conversations`,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      for (const p of puzzleData.puzzles || []) {
+        const label = PUZZLE_LABELS[p.puzzle_type] || p.puzzle_type;
+        if (p.sent_to === user.id && p.solved_by) {
+          items.push({
+            id: `solved-${p.id}`,
+            type: "puzzle_solved",
+            description: `You solved ${p.creator_name}'s ${label}`,
+            timestamp: p.solved_at || p.created_at,
+          });
+        } else if (p.sent_to === user.id && !p.solved_by) {
+          items.push({
+            id: `recv-${p.id}`,
+            type: "puzzle_received",
+            description: `${p.creator_name} sent you a ${label}`,
+            timestamp: p.created_at,
+          });
+        } else if (p.created_by === user.id) {
+          if (p.solved_by) {
+            items.push({
+              id: `their-solve-${p.id}`,
+              type: "puzzle_solved",
+              description: `${p.recipient_name} solved your ${label}`,
+              timestamp: p.solved_at || p.created_at,
+            });
+          } else {
+            items.push({
+              id: `sent-${p.id}`,
+              type: "puzzle_sent",
+              description: `You sent ${p.recipient_name} a ${label}`,
+              timestamp: p.created_at,
+            });
+          }
+        }
+      }
+
+      items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setActivities(items.slice(0, 10));
       setError(null);
     } catch (e) {
       if (e instanceof SessionExpiredError) {
         handleSessionExpired();
         return;
       }
-      if (loading) setError("Unable to load conversations");
+      if (loading) setError("Unable to load data");
     } finally {
       setLoading(false);
     }
-  }, [token, loading, handleSessionExpired]);
+  }, [token, user, loading, handleSessionExpired]);
 
   useEffect(() => {
-    fetchConversations();
-    const interval = setInterval(fetchConversations, 5000);
+    fetchData();
+    const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
-  }, [fetchConversations]);
+  }, [fetchData]);
 
   const handleClearAll = async () => {
     if (!token || clearingAll) return;
@@ -64,7 +151,7 @@ const AdminDashboard = () => {
       await invokeMessaging("clear-all-conversations", token);
       setShowClearAll(false);
       toast({ title: "All conversations cleared", description: "Your message history has been cleared across all conversations." });
-      fetchConversations();
+      fetchData();
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
       toast({ title: "Could not clear conversations", description: "Please try again." });
@@ -76,45 +163,135 @@ const AdminDashboard = () => {
   const formatTime = (iso: string) => {
     const d = new Date(iso);
     const now = new Date();
-    const diffMs = now.getTime() - d.getTime();
-    const diffMin = Math.floor(diffMs / 60000);
-    if (diffMin < 1) return "Just now";
-    if (diffMin < 60) return `${diffMin}m ago`;
-    const isToday = d.toDateString() === now.toDateString();
-    if (isToday) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const diff = now.getTime() - d.getTime();
+    if (diff < 60000) return "Just now";
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
     return d.toLocaleDateString([], { month: "short", day: "numeric" });
   };
 
   const totalUnread = conversations.reduce((sum, c) => sum + c.unread_count, 0);
+  const received = puzzles.filter((p) => p.sent_to === user?.id);
+  const sent = puzzles.filter((p) => p.created_by === user?.id);
+  const solved = received.filter((p) => p.solved_by);
+  const unsolved = received.filter((p) => !p.solved_by);
+
+  const activityIcon = (type: ActivityItem["type"]) => {
+    switch (type) {
+      case "message":
+        return <MessageSquare size={12} className="text-primary" />;
+      case "puzzle_received":
+        return <Gift size={12} className="text-primary" />;
+      case "puzzle_sent":
+        return <Send size={12} className="text-muted-foreground" />;
+      case "puzzle_solved":
+        return <Check size={12} className="text-primary" />;
+    }
+  };
 
   return (
     <PrivateLayout title="Overview">
-      <div className="p-4 sm:p-6 space-y-6">
-        {/* Stats */}
-        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
-          <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Conversations</p>
-            <p className="mt-2 text-2xl font-semibold text-foreground">{conversations.length}</p>
-          </div>
-          <div className="rounded-lg border border-border bg-card p-4 sm:p-5 relative">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Unread</p>
-            <p className="mt-2 text-2xl font-semibold text-foreground">{totalUnread}</p>
+      <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-6">
+        {/* Welcome */}
+        <div>
+          <h2 className="text-base font-semibold text-foreground">
+            Hi, {user?.first_name}
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Here's what's happening
+          </p>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-3 gap-3">
+          <Button
+            variant="outline"
+            className="h-auto py-3 flex flex-col gap-1.5 text-xs"
+            onClick={() => navigate("/p/conversations")}
+          >
+            <MessageSquare size={16} className="text-primary" />
+            <span>Conversations</span>
             {totalUnread > 0 && (
-              <span className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-[10px] text-primary font-medium">{totalUnread} new</span>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            className="h-auto py-3 flex flex-col gap-1.5 text-xs"
+            onClick={() => navigate("/p/for-you")}
+          >
+            <Gift size={16} className="text-primary" />
+            <span>Puzzles for You</span>
+            {unsolved.length > 0 && (
+              <span className="text-[10px] text-primary font-medium">{unsolved.length} unsolved</span>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            className="h-auto py-3 flex flex-col gap-1.5 text-xs"
+            onClick={() => navigate("/p/for-you")}
+          >
+            <Plus size={16} className="text-primary" />
+            <span>Create Puzzle</span>
+          </Button>
+        </div>
+
+        {/* Stats row */}
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+          <div className="rounded-lg border border-border bg-card p-3 text-center">
+            <p className="text-lg font-semibold text-foreground">{conversations.length}</p>
+            <p className="text-[11px] text-muted-foreground">Conversations</p>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-3 text-center relative">
+            <p className="text-lg font-semibold text-foreground">{totalUnread}</p>
+            <p className="text-[11px] text-muted-foreground">Unread</p>
+            {totalUnread > 0 && (
+              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary animate-pulse" />
             )}
           </div>
-          <div className="rounded-lg border border-border bg-card p-4 sm:p-5 col-span-2 sm:col-span-1">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Active</p>
-            <p className="mt-2 text-2xl font-semibold text-foreground">
-              {conversations.filter((c) => c.last_message).length}
-            </p>
+          <div className="rounded-lg border border-border bg-card p-3 text-center">
+            <p className="text-lg font-semibold text-foreground">{received.length}</p>
+            <p className="text-[11px] text-muted-foreground">Puzzles In</p>
           </div>
+          <div className="rounded-lg border border-border bg-card p-3 text-center">
+            <p className="text-lg font-semibold text-foreground">{sent.length}</p>
+            <p className="text-[11px] text-muted-foreground">Puzzles Out</p>
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-foreground">Recent Activity</h3>
+          {loading ? (
+            <p className="text-xs text-muted-foreground animate-pulse py-4 text-center">Loading…</p>
+          ) : activities.length === 0 ? (
+            <div className="rounded-lg border border-border bg-card p-6 text-center">
+              <Clock size={20} className="mx-auto text-muted-foreground/40 mb-2" />
+              <p className="text-xs text-muted-foreground">No recent activity</p>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-border bg-card divide-y divide-border">
+              {activities.map((a) => (
+                <div key={a.id} className="flex items-center gap-3 px-4 py-3">
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-muted shrink-0">
+                    {activityIcon(a.type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-foreground truncate">{a.description}</p>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground shrink-0">
+                    {formatTime(a.timestamp)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Conversation list */}
         <div className="rounded-lg border border-border bg-card">
           <div className="px-4 sm:px-5 py-3 border-b border-border flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-foreground">Conversations</h2>
+            <h3 className="text-sm font-medium text-foreground">Conversations</h3>
             {conversations.length > 0 && (
               <button
                 onClick={() => setShowClearAll(!showClearAll)}
@@ -127,7 +304,6 @@ const AdminDashboard = () => {
             )}
           </div>
 
-          {/* Clear all confirmation */}
           {showClearAll && (
             <div className="px-4 sm:px-5 py-3 bg-destructive/5 border-b border-border space-y-2">
               <p className="text-xs text-destructive">
@@ -160,13 +336,13 @@ const AdminDashboard = () => {
           ) : error ? (
             <div className="px-5 py-8 text-center space-y-3">
               <p className="text-sm text-muted-foreground">{error}</p>
-              <Button variant="outline" size="sm" onClick={() => { setLoading(true); setError(null); fetchConversations(); }}>
+              <Button variant="outline" size="sm" onClick={() => { setLoading(true); setError(null); fetchData(); }}>
                 Retry
               </Button>
             </div>
           ) : conversations.length === 0 ? (
             <div className="px-5 py-8 text-center text-sm text-muted-foreground">
-              No conversations yet. Users will appear here once they start a conversation.
+              No conversations yet.
             </div>
           ) : (
             <div className="divide-y divide-border">
