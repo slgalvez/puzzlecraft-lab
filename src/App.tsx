@@ -17,9 +17,10 @@ import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import PrivateRoute from "./components/private/PrivateRoute";
 import Login from "./pages/private/Login";
-import Dashboard from "./pages/private/Dashboard";
-import ThreadList from "./pages/private/ThreadList";
-import ConversationView from "./pages/private/ConversationView";
+import AdminDashboard from "./pages/private/AdminDashboard";
+import AdminConversationView from "./pages/private/AdminConversationView";
+import AdminUsers from "./pages/private/AdminUsers";
+import UserConversation from "./pages/private/UserConversation";
 import PrivateSettings from "./pages/private/PrivateSettings";
 
 const queryClient = new QueryClient();
@@ -44,9 +45,10 @@ const App = () => (
 
             {/* Private app */}
             <Route path="/p/login" element={<Login />} />
-            <Route path="/p" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-            <Route path="/p/threads" element={<PrivateRoute><ThreadList /></PrivateRoute>} />
-            <Route path="/p/threads/:threadId" element={<PrivateRoute><ConversationView /></PrivateRoute>} />
+            <Route path="/p" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
+            <Route path="/p/conversation" element={<PrivateRoute><UserConversation /></PrivateRoute>} />
+            <Route path="/p/conversation/:conversationId" element={<PrivateRoute><AdminConversationView /></PrivateRoute>} />
+            <Route path="/p/users" element={<PrivateRoute><AdminUsers /></PrivateRoute>} />
             <Route path="/p/settings" element={<PrivateRoute><PrivateSettings /></PrivateRoute>} />
 
             <Route path="*" element={<NotFound />} />
