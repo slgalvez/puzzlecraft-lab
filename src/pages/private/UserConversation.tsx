@@ -4,7 +4,7 @@ import { invokeMessaging } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send } from "lucide-react";
+import { Send, Timer, Check, CheckCheck } from "lucide-react";
 
 interface Message {
   id: string;
@@ -12,7 +12,11 @@ interface Message {
   body: string;
   created_at: string;
   read_at: string | null;
+  is_disappearing: boolean;
+  expires_at: string | null;
 }
+
+const DURATION_LABELS: Record<string, string> = { "1h": "1 hour", "24h": "24 hours", "7d": "7 days" };
 
 const UserConversation = () => {
   const { user, token } = useAuth();
@@ -21,6 +25,11 @@ const UserConversation = () => {
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [disappearingEnabled, setDisappearingEnabled] = useState(false);
+  const [disappearingDuration, setDisappearingDuration] = useState("24h");
+  const [showDisappearingMenu, setShowDisappearingMenu] = useState(false);
+  const [togglingDisappearing, setTogglingDisappearing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
 
@@ -30,6 +39,9 @@ const UserConversation = () => {
       const data = await invokeMessaging("get-my-conversation", token);
       setConversationId(data.conversation.id);
       setMessages(data.messages);
+      setUnreadCount(data.unread_count);
+      setDisappearingEnabled(data.conversation.disappearing_enabled);
+      setDisappearingDuration(data.conversation.disappearing_duration);
     } catch {
       // Silently fail on poll
     } finally {
@@ -74,6 +86,25 @@ const UserConversation = () => {
     }
   };
 
+  const handleToggleDisappearing = async (enabled: boolean, duration?: string) => {
+    if (!conversationId || !token) return;
+    setTogglingDisappearing(true);
+    try {
+      const data = await invokeMessaging("toggle-disappearing", token, {
+        conversation_id: conversationId,
+        enabled,
+        duration: duration || disappearingDuration,
+      });
+      setDisappearingEnabled(data.disappearing_enabled);
+      setDisappearingDuration(data.disappearing_duration);
+      setShowDisappearingMenu(false);
+    } catch {
+      // fail silently
+    } finally {
+      setTogglingDisappearing(false);
+    }
+  };
+
   const formatTime = (iso: string) => {
     const d = new Date(iso);
     const now = new Date();
@@ -95,6 +126,72 @@ const UserConversation = () => {
   return (
     <PrivateLayout title="Conversation">
       <div className="flex flex-col h-[calc(100vh-3.5rem)]">
+        {/* Top bar */}
+        <div className="flex items-center justify-between border-b border-border px-5 py-3 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-foreground">Conversation</span>
+            {unreadCount > 0 && (
+              <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-medium">
+                {unreadCount}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={() => setShowDisappearingMenu(!showDisappearingMenu)}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors ${
+              disappearingEnabled
+                ? "text-primary bg-primary/10"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+            }`}
+          >
+            <Timer size={12} />
+            {disappearingEnabled ? DURATION_LABELS[disappearingDuration] || disappearingDuration : "Auto-delete"}
+          </button>
+        </div>
+
+        {/* Disappearing menu */}
+        {showDisappearingMenu && (
+          <div className="border-b border-border px-5 py-3 bg-secondary/30 space-y-2">
+            <p className="text-xs text-muted-foreground">
+              {disappearingEnabled ? "Messages auto-delete after the set duration." : "Enable auto-delete for new messages."}
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              {(["1h", "24h", "7d"] as const).map((dur) => (
+                <button
+                  key={dur}
+                  disabled={togglingDisappearing}
+                  onClick={() => handleToggleDisappearing(true, dur)}
+                  className={`px-2.5 py-1 rounded text-xs border transition-colors ${
+                    disappearingEnabled && disappearingDuration === dur
+                      ? "border-primary text-primary bg-primary/10"
+                      : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
+                  }`}
+                >
+                  {DURATION_LABELS[dur]}
+                </button>
+              ))}
+              {disappearingEnabled && (
+                <button
+                  disabled={togglingDisappearing}
+                  onClick={() => handleToggleDisappearing(false)}
+                  className="px-2.5 py-1 rounded text-xs border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+                >
+                  Disable
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Disappearing active indicator */}
+        {disappearingEnabled && !showDisappearingMenu && (
+          <div className="px-5 py-1.5 bg-primary/5 border-b border-border">
+            <p className="text-[10px] text-primary flex items-center gap-1">
+              <Timer size={10} /> Auto-delete active · {DURATION_LABELS[disappearingDuration] || disappearingDuration}
+            </p>
+          </div>
+        )}
+
         {/* Messages */}
         <div className="flex-1 overflow-auto p-5 space-y-3">
           {messages.length === 0 ? (
@@ -116,9 +213,19 @@ const UserConversation = () => {
                     }`}
                   >
                     <p className="text-sm whitespace-pre-wrap break-words">{msg.body}</p>
-                    <p className={`text-[10px] mt-1 ${isMine ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                      {formatTime(msg.created_at)}
-                    </p>
+                    <div className={`flex items-center gap-1 mt-1 ${isMine ? "justify-end" : ""}`}>
+                      {msg.is_disappearing && (
+                        <Timer size={8} className={isMine ? "text-primary-foreground/40" : "text-muted-foreground/60"} />
+                      )}
+                      <span className={`text-[10px] ${isMine ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+                        {formatTime(msg.created_at)}
+                      </span>
+                      {isMine && (
+                        msg.read_at
+                          ? <CheckCheck size={10} className="text-primary-foreground/60" />
+                          : <Check size={10} className="text-primary-foreground/40" />
+                      )}
+                    </div>
                   </div>
                 </div>
               );

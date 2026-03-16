@@ -77,18 +77,30 @@ export type Database = {
         Row: {
           admin_profile_id: string
           created_at: string
+          disappearing_duration: string
+          disappearing_enabled: boolean
+          disappearing_enabled_by: string | null
+          disappearing_updated_at: string | null
           id: string
           user_profile_id: string
         }
         Insert: {
           admin_profile_id: string
           created_at?: string
+          disappearing_duration?: string
+          disappearing_enabled?: boolean
+          disappearing_enabled_by?: string | null
+          disappearing_updated_at?: string | null
           id?: string
           user_profile_id: string
         }
         Update: {
           admin_profile_id?: string
           created_at?: string
+          disappearing_duration?: string
+          disappearing_enabled?: boolean
+          disappearing_enabled_by?: string | null
+          disappearing_updated_at?: string | null
           id?: string
           user_profile_id?: string
         }
@@ -96,6 +108,13 @@ export type Database = {
           {
             foreignKeyName: "conversations_admin_profile_id_fkey"
             columns: ["admin_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_disappearing_enabled_by_fkey"
+            columns: ["disappearing_enabled_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -114,7 +133,9 @@ export type Database = {
           body: string
           conversation_id: string
           created_at: string
+          expires_at: string | null
           id: string
+          is_disappearing: boolean
           read_at: string | null
           sender_profile_id: string
         }
@@ -122,7 +143,9 @@ export type Database = {
           body: string
           conversation_id: string
           created_at?: string
+          expires_at?: string | null
           id?: string
+          is_disappearing?: boolean
           read_at?: string | null
           sender_profile_id: string
         }
@@ -130,7 +153,9 @@ export type Database = {
           body?: string
           conversation_id?: string
           created_at?: string
+          expires_at?: string | null
           id?: string
+          is_disappearing?: boolean
           read_at?: string | null
           sender_profile_id?: string
         }

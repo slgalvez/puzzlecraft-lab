@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Badge } from "@/components/ui/badge";
+import { Timer } from "lucide-react";
 
 interface ConversationSummary {
   id: string;
@@ -12,6 +13,8 @@ interface ConversationSummary {
   last_message: string | null;
   last_message_at: string;
   unread_count: number;
+  disappearing_enabled: boolean;
+  disappearing_duration: string;
 }
 
 const AdminDashboard = () => {
@@ -45,6 +48,8 @@ const AdminDashboard = () => {
     return d.toLocaleDateString([], { month: "short", day: "numeric" });
   };
 
+  const totalUnread = conversations.reduce((sum, c) => sum + c.unread_count, 0);
+
   return (
     <PrivateLayout title="Overview">
       <div className="p-6 space-y-6">
@@ -54,11 +59,12 @@ const AdminDashboard = () => {
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Conversations</p>
             <p className="mt-2 text-2xl font-semibold text-foreground">{conversations.length}</p>
           </div>
-          <div className="rounded-lg border border-border bg-card p-5">
+          <div className="rounded-lg border border-border bg-card p-5 relative">
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Unread</p>
-            <p className="mt-2 text-2xl font-semibold text-foreground">
-              {conversations.reduce((sum, c) => sum + c.unread_count, 0)}
-            </p>
+            <p className="mt-2 text-2xl font-semibold text-foreground">{totalUnread}</p>
+            {totalUnread > 0 && (
+              <span className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary animate-pulse" />
+            )}
           </div>
           <div className="rounded-lg border border-border bg-card p-5">
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Active</p>
@@ -89,14 +95,22 @@ const AdminDashboard = () => {
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-foreground truncate">{conv.user_name}</p>
+                      {conv.unread_count > 0 && (
+                        <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
+                      )}
+                      <p className={`text-sm font-medium text-foreground truncate ${conv.unread_count > 0 ? "font-semibold" : ""}`}>
+                        {conv.user_name}
+                      </p>
                       {conv.unread_count > 0 && (
                         <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 min-w-0">
                           {conv.unread_count}
                         </Badge>
                       )}
+                      {conv.disappearing_enabled && (
+                        <Timer size={10} className="text-primary shrink-0" />
+                      )}
                     </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground truncate">
+                    <p className={`mt-0.5 text-xs truncate ${conv.unread_count > 0 ? "text-foreground/80" : "text-muted-foreground"}`}>
                       {conv.last_message || "No messages yet"}
                     </p>
                   </div>
