@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { recordCompletion } from "@/lib/progressTracker";
+import { recordDailyCompletion, getTodaysChallenge } from "@/lib/dailyChallenge";
 import type { PuzzleCategory } from "@/lib/puzzleTypes";
 
 interface TimerState {
@@ -74,6 +75,13 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
     const isNew = saveBestTime(puzzleKey, state.elapsed);
     if (options?.category && options?.difficulty) {
       recordCompletion(puzzleKey, options.category, options.difficulty, state.elapsed);
+      // Auto-record daily completion if this is today's daily puzzle
+      if (puzzleKey.startsWith("daily-")) {
+        const challenge = getTodaysChallenge();
+        if (puzzleKey === `daily-${challenge.dateStr}-${challenge.category}-${challenge.difficulty}`) {
+          recordDailyCompletion(challenge.dateStr, state.elapsed, challenge.category, challenge.difficulty);
+        }
+      }
     }
     return { time: state.elapsed, isNewBest: isNew };
   }, [puzzleKey, state.elapsed, options?.category, options?.difficulty]);

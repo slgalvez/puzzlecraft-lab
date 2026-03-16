@@ -1,13 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Grid3X3, Hash, Type, Search, Plus, Palette, Lock, Calculator } from "lucide-react";
+import { ArrowRight, Grid3X3, Hash, Type, Search, Plus, Palette, Lock, Calculator, Flame, CheckCircle2, Calendar, Trophy, Clock, Target, Infinity } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { dailyPuzzle, allPuzzles, getPuzzleById } from "@/data/puzzles";
+import { allPuzzles, getPuzzleById } from "@/data/puzzles";
 import PuzzleCard from "@/components/puzzles/PuzzleCard";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { getTodaysChallenge, getDailyCompletion, getDailyStreak } from "@/lib/dailyChallenge";
+import { getProgressStats } from "@/lib/progressTracker";
+import { CATEGORY_INFO } from "@/lib/puzzleTypes";
+import { formatTime } from "@/hooks/usePuzzleTimer";
 
 const Index = () => {
   const featured = allPuzzles.slice(0, 3);
@@ -17,6 +21,12 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const challenge = useMemo(() => getTodaysChallenge(), []);
+  const dailyCompletion = useMemo(() => getDailyCompletion(challenge.dateStr), [challenge.dateStr]);
+  const dailyStreak = useMemo(() => getDailyStreak(), []);
+  const stats = useMemo(() => getProgressStats(), []);
+  const challengeInfo = CATEGORY_INFO[challenge.category];
+
   // Silent status check — only if a private session exists
   useEffect(() => {
     try {
@@ -24,7 +34,6 @@ const Index = () => {
       if (!raw) return;
       const { token } = JSON.parse(raw);
       if (!token) return;
-      // Verify token not expired
       const payloadB64 = token.split(".")?.[1];
       if (!payloadB64) return;
       const payload = JSON.parse(atob(payloadB64));
@@ -45,14 +54,12 @@ const Index = () => {
     const code = puzzleCode.trim();
     if (!code) return;
 
-    // Check if it matches a known puzzle ID first (no backend needed)
     const existing = getPuzzleById(code);
     if (existing) {
       navigate(`/play/${code}`);
       return;
     }
 
-    // Validate via backend
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('validate-code', {
@@ -97,7 +104,7 @@ const Index = () => {
         <div className="container py-16 sm:py-24">
           <div className="max-w-2xl">
             <p className="mb-3 text-sm font-medium uppercase tracking-widest text-primary">
-              {dailyPuzzle.date}
+              {challenge.displayDate}
             </p>
             <h1 className="font-display text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl text-foreground">
               Sharpen your mind,{" "}
@@ -111,7 +118,10 @@ const Index = () => {
                 <Link to="/daily">Play Today's Puzzle <ArrowRight size={16} /></Link>
               </Button>
               <Button asChild variant="outline" size="lg">
-                <Link to="/puzzles">Browse Library</Link>
+                <Link to="/generate/sudoku">
+                  <Infinity size={16} />
+                  Endless Mode
+                </Link>
               </Button>
             </div>
 
@@ -134,7 +144,7 @@ const Index = () => {
               {hasUpdate && (
                 <span className="inline-flex items-center gap-1 text-primary/70">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-pulse" />
-                  Updated
+                  Library updated
                 </span>
               )}
             </p>
@@ -142,10 +152,98 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Daily Challenge */}
+      <section className="border-b">
+        <div className="container py-12">
+          <div className="rounded-xl border bg-card overflow-hidden">
+            <div className="flex flex-col md:flex-row">
+              {/* Left: challenge info */}
+              <div className="flex-1 p-6 sm:p-8">
+                <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-primary mb-3">
+                  <Calendar size={14} />
+                  Daily Challenge
+                </div>
+                <h2 className="font-display text-2xl font-bold text-foreground sm:text-3xl">
+                  {challengeInfo.icon} Today's {challengeInfo.name}
+                </h2>
+                <p className="mt-2 text-muted-foreground">
+                  {challengeInfo.description}. Everyone gets the same puzzle — how fast can you solve it?
+                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground capitalize">
+                    {challenge.difficulty}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Seed: <span className="font-mono">{challenge.seed}</span>
+                  </span>
+                </div>
+
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  {dailyCompletion ? (
+                    <>
+                       <div className="flex items-center gap-1.5 rounded-lg border bg-primary/10 border-primary/30 px-3 py-2">
+                         <CheckCircle2 size={16} className="text-primary" />
+                         <span className="text-sm font-medium text-foreground">
+                          Solved in {formatTime(dailyCompletion.time)}
+                        </span>
+                      </div>
+                      <Button asChild size="sm" variant="outline">
+                        <Link to="/daily">View Puzzle</Link>
+                      </Button>
+                    </>
+                  ) : (
+                    <Button asChild size="lg">
+                      <Link to="/daily">
+                        Play Now <ArrowRight size={16} />
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Right: streak stats */}
+              <div className="border-t md:border-t-0 md:border-l bg-secondary/30 p-6 sm:p-8 md:w-64 flex flex-row md:flex-col gap-6 md:gap-4 justify-center">
+                <div className="text-center md:text-left">
+                  <div className="flex items-center justify-center md:justify-start gap-1.5 mb-1">
+                    <Flame size={16} className="text-primary" />
+                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Streak</span>
+                  </div>
+                  <p className="font-mono text-2xl font-bold text-foreground">{dailyStreak.current}</p>
+                  <p className="text-xs text-muted-foreground">day{dailyStreak.current !== 1 ? "s" : ""}</p>
+                </div>
+                <div className="text-center md:text-left">
+                  <div className="flex items-center justify-center md:justify-start gap-1.5 mb-1">
+                    <Trophy size={16} className="text-primary" />
+                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Best</span>
+                  </div>
+                  <p className="font-mono text-2xl font-bold text-foreground">{dailyStreak.longest}</p>
+                  <p className="text-xs text-muted-foreground">day{dailyStreak.longest !== 1 ? "s" : ""}</p>
+                </div>
+                {stats.totalSolved > 0 && (
+                  <div className="text-center md:text-left">
+                    <div className="flex items-center justify-center md:justify-start gap-1.5 mb-1">
+                      <Target size={16} className="text-primary" />
+                      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Total</span>
+                    </div>
+                    <p className="font-mono text-2xl font-bold text-foreground">{stats.totalSolved}</p>
+                    <p className="text-xs text-muted-foreground">solved</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Puzzle types */}
       <section className="container py-16">
-        <h2 className="font-display text-2xl font-semibold text-foreground sm:text-3xl">Eight ways to play</h2>
-        <p className="mt-2 text-muted-foreground">Unlimited puzzles with adjustable difficulty — generated fresh every time.</p>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-display text-2xl font-semibold text-foreground sm:text-3xl">Eight ways to play</h2>
+          <Link to="/generate/sudoku" className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
+            <Infinity size={14} /> Endless Mode
+          </Link>
+        </div>
+        <p className="text-muted-foreground">Unlimited puzzles with adjustable difficulty — generated fresh every time.</p>
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { icon: Grid3X3, title: "Crossword", desc: "Classic clue-based word puzzles.", link: "/generate/crossword" },
@@ -167,6 +265,44 @@ const Index = () => {
           ))}
         </div>
       </section>
+
+      {/* Quick stats bar */}
+      {stats.totalSolved > 0 && (
+        <section className="border-t">
+          <div className="container py-10">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-display text-xl font-semibold text-foreground">Your Progress</h2>
+              <Link to="/stats" className="text-sm font-medium text-primary hover:underline">
+                Full stats →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="rounded-xl border bg-card p-4 text-center">
+                <Target className="mx-auto h-5 w-5 text-primary mb-2" />
+                <p className="font-mono text-xl font-bold text-foreground">{stats.totalSolved}</p>
+                <p className="text-xs text-muted-foreground">Puzzles Solved</p>
+              </div>
+              <div className="rounded-xl border bg-card p-4 text-center">
+                <Flame className="mx-auto h-5 w-5 text-primary mb-2" />
+                <p className="font-mono text-xl font-bold text-foreground">{stats.currentStreak}</p>
+                <p className="text-xs text-muted-foreground">Day Streak</p>
+              </div>
+              <div className="rounded-xl border bg-card p-4 text-center">
+                <Clock className="mx-auto h-5 w-5 text-primary mb-2" />
+                <p className="font-mono text-xl font-bold text-foreground">{formatTime(stats.averageTime)}</p>
+                <p className="text-xs text-muted-foreground">Avg Time</p>
+              </div>
+              <div className="rounded-xl border bg-card p-4 text-center">
+                <Trophy className="mx-auto h-5 w-5 text-primary mb-2" />
+                <p className="font-mono text-xl font-bold text-foreground">
+                  {stats.bestTime !== null ? formatTime(stats.bestTime) : "—"}
+                </p>
+                <p className="text-xs text-muted-foreground">Fastest Solve</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Featured puzzles */}
       <section className="border-t bg-surface-warm">
