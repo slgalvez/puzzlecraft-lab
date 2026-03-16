@@ -577,10 +577,11 @@ function formatTime(seconds: number): string {
 function CreatePuzzleView({
   step, selectedType, wordInput, setWordInput, phraseInput, setPhraseInput,
   clueEntries, setClueEntries, revealMessage, setRevealMessage,
-  generatedData, sending, recipientName, isEditingDraft,
-  onSelectType, onGenerate, onRegenerate, onSend, onSaveDraft, onBack, onEditContent,
+  generatedData, sending, recipientName, recipients, selectedRecipientId,
+  onSelectRecipient, isEditingDraft,
+  onSelectType, onGenerate, onRegenerate, onSend, onSaveDraft, onBack, onEditContent, onChangeRecipient,
 }: {
-  step: "type" | "content" | "preview";
+  step: "type" | "recipient" | "content" | "preview";
   selectedType: PuzzleType | null;
   wordInput: string;
   setWordInput: (v: string) => void;
@@ -593,6 +594,9 @@ function CreatePuzzleView({
   generatedData: Record<string, unknown> | null;
   sending: boolean;
   recipientName: string | null;
+  recipients: { id: string; first_name: string; last_name: string }[];
+  selectedRecipientId: string | null;
+  onSelectRecipient: (id: string) => void;
   isEditingDraft: boolean;
   onSelectType: (t: PuzzleType) => void;
   onGenerate: () => void;
@@ -601,6 +605,7 @@ function CreatePuzzleView({
   onSaveDraft: () => void;
   onBack: () => void;
   onEditContent: () => void;
+  onChangeRecipient: () => void;
 }) {
   if (step === "type") {
     return (
@@ -622,6 +627,34 @@ function CreatePuzzleView({
               className="p-4 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/10 transition-colors text-left"
             >
               <span className="text-sm font-medium">{label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "recipient") {
+    return (
+      <div className="space-y-4">
+        <button onClick={onBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-3 w-3" /> Back
+        </button>
+        <h3 className="text-sm font-medium text-foreground">Select recipient</h3>
+        <p className="text-xs text-muted-foreground">Who should receive this {PUZZLE_LABELS[selectedType!]}?</p>
+        <div className="space-y-2">
+          {recipients.map(r => (
+            <button
+              key={r.id}
+              onClick={() => onSelectRecipient(r.id)}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left ${
+                selectedRecipientId === r.id
+                  ? "border-primary bg-primary/5"
+                  : "border-border bg-card hover:border-primary/50"
+              }`}
+            >
+              <SendIcon className="h-4 w-4 text-primary shrink-0" />
+              <span className="text-sm font-medium">{r.first_name} {r.last_name}</span>
             </button>
           ))}
         </div>
