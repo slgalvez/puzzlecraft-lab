@@ -199,8 +199,8 @@ const PuzzleGenerator = () => {
                 onKeyDown={(e) => e.key === "Enter" && handleLoadSeed()}
               />
             </div>
-            <Button variant="outline" size="sm" onClick={handleLoadSeed} disabled={!seedInput.trim()}>
-              Load Seed
+            <Button variant="outline" size="sm" onClick={handleLoadSeed} disabled={!seedInput.trim() || loadingSeed}>
+              {loadingSeed ? "..." : "Load Seed"}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
