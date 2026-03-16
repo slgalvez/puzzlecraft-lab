@@ -261,8 +261,8 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
                     !isFound && !isStart && !isPreview && !(isCursor && !isMobile) && "bg-puzzle-cell hover:bg-secondary"
                   )}
                   style={{ width: cellSizeStyle.width, height: cellSizeStyle.height, fontSize: cellSizeStyle.fontSize }}
-                  onClick={() => handleCellClick(r, c)}
-                  onMouseEnter={() => !isMobile && setHoverCell([r, c])}
+                  onMouseDown={() => handleMouseDown(r, c)}
+                  onMouseEnter={() => handleMouseEnterCell(r, c)}
                 >
                   {letter}
                 </div>
