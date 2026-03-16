@@ -195,7 +195,7 @@ const ForYou = () => {
 
   if (solvingPuzzle) {
     return (
-      <PrivateLayout title="For You">
+      <PrivateLayout title="Puzzles for You">
         <SolvePuzzleView
           puzzle={solvingPuzzle}
           onBack={() => setSolvingPuzzle(null)}
