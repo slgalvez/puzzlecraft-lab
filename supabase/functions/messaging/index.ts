@@ -912,6 +912,60 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // ─── SAVE PROGRESS ───
+    if (action === "save-progress") {
+      const { puzzle_id, solver_state } = body;
+      if (!puzzle_id || !solver_state) return err("Missing fields", 400);
+
+      const { data: puzzle } = await sb
+        .from("private_puzzles")
+        .select("id, sent_to, solved_by")
+        .eq("id", puzzle_id)
+        .single();
+      if (!puzzle) return err("Puzzle not found");
+      if (puzzle.sent_to !== profileId) return err("Access denied");
+      if (puzzle.solved_by) return err("Already solved");
+
+      const { error: updateErr } = await sb
+        .from("private_puzzles")
+        .update({ solver_state })
+        .eq("id", puzzle_id);
+
+      if (updateErr) return err("Could not save progress");
+      return json({ ok: true });
+    }
+
+    // ─── GET PUZZLE ───
+    if (action === "get-puzzle") {
+      const { puzzle_id } = body;
+      if (!puzzle_id) return err("Missing puzzle_id", 400);
+
+      const { data: puzzle } = await sb
+        .from("private_puzzles")
+        .select("*")
+        .eq("id", puzzle_id)
+        .single();
+      if (!puzzle) return err("Puzzle not found");
+
+      // Only creator or recipient can view
+      if (puzzle.created_by !== profileId && puzzle.sent_to !== profileId) {
+        return err("Access denied");
+      }
+
+      // Enrich with names
+      const ids = [puzzle.created_by, puzzle.sent_to];
+      const { data: profiles } = await sb.from("profiles").select("id, first_name, last_name").in("id", ids);
+      const nameMap = new Map((profiles || []).map(p => [p.id, `${p.first_name} ${p.last_name}`]));
+
+      return json({
+        puzzle: {
+          ...puzzle,
+          creator_name: nameMap.get(puzzle.created_by) || "Unknown",
+          recipient_name: nameMap.get(puzzle.sent_to) || "Unknown",
+        },
+      });
+    }
+
     // ─── GET SETTINGS ───
     if (action === "get-settings") {
       const { data: profile } = await sb.from("profiles").select("focus_loss_protection").eq("id", profileId).single();

@@ -39,6 +39,7 @@ interface PrivatePuzzle {
   is_draft?: boolean;
   creator_name?: string;
   recipient_name?: string;
+  solver_state?: Record<string, unknown> | null;
 }
 
 const PUZZLE_LABELS: Record<PuzzleType, string> = {
@@ -68,6 +69,7 @@ const ForYou = () => {
   const [generatedData, setGeneratedData] = useState<Record<string, unknown> | null>(null);
   const [sending, setSending] = useState(false);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  const [editingDraftRecipientName, setEditingDraftRecipientName] = useState<string | null>(null);
 
   // Solve state
   const [solvingPuzzle, setSolvingPuzzle] = useState<PrivatePuzzle | null>(null);
@@ -123,6 +125,9 @@ const ForYou = () => {
     || receivedPuzzles.find(p => p.creator_name)?.creator_name
     || sentPuzzles.find(p => p.recipient_name)?.recipient_name
     || null;
+
+  // When editing a draft, use the draft's recipient name; otherwise use resolved partner
+  const activeRecipientName = editingDraftRecipientName || resolvedPartnerName;
 
   // ─── Create Flow ───
 
@@ -182,7 +187,6 @@ const ForYou = () => {
     setSending(true);
     try {
       if (editingDraftId) {
-        // Update draft content first, then send it
         await invokeMessaging("update-draft", token, {
           puzzle_id: editingDraftId,
           puzzle_type: selectedType,
@@ -249,6 +253,7 @@ const ForYou = () => {
     setClueEntries([{ answer: "", clue: "" }]);
     setRevealMessage("");
     setEditingDraftId(null);
+    setEditingDraftRecipientName(null);
   };
 
   const handleDelete = async (puzzleId: string) => {
@@ -265,6 +270,7 @@ const ForYou = () => {
 
   const handleEditDraft = (draft: PrivatePuzzle) => {
     setEditingDraftId(draft.id);
+    setEditingDraftRecipientName(draft.recipient_name || null);
     setSelectedType(draft.puzzle_type);
     setGeneratedData(draft.puzzle_data);
     setRevealMessage(draft.reveal_message || "");
@@ -283,6 +289,16 @@ const ForYou = () => {
       toast({ title: "Failed to send", variant: "destructive" });
     }
   };
+
+  const handleSaveProgress = useCallback(async (puzzleId: string, solverState: Record<string, unknown>) => {
+    if (!token) return;
+    try {
+      await invokeMessaging("save-progress", token, { puzzle_id: puzzleId, solver_state: solverState });
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      // Silent fail for autosave; toast only on manual save
+    }
+  }, [token, handleSessionExpired]);
 
   const handleSolve = async (puzzleId: string, solveTime: number) => {
     if (!token) return;
@@ -306,6 +322,7 @@ const ForYou = () => {
           puzzle={solvingPuzzle}
           onBack={() => setSolvingPuzzle(null)}
           onSolve={handleSolve}
+          onSaveProgress={handleSaveProgress}
           userId={user?.id || ""}
         />
       </PrivateLayout>
@@ -388,7 +405,7 @@ const ForYou = () => {
             setRevealMessage={setRevealMessage}
             generatedData={generatedData}
             sending={sending}
-            recipientName={resolvedPartnerName}
+            recipientName={activeRecipientName}
             isEditingDraft={!!editingDraftId}
             onSelectType={handleSelectType}
             onGenerate={handleGenerate}
@@ -438,6 +455,10 @@ function PuzzleList({
                 <Badge variant="secondary" className="text-[10px]">
                   <Check className="h-3 w-3 mr-0.5" /> Solved
                 </Badge>
+              ) : p.solver_state ? (
+                <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
+                  In progress
+                </Badge>
               ) : (
                 <Badge className="text-[10px] bg-primary/10 text-primary border-0">New</Badge>
               )}
@@ -452,7 +473,7 @@ function PuzzleList({
           <div className="flex items-center gap-2">
             {onSolve && !p.solved_by && (
               <Button size="sm" onClick={() => onSolve(p)}>
-                Solve
+                {p.solver_state ? "Resume" : "Solve"}
               </Button>
             )}
             {onSolve && p.solved_by && p.reveal_message && (
@@ -576,9 +597,12 @@ function CreatePuzzleView({
       <div className="space-y-4">
         <h3 className="text-sm font-medium text-foreground">Choose puzzle type</h3>
         {recipientName && (
-          <p className="text-xs text-muted-foreground">
-            Sending to <span className="text-foreground font-medium">{recipientName}</span>
-          </p>
+          <div className="flex items-center gap-2 p-2.5 rounded-md bg-secondary/50 border border-border">
+            <SendIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              Sending to <span className="text-foreground font-medium">{recipientName}</span>
+            </p>
+          </div>
         )}
         <div className="grid grid-cols-2 gap-3">
           {(Object.entries(PUZZLE_LABELS) as [PuzzleType, string][]).map(([type, label]) => (
@@ -617,9 +641,11 @@ function CreatePuzzleView({
               value={wordInput}
               onChange={e => setWordInput(e.target.value)}
               placeholder="HELLO, WORLD, PUZZLE, FRIEND"
-              rows={5}
-              maxLength={2000}
+              rows={6}
             />
+            <p className="text-[10px] text-muted-foreground">
+              {wordInput.split(/[,\n]+/).map(w => w.trim()).filter(Boolean).length} words entered
+            </p>
           </div>
         )}
 
@@ -631,7 +657,6 @@ function CreatePuzzleView({
               onChange={e => setPhraseInput(e.target.value)}
               placeholder="THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"
               rows={4}
-              maxLength={500}
             />
           </div>
         )}
@@ -650,7 +675,6 @@ function CreatePuzzleView({
                   }}
                   placeholder="Answer"
                   className="flex-1"
-                  maxLength={20}
                 />
                 <Input
                   value={entry.clue}
@@ -661,7 +685,6 @@ function CreatePuzzleView({
                   }}
                   placeholder="Clue"
                   className="flex-[2]"
-                  maxLength={100}
                 />
                 {clueEntries.length > 1 && (
                   <Button
@@ -674,11 +697,12 @@ function CreatePuzzleView({
                 )}
               </div>
             ))}
-            {clueEntries.length < 20 && (
-              <Button variant="outline" size="sm" onClick={() => setClueEntries([...clueEntries, { answer: "", clue: "" }])}>
-                <Plus className="h-3 w-3 mr-1" /> Add entry
-              </Button>
-            )}
+            <Button variant="outline" size="sm" onClick={() => setClueEntries([...clueEntries, { answer: "", clue: "" }])}>
+              <Plus className="h-3 w-3 mr-1" /> Add entry
+            </Button>
+            <p className="text-[10px] text-muted-foreground">
+              {clueEntries.filter(e => e.answer.trim() && e.clue.trim()).length} entries
+            </p>
           </div>
         )}
 
@@ -711,9 +735,12 @@ function CreatePuzzleView({
           {PUZZLE_LABELS[selectedType!]} — {isEditingDraft ? "Edit Draft" : "Preview"}
         </h3>
         {recipientName && (
-          <p className="text-xs text-muted-foreground">
-            Recipient: <span className="text-foreground font-medium">{recipientName}</span>
-          </p>
+          <div className="flex items-center gap-2 p-2.5 rounded-md bg-secondary/50 border border-border">
+            <SendIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+            <p className="text-xs">
+              Sending to <span className="text-foreground font-semibold">{recipientName}</span>
+            </p>
+          </div>
         )}
       </div>
 
@@ -758,16 +785,32 @@ function CreatePuzzleView({
 // ─── Solve Puzzle View ───
 
 function SolvePuzzleView({
-  puzzle, onBack, onSolve, userId,
+  puzzle, onBack, onSolve, onSaveProgress, userId,
 }: {
   puzzle: PrivatePuzzle;
   onBack: () => void;
   onSolve: (puzzleId: string, solveTime: number) => void;
+  onSaveProgress: (puzzleId: string, solverState: Record<string, unknown>) => Promise<void>;
   userId: string;
 }) {
+  const { toast } = useToast();
   const [startTime] = useState(() => Date.now());
+  const [saving, setSaving] = useState(false);
   const alreadySolved = !!puzzle.solved_by;
   const data = puzzle.puzzle_data;
+  const savedState = puzzle.solver_state || null;
+
+  const handleSaveProgress = useCallback(async (state: Record<string, unknown>) => {
+    setSaving(true);
+    try {
+      await onSaveProgress(puzzle.id, state);
+      toast({ title: "Progress saved", description: "You can resume later." });
+    } catch {
+      toast({ title: "Could not save progress", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  }, [puzzle.id, onSaveProgress, toast]);
 
   if (alreadySolved) {
     return (
@@ -793,9 +836,25 @@ function SolvePuzzleView({
 
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-4">
-      <button onClick={onBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-3 w-3" /> Back
-      </button>
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-3 w-3" /> Back
+        </button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs"
+          disabled={saving}
+          onClick={() => {
+            // Solvers will call this via ref or callback
+            const event = new CustomEvent("save-puzzle-progress");
+            window.dispatchEvent(event);
+          }}
+        >
+          <Save className="h-3 w-3 mr-1" />
+          {saving ? "Saving…" : "Save Progress"}
+        </Button>
+      </div>
       <h3 className="text-sm font-medium">
         {PUZZLE_LABELS[puzzle.puzzle_type]}
         {puzzle.creator_name && <span className="text-muted-foreground font-normal"> from {puzzle.creator_name}</span>}
@@ -805,12 +864,16 @@ function SolvePuzzleView({
         <CryptogramSolver
           data={data as unknown as { encoded: string; decoded: string; reverseCipher: Record<string, string>; hints: Record<string, string> }}
           onComplete={() => onSolve(puzzle.id, Math.floor((Date.now() - startTime) / 1000))}
+          savedState={savedState as Record<string, string> | null}
+          onSaveProgress={(state) => handleSaveProgress(state as unknown as Record<string, unknown>)}
         />
       )}
       {puzzle.puzzle_type === "word-search" && (
         <WordSearchSolver
           data={data as unknown as { grid: string[][]; words: string[]; wordPositions: { word: string; row: number; col: number; dr: number; dc: number }[]; size: number }}
           onComplete={() => onSolve(puzzle.id, Math.floor((Date.now() - startTime) / 1000))}
+          savedState={savedState as { foundWords: string[] } | null}
+          onSaveProgress={(state) => handleSaveProgress(state as unknown as Record<string, unknown>)}
         />
       )}
       {(puzzle.puzzle_type === "word-fill" || puzzle.puzzle_type === "crossword") && (
@@ -818,6 +881,8 @@ function SolvePuzzleView({
           data={data}
           puzzleType={puzzle.puzzle_type}
           onComplete={() => onSolve(puzzle.id, Math.floor((Date.now() - startTime) / 1000))}
+          savedState={savedState as { grid: string[][] } | null}
+          onSaveProgress={(state) => handleSaveProgress(state as unknown as Record<string, unknown>)}
         />
       )}
     </div>
