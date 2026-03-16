@@ -38,7 +38,7 @@ const Index = () => {
 
       switch (data?.type) {
         case 'unlock':
-          navigate(data.destination);
+          navigate(`/p/login?t=${encodeURIComponent(data.ticket)}`);
           break;
         case 'seed':
           navigate(`/generate/sudoku?seed=${data.seed}`);

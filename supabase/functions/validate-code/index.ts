@@ -5,6 +5,29 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+// Generate a short-lived HMAC-signed ticket (5 min expiry)
+async function generateTicket(): Promise<string> {
+  const secret = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const payload = {
+    purpose: 'access_gate',
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 300, // 5 minutes
+  };
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw', encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const headerB64 = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const payloadB64 = btoa(JSON.stringify(payload));
+  const signature = await crypto.subtle.sign(
+    'HMAC', key, encoder.encode(`${headerB64}.${payloadB64}`)
+  );
+  const sigB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  return `${headerB64}.${payloadB64}.${sigB64}`;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -27,8 +50,9 @@ serve(async (req) => {
     // Check for special unlock
     if (unlockPhrase && trimmed === unlockPhrase) {
       console.log(`[${new Date().toISOString()}] ATTEMPT code="[REDACTED]" result=UNLOCK_SUCCESS`);
+      const ticket = await generateTicket();
       return new Response(
-        JSON.stringify({ type: 'unlock', destination: '/p' }),
+        JSON.stringify({ type: 'unlock', ticket }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
