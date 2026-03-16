@@ -3,6 +3,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { UserPlus } from "lucide-react";
 
 interface UserInfo {
   id: string;
@@ -19,6 +21,15 @@ const AdminUsers = () => {
   const [users, setUsers] = useState<UserInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
+
+  // Add user form
+  const [showForm, setShowForm] = useState(false);
+  const [newFirst, setNewFirst] = useState("");
+  const [newLast, setNewLast] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [addError, setAddError] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [addSuccess, setAddSuccess] = useState("");
 
   const fetchUsers = useCallback(async () => {
     if (!token) return;
@@ -54,9 +65,103 @@ const AdminUsers = () => {
     }
   };
 
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddError("");
+    setAddSuccess("");
+
+    if (!newFirst.trim() || !newLast.trim() || !newPassword) {
+      setAddError("All fields are required");
+      return;
+    }
+    if (newPassword.length < 4) {
+      setAddError("Password must be at least 4 characters");
+      return;
+    }
+
+    setAdding(true);
+    try {
+      await invokeMessaging("add-user", token!, {
+        first_name: newFirst.trim(),
+        last_name: newLast.trim(),
+        password: newPassword,
+      });
+      setAddSuccess(`${newFirst.trim()} ${newLast.trim()} added successfully`);
+      setNewFirst("");
+      setNewLast("");
+      setNewPassword("");
+      fetchUsers();
+      setTimeout(() => setAddSuccess(""), 4000);
+    } catch (err: any) {
+      setAddError(err.message || "Could not add user");
+    } finally {
+      setAdding(false);
+    }
+  };
+
   return (
     <PrivateLayout title="Users">
-      <div className="p-6">
+      <div className="p-6 space-y-6">
+        {/* Add user section */}
+        <div className="rounded-lg border border-border bg-card">
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="w-full flex items-center gap-2 px-5 py-3 text-sm font-semibold text-foreground hover:bg-secondary/40 transition-colors"
+          >
+            <UserPlus size={14} />
+            Add New User
+          </button>
+          {showForm && (
+            <form onSubmit={handleAddUser} className="px-5 pb-5 space-y-3 border-t border-border pt-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-muted-foreground">First Name</label>
+                  <Input
+                    value={newFirst}
+                    onChange={(e) => setNewFirst(e.target.value)}
+                    placeholder="First name"
+                    className="bg-secondary border-border text-foreground"
+                    maxLength={100}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Last Name</label>
+                  <Input
+                    value={newLast}
+                    onChange={(e) => setNewLast(e.target.value)}
+                    placeholder="Last name"
+                    className="bg-secondary border-border text-foreground"
+                    maxLength={100}
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Password</label>
+                <Input
+                  type="text"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Set a password"
+                  className="bg-secondary border-border text-foreground font-mono text-sm"
+                  maxLength={200}
+                  required
+                />
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  The password is visible here so you can share it with the user. It will be securely hashed before storage.
+                </p>
+              </div>
+              {addError && <p className="text-xs text-destructive">{addError}</p>}
+              {addSuccess && <p className="text-xs text-primary">{addSuccess}</p>}
+              <Button type="submit" size="sm" disabled={adding}>
+                {adding ? "Adding..." : "Create User"}
+              </Button>
+            </form>
+          )}
+        </div>
+
+        {/* User list */}
         <div className="rounded-lg border border-border bg-card">
           <div className="px-5 py-3 border-b border-border">
             <h2 className="text-sm font-semibold text-foreground">Authorized Users</h2>
