@@ -580,7 +580,7 @@ function CreatePuzzleView({
   clueEntries, setClueEntries, revealMessage, setRevealMessage,
   generatedData, sending, recipientName, recipients, selectedRecipientId,
   onSelectRecipient, isEditingDraft,
-  onSelectType, onGenerate, onRegenerate, onSend, onSaveDraft, onBack, onEditContent, onChangeRecipient,
+  onSelectType, onGenerate, onRegenerate, onSend, onSaveDraft, onBack, onEditContent, onChangeRecipient, onGoToPreview,
 }: {
   step: "type" | "recipient" | "content" | "preview";
   selectedType: PuzzleType | null;
