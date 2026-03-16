@@ -328,6 +328,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
             })
           )}
         </div>
+        </div>
         {showControls && onNewPuzzle && (
           <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} />
         )}

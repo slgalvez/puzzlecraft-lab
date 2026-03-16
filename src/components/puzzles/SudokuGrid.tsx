@@ -193,6 +193,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
           })
         )}
       </div>
+      </div>
       <MobileNumberPad
         visible={isMobile && !!activeCell && !timer.isSolved}
         onNumber={enterNumber}

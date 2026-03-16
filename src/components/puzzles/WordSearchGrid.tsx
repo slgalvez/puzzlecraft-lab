@@ -220,6 +220,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
             })
           )}
         </div>
+        </div>
         <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} />
       </div>
 
