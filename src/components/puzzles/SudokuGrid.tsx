@@ -183,6 +183,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
                 )}
                 onClick={() => {
                   setActiveCell([r, c]);
+                  if (isMobile) haptic();
                   if (!isMobile) containerRef.current?.focus();
                 }}
               >
