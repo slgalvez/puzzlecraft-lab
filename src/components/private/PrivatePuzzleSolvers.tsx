@@ -690,14 +690,25 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress 
     setSelEnd(null);
   };
 
+  // Global mouseup to catch releases outside grid
+  useEffect(() => {
+    const onGlobalMouseUp = () => {
+      if (selStart && selEnd) trySelectWord(selStart[0], selStart[1], selEnd[0], selEnd[1]);
+      setSelStart(null);
+      setSelEnd(null);
+    };
+    window.addEventListener("mouseup", onGlobalMouseUp);
+    return () => window.removeEventListener("mouseup", onGlobalMouseUp);
+  }, [selStart, selEnd, trySelectWord]);
+
   const previewCells = getPreviewCells();
 
   return (
     <div className="space-y-4">
       <div
         ref={gridRef}
-        className="inline-grid gap-0"
-        style={{ gridTemplateColumns: `repeat(${data.size}, minmax(0, 1fr))` }}
+        className="inline-grid gap-0 select-none"
+        style={{ gridTemplateColumns: `repeat(${data.size}, minmax(0, 1fr))`, touchAction: "none" }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
