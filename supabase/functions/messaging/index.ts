@@ -569,6 +569,39 @@ Deno.serve(async (req) => {
       return json({ ok: true, deleted: count || 0 });
     }
 
+    // ─── CHECK STATUS (returns only a boolean — safe for public context) ───
+    if (action === "check-status") {
+      // For regular users: check if they have unread messages
+      // For admins: check if any conversation has unread messages
+      let hasUpdate = false;
+      if (isAdmin) {
+        const { count } = await sb
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .neq("sender_profile_id", profileId)
+          .is("read_at", null)
+          .or(`expires_at.is.null,expires_at.gt.${now}`);
+        hasUpdate = (count || 0) > 0;
+      } else {
+        const { data: conv } = await sb
+          .from("conversations")
+          .select("id")
+          .eq("user_profile_id", profileId)
+          .maybeSingle();
+        if (conv) {
+          const { count } = await sb
+            .from("messages")
+            .select("id", { count: "exact", head: true })
+            .eq("conversation_id", conv.id)
+            .neq("sender_profile_id", profileId)
+            .is("read_at", null)
+            .or(`expires_at.is.null,expires_at.gt.${now}`);
+          hasUpdate = (count || 0) > 0;
+        }
+      }
+      return json({ updated: hasUpdate });
+    }
+
     return err("Unknown action", 400);
   } catch (e) {
     console.error("Messaging error:", e);
