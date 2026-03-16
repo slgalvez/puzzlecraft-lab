@@ -4,7 +4,7 @@ import { invokeMessaging } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { UserPlus } from "lucide-react";
+import { UserPlus, KeyRound } from "lucide-react";
 
 interface UserInfo {
   id: string;
