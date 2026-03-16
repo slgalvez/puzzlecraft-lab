@@ -12,6 +12,7 @@ import About from "./pages/About";
 import Help from "./pages/Help";
 import Stats from "./pages/Stats";
 import NotFound from "./pages/NotFound";
+import PrivatePage from "./pages/PrivatePage";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/about" element={<About />} />
           <Route path="/help" element={<Help />} />
           <Route path="/stats" element={<Stats />} />
+          <Route path="/p" element={<PrivatePage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

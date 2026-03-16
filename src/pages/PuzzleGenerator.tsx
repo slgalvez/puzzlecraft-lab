@@ -1,13 +1,14 @@
-import { useState, useMemo } from "react";
-import { useParams, useSearchParams, Link } from "react-router-dom";
+import { useState } from "react";
+import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import DifficultySelector from "@/components/puzzles/DifficultySelector";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CATEGORY_INFO, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
-import { randomSeed, seedFromString } from "@/lib/seededRandom";
+import { randomSeed } from "@/lib/seededRandom";
 import { useToast } from "@/hooks/use-toast";
 import { getPuzzleById } from "@/data/puzzles";
+import { supabase } from "@/integrations/supabase/client";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
@@ -28,6 +29,7 @@ const PuzzleGenerator = () => {
   const [searchParams] = useSearchParams();
   const category = type as PuzzleCategory;
   const info = CATEGORY_INFO[category];
+  const navigate = useNavigate();
 
   const initialSeed = searchParams.get("seed");
 
@@ -35,6 +37,7 @@ const PuzzleGenerator = () => {
   const [seed, setSeed] = useState(() => initialSeed ? parseInt(initialSeed) || randomSeed() : randomSeed());
   const [seedInput, setSeedInput] = useState(initialSeed || "");
   const [puzzleKey, setPuzzleKey] = useState(0);
+  const [loadingSeed, setLoadingSeed] = useState(false);
   const { toast } = useToast();
 
   if (!info) {
@@ -55,28 +58,53 @@ const PuzzleGenerator = () => {
     setPuzzleKey((k) => k + 1);
   };
 
-  const handleLoadSeed = () => {
+  const handleLoadSeed = async () => {
     const code = seedInput.trim();
     if (!code) return;
 
-    // Accept known puzzle IDs
+    // Accept known puzzle IDs locally
     if (getPuzzleById(code)) {
-      setSeed(seedFromString(code));
-      setPuzzleKey((k) => k + 1);
+      navigate(`/play/${code}`);
       return;
     }
 
-    // Accept pure numeric seeds
-    if (/^\d+$/.test(code)) {
-      setSeed(parseInt(code));
-      setPuzzleKey((k) => k + 1);
-      return;
-    }
+    // Validate via backend
+    setLoadingSeed(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-code', {
+        body: { code },
+      });
 
-    toast({
-      title: "Code not found",
-      description: "We couldn't find a puzzle matching that code. Check the code and try again.",
-    });
+      if (error) throw error;
+
+      switch (data?.type) {
+        case 'unlock':
+          navigate(data.destination);
+          break;
+        case 'seed':
+          setSeed(data.seed);
+          setPuzzleKey((k) => k + 1);
+          break;
+        case 'type-seed':
+          navigate(`/generate/${data.puzzleType}?seed=${data.seed}`);
+          break;
+        case 'type-name':
+          navigate(`/generate/${data.puzzleType}`);
+          break;
+        default:
+          toast({
+            title: "Code not found",
+            description: "We couldn't find a puzzle matching that code. Check the code and try again.",
+          });
+      }
+    } catch {
+      toast({
+        title: "Code not found",
+        description: "We couldn't find a puzzle matching that code. Check the code and try again.",
+      });
+    } finally {
+      setLoadingSeed(false);
+    }
   };
 
   const handleDifficultyChange = (d: Difficulty) => {
@@ -171,8 +199,8 @@ const PuzzleGenerator = () => {
                 onKeyDown={(e) => e.key === "Enter" && handleLoadSeed()}
               />
             </div>
-            <Button variant="outline" size="sm" onClick={handleLoadSeed} disabled={!seedInput.trim()}>
-              Load Seed
+            <Button variant="outline" size="sm" onClick={handleLoadSeed} disabled={!seedInput.trim() || loadingSeed}>
+              {loadingSeed ? "..." : "Load Seed"}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
