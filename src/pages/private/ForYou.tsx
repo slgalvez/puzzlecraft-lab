@@ -414,7 +414,7 @@ const ForYou = () => {
             recipientName={activeRecipientName}
             recipients={recipients}
             selectedRecipientId={selectedRecipientId}
-            onSelectRecipient={(id) => { setSelectedRecipientId(id); setCreateStep("content"); }}
+            onSelectRecipient={(id) => { setSelectedRecipientId(id); setCreateStep(editingDraftId ? "preview" : "content"); }}
             isEditingDraft={!!editingDraftId}
             onSelectType={handleSelectType}
             onGenerate={handleGenerate}
@@ -424,6 +424,7 @@ const ForYou = () => {
             onBack={resetCreate}
             onEditContent={() => setCreateStep("content")}
             onChangeRecipient={() => setCreateStep("recipient")}
+            onGoToPreview={() => setCreateStep("preview")}
           />
         )}
       </div>
@@ -579,7 +580,7 @@ function CreatePuzzleView({
   clueEntries, setClueEntries, revealMessage, setRevealMessage,
   generatedData, sending, recipientName, recipients, selectedRecipientId,
   onSelectRecipient, isEditingDraft,
-  onSelectType, onGenerate, onRegenerate, onSend, onSaveDraft, onBack, onEditContent, onChangeRecipient,
+  onSelectType, onGenerate, onRegenerate, onSend, onSaveDraft, onBack, onEditContent, onChangeRecipient, onGoToPreview,
 }: {
   step: "type" | "recipient" | "content" | "preview";
   selectedType: PuzzleType | null;
@@ -606,6 +607,7 @@ function CreatePuzzleView({
   onBack: () => void;
   onEditContent: () => void;
   onChangeRecipient: () => void;
+  onGoToPreview: () => void;
 }) {
   if (step === "type") {
     return (
@@ -637,7 +639,7 @@ function CreatePuzzleView({
   if (step === "recipient") {
     return (
       <div className="space-y-4">
-        <button onClick={onBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+        <button onClick={() => { if (isEditingDraft && generatedData) { onGoToPreview(); } else { onBack(); } }} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-3 w-3" /> Back
         </button>
         <h3 className="text-sm font-medium text-foreground">Select recipient</h3>
