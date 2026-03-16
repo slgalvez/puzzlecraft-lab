@@ -1,0 +1,1 @@
+ALTER TABLE public.private_puzzles ADD COLUMN solver_state jsonb DEFAULT NULL;
