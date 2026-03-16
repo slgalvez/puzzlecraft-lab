@@ -3,8 +3,10 @@ import { cn } from "@/lib/utils";
 import { generateKakuro } from "@/lib/generators/kakuro";
 import PuzzleControls from "./PuzzleControls";
 import PuzzleTimer from "./PuzzleTimer";
+import MobileNumberPad from "./MobileNumberPad";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Difficulty } from "@/lib/puzzleTypes";
 
 interface Props {
@@ -15,6 +17,7 @@ interface Props {
 
 const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateKakuro(seed, difficulty), [seed, difficulty]);
   const { size, isBlack, solution, clues } = puzzle;
 
@@ -34,15 +37,10 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     return map;
   }, [clues]);
 
-  // Find first white cell on mount
   useEffect(() => {
     for (let r = 0; r < size; r++)
       for (let c = 0; c < size; c++)
-        if (!isBlack[r][c]) {
-          setActiveCell([r, c]);
-          containerRef.current?.focus();
-          return;
-        }
+        if (!isBlack[r][c]) { setActiveCell([r, c]); containerRef.current?.focus(); return; }
   }, [seed, difficulty]);
 
   const findNextWhite = (r: number, c: number, dir: number): [number, number] | null => {
@@ -55,66 +53,46 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     return null;
   };
 
+  const enterNumber = useCallback((num: number) => {
+    if (!activeCell || timer.isSolved) return;
+    const [r, c] = activeCell;
+    setGrid((prev) => {
+      const next = prev.map((row) => [...row]);
+      next[r][c] = num.toString();
+      return next;
+    });
+    setErrors(new Set());
+    const next = findNextWhite(r, c, 1);
+    if (next) setActiveCell(next);
+  }, [activeCell, timer.isSolved, size, isBlack]);
+
+  const deleteCell = useCallback(() => {
+    if (!activeCell || timer.isSolved) return;
+    const [r, c] = activeCell;
+    setGrid((prev) => {
+      const next = prev.map((row) => [...row]);
+      next[r][c] = "";
+      return next;
+    });
+    setErrors(new Set());
+    const prev = findNextWhite(r, c, -1);
+    if (prev) setActiveCell(prev);
+  }, [activeCell, timer.isSolved, size, isBlack]);
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (!activeCell || timer.isSolved) return;
     const [r, c] = activeCell;
 
     switch (e.key) {
-      case "ArrowUp":
-        e.preventDefault();
-        for (let nr = r - 1; nr >= 0; nr--)
-          if (!isBlack[nr][c]) { setActiveCell([nr, c]); return; }
-        break;
-      case "ArrowDown":
-        e.preventDefault();
-        for (let nr = r + 1; nr < size; nr++)
-          if (!isBlack[nr][c]) { setActiveCell([nr, c]); return; }
-        break;
-      case "ArrowLeft":
-        e.preventDefault();
-        for (let nc = c - 1; nc >= 0; nc--)
-          if (!isBlack[r][nc]) { setActiveCell([r, nc]); return; }
-        break;
-      case "ArrowRight":
-        e.preventDefault();
-        for (let nc = c + 1; nc < size; nc++)
-          if (!isBlack[r][nc]) { setActiveCell([r, nc]); return; }
-        break;
-      case "Tab": {
-        e.preventDefault();
-        const next = findNextWhite(r, c, e.shiftKey ? -1 : 1);
-        if (next) setActiveCell(next);
-        break;
-      }
-      case "Backspace":
-      case "Delete":
-        e.preventDefault();
-        setGrid((prev) => {
-          const next = prev.map((row) => [...row]);
-          next[r][c] = "";
-          return next;
-        });
-        setErrors(new Set());
-        if (e.key === "Backspace") {
-          const prev = findNextWhite(r, c, -1);
-          if (prev) setActiveCell(prev);
-        }
-        break;
-      default: {
-        if (/^[1-9]$/.test(e.key)) {
-          e.preventDefault();
-          setGrid((prev) => {
-            const next = prev.map((row) => [...row]);
-            next[r][c] = e.key;
-            return next;
-          });
-          setErrors(new Set());
-          const next = findNextWhite(r, c, 1);
-          if (next) setActiveCell(next);
-        }
-      }
+      case "ArrowUp": e.preventDefault(); for (let nr = r - 1; nr >= 0; nr--) if (!isBlack[nr][c]) { setActiveCell([nr, c]); return; } break;
+      case "ArrowDown": e.preventDefault(); for (let nr = r + 1; nr < size; nr++) if (!isBlack[nr][c]) { setActiveCell([nr, c]); return; } break;
+      case "ArrowLeft": e.preventDefault(); for (let nc = c - 1; nc >= 0; nc--) if (!isBlack[r][nc]) { setActiveCell([r, nc]); return; } break;
+      case "ArrowRight": e.preventDefault(); for (let nc = c + 1; nc < size; nc++) if (!isBlack[r][nc]) { setActiveCell([r, nc]); return; } break;
+      case "Tab": { e.preventDefault(); const next = findNextWhite(r, c, e.shiftKey ? -1 : 1); if (next) setActiveCell(next); break; }
+      case "Backspace": case "Delete": e.preventDefault(); deleteCell(); break;
+      default: { if (/^[1-9]$/.test(e.key)) { e.preventDefault(); enterNumber(parseInt(e.key)); } }
     }
-  }, [activeCell, timer.isSolved, grid, size, isBlack]);
+  }, [activeCell, timer.isSolved, grid, size, isBlack, enterNumber, deleteCell]);
 
   const handleReset = () => {
     setGrid(Array.from({ length: size }, () => Array(size).fill("")));
@@ -146,9 +124,11 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   return (
     <div>
       <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
-      <p className="mb-2 text-xs text-muted-foreground">
-        Arrow keys to move • 1–9 to enter • Delete to clear
-      </p>
+      {!isMobile && (
+        <p className="mb-2 text-xs text-muted-foreground">
+          Arrow keys to move • 1–9 to enter • Delete to clear
+        </p>
+      )}
       <div
         ref={containerRef}
         tabIndex={0}
@@ -165,30 +145,16 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
 
             if (black) {
               return (
-                <div
-                  key={`${r}-${c}`}
-                  className="relative w-10 h-10 sm:w-12 sm:h-12 bg-puzzle-cell-black border border-puzzle-border overflow-hidden"
-                >
+                <div key={`${r}-${c}`} className="relative w-10 h-10 sm:w-12 sm:h-12 bg-puzzle-cell-black border border-puzzle-border overflow-hidden">
                   {clue && (
                     <>
-                      <div
-                        className="absolute inset-0"
-                        style={{
-                          background: (clue.across && clue.down)
-                            ? "linear-gradient(to top right, transparent calc(50% - 0.5px), hsl(var(--puzzle-border)) calc(50% - 0.5px), hsl(var(--puzzle-border)) calc(50% + 0.5px), transparent calc(50% + 0.5px))"
-                            : undefined,
-                        }}
-                      />
-                      {clue.down != null && (
-                        <span className="absolute top-0.5 right-1 text-[9px] font-bold text-primary-foreground/90">
-                          {clue.down}
-                        </span>
-                      )}
-                      {clue.across != null && (
-                        <span className="absolute bottom-0.5 left-1 text-[9px] font-bold text-primary-foreground/90">
-                          {clue.across}
-                        </span>
-                      )}
+                      <div className="absolute inset-0" style={{
+                        background: (clue.across && clue.down)
+                          ? "linear-gradient(to top right, transparent calc(50% - 0.5px), hsl(var(--puzzle-border)) calc(50% - 0.5px), hsl(var(--puzzle-border)) calc(50% + 0.5px), transparent calc(50% + 0.5px))"
+                          : undefined,
+                      }} />
+                      {clue.down != null && <span className="absolute top-0.5 right-1 text-[9px] font-bold text-primary-foreground/90">{clue.down}</span>}
+                      {clue.across != null && <span className="absolute bottom-0.5 left-1 text-[9px] font-bold text-primary-foreground/90">{clue.across}</span>}
                     </>
                   )}
                 </div>
@@ -199,24 +165,27 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
               <div
                 key={`${r}-${c}`}
                 className={cn(
-                  "relative w-10 h-10 sm:w-12 sm:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none",
+                  "relative w-10 h-10 sm:w-12 sm:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation",
                   hasError && "bg-puzzle-cell-error",
                   !hasError && isActive && "bg-puzzle-cell-active",
                   !hasError && !isActive && "bg-puzzle-cell"
                 )}
                 onClick={() => {
                   setActiveCell([r, c]);
-                  containerRef.current?.focus();
+                  if (!isMobile) containerRef.current?.focus();
                 }}
               >
-                <span className="text-lg sm:text-xl font-semibold text-foreground">
-                  {grid[r][c]}
-                </span>
+                <span className="text-lg sm:text-xl font-semibold text-foreground">{grid[r][c]}</span>
               </div>
             );
           })
         )}
       </div>
+      <MobileNumberPad
+        visible={isMobile && !!activeCell && !timer.isSolved}
+        onNumber={enterNumber}
+        onDelete={deleteCell}
+      />
       <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} />
     </div>
   );

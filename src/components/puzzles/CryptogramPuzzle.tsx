@@ -5,6 +5,7 @@ import PuzzleControls from "./PuzzleControls";
 import PuzzleTimer from "./PuzzleTimer";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Difficulty } from "@/lib/puzzleTypes";
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 
 const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateCryptogram(seed, difficulty), [seed, difficulty]);
   const { encoded, decoded, reverseCipher, hints } = puzzle;
 
@@ -31,7 +33,6 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
     return [...new Set(encoded.split("").filter((ch) => /[A-Z]/.test(ch)))];
   }, [encoded]);
 
-  // Build ordered list of editable character indices
   const editableIndices = useMemo(() => {
     const indices: number[] = [];
     let idx = 0;
@@ -46,23 +47,16 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
     return indices;
   }, [encoded, hints]);
 
-  // Map from flat char index to encoded letter
   const charMap = useMemo(() => {
     const map: { idx: number; letter: string }[] = [];
     let idx = 0;
     for (const ch of encoded) {
-      if (/[A-Z]/.test(ch)) {
-        map.push({ idx, letter: ch });
-        idx++;
-      } else if (ch !== " ") {
-        map.push({ idx, letter: ch });
-        idx++;
-      }
+      if (/[A-Z]/.test(ch)) { map.push({ idx, letter: ch }); idx++; }
+      else if (ch !== " ") { map.push({ idx, letter: ch }); idx++; }
     }
     return map;
   }, [encoded]);
 
-  // Auto-focus first editable
   useEffect(() => {
     if (editableIndices.length > 0) {
       setActiveIdx(editableIndices[0]);
@@ -78,15 +72,8 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const findNextEditable = (fromIdx: number, dir: number): number | null => {
     const pos = editableIndices.indexOf(fromIdx);
     if (pos === -1) {
-      // Find closest
-      if (dir > 0) {
-        const next = editableIndices.find((i) => i > fromIdx);
-        return next ?? null;
-      } else {
-        for (let i = editableIndices.length - 1; i >= 0; i--)
-          if (editableIndices[i] < fromIdx) return editableIndices[i];
-        return null;
-      }
+      if (dir > 0) { const next = editableIndices.find((i) => i > fromIdx); return next ?? null; }
+      else { for (let i = editableIndices.length - 1; i >= 0; i--) if (editableIndices[i] < fromIdx) return editableIndices[i]; return null; }
     }
     const nextPos = pos + dir;
     if (nextPos >= 0 && nextPos < editableIndices.length) return editableIndices[nextPos];
@@ -98,7 +85,6 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
     const letter = value.toUpperCase().replace(/[^A-Z]/g, "").slice(-1);
     setGuesses((prev) => ({ ...prev, [encodedLetter]: letter }));
     setErrors(new Set());
-
     if (letter) {
       const next = findNextEditable(idx, 1);
       if (next !== null) focusIdx(next);
@@ -107,37 +93,14 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent, encodedLetter: string, idx: number) => {
     if (timer.isSolved) return;
-
     switch (e.key) {
-      case "ArrowRight": {
+      case "ArrowRight": { e.preventDefault(); const next = findNextEditable(idx, 1); if (next !== null) focusIdx(next); break; }
+      case "ArrowLeft": { e.preventDefault(); const prev = findNextEditable(idx, -1); if (prev !== null) focusIdx(prev); break; }
+      case "Tab": { e.preventDefault(); const next = findNextEditable(idx, e.shiftKey ? -1 : 1); if (next !== null) focusIdx(next); break; }
+      case "Backspace": case "Delete":
         e.preventDefault();
-        const next = findNextEditable(idx, 1);
-        if (next !== null) focusIdx(next);
-        break;
-      }
-      case "ArrowLeft": {
-        e.preventDefault();
-        const prev = findNextEditable(idx, -1);
-        if (prev !== null) focusIdx(prev);
-        break;
-      }
-      case "Tab": {
-        e.preventDefault();
-        const next = findNextEditable(idx, e.shiftKey ? -1 : 1);
-        if (next !== null) focusIdx(next);
-        break;
-      }
-      case "Backspace":
-      case "Delete":
-        e.preventDefault();
-        if (!hints[encodedLetter]) {
-          setGuesses((prev) => ({ ...prev, [encodedLetter]: "" }));
-          setErrors(new Set());
-        }
-        if (e.key === "Backspace") {
-          const prev = findNextEditable(idx, -1);
-          if (prev !== null) focusIdx(prev);
-        }
+        if (!hints[encodedLetter]) { setGuesses((prev) => ({ ...prev, [encodedLetter]: "" })); setErrors(new Set()); }
+        if (e.key === "Backspace") { const prev = findNextEditable(idx, -1); if (prev !== null) focusIdx(prev); }
         break;
       default: {
         const letter = e.key.toUpperCase();
@@ -153,9 +116,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
   }, [timer.isSolved, hints, editableIndices]);
 
   const handleReset = () => {
-    setGuesses({ ...hints });
-    setErrors(new Set());
-    timer.reset();
+    setGuesses({ ...hints }); setErrors(new Set()); timer.reset();
     if (editableIndices.length > 0) focusIdx(editableIndices[0]);
   };
 
@@ -183,9 +144,16 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
   return (
     <div ref={containerRef}>
       <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
-      <p className="mb-3 text-xs text-muted-foreground">
-        Type letters to guess • Arrow keys to move • All matching letters update together
-      </p>
+      {!isMobile && (
+        <p className="mb-3 text-xs text-muted-foreground">
+          Type letters to guess • Arrow keys to move • All matching letters update together
+        </p>
+      )}
+      {isMobile && (
+        <p className="mb-3 text-xs text-muted-foreground">
+          Tap a letter to focus • Type to guess • Matching letters update together
+        </p>
+      )}
       <div className="flex flex-wrap gap-x-4 gap-y-4 mb-4">
         {words.map((word, wi) => (
           <div key={wi} className="flex gap-0.5">
@@ -210,7 +178,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
                   <input
                     ref={(el) => { if (el) inputRefs.current.set(idx, el); }}
                     className={cn(
-                      "w-8 h-9 text-center text-lg font-semibold outline-none border-b-2 bg-transparent uppercase",
+                      "w-8 h-10 sm:h-9 text-center text-lg font-semibold outline-none border-b-2 bg-transparent uppercase touch-manipulation",
                       isHint && "text-primary border-primary/50",
                       hasError && "text-destructive border-destructive",
                       !isHint && !hasError && isActive && "text-foreground border-primary",
@@ -219,6 +187,10 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
                     value={guess}
                     readOnly={!!isHint}
                     maxLength={1}
+                    inputMode="text"
+                    autoCapitalize="characters"
+                    autoComplete="off"
+                    autoCorrect="off"
                     onChange={(e) => handleInput(ch, e.target.value, idx)}
                     onKeyDown={(e) => handleKeyDown(e, ch, idx)}
                     onFocus={() => setActiveIdx(idx)}
@@ -232,9 +204,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
       </div>
 
       <details className="mt-4 text-sm text-muted-foreground">
-        <summary className="cursor-pointer hover:text-foreground transition-colors">
-          Letter frequency
-        </summary>
+        <summary className="cursor-pointer hover:text-foreground transition-colors">Letter frequency</summary>
         <div className="mt-2 flex flex-wrap gap-2">
           {encodedLetters
             .sort((a, b) => {
@@ -245,9 +215,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
             .map((letter) => {
               const count = encoded.split("").filter((c) => c === letter).length;
               return (
-                <span key={letter} className="rounded border border-border px-2 py-0.5 text-xs bg-card">
-                  {letter}: {count}
-                </span>
+                <span key={letter} className="rounded border border-border px-2 py-0.5 text-xs bg-card">{letter}: {count}</span>
               );
             })}
         </div>
