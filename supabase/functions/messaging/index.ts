@@ -38,6 +38,17 @@ function err(msg: string, status = 403) {
   return json({ error: msg }, status);
 }
 
+/** Parse duration string like '1h', '24h', '7d' into milliseconds */
+function parseDuration(dur: string): number {
+  const match = dur.match(/^(\d+)(h|d)$/);
+  if (!match) return 24 * 60 * 60 * 1000; // default 24h
+  const val = parseInt(match[1]);
+  if (match[2] === "h") return val * 60 * 60 * 1000;
+  return val * 24 * 60 * 60 * 1000;
+}
+
+const VALID_DURATIONS = ["1h", "24h", "7d"];
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -54,27 +65,26 @@ Deno.serve(async (req) => {
 
     const profileId = user.sub;
     const isAdmin = user.role === "admin";
+    const now = new Date().toISOString();
 
     // ─── GET MY CONVERSATION (user) ───
     if (action === "get-my-conversation") {
       if (isAdmin) return err("Use admin actions");
 
-      // Find or create conversation
       let { data: conv } = await sb
         .from("conversations")
-        .select("id, admin_profile_id")
+        .select("id, admin_profile_id, disappearing_enabled, disappearing_duration")
         .eq("user_profile_id", profileId)
         .maybeSingle();
 
       if (!conv) {
-        // Find admin profile
         const { data: admin } = await sb.from("profiles").select("id").eq("role", "admin").limit(1).single();
         if (!admin) return err("System not ready");
 
         const { data: newConv, error: convErr } = await sb
           .from("conversations")
           .insert({ user_profile_id: profileId, admin_profile_id: admin.id })
-          .select("id, admin_profile_id")
+          .select("id, admin_profile_id, disappearing_enabled, disappearing_duration")
           .single();
         if (convErr) {
           console.error("Create conversation error:", JSON.stringify(convErr));
@@ -83,15 +93,34 @@ Deno.serve(async (req) => {
         conv = newConv;
       }
 
-      // Get messages
+      // Get messages, filtering out expired ones
       const { data: messages } = await sb
         .from("messages")
-        .select("id, sender_profile_id, body, created_at, read_at")
+        .select("id, sender_profile_id, body, created_at, read_at, is_disappearing, expires_at")
         .eq("conversation_id", conv.id)
+        .or(`expires_at.is.null,expires_at.gt.${now}`)
         .order("created_at", { ascending: true })
         .limit(200);
 
-      return json({ conversation: { id: conv.id, admin_profile_id: conv.admin_profile_id }, messages: messages || [] });
+      // Count unread from admin
+      const { count: unreadCount } = await sb
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("conversation_id", conv.id)
+        .neq("sender_profile_id", profileId)
+        .is("read_at", null)
+        .or(`expires_at.is.null,expires_at.gt.${now}`);
+
+      return json({
+        conversation: {
+          id: conv.id,
+          admin_profile_id: conv.admin_profile_id,
+          disappearing_enabled: conv.disappearing_enabled,
+          disappearing_duration: conv.disappearing_duration,
+        },
+        messages: messages || [],
+        unread_count: unreadCount || 0,
+      });
     }
 
     // ─── SEND MESSAGE ───
@@ -100,16 +129,23 @@ Deno.serve(async (req) => {
       if (!conversation_id || !message || typeof message !== "string" || message.trim().length === 0) return err("Invalid message", 400);
       if (message.length > 5000) return err("Message too long", 400);
 
-      // Verify access to conversation
-      const { data: conv } = await sb.from("conversations").select("id, user_profile_id, admin_profile_id").eq("id", conversation_id).single();
+      const { data: conv } = await sb.from("conversations").select("id, user_profile_id, admin_profile_id, disappearing_enabled, disappearing_duration").eq("id", conversation_id).single();
       if (!conv) return err("Conversation not found");
-
       if (!isAdmin && conv.user_profile_id !== profileId) return err("Access denied");
+
+      // Calculate expires_at if disappearing mode is on
+      let expires_at: string | null = null;
+      let is_disappearing = false;
+      if (conv.disappearing_enabled) {
+        is_disappearing = true;
+        const ms = parseDuration(conv.disappearing_duration);
+        expires_at = new Date(Date.now() + ms).toISOString();
+      }
 
       const { data: msg, error: msgErr } = await sb
         .from("messages")
-        .insert({ conversation_id, sender_profile_id: profileId, body: message.trim() })
-        .select("id, sender_profile_id, body, created_at, read_at")
+        .insert({ conversation_id, sender_profile_id: profileId, body: message.trim(), is_disappearing, expires_at })
+        .select("id, sender_profile_id, body, created_at, read_at, is_disappearing, expires_at")
         .single();
 
       if (msgErr) return err("Could not send message");
@@ -121,20 +157,44 @@ Deno.serve(async (req) => {
       const { conversation_id } = body;
       if (!conversation_id) return err("Missing conversation_id", 400);
 
-      // Verify access
       const { data: conv } = await sb.from("conversations").select("id, user_profile_id, admin_profile_id").eq("id", conversation_id).single();
       if (!conv) return err("Not found");
       if (!isAdmin && conv.user_profile_id !== profileId) return err("Access denied");
 
-      // Mark messages from the other party as read
       await sb
         .from("messages")
-        .update({ read_at: new Date().toISOString() })
+        .update({ read_at: now })
         .eq("conversation_id", conversation_id)
         .neq("sender_profile_id", profileId)
         .is("read_at", null);
 
       return json({ ok: true });
+    }
+
+    // ─── TOGGLE DISAPPEARING ───
+    if (action === "toggle-disappearing") {
+      const { conversation_id, enabled, duration } = body;
+      if (!conversation_id) return err("Missing conversation_id", 400);
+      if (typeof enabled !== "boolean") return err("Invalid params", 400);
+
+      const { data: conv } = await sb.from("conversations").select("id, user_profile_id, admin_profile_id").eq("id", conversation_id).single();
+      if (!conv) return err("Not found");
+      if (!isAdmin && conv.user_profile_id !== profileId) return err("Access denied");
+
+      const dur = duration && VALID_DURATIONS.includes(duration) ? duration : "24h";
+
+      const { error: updateErr } = await sb
+        .from("conversations")
+        .update({
+          disappearing_enabled: enabled,
+          disappearing_duration: dur,
+          disappearing_enabled_by: profileId,
+          disappearing_updated_at: now,
+        })
+        .eq("id", conversation_id);
+
+      if (updateErr) return err("Could not update setting");
+      return json({ ok: true, disappearing_enabled: enabled, disappearing_duration: dur });
     }
 
     // ─── ADMIN: LIST CONVERSATIONS ───
@@ -147,17 +207,19 @@ Deno.serve(async (req) => {
           id,
           user_profile_id,
           created_at,
+          disappearing_enabled,
+          disappearing_duration,
           profiles!conversations_user_profile_id_fkey (first_name, last_name)
         `)
         .order("created_at", { ascending: false });
 
-      // For each conversation, get last message and unread count
       const results = [];
       for (const c of convs || []) {
         const { data: lastMsg } = await sb
           .from("messages")
           .select("body, created_at, sender_profile_id")
           .eq("conversation_id", c.id)
+          .or(`expires_at.is.null,expires_at.gt.${now}`)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -167,7 +229,8 @@ Deno.serve(async (req) => {
           .select("id", { count: "exact", head: true })
           .eq("conversation_id", c.id)
           .neq("sender_profile_id", profileId)
-          .is("read_at", null);
+          .is("read_at", null)
+          .or(`expires_at.is.null,expires_at.gt.${now}`);
 
         const profile = c.profiles as unknown as { first_name: string; last_name: string } | null;
 
@@ -178,12 +241,12 @@ Deno.serve(async (req) => {
           last_message: lastMsg?.body || null,
           last_message_at: lastMsg?.created_at || c.created_at,
           unread_count: unreadCount || 0,
+          disappearing_enabled: c.disappearing_enabled,
+          disappearing_duration: c.disappearing_duration,
         });
       }
 
-      // Sort by last_message_at desc
       results.sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
-
       return json({ conversations: results });
     }
 
@@ -195,15 +258,16 @@ Deno.serve(async (req) => {
 
       const { data: conv } = await sb
         .from("conversations")
-        .select(`id, user_profile_id, admin_profile_id, profiles!conversations_user_profile_id_fkey (first_name, last_name)`)
+        .select(`id, user_profile_id, admin_profile_id, disappearing_enabled, disappearing_duration, profiles!conversations_user_profile_id_fkey (first_name, last_name)`)
         .eq("id", conversation_id)
         .single();
       if (!conv) return err("Not found");
 
       const { data: messages } = await sb
         .from("messages")
-        .select("id, sender_profile_id, body, created_at, read_at")
+        .select("id, sender_profile_id, body, created_at, read_at, is_disappearing, expires_at")
         .eq("conversation_id", conversation_id)
+        .or(`expires_at.is.null,expires_at.gt.${now}`)
         .order("created_at", { ascending: true })
         .limit(200);
 
@@ -215,6 +279,8 @@ Deno.serve(async (req) => {
           user_profile_id: conv.user_profile_id,
           admin_profile_id: conv.admin_profile_id,
           user_name: profile ? `${profile.first_name} ${profile.last_name}` : "Unknown",
+          disappearing_enabled: conv.disappearing_enabled,
+          disappearing_duration: conv.disappearing_duration,
         },
         messages: messages || [],
       });
@@ -230,7 +296,7 @@ Deno.serve(async (req) => {
         .from("authorized_users")
         .update({ is_active })
         .eq("id", authorized_user_id)
-        .neq("id", profileId); // Can't deactivate self
+        .neq("id", profileId);
 
       if (updateErr) return err("Update failed");
       return json({ ok: true });
@@ -245,7 +311,6 @@ Deno.serve(async (req) => {
         .select("id, first_name, last_name, is_active, created_at")
         .order("created_at", { ascending: true });
 
-      // Get profile ids and roles
       const { data: profiles } = await sb.from("profiles").select("id, authorized_user_id, role");
       const profileMap = new Map((profiles || []).map((p) => [p.authorized_user_id, p]));
 
@@ -268,7 +333,6 @@ Deno.serve(async (req) => {
         return err("Invalid fields", 400);
       }
 
-      // Hash password with PBKDF2
       const encoder = new TextEncoder();
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const keyMaterial = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
@@ -277,7 +341,6 @@ Deno.serve(async (req) => {
       const hashB64 = btoa(String.fromCharCode(...new Uint8Array(hash)));
       const password_hash = `pbkdf2:100000:${saltB64}:${hashB64}`;
 
-      // Insert authorized_user
       const { data: newUser, error: insertErr } = await sb
         .from("authorized_users")
         .insert({ first_name: first_name.trim(), last_name: last_name.trim(), password_hash })
@@ -291,13 +354,11 @@ Deno.serve(async (req) => {
         return err("Could not create user", 400);
       }
 
-      // Create profile
       const { error: profileErr } = await sb
         .from("profiles")
         .insert({ authorized_user_id: newUser.id, first_name: newUser.first_name, last_name: newUser.last_name, role: "user" });
 
       if (profileErr) return err("User created but profile failed", 500);
-
       return json({ user: newUser });
     }
 
@@ -323,6 +384,19 @@ Deno.serve(async (req) => {
 
       if (updateErr) return err("Could not reset password");
       return json({ ok: true });
+    }
+
+    // ─── CLEANUP EXPIRED MESSAGES ───
+    if (action === "cleanup-expired") {
+      if (!isAdmin) return err("Access denied");
+
+      const { count } = await sb
+        .from("messages")
+        .delete({ count: "exact" })
+        .eq("is_disappearing", true)
+        .lt("expires_at", now);
+
+      return json({ ok: true, deleted: count || 0 });
     }
 
     return err("Unknown action", 400);
