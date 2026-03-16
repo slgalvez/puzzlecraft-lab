@@ -805,6 +805,29 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // ─── DELETE PUZZLE ───
+    if (action === "delete-puzzle") {
+      const { puzzle_id } = body;
+      if (!puzzle_id) return err("Missing puzzle_id", 400);
+
+      const { data: puzzle } = await sb
+        .from("private_puzzles")
+        .select("id, created_by, solved_by")
+        .eq("id", puzzle_id)
+        .single();
+      if (!puzzle) return err("Puzzle not found");
+      if (puzzle.created_by !== profileId) return err("Access denied");
+      if (puzzle.solved_by) return err("Cannot delete a solved puzzle", 400);
+
+      const { error: delErr } = await sb
+        .from("private_puzzles")
+        .delete()
+        .eq("id", puzzle_id);
+
+      if (delErr) return err("Could not delete puzzle");
+      return json({ ok: true });
+    }
+
     return err("Unknown action", 400);
   } catch (e) {
     console.error("Messaging error:", e);

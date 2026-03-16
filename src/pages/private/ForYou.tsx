@@ -166,6 +166,18 @@ const ForYou = () => {
     setRevealMessage("");
   };
 
+  const handleDelete = async (puzzleId: string) => {
+    if (!token) return;
+    try {
+      await invokeMessaging("delete-puzzle", token, { puzzle_id: puzzleId });
+      toast({ title: "Puzzle deleted" });
+      fetchPuzzles();
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: (e as Error).message || "Could not delete puzzle", variant: "destructive" });
+    }
+  };
+
   const handleSolve = async (puzzleId: string, solveTime: number) => {
     if (!token) return;
     try {
@@ -236,6 +248,7 @@ const ForYou = () => {
             loading={loading}
             emptyMessage="No puzzles sent yet"
             showRecipient
+            onDelete={handleDelete}
           />
         )}
 
@@ -267,7 +280,7 @@ const ForYou = () => {
 // ─── Puzzle List ───
 
 function PuzzleList({
-  puzzles, loading, emptyMessage, showCreator, showRecipient, onSolve,
+  puzzles, loading, emptyMessage, showCreator, showRecipient, onSolve, onDelete,
 }: {
   puzzles: PrivatePuzzle[];
   loading: boolean;
@@ -275,6 +288,7 @@ function PuzzleList({
   showCreator?: boolean;
   showRecipient?: boolean;
   onSolve?: (p: PrivatePuzzle) => void;
+  onDelete?: (id: string) => void;
 }) {
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
   if (puzzles.length === 0) {
@@ -308,16 +322,28 @@ function PuzzleList({
               {p.solve_time != null && ` · Solved in ${formatTime(p.solve_time)}`}
             </p>
           </div>
-          {onSolve && !p.solved_by && (
-            <Button size="sm" onClick={() => onSolve(p)}>
-              Solve
-            </Button>
-          )}
-          {onSolve && p.solved_by && p.reveal_message && (
-            <Button size="sm" variant="outline" onClick={() => onSolve(p)}>
-              View
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {onSolve && !p.solved_by && (
+              <Button size="sm" onClick={() => onSolve(p)}>
+                Solve
+              </Button>
+            )}
+            {onSolve && p.solved_by && p.reveal_message && (
+              <Button size="sm" variant="outline" onClick={() => onSolve(p)}>
+                View
+              </Button>
+            )}
+            {onDelete && !p.solved_by && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onDelete(p.id)}
+                className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
         </div>
       ))}
     </div>
