@@ -19,6 +19,7 @@ import PrivateRoute from "./components/private/PrivateRoute";
 import Login from "./pages/private/Login";
 import AdminDashboard from "./pages/private/AdminDashboard";
 import AdminConversationView from "./pages/private/AdminConversationView";
+import AdminConversations from "./pages/private/AdminConversations";
 import AdminUsers from "./pages/private/AdminUsers";
 import UserConversation from "./pages/private/UserConversation";
 import PrivateSettings from "./pages/private/PrivateSettings";
