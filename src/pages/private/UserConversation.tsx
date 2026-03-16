@@ -6,7 +6,7 @@ import PrivateLayout from "@/components/private/PrivateLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Timer, Check, CheckCheck, Eye } from "lucide-react";
+import { Send, Timer, Check, CheckCheck, Eye, Trash2 } from "lucide-react";
 
 interface Message {
   id: string;
@@ -35,6 +35,8 @@ const UserConversation = () => {
   const [disappearingDuration, setDisappearingDuration] = useState("24h");
   const [showDisappearingMenu, setShowDisappearingMenu] = useState(false);
   const [togglingDisappearing, setTogglingDisappearing] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
 
@@ -58,7 +60,6 @@ const UserConversation = () => {
         handleSessionExpired();
         return;
       }
-      // Only show error on initial load
       if (loading) setError("Unable to load conversation");
     } finally {
       setLoading(false);
@@ -75,7 +76,6 @@ const UserConversation = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  // Mark messages as read when viewing
   useEffect(() => {
     if (!conversationId || !token) return;
     const unread = messages.some((m) => m.sender_profile_id !== user?.id && !m.read_at);
@@ -101,7 +101,7 @@ const UserConversation = () => {
         handleSessionExpired();
         return;
       }
-      setNewMessage(body); // Restore message on failure
+      setNewMessage(body);
       toast({ title: "Could not send message", description: "Please try again." });
     } finally {
       setSending(false);
@@ -125,6 +125,22 @@ const UserConversation = () => {
       toast({ title: "Could not update setting", description: "Please try again." });
     } finally {
       setTogglingDisappearing(false);
+    }
+  };
+
+  const handleClearConversation = async () => {
+    if (!conversationId || !token || clearing) return;
+    setClearing(true);
+    try {
+      await invokeMessaging("clear-conversation", token, { conversation_id: conversationId });
+      setMessages([]);
+      setShowClearConfirm(false);
+      toast({ title: "Conversation cleared", description: "Your message history has been cleared." });
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Could not clear conversation", description: "Please try again." });
+    } finally {
+      setClearing(false);
     }
   };
 
@@ -172,23 +188,61 @@ const UserConversation = () => {
               </span>
             )}
           </div>
-          <button
-            onClick={() => setShowDisappearingMenu(!showDisappearingMenu)}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors ${
-              disappearingEnabled
-                ? "text-primary bg-primary/10"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-            }`}
-          >
-            <Timer size={12} />
-            <span className="hidden sm:inline">
-              {disappearingEnabled ? DURATION_LABELS[disappearingDuration] || disappearingDuration : "Auto-delete"}
-            </span>
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setShowClearConfirm(!showClearConfirm)}
+              className="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              title="Clear conversation"
+            >
+              <Trash2 size={12} />
+              <span className="hidden sm:inline">Clear</span>
+            </button>
+            <button
+              onClick={() => setShowDisappearingMenu(!showDisappearingMenu)}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors ${
+                disappearingEnabled
+                  ? "text-primary bg-primary/10"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              }`}
+            >
+              <Timer size={12} />
+              <span className="hidden sm:inline">
+                {disappearingEnabled ? DURATION_LABELS[disappearingDuration] || disappearingDuration : "Auto-delete"}
+              </span>
+            </button>
+          </div>
         </div>
 
+        {/* Clear confirmation */}
+        {showClearConfirm && (
+          <div className="border-b border-border px-4 sm:px-5 py-3 bg-destructive/5 space-y-2">
+            <p className="text-xs text-destructive">
+              Clear your message history? The other participant will still see their copy until they clear it.
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-7 text-xs"
+                disabled={clearing}
+                onClick={handleClearConversation}
+              >
+                {clearing ? "Clearing..." : "Clear History"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs border-border"
+                onClick={() => setShowClearConfirm(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Disappearing menu */}
-        {showDisappearingMenu && (
+        {showDisappearingMenu && !showClearConfirm && (
           <div className="border-b border-border px-4 sm:px-5 py-3 bg-secondary/30 space-y-2">
             <p className="text-xs text-muted-foreground">
               {disappearingEnabled ? "Messages auto-delete after the set duration." : "Enable auto-delete for new messages."}
@@ -222,7 +276,7 @@ const UserConversation = () => {
         )}
 
         {/* Disappearing active indicator */}
-        {disappearingEnabled && !showDisappearingMenu && (
+        {disappearingEnabled && !showDisappearingMenu && !showClearConfirm && (
           <div className="px-4 sm:px-5 py-1.5 bg-primary/5 border-b border-border">
             <p className="text-[10px] text-primary flex items-center gap-1">
               <Timer size={10} /> Auto-delete active · {DURATION_LABELS[disappearingDuration] || disappearingDuration}

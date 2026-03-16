@@ -5,7 +5,8 @@ import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Timer } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Timer, Trash2 } from "lucide-react";
 
 interface ConversationSummary {
   id: string;
@@ -21,9 +22,17 @@ interface ConversationSummary {
 const AdminDashboard = () => {
   const { token, signOut } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showClearAll, setShowClearAll] = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
+
+  const handleSessionExpired = useCallback(() => {
+    signOut();
+    navigate("/");
+  }, [signOut, navigate]);
 
   const fetchConversations = useCallback(async () => {
     if (!token) return;
@@ -33,21 +42,36 @@ const AdminDashboard = () => {
       setError(null);
     } catch (e) {
       if (e instanceof SessionExpiredError) {
-        signOut();
-        navigate("/");
+        handleSessionExpired();
         return;
       }
       if (loading) setError("Unable to load conversations");
     } finally {
       setLoading(false);
     }
-  }, [token, loading, signOut, navigate]);
+  }, [token, loading, handleSessionExpired]);
 
   useEffect(() => {
     fetchConversations();
     const interval = setInterval(fetchConversations, 5000);
     return () => clearInterval(interval);
   }, [fetchConversations]);
+
+  const handleClearAll = async () => {
+    if (!token || clearingAll) return;
+    setClearingAll(true);
+    try {
+      await invokeMessaging("clear-all-conversations", token);
+      setShowClearAll(false);
+      toast({ title: "All conversations cleared", description: "Your message history has been cleared across all conversations." });
+      fetchConversations();
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Could not clear conversations", description: "Please try again." });
+    } finally {
+      setClearingAll(false);
+    }
+  };
 
   const formatTime = (iso: string) => {
     const d = new Date(iso);
@@ -89,9 +113,48 @@ const AdminDashboard = () => {
 
         {/* Conversation list */}
         <div className="rounded-lg border border-border bg-card">
-          <div className="px-4 sm:px-5 py-3 border-b border-border">
+          <div className="px-4 sm:px-5 py-3 border-b border-border flex items-center justify-between">
             <h2 className="text-sm font-semibold text-foreground">Conversations</h2>
+            {conversations.length > 0 && (
+              <button
+                onClick={() => setShowClearAll(!showClearAll)}
+                className="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                title="Clear all conversations"
+              >
+                <Trash2 size={12} />
+                <span className="hidden sm:inline">Clear All</span>
+              </button>
+            )}
           </div>
+
+          {/* Clear all confirmation */}
+          {showClearAll && (
+            <div className="px-4 sm:px-5 py-3 bg-destructive/5 border-b border-border space-y-2">
+              <p className="text-xs text-destructive">
+                Clear your message history across all conversations? Users will still see their copies until they clear them.
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="h-7 text-xs"
+                  disabled={clearingAll}
+                  onClick={handleClearAll}
+                >
+                  {clearingAll ? "Clearing..." : "Clear All History"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs border-border"
+                  onClick={() => setShowClearAll(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="px-5 py-8 text-center text-sm text-muted-foreground animate-pulse">Loading...</div>
           ) : error ? (

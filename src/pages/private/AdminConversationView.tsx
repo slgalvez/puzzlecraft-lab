@@ -6,7 +6,7 @@ import PrivateLayout from "@/components/private/PrivateLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Send, Timer, Check, CheckCheck, Eye } from "lucide-react";
+import { ArrowLeft, Send, Timer, Check, CheckCheck, Eye, Trash2 } from "lucide-react";
 
 interface Message {
   id: string;
@@ -42,6 +42,8 @@ const AdminConversationView = () => {
   const [error, setError] = useState<string | null>(null);
   const [showDisappearingMenu, setShowDisappearingMenu] = useState(false);
   const [togglingDisappearing, setTogglingDisappearing] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
 
@@ -123,6 +125,22 @@ const AdminConversationView = () => {
     }
   };
 
+  const handleClearConversation = async () => {
+    if (!conversationId || !token || clearing) return;
+    setClearing(true);
+    try {
+      await invokeMessaging("clear-conversation", token, { conversation_id: conversationId });
+      setMessages([]);
+      setShowClearConfirm(false);
+      toast({ title: "Conversation cleared", description: "Your message history has been cleared." });
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Could not clear conversation", description: "Please try again." });
+    } finally {
+      setClearing(false);
+    }
+  };
+
   const formatTime = (iso: string) => {
     const d = new Date(iso);
     const now = new Date();
@@ -167,25 +185,63 @@ const AdminConversationView = () => {
               {conversation?.user_name || "Conversation"}
             </span>
           </div>
-          <button
-            onClick={() => setShowDisappearingMenu(!showDisappearingMenu)}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors ${
-              conversation?.disappearing_enabled
-                ? "text-primary bg-primary/10"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-            }`}
-          >
-            <Timer size={12} />
-            <span className="hidden sm:inline">
-              {conversation?.disappearing_enabled
-                ? DURATION_LABELS[conversation.disappearing_duration] || conversation.disappearing_duration
-                : "Auto-delete"}
-            </span>
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => { setShowClearConfirm(!showClearConfirm); setShowDisappearingMenu(false); }}
+              className="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              title="Clear conversation"
+            >
+              <Trash2 size={12} />
+              <span className="hidden sm:inline">Clear</span>
+            </button>
+            <button
+              onClick={() => { setShowDisappearingMenu(!showDisappearingMenu); setShowClearConfirm(false); }}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors ${
+                conversation?.disappearing_enabled
+                  ? "text-primary bg-primary/10"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              }`}
+            >
+              <Timer size={12} />
+              <span className="hidden sm:inline">
+                {conversation?.disappearing_enabled
+                  ? DURATION_LABELS[conversation.disappearing_duration] || conversation.disappearing_duration
+                  : "Auto-delete"}
+              </span>
+            </button>
+          </div>
         </div>
 
+        {/* Clear confirmation */}
+        {showClearConfirm && (
+          <div className="border-b border-border px-4 sm:px-5 py-3 bg-destructive/5 space-y-2">
+            <p className="text-xs text-destructive">
+              Clear your message history for this conversation? The user will still see their copy until they clear it.
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-7 text-xs"
+                disabled={clearing}
+                onClick={handleClearConversation}
+              >
+                {clearing ? "Clearing..." : "Clear History"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs border-border"
+                onClick={() => setShowClearConfirm(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Disappearing menu */}
-        {showDisappearingMenu && (
+        {showDisappearingMenu && !showClearConfirm && (
           <div className="border-b border-border px-4 sm:px-5 py-3 bg-secondary/30 space-y-2">
             <p className="text-xs text-muted-foreground">
               {conversation?.disappearing_enabled ? "Messages auto-delete after the set duration." : "Enable auto-delete for new messages."}
@@ -219,7 +275,7 @@ const AdminConversationView = () => {
         )}
 
         {/* Disappearing active indicator */}
-        {conversation?.disappearing_enabled && !showDisappearingMenu && (
+        {conversation?.disappearing_enabled && !showDisappearingMenu && !showClearConfirm && (
           <div className="px-4 sm:px-5 py-1.5 bg-primary/5 border-b border-border">
             <p className="text-[10px] text-primary flex items-center gap-1">
               <Timer size={10} /> Auto-delete active · {DURATION_LABELS[conversation.disappearing_duration] || conversation.disappearing_duration}
