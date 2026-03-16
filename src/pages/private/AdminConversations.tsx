@@ -5,7 +5,7 @@ import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Timer, Plus, Eye } from "lucide-react";
+import { Timer, Plus, Eye, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -51,6 +51,9 @@ const AdminConversations = () => {
   const [users, setUsers] = useState<UserOption[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [starting, setStarting] = useState<string | null>(null);
+  const [showClearAll, setShowClearAll] = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
+  const [clearingId, setClearingId] = useState<string | null>(null);
 
   const handleSessionExpired = useCallback(() => {
     signOut();
@@ -117,6 +120,39 @@ const AdminConversations = () => {
     }
   };
 
+  const handleClearConversation = async (conversationId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!token || clearingId) return;
+    setClearingId(conversationId);
+    try {
+      await invokeMessaging("clear-conversation", token, { conversation_id: conversationId });
+      toast({ title: "Conversation cleared" });
+      fetchConversations();
+    } catch (err) {
+      if (err instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Could not clear conversation", description: "Please try again." });
+    } finally {
+      setClearingId(null);
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (!token || clearingAll) return;
+    setClearingAll(true);
+    try {
+      await invokeMessaging("clear-all-conversations", token);
+      setShowClearAll(false);
+      toast({ title: "All conversations cleared" });
+      fetchConversations();
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Could not clear conversations", description: "Please try again." });
+    } finally {
+      setClearingAll(false);
+    }
+  };
+
   const existingUserIds = new Set(conversations.map((c) => c.user_profile_id));
   const availableUsers = users.filter((u) => !existingUserIds.has(u.profile_id));
 
@@ -135,11 +171,52 @@ const AdminConversations = () => {
           <h2 className="text-sm font-semibold text-foreground">
             All Conversations
           </h2>
-          <Button size="sm" variant="outline" onClick={handleOpenNew} className="gap-1.5 text-xs">
-            <Plus size={14} />
-            New
-          </Button>
+          <div className="flex items-center gap-2">
+            {conversations.length > 0 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowClearAll(!showClearAll)}
+                className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <Trash2 size={14} />
+                <span className="hidden sm:inline">Clear All</span>
+              </Button>
+            )}
+            <Button size="sm" variant="outline" onClick={handleOpenNew} className="gap-1.5 text-xs">
+              <Plus size={14} />
+              New
+            </Button>
+          </div>
         </div>
+
+        {/* Clear all confirmation */}
+        {showClearAll && (
+          <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 space-y-2">
+            <p className="text-xs text-destructive">
+              Clear your message history across all conversations? Users will still see their copies.
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-7 text-xs"
+                disabled={clearingAll}
+                onClick={handleClearAll}
+              >
+                {clearingAll ? "Clearing..." : "Clear All History"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs border-border"
+                onClick={() => setShowClearAll(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
 
         <div className="rounded-lg border border-border bg-card">
           {loading ? (
@@ -151,45 +228,54 @@ const AdminConversations = () => {
           ) : (
             <div className="divide-y divide-border">
               {conversations.map((conv) => (
-                <Link
-                  key={conv.id}
-                  to={`/p/conversation/${conv.id}`}
-                  className="flex items-center justify-between px-4 sm:px-5 py-4 hover:bg-secondary/40 transition-colors"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      {conv.unread_count > 0 && (
-                        <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
-                      )}
-                      <p className={`text-sm font-medium text-foreground truncate ${conv.unread_count > 0 ? "font-semibold" : ""}`}>
-                        {conv.user_name}
+                <div key={conv.id} className="flex items-center hover:bg-secondary/40 transition-colors">
+                  <Link
+                    to={`/p/conversation/${conv.id}`}
+                    className="flex items-center justify-between flex-1 px-4 sm:px-5 py-4 min-w-0"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        {conv.unread_count > 0 && (
+                          <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
+                        )}
+                        <p className={`text-sm font-medium text-foreground truncate ${conv.unread_count > 0 ? "font-semibold" : ""}`}>
+                          {conv.user_name}
+                        </p>
+                        {conv.unread_count > 0 && (
+                          <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 min-w-0">
+                            {conv.unread_count}
+                          </Badge>
+                        )}
+                        {conv.disappearing_enabled && (
+                          conv.disappearing_duration === "view-once"
+                            ? <Eye size={10} className="text-primary shrink-0" />
+                            : <Timer size={10} className="text-primary shrink-0" />
+                        )}
+                      </div>
+                      <p className={`mt-0.5 text-xs truncate ${conv.unread_count > 0 ? "text-foreground/80" : "text-muted-foreground"}`}>
+                        {conv.last_message || "No messages yet"}
                       </p>
-                      {conv.unread_count > 0 && (
-                        <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 min-w-0">
-                          {conv.unread_count}
-                        </Badge>
-                      )}
+                    </div>
+                    <div className="ml-4 flex flex-col items-end gap-1 shrink-0">
+                      <span className="text-xs text-muted-foreground">
+                        {formatTime(conv.last_message_at)}
+                      </span>
                       {conv.disappearing_enabled && (
-                        conv.disappearing_duration === "view-once"
-                          ? <Eye size={10} className="text-primary shrink-0" />
-                          : <Timer size={10} className="text-primary shrink-0" />
+                        <span className="text-[10px] text-primary">
+                          {DURATION_LABELS[conv.disappearing_duration] || conv.disappearing_duration}
+                        </span>
                       )}
                     </div>
-                    <p className={`mt-0.5 text-xs truncate ${conv.unread_count > 0 ? "text-foreground/80" : "text-muted-foreground"}`}>
-                      {conv.last_message || "No messages yet"}
-                    </p>
-                  </div>
-                  <div className="ml-4 flex flex-col items-end gap-1 shrink-0">
-                    <span className="text-xs text-muted-foreground">
-                      {formatTime(conv.last_message_at)}
-                    </span>
-                    {conv.disappearing_enabled && (
-                      <span className="text-[10px] text-primary">
-                        {DURATION_LABELS[conv.disappearing_duration] || conv.disappearing_duration}
-                      </span>
-                    )}
-                  </div>
-                </Link>
+                  </Link>
+                  <button
+                    onClick={(e) => handleClearConversation(conv.id, e)}
+                    disabled={clearingId === conv.id}
+                    className="px-3 py-4 text-muted-foreground/50 hover:text-destructive transition-colors shrink-0"
+                    title="Clear this conversation"
+                  >
+                    <Trash2 size={12} className={clearingId === conv.id ? "animate-pulse" : ""} />
+                  </button>
+                </div>
               ))}
             </div>
           )}
