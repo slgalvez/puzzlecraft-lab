@@ -607,6 +607,7 @@ function CreatePuzzleView({
   onBack: () => void;
   onEditContent: () => void;
   onChangeRecipient: () => void;
+  onGoToPreview: () => void;
 }) {
   if (step === "type") {
     return (
