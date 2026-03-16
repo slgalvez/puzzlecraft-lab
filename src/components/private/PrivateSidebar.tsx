@@ -42,12 +42,17 @@ export function PrivateSidebar() {
   const fetchUnread = useCallback(async () => {
     if (!token) return;
     try {
-      const data = await invokeMessaging("list-conversations", token);
-      const total = (data.conversations || []).reduce(
-        (sum: number, c: { unread_count: number }) => sum + c.unread_count,
-        0
-      );
-      setUnreadCount(total);
+      if (isAdmin) {
+        const data = await invokeMessaging("list-conversations", token);
+        const total = (data.conversations || []).reduce(
+          (sum: number, c: { unread_count: number }) => sum + c.unread_count,
+          0
+        );
+        setUnreadCount(total);
+      } else {
+        const data = await invokeMessaging("get-my-conversation", token);
+        setUnreadCount(data.unread_count || 0);
+      }
     } catch {
       // silent
     }
