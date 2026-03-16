@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { invokeMessaging } from "@/lib/privateApi";
+import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 import { UserPlus, KeyRound, Trash2 } from "lucide-react";
 
 interface UserInfo {
@@ -17,7 +19,9 @@ interface UserInfo {
 }
 
 const AdminUsers = () => {
-  const { token } = useAuth();
+  const { token, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [users, setUsers] = useState<UserInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
@@ -39,17 +43,22 @@ const AdminUsers = () => {
   const [resetting, setResetting] = useState(false);
   const [resetMsg, setResetMsg] = useState("");
 
+  const handleSessionExpired = useCallback(() => {
+    signOut();
+    navigate("/");
+  }, [signOut, navigate]);
+
   const fetchUsers = useCallback(async () => {
     if (!token) return;
     try {
       const data = await invokeMessaging("list-users", token);
       setUsers(data.users);
-    } catch {
-      // Silently fail
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, handleSessionExpired]);
 
   useEffect(() => {
     fetchUsers();
@@ -66,8 +75,9 @@ const AdminUsers = () => {
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, is_active: !currentActive } : u))
       );
-    } catch {
-      // Could show error
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Action failed", description: "Please try again." });
     } finally {
       setToggling(null);
     }
@@ -100,8 +110,9 @@ const AdminUsers = () => {
       setNewPassword("");
       fetchUsers();
       setTimeout(() => setAddSuccess(""), 4000);
-    } catch (err: any) {
-      setAddError(err.message || "Could not add user");
+    } catch (e: any) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      setAddError(e.message || "Could not add user");
     } finally {
       setAdding(false);
     }
@@ -126,28 +137,44 @@ const AdminUsers = () => {
         setResetUserId(null);
         setResetMsg("");
       }, 2000);
-    } catch (err: any) {
-      setResetMsg(err.message || "Could not reset password");
+    } catch (e: any) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      setResetMsg(e.message || "Could not reset password");
     } finally {
       setResetting(false);
     }
   };
 
+  const handleDelete = async (userId: string) => {
+    if (!token) return;
+    setDeleting(userId);
+    try {
+      await invokeMessaging("delete-user", token, { authorized_user_id: userId });
+      setUsers((prev) => prev.filter((x) => x.id !== userId));
+      setConfirmDelete(null);
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Could not delete user", description: "Please try again." });
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   return (
     <PrivateLayout title="Users">
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-6">
         {/* Add user section */}
         <div className="rounded-lg border border-border bg-card">
           <button
             onClick={() => setShowForm(!showForm)}
-            className="w-full flex items-center gap-2 px-5 py-3 text-sm font-semibold text-foreground hover:bg-secondary/40 transition-colors"
+            className="w-full flex items-center gap-2 px-4 sm:px-5 py-3 text-sm font-semibold text-foreground hover:bg-secondary/40 transition-colors"
           >
             <UserPlus size={14} />
             Add New User
           </button>
           {showForm && (
-            <form onSubmit={handleAddUser} className="px-5 pb-5 space-y-3 border-t border-border pt-4">
-              <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={handleAddUser} className="px-4 sm:px-5 pb-5 space-y-3 border-t border-border pt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-muted-foreground">First Name</label>
                   <Input
@@ -197,18 +224,18 @@ const AdminUsers = () => {
 
         {/* User list */}
         <div className="rounded-lg border border-border bg-card">
-          <div className="px-5 py-3 border-b border-border">
+          <div className="px-4 sm:px-5 py-3 border-b border-border">
             <h2 className="text-sm font-semibold text-foreground">Authorized Users</h2>
           </div>
           {loading ? (
-            <div className="px-5 py-8 text-center text-sm text-muted-foreground">Loading...</div>
+            <div className="px-5 py-8 text-center text-sm text-muted-foreground animate-pulse">Loading...</div>
           ) : users.length === 0 ? (
             <div className="px-5 py-8 text-center text-sm text-muted-foreground">No users found.</div>
           ) : (
             <div className="divide-y divide-border">
               {users.map((u) => (
-                <div key={u.id} className="px-5 py-4">
-                  <div className="flex items-center justify-between">
+                <div key={u.id} className="px-4 sm:px-5 py-4">
+                  <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium text-foreground">
@@ -224,11 +251,11 @@ const AdminUsers = () => {
                       </p>
                     </div>
                     {u.role !== "admin" && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-xs text-muted-foreground hover:text-foreground"
+                          className="text-xs text-muted-foreground hover:text-foreground h-7 px-2"
                           onClick={() => {
                             setResetUserId(resetUserId === u.id ? null : u.id);
                             setResetPassword("");
@@ -241,7 +268,7 @@ const AdminUsers = () => {
                         <Button
                           variant={u.is_active ? "outline" : "default"}
                           size="sm"
-                          className="text-xs border-border"
+                          className="text-xs border-border h-7 px-2"
                           disabled={toggling === u.id}
                           onClick={() => handleToggle(u.id, u.is_active)}
                         >
@@ -250,7 +277,7 @@ const AdminUsers = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                          className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10 h-7 px-2"
                           disabled={deleting === u.id}
                           onClick={() => setConfirmDelete(confirmDelete === u.id ? null : u.id)}
                         >
@@ -260,7 +287,7 @@ const AdminUsers = () => {
                     )}
                   </div>
                   {resetUserId === u.id && (
-                    <div className="mt-3 flex items-center gap-2">
+                    <div className="mt-3 flex items-center gap-2 flex-wrap">
                       <Input
                         type="text"
                         value={resetPassword}
@@ -285,39 +312,29 @@ const AdminUsers = () => {
                     </div>
                   )}
                   {confirmDelete === u.id && (
-                    <div className="mt-3 flex items-center gap-2 p-2.5 rounded-md bg-destructive/5 border border-destructive/20">
-                      <p className="text-xs text-destructive flex-1">
+                    <div className="mt-3 flex items-center gap-2 p-2.5 rounded-md bg-destructive/5 border border-destructive/20 flex-wrap">
+                      <p className="text-xs text-destructive flex-1 min-w-[150px]">
                         Permanently delete {u.first_name} {u.last_name}? This removes all their messages and cannot be undone.
                       </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 text-xs border-border"
-                        onClick={() => setConfirmDelete(null)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="h-7 text-xs"
-                        disabled={deleting === u.id}
-                        onClick={async () => {
-                          if (!token) return;
-                          setDeleting(u.id);
-                          try {
-                            await invokeMessaging("delete-user", token, { authorized_user_id: u.id });
-                            setUsers((prev) => prev.filter((x) => x.id !== u.id));
-                            setConfirmDelete(null);
-                          } catch {
-                            // silent
-                          } finally {
-                            setDeleting(null);
-                          }
-                        }}
-                      >
-                        {deleting === u.id ? "Deleting..." : "Delete"}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs border-border"
+                          onClick={() => setConfirmDelete(null)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="h-7 text-xs"
+                          disabled={deleting === u.id}
+                          onClick={() => handleDelete(u.id)}
+                        >
+                          {deleting === u.id ? "Deleting..." : "Delete"}
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>

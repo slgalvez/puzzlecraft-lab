@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { invokeMessaging } from "@/lib/privateApi";
+import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { Send, Timer, Check, CheckCheck, Eye } from "lucide-react";
 
 interface Message {
@@ -19,12 +21,15 @@ interface Message {
 const DURATION_LABELS: Record<string, string> = { "view-once": "View once", "1h": "1 hour", "24h": "24 hours", "7d": "7 days" };
 
 const UserConversation = () => {
-  const { user, token } = useAuth();
+  const { user, token, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [disappearingEnabled, setDisappearingEnabled] = useState(false);
   const [disappearingDuration, setDisappearingDuration] = useState("24h");
@@ -32,6 +37,11 @@ const UserConversation = () => {
   const [togglingDisappearing, setTogglingDisappearing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
+
+  const handleSessionExpired = useCallback(() => {
+    signOut();
+    navigate("/");
+  }, [signOut, navigate]);
 
   const fetchConversation = useCallback(async () => {
     if (!token) return;
@@ -42,12 +52,18 @@ const UserConversation = () => {
       setUnreadCount(data.unread_count);
       setDisappearingEnabled(data.conversation.disappearing_enabled);
       setDisappearingDuration(data.conversation.disappearing_duration);
-    } catch {
-      // Silently fail on poll
+      setError(null);
+    } catch (e) {
+      if (e instanceof SessionExpiredError) {
+        handleSessionExpired();
+        return;
+      }
+      // Only show error on initial load
+      if (loading) setError("Unable to load conversation");
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, loading, handleSessionExpired]);
 
   useEffect(() => {
     fetchConversation();
@@ -57,7 +73,7 @@ const UserConversation = () => {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages.length]);
 
   // Mark messages as read when viewing
   useEffect(() => {
@@ -70,17 +86,23 @@ const UserConversation = () => {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !conversationId || !token || sending) return;
+    const body = newMessage.trim();
+    if (!body || !conversationId || !token || sending) return;
     setSending(true);
+    setNewMessage("");
     try {
       const data = await invokeMessaging("send-message", token, {
         conversation_id: conversationId,
-        message: newMessage.trim(),
+        message: body,
       });
       setMessages((prev) => [...prev, data.message]);
-      setNewMessage("");
-    } catch {
-      // Could show error toast
+    } catch (e) {
+      if (e instanceof SessionExpiredError) {
+        handleSessionExpired();
+        return;
+      }
+      setNewMessage(body); // Restore message on failure
+      toast({ title: "Could not send message", description: "Please try again." });
     } finally {
       setSending(false);
     }
@@ -98,8 +120,9 @@ const UserConversation = () => {
       setDisappearingEnabled(data.disappearing_enabled);
       setDisappearingDuration(data.disappearing_duration);
       setShowDisappearingMenu(false);
-    } catch {
-      // fail silently
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Could not update setting", description: "Please try again." });
     } finally {
       setTogglingDisappearing(false);
     }
@@ -117,7 +140,20 @@ const UserConversation = () => {
     return (
       <PrivateLayout title="Conversation">
         <div className="flex items-center justify-center h-[calc(100vh-3.5rem)]">
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
+        </div>
+      </PrivateLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <PrivateLayout title="Conversation">
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-3.5rem)] gap-3">
+          <p className="text-sm text-muted-foreground">{error}</p>
+          <Button variant="outline" size="sm" onClick={() => { setLoading(true); setError(null); fetchConversation(); }}>
+            Retry
+          </Button>
         </div>
       </PrivateLayout>
     );
@@ -127,7 +163,7 @@ const UserConversation = () => {
     <PrivateLayout title="Conversation">
       <div className="flex flex-col h-[calc(100vh-3.5rem)]">
         {/* Top bar */}
-        <div className="flex items-center justify-between border-b border-border px-5 py-3 shrink-0">
+        <div className="flex items-center justify-between border-b border-border px-4 sm:px-5 py-3 shrink-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-foreground">Conversation</span>
             {unreadCount > 0 && (
@@ -145,13 +181,15 @@ const UserConversation = () => {
             }`}
           >
             <Timer size={12} />
-            {disappearingEnabled ? DURATION_LABELS[disappearingDuration] || disappearingDuration : "Auto-delete"}
+            <span className="hidden sm:inline">
+              {disappearingEnabled ? DURATION_LABELS[disappearingDuration] || disappearingDuration : "Auto-delete"}
+            </span>
           </button>
         </div>
 
         {/* Disappearing menu */}
         {showDisappearingMenu && (
-          <div className="border-b border-border px-5 py-3 bg-secondary/30 space-y-2">
+          <div className="border-b border-border px-4 sm:px-5 py-3 bg-secondary/30 space-y-2">
             <p className="text-xs text-muted-foreground">
               {disappearingEnabled ? "Messages auto-delete after the set duration." : "Enable auto-delete for new messages."}
             </p>
@@ -185,7 +223,7 @@ const UserConversation = () => {
 
         {/* Disappearing active indicator */}
         {disappearingEnabled && !showDisappearingMenu && (
-          <div className="px-5 py-1.5 bg-primary/5 border-b border-border">
+          <div className="px-4 sm:px-5 py-1.5 bg-primary/5 border-b border-border">
             <p className="text-[10px] text-primary flex items-center gap-1">
               <Timer size={10} /> Auto-delete active · {DURATION_LABELS[disappearingDuration] || disappearingDuration}
             </p>
@@ -193,7 +231,7 @@ const UserConversation = () => {
         )}
 
         {/* Messages */}
-        <div className="flex-1 overflow-auto p-5 space-y-3">
+        <div className="flex-1 overflow-auto px-4 sm:px-5 py-4 space-y-2.5">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <p className="text-sm text-muted-foreground">
@@ -208,14 +246,14 @@ const UserConversation = () => {
               return (
                 <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[75%] rounded-lg px-3.5 py-2.5 ${
+                    className={`max-w-[80%] sm:max-w-[75%] rounded-2xl px-3.5 py-2 ${
                       isMine
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-foreground"
+                        ? "bg-primary text-primary-foreground rounded-br-md"
+                        : "bg-secondary text-foreground rounded-bl-md"
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap break-words">{msg.body}</p>
-                    <div className={`flex items-center gap-1 mt-1 ${isMine ? "justify-end" : ""}`}>
+                    <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{msg.body}</p>
+                    <div className={`flex items-center gap-1 mt-0.5 ${isMine ? "justify-end" : ""}`}>
                       {msg.is_disappearing && (
                         isViewOnce
                           ? <Eye size={8} className={isMine ? "text-primary-foreground/40" : "text-muted-foreground/60"} />
@@ -239,7 +277,7 @@ const UserConversation = () => {
         </div>
 
         {/* Compose */}
-        <form onSubmit={handleSend} className="border-t border-border px-5 py-3 shrink-0">
+        <form onSubmit={handleSend} className="border-t border-border px-4 sm:px-5 py-3 shrink-0">
           <div className="flex items-center gap-2">
             <Input
               value={newMessage}

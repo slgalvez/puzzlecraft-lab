@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { invokeMessaging } from "@/lib/privateApi";
+import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Send, Timer, Check, CheckCheck, Eye } from "lucide-react";
 
 interface Message {
@@ -30,16 +31,24 @@ const DURATION_LABELS: Record<string, string> = { "view-once": "View once", "1h"
 
 const AdminConversationView = () => {
   const { conversationId } = useParams<{ conversationId: string }>();
-  const { user, token } = useAuth();
+  const { user, token, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [conversation, setConversation] = useState<ConversationInfo | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showDisappearingMenu, setShowDisappearingMenu] = useState(false);
   const [togglingDisappearing, setTogglingDisappearing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
+
+  const handleSessionExpired = useCallback(() => {
+    signOut();
+    navigate("/");
+  }, [signOut, navigate]);
 
   const fetchConversation = useCallback(async () => {
     if (!token || !conversationId) return;
@@ -47,12 +56,14 @@ const AdminConversationView = () => {
       const data = await invokeMessaging("get-conversation", token, { conversation_id: conversationId });
       setConversation(data.conversation);
       setMessages(data.messages);
-    } catch {
-      // Silently fail
+      setError(null);
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      if (loading) setError("Unable to load conversation");
     } finally {
       setLoading(false);
     }
-  }, [token, conversationId]);
+  }, [token, conversationId, loading, handleSessionExpired]);
 
   useEffect(() => {
     fetchConversation();
@@ -62,7 +73,7 @@ const AdminConversationView = () => {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages.length]);
 
   useEffect(() => {
     if (!conversationId || !token) return;
@@ -74,17 +85,20 @@ const AdminConversationView = () => {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !conversationId || !token || sending) return;
+    const body = newMessage.trim();
+    if (!body || !conversationId || !token || sending) return;
     setSending(true);
+    setNewMessage("");
     try {
       const data = await invokeMessaging("send-message", token, {
         conversation_id: conversationId,
-        message: newMessage.trim(),
+        message: body,
       });
       setMessages((prev) => [...prev, data.message]);
-      setNewMessage("");
-    } catch {
-      // Could show error
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      setNewMessage(body);
+      toast({ title: "Could not send message", description: "Please try again." });
     } finally {
       setSending(false);
     }
@@ -101,8 +115,9 @@ const AdminConversationView = () => {
       });
       setConversation((prev) => prev ? { ...prev, disappearing_enabled: data.disappearing_enabled, disappearing_duration: data.disappearing_duration } : prev);
       setShowDisappearingMenu(false);
-    } catch {
-      // fail silently
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Could not update setting", description: "Please try again." });
     } finally {
       setTogglingDisappearing(false);
     }
@@ -120,7 +135,20 @@ const AdminConversationView = () => {
     return (
       <PrivateLayout title="Conversation">
         <div className="flex items-center justify-center h-[calc(100vh-3.5rem)]">
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
+        </div>
+      </PrivateLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <PrivateLayout title="Conversation">
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-3.5rem)] gap-3">
+          <p className="text-sm text-muted-foreground">{error}</p>
+          <Button variant="outline" size="sm" onClick={() => { setLoading(true); setError(null); fetchConversation(); }}>
+            Retry
+          </Button>
         </div>
       </PrivateLayout>
     );
@@ -130,7 +158,7 @@ const AdminConversationView = () => {
     <PrivateLayout title={conversation?.user_name || "Conversation"}>
       <div className="flex flex-col h-[calc(100vh-3.5rem)]">
         {/* Top bar */}
-        <div className="flex items-center justify-between border-b border-border px-5 py-3 shrink-0">
+        <div className="flex items-center justify-between border-b border-border px-4 sm:px-5 py-3 shrink-0">
           <div className="flex items-center gap-3">
             <Link to="/p" className="text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft size={16} />
@@ -148,15 +176,17 @@ const AdminConversationView = () => {
             }`}
           >
             <Timer size={12} />
-            {conversation?.disappearing_enabled
-              ? DURATION_LABELS[conversation.disappearing_duration] || conversation.disappearing_duration
-              : "Auto-delete"}
+            <span className="hidden sm:inline">
+              {conversation?.disappearing_enabled
+                ? DURATION_LABELS[conversation.disappearing_duration] || conversation.disappearing_duration
+                : "Auto-delete"}
+            </span>
           </button>
         </div>
 
         {/* Disappearing menu */}
         {showDisappearingMenu && (
-          <div className="border-b border-border px-5 py-3 bg-secondary/30 space-y-2">
+          <div className="border-b border-border px-4 sm:px-5 py-3 bg-secondary/30 space-y-2">
             <p className="text-xs text-muted-foreground">
               {conversation?.disappearing_enabled ? "Messages auto-delete after the set duration." : "Enable auto-delete for new messages."}
             </p>
@@ -190,7 +220,7 @@ const AdminConversationView = () => {
 
         {/* Disappearing active indicator */}
         {conversation?.disappearing_enabled && !showDisappearingMenu && (
-          <div className="px-5 py-1.5 bg-primary/5 border-b border-border">
+          <div className="px-4 sm:px-5 py-1.5 bg-primary/5 border-b border-border">
             <p className="text-[10px] text-primary flex items-center gap-1">
               <Timer size={10} /> Auto-delete active · {DURATION_LABELS[conversation.disappearing_duration] || conversation.disappearing_duration}
             </p>
@@ -198,7 +228,7 @@ const AdminConversationView = () => {
         )}
 
         {/* Messages */}
-        <div className="flex-1 overflow-auto p-5 space-y-3">
+        <div className="flex-1 overflow-auto px-4 sm:px-5 py-4 space-y-2.5">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <p className="text-sm text-muted-foreground">No messages in this conversation yet.</p>
@@ -211,12 +241,14 @@ const AdminConversationView = () => {
               return (
                 <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[75%] rounded-lg px-3.5 py-2.5 ${
-                      isMine ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground"
+                    className={`max-w-[80%] sm:max-w-[75%] rounded-2xl px-3.5 py-2 ${
+                      isMine
+                        ? "bg-primary text-primary-foreground rounded-br-md"
+                        : "bg-secondary text-foreground rounded-bl-md"
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap break-words">{msg.body}</p>
-                    <div className={`flex items-center gap-1 mt-1 ${isMine ? "justify-end" : ""}`}>
+                    <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{msg.body}</p>
+                    <div className={`flex items-center gap-1 mt-0.5 ${isMine ? "justify-end" : ""}`}>
                       {msg.is_disappearing && (
                         isViewOnce
                           ? <Eye size={8} className={isMine ? "text-primary-foreground/40" : "text-muted-foreground/60"} />
@@ -240,7 +272,7 @@ const AdminConversationView = () => {
         </div>
 
         {/* Compose */}
-        <form onSubmit={handleSend} className="border-t border-border px-5 py-3 shrink-0">
+        <form onSubmit={handleSend} className="border-t border-border px-4 sm:px-5 py-3 shrink-0">
           <div className="flex items-center gap-2">
             <Input
               value={newMessage}

@@ -9,6 +9,7 @@ import { randomSeed } from "@/lib/seededRandom";
 import { useToast } from "@/hooks/use-toast";
 import { getPuzzleById } from "@/data/puzzles";
 import { supabase } from "@/integrations/supabase/client";
+import { RefreshCw } from "lucide-react";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
@@ -19,10 +20,21 @@ import CryptogramPuzzle from "@/components/puzzles/CryptogramPuzzle";
 import CrosswordGrid from "@/components/puzzles/CrosswordGrid";
 import FillInGrid from "@/components/puzzles/FillInGrid";
 
-// Generators for crossword / fill-in (they produce puzzle-compatible data)
+// Generators for crossword / fill-in
 import { generateCrossword } from "@/lib/generators/crosswordGen";
 import { generateWordFillIn, generateNumberFillIn } from "@/lib/generators/fillGen";
 import type { CrosswordPuzzle, FillInPuzzle } from "@/data/puzzles";
+
+const puzzleTypes: { value: PuzzleCategory; label: string }[] = [
+  { value: "sudoku", label: "Sudoku" },
+  { value: "crossword", label: "Crossword" },
+  { value: "word-search", label: "Word Search" },
+  { value: "kakuro", label: "Kakuro" },
+  { value: "nonogram", label: "Nonogram" },
+  { value: "cryptogram", label: "Cryptogram" },
+  { value: "word-fill", label: "Word Fill-In" },
+  { value: "number-fill", label: "Number Fill-In" },
+];
 
 const PuzzleGenerator = () => {
   const { type } = useParams<{ type: string }>();
@@ -45,8 +57,11 @@ const PuzzleGenerator = () => {
       <Layout>
         <div className="container py-20 text-center">
           <h1 className="font-display text-2xl font-bold text-foreground">Unknown puzzle type</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            The puzzle type you requested doesn't exist.
+          </p>
           <Link to="/puzzles" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
-            ← Back to library
+            ← Browse puzzle types
           </Link>
         </div>
       </Layout>
@@ -84,23 +99,32 @@ const PuzzleGenerator = () => {
         case 'seed':
           setSeed(data.seed);
           setPuzzleKey((k) => k + 1);
+          setSeedInput("");
           break;
         case 'type-seed':
-          navigate(`/generate/${data.puzzleType}?seed=${data.seed}`);
+          if (data.puzzleType === category) {
+            setSeed(data.seed);
+            setPuzzleKey((k) => k + 1);
+            setSeedInput("");
+          } else {
+            navigate(`/generate/${data.puzzleType}?seed=${data.seed}`);
+          }
           break;
         case 'type-name':
-          navigate(`/generate/${data.puzzleType}`);
+          if (data.puzzleType !== category) {
+            navigate(`/generate/${data.puzzleType}`);
+          }
           break;
         default:
           toast({
-            title: "Code not found",
-            description: "We couldn't find a puzzle matching that code. Check the code and try again.",
+            title: "Code not recognized",
+            description: "We couldn't find a puzzle matching that code.",
           });
       }
     } catch {
       toast({
-        title: "Code not found",
-        description: "We couldn't find a puzzle matching that code. Check the code and try again.",
+        title: "Something went wrong",
+        description: "Please check the code and try again.",
       });
     } finally {
       setLoadingSeed(false);
@@ -111,6 +135,10 @@ const PuzzleGenerator = () => {
     setDifficulty(d);
     setSeed(randomSeed());
     setPuzzleKey((k) => k + 1);
+  };
+
+  const handleTypeChange = (newType: PuzzleCategory) => {
+    navigate(`/generate/${newType}`, { replace: true });
   };
 
   const renderPuzzle = () => {
@@ -166,46 +194,80 @@ const PuzzleGenerator = () => {
     <Layout>
       <div className="container py-12">
         <Link to="/puzzles" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-          ← Back to library
+          ← Puzzle Types
         </Link>
 
         <div className="mt-4 mb-6">
           <div className="flex items-center gap-3">
             <span className="text-3xl">{info.icon}</span>
             <div>
-              <h1 className="font-display text-3xl font-bold text-foreground">{info.name}</h1>
+              <h1 className="font-display text-3xl font-bold text-foreground">Puzzle Lab</h1>
               <p className="text-sm text-muted-foreground">{info.description}</p>
             </div>
           </div>
         </div>
 
         {/* Controls */}
-        <div className="mb-8 space-y-4 rounded-lg border bg-card p-4">
+        <div className="mb-8 space-y-4 rounded-lg border bg-card p-5">
+          {/* Puzzle Type */}
+          <div>
+            <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Puzzle Type
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {puzzleTypes.map((pt) => (
+                <button
+                  key={pt.value}
+                  onClick={() => handleTypeChange(pt.value)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors border ${
+                    category === pt.value
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
+                  }`}
+                >
+                  {pt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Difficulty */}
           <div>
             <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Difficulty
             </label>
             <DifficultySelector value={difficulty} onChange={handleDifficultyChange} />
           </div>
+
+          {/* Seed / Code */}
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex-1 min-w-[200px]">
               <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Puzzle Seed / Code (optional)
+                Puzzle Seed / Code
               </label>
               <Input
                 value={seedInput}
                 onChange={(e) => setSeedInput(e.target.value)}
-                placeholder="Enter a seed code..."
+                placeholder="Enter a seed or puzzle code..."
                 onKeyDown={(e) => e.key === "Enter" && handleLoadSeed()}
+                disabled={loadingSeed}
               />
             </div>
             <Button variant="outline" size="sm" onClick={handleLoadSeed} disabled={!seedInput.trim() || loadingSeed}>
-              {loadingSeed ? "..." : "Load Seed"}
+              {loadingSeed ? "Loading..." : "Load"}
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Current seed: <span className="font-mono text-foreground">{seed}</span>
-          </p>
+
+          {/* Generate + seed display */}
+          <div className="flex items-center justify-between pt-1">
+            <p className="text-xs text-muted-foreground">
+              Seed: <span className="font-mono text-foreground">{seed}</span>
+            </p>
+            <Button onClick={handleNewPuzzle} size="sm" className="gap-1.5">
+              <RefreshCw size={14} />
+              Generate Puzzle
+            </Button>
+          </div>
         </div>
 
         {/* Puzzle */}
