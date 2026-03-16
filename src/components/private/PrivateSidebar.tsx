@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, MessageSquare, Users, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Users, Settings, LogOut, Gift } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging } from "@/lib/privateApi";
 import { NavLink } from "@/components/NavLink";
@@ -19,12 +19,14 @@ import {
 const adminNav = [
   { title: "Overview", url: "/p", icon: LayoutDashboard },
   { title: "Conversations", url: "/p/conversations", icon: MessageSquare, badgeKey: "unread" as const },
+  { title: "For You", url: "/p/for-you", icon: Gift },
   { title: "Users", url: "/p/users", icon: Users },
   { title: "Settings", url: "/p/settings", icon: Settings },
 ];
 
 const userNav = [
   { title: "Conversation", url: "/p/conversation", icon: MessageSquare, badgeKey: "unread" as const },
+  { title: "For You", url: "/p/for-you", icon: Gift },
   { title: "Settings", url: "/p/settings", icon: Settings },
 ];
 

@@ -182,6 +182,67 @@ export type Database = {
           },
         ]
       }
+      private_puzzles: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          puzzle_data: Json
+          puzzle_type: string
+          reveal_message: string | null
+          sent_to: string
+          solve_time: number | null
+          solved_at: string | null
+          solved_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          puzzle_data: Json
+          puzzle_type: string
+          reveal_message?: string | null
+          sent_to: string
+          solve_time?: number | null
+          solved_at?: string | null
+          solved_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          puzzle_data?: Json
+          puzzle_type?: string
+          reveal_message?: string | null
+          sent_to?: string
+          solve_time?: number | null
+          solved_at?: string | null
+          solved_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "private_puzzles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "private_puzzles_sent_to_fkey"
+            columns: ["sent_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "private_puzzles_solved_by_fkey"
+            columns: ["solved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           authorized_user_id: string

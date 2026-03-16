@@ -649,6 +649,115 @@ Deno.serve(async (req) => {
       return json({ updated: hasUpdate });
     }
 
+    // ─── LIST PUZZLES (For You) ───
+    if (action === "list-puzzles") {
+      // Get the other participant's profile id
+      const { data: myProfile } = await sb.from("profiles").select("id, role").eq("id", profileId).single();
+      if (!myProfile) return err("Profile not found");
+
+      // Get puzzles where user is creator or recipient
+      const { data: puzzles } = await sb
+        .from("private_puzzles")
+        .select("*")
+        .or(`created_by.eq.${profileId},sent_to.eq.${profileId}`)
+        .order("created_at", { ascending: false });
+
+      // Enrich with names
+      const profileIds = new Set<string>();
+      for (const p of puzzles || []) {
+        profileIds.add(p.created_by);
+        profileIds.add(p.sent_to);
+      }
+      const { data: profiles } = await sb
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .in("id", [...profileIds]);
+      const nameMap = new Map((profiles || []).map(p => [p.id, `${p.first_name} ${p.last_name}`]));
+
+      const enriched = (puzzles || []).map(p => ({
+        ...p,
+        creator_name: nameMap.get(p.created_by) || "Unknown",
+        recipient_name: nameMap.get(p.sent_to) || "Unknown",
+      }));
+
+      return json({ puzzles: enriched });
+    }
+
+    // ─── CREATE PUZZLE ───
+    if (action === "create-puzzle") {
+      const { puzzle_type, puzzle_data, reveal_message } = body;
+      if (!puzzle_type || !puzzle_data) return err("Missing fields", 400);
+      const validTypes = ["word-fill", "cryptogram", "crossword", "word-search"];
+      if (!validTypes.includes(puzzle_type)) return err("Invalid puzzle type", 400);
+
+      // Find the other participant (admin finds user's conversation, user finds admin)
+      let sentTo: string;
+      if (isAdmin) {
+        // Admin sends to their most recent conversation user, or first user
+        const { data: convs } = await sb
+          .from("conversations")
+          .select("user_profile_id")
+          .eq("admin_profile_id", profileId)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (!convs || convs.length === 0) return err("No conversation partner found");
+        sentTo = convs[0].user_profile_id;
+      } else {
+        const { data: conv } = await sb
+          .from("conversations")
+          .select("admin_profile_id")
+          .eq("user_profile_id", profileId)
+          .maybeSingle();
+        if (!conv) return err("No conversation partner found");
+        sentTo = conv.admin_profile_id;
+      }
+
+      const { data: puzzle, error: insertErr } = await sb
+        .from("private_puzzles")
+        .insert({
+          created_by: profileId,
+          sent_to: sentTo,
+          puzzle_type,
+          puzzle_data,
+          reveal_message: reveal_message || null,
+        })
+        .select("*")
+        .single();
+
+      if (insertErr) {
+        console.error("Create puzzle error:", JSON.stringify(insertErr));
+        return err("Could not create puzzle");
+      }
+      return json({ puzzle });
+    }
+
+    // ─── SOLVE PUZZLE ───
+    if (action === "solve-puzzle") {
+      const { puzzle_id, solve_time } = body;
+      if (!puzzle_id) return err("Missing puzzle_id", 400);
+
+      const { data: puzzle } = await sb
+        .from("private_puzzles")
+        .select("id, sent_to, solved_by")
+        .eq("id", puzzle_id)
+        .single();
+      if (!puzzle) return err("Puzzle not found");
+      if (puzzle.sent_to !== profileId) return err("Access denied");
+      if (puzzle.solved_by) return err("Already solved");
+
+      const { error: updateErr } = await sb
+        .from("private_puzzles")
+        .update({
+          solved_by: profileId,
+          solved_at: now,
+          solve_time: typeof solve_time === "number" ? solve_time : null,
+        })
+        .eq("id", puzzle_id);
+
+      if (updateErr) return err("Could not mark solved");
+      return json({ ok: true });
+    }
+
     return err("Unknown action", 400);
   } catch (e) {
     console.error("Messaging error:", e);
