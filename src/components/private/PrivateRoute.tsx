@@ -2,7 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { user, isApproved, loading } = useAuth();
+  const { user, isApproved, loading, signOut } = useAuth();
 
   if (loading) {
     return (
@@ -25,10 +25,7 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
             Your account does not have access to this application.
           </p>
           <button
-            onClick={() => {
-              const { signOut } = useAuth();
-              signOut();
-            }}
+            onClick={() => signOut()}
             className="text-xs text-primary hover:underline"
           >
             Sign out
