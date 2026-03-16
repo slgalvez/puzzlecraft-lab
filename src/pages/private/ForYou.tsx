@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Gift, Send as SendIcon, Check, ArrowLeft, Trash2, RefreshCw, Eye, Pencil, FileText, Save } from "lucide-react";
+import { Plus, Puzzle, Send as SendIcon, Check, ArrowLeft, Trash2, RefreshCw, Eye, Pencil, FileText, Save } from "lucide-react";
 import {
   generateCustomFillIn,
   generateCustomCryptogram,
@@ -421,7 +421,7 @@ function PuzzleList({
   if (puzzles.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        <Gift className="mx-auto h-10 w-10 mb-3 opacity-40" />
+        <Puzzle className="mx-auto h-10 w-10 mb-3 opacity-40" />
         <p className="text-sm">{emptyMessage}</p>
       </div>
     );

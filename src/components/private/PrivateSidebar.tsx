@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, MessageSquare, Users, Settings, LogOut, Gift } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Users, Settings, LogOut, Puzzle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging } from "@/lib/privateApi";
 import { NavLink } from "@/components/NavLink";
@@ -19,7 +19,7 @@ import {
 const adminNav = [
   { title: "Overview", url: "/p", icon: LayoutDashboard, badgeKey: "overview" as const },
   { title: "Conversations", url: "/p/conversations", icon: MessageSquare, badgeKey: "unread" as const },
-  { title: "Puzzles for You", url: "/p/for-you", icon: Gift, badgeKey: "puzzles" as const },
+  { title: "Puzzles for You", url: "/p/for-you", icon: Puzzle, badgeKey: "puzzles" as const },
   { title: "Users", url: "/p/users", icon: Users },
   { title: "Settings", url: "/p/settings", icon: Settings },
 ];
@@ -27,7 +27,7 @@ const adminNav = [
 const userNav = [
   { title: "Overview", url: "/p", icon: LayoutDashboard, badgeKey: "overview" as const },
   { title: "Conversation", url: "/p/conversation", icon: MessageSquare, badgeKey: "unread" as const },
-  { title: "Puzzles for You", url: "/p/for-you", icon: Gift, badgeKey: "puzzles" as const },
+  { title: "Puzzles for You", url: "/p/for-you", icon: Puzzle, badgeKey: "puzzles" as const },
   { title: "Settings", url: "/p/settings", icon: Settings },
 ];
 

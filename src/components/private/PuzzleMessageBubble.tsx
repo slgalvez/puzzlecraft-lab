@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Puzzle, Gift, Check } from "lucide-react";
+import { Puzzle, Check } from "lucide-react";
 
 interface Props {
   body: string;
@@ -30,7 +30,7 @@ export function PuzzleMessageBubble({ body, isMine, formatTime, createdAt }: Pro
         <div className="flex items-center gap-2">
           <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 shrink-0">
             {isSent ? (
-              <Gift size={12} className="text-primary" />
+              <Puzzle size={12} className="text-primary" />
             ) : (
               <Check size={12} className="text-primary" />
             )}

@@ -6,7 +6,7 @@ import PrivateLayout from "@/components/private/PrivateLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Timer, Trash2, MessageSquare, Gift, Plus, Check, Clock, Send } from "lucide-react";
+import { Timer, Trash2, MessageSquare, Puzzle, Plus, Check, Clock, Send } from "lucide-react";
 
 interface ConversationSummary {
   id: string;
@@ -181,7 +181,7 @@ const AdminDashboard = () => {
       case "message":
         return <MessageSquare size={12} className="text-primary" />;
       case "puzzle_received":
-        return <Gift size={12} className="text-primary" />;
+        return <Puzzle size={12} className="text-primary" />;
       case "puzzle_sent":
         return <Send size={12} className="text-muted-foreground" />;
       case "puzzle_solved":
@@ -220,7 +220,7 @@ const AdminDashboard = () => {
             className="h-auto py-3 flex flex-col gap-1.5 text-xs"
             onClick={() => navigate("/p/for-you")}
           >
-            <Gift size={16} className="text-primary" />
+            <Puzzle size={16} className="text-primary" />
             <span>Puzzles for You</span>
             {unsolved.length > 0 && (
               <span className="text-[10px] text-primary font-medium">{unsolved.length} unsolved</span>
