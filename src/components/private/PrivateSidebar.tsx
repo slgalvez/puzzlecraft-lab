@@ -25,6 +25,7 @@ const adminNav = [
 ];
 
 const userNav = [
+  { title: "Overview", url: "/p", icon: LayoutDashboard },
   { title: "Conversation", url: "/p/conversation", icon: MessageSquare, badgeKey: "unread" as const },
   { title: "For You", url: "/p/for-you", icon: Gift, badgeKey: "puzzles" as const },
   { title: "Settings", url: "/p/settings", icon: Settings },

@@ -47,7 +47,7 @@ const App = () => (
 
             {/* Private app */}
             <Route path="/p/login" element={<Login />} />
-            <Route path="/p" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
+            <Route path="/p" element={<PrivateRoute><PrivateHome /></PrivateRoute>} />
             <Route path="/p/conversations" element={<PrivateRoute><AdminConversations /></PrivateRoute>} />
             <Route path="/p/conversation" element={<PrivateRoute><UserConversation /></PrivateRoute>} />
             <Route path="/p/conversation/:conversationId" element={<PrivateRoute><AdminConversationView /></PrivateRoute>} />
