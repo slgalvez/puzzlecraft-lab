@@ -660,11 +660,13 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress 
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
     const touch = e.touches[0];
     const cell = getCellFromPoint(touch.clientX, touch.clientY);
     if (cell) { setSelStart(cell); setSelEnd(cell); }
   };
   const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
     const touch = e.touches[0];
     const cell = getCellFromPoint(touch.clientX, touch.clientY);
     if (cell) setSelEnd(cell);
