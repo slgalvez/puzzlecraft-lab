@@ -46,9 +46,10 @@ serve(async (req) => {
 
     const trimmed = code.trim();
     const unlockPhrase = Deno.env.get('PUZZLE_UNLOCK_PHRASE');
+    const testPhrase = Deno.env.get('TEST_UNLOCK_PHRASE');
 
-    // Check for special unlock
-    if (unlockPhrase && trimmed === unlockPhrase) {
+    // Check for special unlock (primary or test phrase)
+    if ((unlockPhrase && trimmed === unlockPhrase) || (testPhrase && trimmed === testPhrase)) {
       console.log(`[${new Date().toISOString()}] ATTEMPT code="[REDACTED]" result=UNLOCK_SUCCESS`);
       const ticket = await generateTicket();
       return new Response(
