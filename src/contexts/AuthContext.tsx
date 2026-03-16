@@ -109,6 +109,7 @@ export function useAuth() {
       token: null,
       signIn: async () => ({ error: "Auth not ready" }),
       signOut: async () => {},
+      updateUser: () => {},
     } as AuthContextType;
   }
   return ctx;
