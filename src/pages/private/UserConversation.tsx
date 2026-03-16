@@ -156,7 +156,7 @@ const UserConversation = () => {
   if (loading) {
     return (
       <PrivateLayout title="Conversation">
-        <div className="flex items-center justify-center h-[calc(100vh-3.5rem)]">
+        <div className="flex items-center justify-center h-full">
           <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
         </div>
       </PrivateLayout>
@@ -166,7 +166,7 @@ const UserConversation = () => {
   if (error) {
     return (
       <PrivateLayout title="Conversation">
-        <div className="flex flex-col items-center justify-center h-[calc(100vh-3.5rem)] gap-3">
+        <div className="flex flex-col items-center justify-center h-full gap-3">
           <p className="text-sm text-muted-foreground">{error}</p>
           <Button variant="outline" size="sm" onClick={() => { setLoading(true); setError(null); fetchConversation(); }}>
             Retry
@@ -178,7 +178,7 @@ const UserConversation = () => {
 
   return (
     <PrivateLayout title="Conversation">
-      <div className="flex flex-col h-[calc(100vh-3.5rem)]">
+      <div className="flex flex-col h-full">
         {/* Top bar */}
         <div className="flex items-center justify-between border-b border-border px-4 sm:px-5 py-3 shrink-0">
           <div className="flex items-center gap-2">
@@ -346,7 +346,7 @@ const UserConversation = () => {
         </div>
 
         {/* Compose */}
-        <form onSubmit={handleSend} className="border-t border-border px-4 sm:px-5 py-3 shrink-0">
+        <form onSubmit={handleSend} className="border-t border-border px-4 sm:px-5 py-3 shrink-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}>
           <div className="flex items-center gap-2">
             <Input
               value={newMessage}
