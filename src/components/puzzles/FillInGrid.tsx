@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import GroupedEntryList from "./GroupedEntryList";
 import type { FillInPuzzle } from "@/data/puzzles";
 import { cn } from "@/lib/utils";
 import PuzzleControls from "./PuzzleControls";
