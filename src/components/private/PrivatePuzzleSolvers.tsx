@@ -270,7 +270,11 @@ export function GridSolver({ data, puzzleType, onComplete }: GridSolverProps) {
       if (hasAcross && !hasDown) setDirection("across");
       else if (hasDown && !hasAcross) setDirection("down");
     }
-    if (!isMobile) containerRef.current?.focus();
+    if (isMobile) {
+      mobileInputRef.current?.focus();
+    } else {
+      containerRef.current?.focus();
+    }
   };
 
   const handleReset = () => {
