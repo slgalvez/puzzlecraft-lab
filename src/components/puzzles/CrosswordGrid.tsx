@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { CrosswordPuzzle, CrosswordClue } from "@/data/puzzles";
 import { cn } from "@/lib/utils";
 import PuzzleControls from "./PuzzleControls";
@@ -21,20 +21,35 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
   const [direction, setDirection] = useState<"across" | "down">("across");
   const [errors, setErrors] = useState<Set<string>>(new Set());
-  const inputRefs = useRef<(HTMLInputElement | null)[][]>(
-    Array.from({ length: gridSize }, () => Array(gridSize).fill(null))
-  );
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const timerKey = `crossword-${puzzle.id}`;
   const timer = usePuzzleTimer(timerKey, { category: "crossword", difficulty: puzzle.difficulty });
 
-  const isBlack = (r: number, c: number) =>
-    blackCells.some(([br, bc]) => br === r && bc === c);
+  const blackSet = useCallback(() => {
+    const set = new Set<string>();
+    blackCells.forEach(([r, c]) => set.add(`${r}-${c}`));
+    return set;
+  }, [blackCells]);
+
+  const blacks = blackSet();
+  const isBlack = (r: number, c: number) => blacks.has(`${r}-${c}`);
 
   const getCellNumber = (r: number, c: number) => {
     const clue = clues.find((cl) => cl.row === r && cl.col === c);
     return clue?.number;
   };
+
+  // Auto-focus first non-black cell
+  useEffect(() => {
+    for (let r = 0; r < gridSize; r++)
+      for (let c = 0; c < gridSize; c++)
+        if (!isBlack(r, c)) {
+          setActiveCell([r, c]);
+          containerRef.current?.focus();
+          return;
+        }
+  }, [puzzle.id]);
 
   const getHighlightedCells = useCallback((): Set<string> => {
     if (!activeCell) return new Set();
@@ -54,9 +69,152 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
       }
     }
     return cells;
-  }, [activeCell, direction, gridSize, blackCells]);
+  }, [activeCell, direction, gridSize, blacks]);
 
   const highlighted = getHighlightedCells();
+
+  const moveToNext = (r: number, c: number) => {
+    if (direction === "across") {
+      for (let nc = c + 1; nc < gridSize; nc++)
+        if (!isBlack(r, nc)) { setActiveCell([r, nc]); return; }
+    } else {
+      for (let nr = r + 1; nr < gridSize; nr++)
+        if (!isBlack(nr, c)) { setActiveCell([nr, c]); return; }
+    }
+  };
+
+  const moveToPrev = (r: number, c: number) => {
+    if (direction === "across") {
+      for (let nc = c - 1; nc >= 0; nc--)
+        if (!isBlack(r, nc)) { setActiveCell([r, nc]); return; }
+    } else {
+      for (let nr = r - 1; nr >= 0; nr--)
+        if (!isBlack(nr, c)) { setActiveCell([nr, c]); return; }
+    }
+  };
+
+  // Find next/prev word start
+  const findNextWord = (reverse: boolean) => {
+    const wordStarts: [number, number, "across" | "down"][] = [];
+    for (const cl of clues) wordStarts.push([cl.row, cl.col, cl.direction]);
+    // Sort by position
+    wordStarts.sort((a, b) => a[0] * gridSize + a[1] - (b[0] * gridSize + b[1]));
+
+    if (!activeCell) {
+      if (wordStarts.length > 0) {
+        const w = reverse ? wordStarts[wordStarts.length - 1] : wordStarts[0];
+        setActiveCell([w[0], w[1]]);
+        setDirection(w[2]);
+      }
+      return;
+    }
+
+    const [ar, ac] = activeCell;
+    const currentIdx = ar * gridSize + ac;
+
+    if (reverse) {
+      for (let i = wordStarts.length - 1; i >= 0; i--) {
+        const idx = wordStarts[i][0] * gridSize + wordStarts[i][1];
+        if (idx < currentIdx || (idx === currentIdx && wordStarts[i][2] !== direction)) {
+          setActiveCell([wordStarts[i][0], wordStarts[i][1]]);
+          setDirection(wordStarts[i][2]);
+          return;
+        }
+      }
+      // Wrap
+      const w = wordStarts[wordStarts.length - 1];
+      setActiveCell([w[0], w[1]]);
+      setDirection(w[2]);
+    } else {
+      for (const ws of wordStarts) {
+        const idx = ws[0] * gridSize + ws[1];
+        if (idx > currentIdx || (idx === currentIdx && ws[2] !== direction)) {
+          setActiveCell([ws[0], ws[1]]);
+          setDirection(ws[2]);
+          return;
+        }
+      }
+      // Wrap
+      const w = wordStarts[0];
+      setActiveCell([w[0], w[1]]);
+      setDirection(w[2]);
+    }
+  };
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!activeCell || timer.isSolved) return;
+    const [r, c] = activeCell;
+
+    switch (e.key) {
+      case "ArrowUp":
+        e.preventDefault();
+        if (direction === "across") {
+          setDirection("down");
+        } else {
+          for (let nr = r - 1; nr >= 0; nr--)
+            if (!isBlack(nr, c)) { setActiveCell([nr, c]); return; }
+        }
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        if (direction === "across") {
+          setDirection("down");
+        } else {
+          for (let nr = r + 1; nr < gridSize; nr++)
+            if (!isBlack(nr, c)) { setActiveCell([nr, c]); return; }
+        }
+        break;
+      case "ArrowLeft":
+        e.preventDefault();
+        if (direction === "down") {
+          setDirection("across");
+        } else {
+          for (let nc = c - 1; nc >= 0; nc--)
+            if (!isBlack(r, nc)) { setActiveCell([r, nc]); return; }
+        }
+        break;
+      case "ArrowRight":
+        e.preventDefault();
+        if (direction === "down") {
+          setDirection("across");
+        } else {
+          for (let nc = c + 1; nc < gridSize; nc++)
+            if (!isBlack(r, nc)) { setActiveCell([r, nc]); return; }
+        }
+        break;
+      case "Tab":
+        e.preventDefault();
+        findNextWord(e.shiftKey);
+        break;
+      case "Backspace":
+      case "Delete":
+        e.preventDefault();
+        if (grid[r][c]) {
+          setGrid((prev) => {
+            const next = prev.map((row) => [...row]);
+            next[r][c] = "";
+            return next;
+          });
+          setErrors(new Set());
+        } else {
+          moveToPrev(r, c);
+        }
+        break;
+      default: {
+        const letter = e.key.toUpperCase();
+        if (/^[A-Z]$/.test(letter)) {
+          e.preventDefault();
+          setGrid((prev) => {
+            const next = prev.map((row) => [...row]);
+            next[r][c] = letter;
+            return next;
+          });
+          setErrors(new Set());
+          moveToNext(r, c);
+        }
+      }
+    }
+  }, [activeCell, direction, timer.isSolved, grid, gridSize, blacks, clues]);
 
   const handleCellClick = (r: number, c: number) => {
     if (isBlack(r, c)) return;
@@ -65,55 +223,14 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
     } else {
       setActiveCell([r, c]);
     }
-    inputRefs.current[r][c]?.focus();
-  };
-
-  const handleInput = (r: number, c: number, value: string) => {
-    if (timer.isSolved) return;
-    const letter = value.toUpperCase().replace(/[^A-Z]/g, "").slice(-1);
-    setGrid((prev) => {
-      const next = prev.map((row) => [...row]);
-      next[r][c] = letter;
-      return next;
-    });
-    setErrors(new Set());
-    if (letter) moveToNext(r, c);
-  };
-
-  const moveToNext = (r: number, c: number) => {
-    if (direction === "across") {
-      for (let nc = c + 1; nc < gridSize; nc++) {
-        if (!isBlack(r, nc)) { inputRefs.current[r][nc]?.focus(); return; }
-      }
-    } else {
-      for (let nr = r + 1; nr < gridSize; nr++) {
-        if (!isBlack(nr, c)) { inputRefs.current[nr][c]?.focus(); return; }
-      }
-    }
-  };
-
-  const handleKeyDown = (r: number, c: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace" && !grid[r][c]) {
-      if (direction === "across") {
-        for (let nc = c - 1; nc >= 0; nc--) {
-          if (!isBlack(r, nc)) { inputRefs.current[r][nc]?.focus(); return; }
-        }
-      } else {
-        for (let nr = r - 1; nr >= 0; nr--) {
-          if (!isBlack(nr, c)) { inputRefs.current[nr][c]?.focus(); return; }
-        }
-      }
-    }
-    if (e.key === "Tab") {
-      e.preventDefault();
-      setDirection((d) => (d === "across" ? "down" : "across"));
-    }
+    containerRef.current?.focus();
   };
 
   const handleReset = () => {
     setGrid(Array.from({ length: gridSize }, () => Array(gridSize).fill("")));
     setErrors(new Set());
     timer.reset();
+    containerRef.current?.focus();
   };
 
   const handleCheck = () => {
@@ -152,9 +269,15 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
       <div className="flex-shrink-0">
         <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
+        <p className="mb-2 text-xs text-muted-foreground">
+          Arrow keys to move • Tab for next word • Click cell to toggle direction
+        </p>
         <div
-          className="inline-grid border-2 border-puzzle-border"
+          ref={containerRef}
+          tabIndex={0}
+          className="inline-grid border-2 border-puzzle-border outline-none"
           style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
+          onKeyDown={handleKeyDown}
         >
           {Array.from({ length: gridSize }, (_, r) =>
             Array.from({ length: gridSize }, (_, c) => {
@@ -168,7 +291,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
                 <div
                   key={`${r}-${c}`}
                   className={cn(
-                    "relative w-10 h-10 sm:w-12 sm:h-12 border border-puzzle-border",
+                    "relative w-10 h-10 sm:w-12 sm:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none",
                     black && "bg-puzzle-cell-black",
                     !black && hasError && "bg-puzzle-cell-error",
                     !black && !hasError && isActive && "bg-puzzle-cell-active",
@@ -183,15 +306,9 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
                     </span>
                   )}
                   {!black && (
-                    <input
-                      ref={(el) => { inputRefs.current[r][c] = el; }}
-                      className="absolute inset-0 w-full h-full bg-transparent text-center text-lg sm:text-xl font-semibold text-foreground outline-none caret-transparent uppercase"
-                      value={grid[r][c]}
-                      maxLength={1}
-                      onChange={(e) => handleInput(r, c, e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(r, c, e)}
-                      onFocus={() => setActiveCell([r, c])}
-                    />
+                    <span className="text-lg sm:text-xl font-semibold text-foreground uppercase">
+                      {grid[r][c]}
+                    </span>
                   )}
                 </div>
               );

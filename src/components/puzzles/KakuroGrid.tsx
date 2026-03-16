@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { generateKakuro } from "@/lib/generators/kakuro";
 import PuzzleControls from "./PuzzleControls";
@@ -22,9 +22,8 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     Array.from({ length: size }, () => Array(size).fill(""))
   );
   const [errors, setErrors] = useState<Set<string>>(new Set());
-  const inputRefs = useRef<(HTMLInputElement | null)[][]>(
-    Array.from({ length: size }, () => Array(size).fill(null))
-  );
+  const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const timerKey = `kakuro-${seed}-${difficulty}`;
   const timer = usePuzzleTimer(timerKey, { category: "kakuro", difficulty });
@@ -35,21 +34,93 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     return map;
   }, [clues]);
 
-  const handleInput = (r: number, c: number, value: string) => {
-    if (timer.isSolved) return;
-    const digit = value.replace(/[^1-9]/g, "").slice(-1);
-    setGrid((prev) => {
-      const next = prev.map((row) => [...row]);
-      next[r][c] = digit;
-      return next;
-    });
-    setErrors(new Set());
+  // Find first white cell on mount
+  useEffect(() => {
+    for (let r = 0; r < size; r++)
+      for (let c = 0; c < size; c++)
+        if (!isBlack[r][c]) {
+          setActiveCell([r, c]);
+          containerRef.current?.focus();
+          return;
+        }
+  }, [seed, difficulty]);
+
+  const findNextWhite = (r: number, c: number, dir: number): [number, number] | null => {
+    let idx = r * size + c + dir;
+    while (idx >= 0 && idx < size * size) {
+      const nr = Math.floor(idx / size), nc = idx % size;
+      if (!isBlack[nr][nc]) return [nr, nc];
+      idx += dir;
+    }
+    return null;
   };
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!activeCell || timer.isSolved) return;
+    const [r, c] = activeCell;
+
+    switch (e.key) {
+      case "ArrowUp":
+        e.preventDefault();
+        for (let nr = r - 1; nr >= 0; nr--)
+          if (!isBlack[nr][c]) { setActiveCell([nr, c]); return; }
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        for (let nr = r + 1; nr < size; nr++)
+          if (!isBlack[nr][c]) { setActiveCell([nr, c]); return; }
+        break;
+      case "ArrowLeft":
+        e.preventDefault();
+        for (let nc = c - 1; nc >= 0; nc--)
+          if (!isBlack[r][nc]) { setActiveCell([r, nc]); return; }
+        break;
+      case "ArrowRight":
+        e.preventDefault();
+        for (let nc = c + 1; nc < size; nc++)
+          if (!isBlack[r][nc]) { setActiveCell([r, nc]); return; }
+        break;
+      case "Tab": {
+        e.preventDefault();
+        const next = findNextWhite(r, c, e.shiftKey ? -1 : 1);
+        if (next) setActiveCell(next);
+        break;
+      }
+      case "Backspace":
+      case "Delete":
+        e.preventDefault();
+        setGrid((prev) => {
+          const next = prev.map((row) => [...row]);
+          next[r][c] = "";
+          return next;
+        });
+        setErrors(new Set());
+        if (e.key === "Backspace") {
+          const prev = findNextWhite(r, c, -1);
+          if (prev) setActiveCell(prev);
+        }
+        break;
+      default: {
+        if (/^[1-9]$/.test(e.key)) {
+          e.preventDefault();
+          setGrid((prev) => {
+            const next = prev.map((row) => [...row]);
+            next[r][c] = e.key;
+            return next;
+          });
+          setErrors(new Set());
+          const next = findNextWhite(r, c, 1);
+          if (next) setActiveCell(next);
+        }
+      }
+    }
+  }, [activeCell, timer.isSolved, grid, size, isBlack]);
 
   const handleReset = () => {
     setGrid(Array.from({ length: size }, () => Array(size).fill("")));
     setErrors(new Set());
     timer.reset();
+    containerRef.current?.focus();
   };
 
   const handleCheck = () => {
@@ -75,15 +146,22 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   return (
     <div>
       <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
+      <p className="mb-2 text-xs text-muted-foreground">
+        Arrow keys to move • 1–9 to enter • Delete to clear
+      </p>
       <div
-        className="inline-grid border-2 border-foreground"
+        ref={containerRef}
+        tabIndex={0}
+        className="inline-grid border-2 border-foreground outline-none"
         style={{ gridTemplateColumns: `repeat(${size}, 1fr)` }}
+        onKeyDown={handleKeyDown}
       >
         {Array.from({ length: size }, (_, r) =>
           Array.from({ length: size }, (_, c) => {
             const black = isBlack[r][c];
             const clue = clueMap.get(`${r}-${c}`);
             const hasError = errors.has(`${r}-${c}`);
+            const isActive = activeCell?.[0] === r && activeCell?.[1] === c;
 
             if (black) {
               return (
@@ -121,19 +199,19 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
               <div
                 key={`${r}-${c}`}
                 className={cn(
-                  "relative w-10 h-10 sm:w-12 sm:h-12 border border-puzzle-border",
-                  hasError ? "bg-puzzle-cell-error" : "bg-puzzle-cell"
+                  "relative w-10 h-10 sm:w-12 sm:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none",
+                  hasError && "bg-puzzle-cell-error",
+                  !hasError && isActive && "bg-puzzle-cell-active",
+                  !hasError && !isActive && "bg-puzzle-cell"
                 )}
+                onClick={() => {
+                  setActiveCell([r, c]);
+                  containerRef.current?.focus();
+                }}
               >
-                <input
-                  ref={(el) => { inputRefs.current[r][c] = el; }}
-                  className="absolute inset-0 w-full h-full bg-transparent text-center text-lg sm:text-xl font-semibold text-foreground outline-none caret-transparent"
-                  value={grid[r][c]}
-                  maxLength={1}
-                  inputMode="numeric"
-                  onChange={(e) => handleInput(r, c, e.target.value)}
-                  onFocus={() => setErrors(new Set())}
-                />
+                <span className="text-lg sm:text-xl font-semibold text-foreground">
+                  {grid[r][c]}
+                </span>
               </div>
             );
           })

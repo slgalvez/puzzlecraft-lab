@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { generateWordSearch } from "@/lib/generators/wordSearch";
 import { WORDS } from "@/lib/wordList";
@@ -21,14 +21,24 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const [foundCells, setFoundCells] = useState<Set<string>>(new Set());
   const [startCell, setStartCell] = useState<[number, number] | null>(null);
   const [hoverCell, setHoverCell] = useState<[number, number] | null>(null);
+  const [cursor, setCursor] = useState<[number, number]>([0, 0]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const timerKey = `word-search-${seed}-${difficulty}`;
   const timer = usePuzzleTimer(timerKey, { category: "word-search", difficulty });
 
+  useEffect(() => {
+    setCursor([0, 0]);
+    setStartCell(null);
+    containerRef.current?.focus();
+  }, [seed, difficulty]);
+
   const getPreviewCells = (): Set<string> => {
-    if (!startCell || !hoverCell) return new Set();
-    const [sr, sc] = startCell;
-    const [er, ec] = hoverCell;
+    const start = startCell;
+    const end = hoverCell || (startCell ? cursor : null);
+    if (!start || !end) return new Set();
+    const [sr, sc] = start;
+    const [er, ec] = end;
     const dr = Math.sign(er - sr);
     const dc = Math.sign(ec - sc);
     if (sr !== er && sc !== ec && Math.abs(er - sr) !== Math.abs(ec - sc)) return new Set();
@@ -45,50 +55,98 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
 
   const previewCells = getPreviewCells();
 
+  const trySelectWord = (sr: number, sc: number, er: number, ec: number) => {
+    const dr = Math.sign(er - sr);
+    const dc = Math.sign(ec - sc);
+
+    if (sr === er && sc === ec) return false;
+    if (sr !== er && sc !== ec && Math.abs(er - sr) !== Math.abs(ec - sc)) return false;
+
+    const letters: string[] = [];
+    const cells: string[] = [];
+    let cr = sr, cc = sc;
+    const steps = Math.max(Math.abs(er - sr), Math.abs(ec - sc));
+    for (let i = 0; i <= steps; i++) {
+      letters.push(puzzle.grid[cr][cc]);
+      cells.push(`${cr}-${cc}`);
+      cr += dr;
+      cc += dc;
+    }
+    const word = letters.join("");
+    if (puzzle.words.includes(word) && !foundWords.has(word)) {
+      const newFound = new Set([...foundWords, word]);
+      setFoundWords(newFound);
+      setFoundCells((prev) => {
+        const next = new Set(prev);
+        cells.forEach((c) => next.add(c));
+        return next;
+      });
+      if (newFound.size === puzzle.words.length) {
+        const { isNewBest } = timer.solve();
+        toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "All words found!" });
+      }
+      return true;
+    }
+    return false;
+  };
+
   const handleCellClick = (r: number, c: number) => {
     if (timer.isSolved) return;
+    setCursor([r, c]);
     if (!startCell) {
       setStartCell([r, c]);
     } else {
-      const [sr, sc] = startCell;
-      const dr = Math.sign(r - sr);
-      const dc = Math.sign(c - sc);
-
-      if (sr === r || sc === c || Math.abs(r - sr) === Math.abs(c - sc)) {
-        const letters: string[] = [];
-        const cells: string[] = [];
-        let cr = sr, cc = sc;
-        const steps = Math.max(Math.abs(r - sr), Math.abs(c - sc));
-        for (let i = 0; i <= steps; i++) {
-          letters.push(puzzle.grid[cr][cc]);
-          cells.push(`${cr}-${cc}`);
-          cr += dr;
-          cc += dc;
-        }
-        const word = letters.join("");
-        if (puzzle.words.includes(word) && !foundWords.has(word)) {
-          const newFound = new Set([...foundWords, word]);
-          setFoundWords(newFound);
-          setFoundCells((prev) => {
-            const next = new Set(prev);
-            cells.forEach((c) => next.add(c));
-            return next;
-          });
-          if (newFound.size === puzzle.words.length) {
-            const { isNewBest } = timer.solve();
-            toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "All words found!" });
-          }
-        }
-      }
+      trySelectWord(startCell[0], startCell[1], r, c);
       setStartCell(null);
     }
   };
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (timer.isSolved) return;
+    const [r, c] = cursor;
+    const size = puzzle.size;
+
+    switch (e.key) {
+      case "ArrowUp":
+        e.preventDefault();
+        setCursor([Math.max(0, r - 1), c]);
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        setCursor([Math.min(size - 1, r + 1), c]);
+        break;
+      case "ArrowLeft":
+        e.preventDefault();
+        setCursor([r, Math.max(0, c - 1)]);
+        break;
+      case "ArrowRight":
+        e.preventDefault();
+        setCursor([r, Math.min(size - 1, c + 1)]);
+        break;
+      case " ":
+      case "Enter":
+        e.preventDefault();
+        if (!startCell) {
+          setStartCell([r, c]);
+        } else {
+          trySelectWord(startCell[0], startCell[1], r, c);
+          setStartCell(null);
+        }
+        break;
+      case "Escape":
+        e.preventDefault();
+        setStartCell(null);
+        break;
+    }
+  }, [cursor, startCell, timer.isSolved, puzzle, foundWords]);
 
   const handleReset = () => {
     setFoundWords(new Set());
     setFoundCells(new Set());
     setStartCell(null);
+    setCursor([0, 0]);
     timer.reset();
+    containerRef.current?.focus();
   };
 
   const handleCheck = () => {
@@ -107,11 +165,14 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
       <div className="flex-shrink-0">
         <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
         <p className="mb-2 text-xs text-muted-foreground">
-          Click a start letter, then click the end letter to select a word.
+          Arrow keys to move • Space/Enter to select start & end • Escape to cancel
         </p>
         <div
-          className="inline-grid border-2 border-puzzle-border select-none"
+          ref={containerRef}
+          tabIndex={0}
+          className="inline-grid border-2 border-puzzle-border select-none outline-none"
           style={{ gridTemplateColumns: `repeat(${puzzle.size}, 1fr)` }}
+          onKeyDown={handleKeyDown}
         >
           {puzzle.grid.map((row, r) =>
             row.map((letter, c) => {
@@ -119,6 +180,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
               const isFound = foundCells.has(key);
               const isStart = startCell?.[0] === r && startCell?.[1] === c;
               const isPreview = previewCells.has(key);
+              const isCursor = cursor[0] === r && cursor[1] === c;
 
               return (
                 <div
@@ -128,7 +190,8 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
                     isFound && "bg-puzzle-cell-highlight text-primary",
                     isStart && "bg-puzzle-cell-active",
                     isPreview && !isFound && !isStart && "bg-secondary",
-                    !isFound && !isStart && !isPreview && "bg-puzzle-cell hover:bg-secondary"
+                    isCursor && !isFound && !isStart && !isPreview && "ring-2 ring-inset ring-primary bg-puzzle-cell-active",
+                    !isFound && !isStart && !isPreview && !isCursor && "bg-puzzle-cell hover:bg-secondary"
                   )}
                   onClick={() => handleCellClick(r, c)}
                   onMouseEnter={() => setHoverCell([r, c])}
