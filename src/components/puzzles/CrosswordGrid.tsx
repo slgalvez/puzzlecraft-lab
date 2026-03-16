@@ -208,9 +208,8 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
     } else {
       setActiveCell([r, c]);
     }
-    // Re-trigger mobile keyboard focus
     if (isMobile) {
-      setFocusTrigger((t) => t + 1);
+      mobileInputRef.current?.focus();
     } else {
       containerRef.current?.focus();
     }
