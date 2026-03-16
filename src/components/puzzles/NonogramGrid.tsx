@@ -152,7 +152,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
         </p>
       )}
 
-      <div className="inline-block">
+      <div className="max-w-full overflow-x-auto inline-block">
         {/* Column clues */}
         <div className="flex">
           <div style={{ width: `${maxRowClueLen * 1.5}rem` }} />
