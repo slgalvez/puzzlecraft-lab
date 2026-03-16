@@ -316,6 +316,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
           />
         )}
 
+        <div className="max-w-full overflow-x-auto">
         <div
           ref={containerRef}
           tabIndex={0}
