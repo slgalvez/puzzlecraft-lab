@@ -26,8 +26,8 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
   const [direction, setDirection] = useState<"across" | "down">("across");
   const [errors, setErrors] = useState<Set<string>>(new Set());
-  const [focusTrigger, setFocusTrigger] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const mobileInputRef = useRef<MobileLetterInputHandle>(null);
 
   const timerKey = `crossword-${puzzle.id}`;
   const timer = usePuzzleTimer(timerKey, { category: "crossword", difficulty: puzzle.difficulty });
