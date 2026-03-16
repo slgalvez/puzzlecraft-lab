@@ -710,6 +710,33 @@ Deno.serve(async (req) => {
       return json({ puzzles: enrich(puzzles), drafts: enrich(drafts) });
     }
 
+    // ─── LIST RECIPIENTS ───
+    if (action === "list-recipients") {
+      let recipients: { id: string; first_name: string; last_name: string }[] = [];
+      if (isAdmin) {
+        // Admin can send to any non-admin active user
+        const { data: profiles } = await sb
+          .from("profiles")
+          .select("id, first_name, last_name, role")
+          .neq("id", profileId);
+        recipients = (profiles || []).filter(p => p.role !== "admin").map(p => ({
+          id: p.id, first_name: p.first_name, last_name: p.last_name,
+        }));
+      } else {
+        // Regular user sends to their admin
+        const { data: conv } = await sb
+          .from("conversations")
+          .select("admin_profile_id")
+          .eq("user_profile_id", profileId)
+          .maybeSingle();
+        if (conv) {
+          const { data: admin } = await sb.from("profiles").select("id, first_name, last_name").eq("id", conv.admin_profile_id).single();
+          if (admin) recipients = [admin];
+        }
+      }
+      return json({ recipients });
+    }
+
     // ─── CREATE PUZZLE ───
     if (action === "create-puzzle") {
       const { puzzle_type, puzzle_data, reveal_message, is_draft, sent_to: explicitSentTo } = body;
