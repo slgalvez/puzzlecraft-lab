@@ -5,7 +5,7 @@ import { invokeMessaging } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Send, Timer, Check, CheckCheck } from "lucide-react";
+import { ArrowLeft, Send, Timer, Check, CheckCheck, Eye } from "lucide-react";
 
 interface Message {
   id: string;
@@ -26,7 +26,7 @@ interface ConversationInfo {
   disappearing_duration: string;
 }
 
-const DURATION_LABELS: Record<string, string> = { "1h": "1 hour", "24h": "24 hours", "7d": "7 days" };
+const DURATION_LABELS: Record<string, string> = { "view-once": "View once", "1h": "1 hour", "24h": "24 hours", "7d": "7 days" };
 
 const AdminConversationView = () => {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -161,7 +161,7 @@ const AdminConversationView = () => {
               {conversation?.disappearing_enabled ? "Messages auto-delete after the set duration." : "Enable auto-delete for new messages."}
             </p>
             <div className="flex items-center gap-2 flex-wrap">
-              {(["1h", "24h", "7d"] as const).map((dur) => (
+              {(["view-once", "1h", "24h", "7d"] as const).map((dur) => (
                 <button
                   key={dur}
                   disabled={togglingDisappearing}

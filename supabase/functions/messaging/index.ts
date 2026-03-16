@@ -47,7 +47,7 @@ function parseDuration(dur: string): number {
   return val * 24 * 60 * 60 * 1000;
 }
 
-const VALID_DURATIONS = ["1h", "24h", "7d"];
+const VALID_DURATIONS = ["view-once", "1h", "24h", "7d"];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -91,6 +91,17 @@ Deno.serve(async (req) => {
           return err("Could not create conversation");
         }
         conv = newConv;
+      }
+
+      // Clean up read view-once messages (only when view-once mode is active)
+      if (conv.disappearing_duration === "view-once") {
+        await sb
+          .from("messages")
+          .delete()
+          .eq("conversation_id", conv.id)
+          .eq("is_disappearing", true)
+          .neq("sender_profile_id", profileId)
+          .not("read_at", "is", null);
       }
 
       // Get messages, filtering out expired ones
@@ -138,8 +149,13 @@ Deno.serve(async (req) => {
       let is_disappearing = false;
       if (conv.disappearing_enabled) {
         is_disappearing = true;
-        const ms = parseDuration(conv.disappearing_duration);
-        expires_at = new Date(Date.now() + ms).toISOString();
+        if (conv.disappearing_duration === "view-once") {
+          // View-once: set a far-future expiry; actual deletion happens on mark-read
+          expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        } else {
+          const ms = parseDuration(conv.disappearing_duration);
+          expires_at = new Date(Date.now() + ms).toISOString();
+        }
       }
 
       const { data: msg, error: msgErr } = await sb
@@ -161,12 +177,30 @@ Deno.serve(async (req) => {
       if (!conv) return err("Not found");
       if (!isAdmin && conv.user_profile_id !== profileId) return err("Access denied");
 
+      // Mark unread messages as read
       await sb
         .from("messages")
         .update({ read_at: now })
         .eq("conversation_id", conversation_id)
         .neq("sender_profile_id", profileId)
         .is("read_at", null);
+
+      // Delete view-once messages that were just read (sent by the other party)
+      const { data: convForViewOnce } = await sb
+        .from("conversations")
+        .select("disappearing_duration")
+        .eq("id", conversation_id)
+        .single();
+
+      if (convForViewOnce?.disappearing_duration === "view-once") {
+        await sb
+          .from("messages")
+          .delete()
+          .eq("conversation_id", conversation_id)
+          .eq("is_disappearing", true)
+          .neq("sender_profile_id", profileId)
+          .not("read_at", "is", null);
+      }
 
       return json({ ok: true });
     }
@@ -262,6 +296,17 @@ Deno.serve(async (req) => {
         .eq("id", conversation_id)
         .single();
       if (!conv) return err("Not found");
+
+      // Clean up read view-once messages (only when view-once mode is active)
+      if (conv.disappearing_duration === "view-once") {
+        await sb
+          .from("messages")
+          .delete()
+          .eq("conversation_id", conversation_id)
+          .eq("is_disappearing", true)
+          .neq("sender_profile_id", profileId)
+          .not("read_at", "is", null);
+      }
 
       const { data: messages } = await sb
         .from("messages")
