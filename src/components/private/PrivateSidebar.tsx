@@ -1,5 +1,5 @@
-import { useLocation } from "react-router-dom";
-import { LayoutDashboard, MessageSquare, Users, Settings } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { LayoutDashboard, MessageSquare, Users, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { NavLink } from "@/components/NavLink";
 import {
