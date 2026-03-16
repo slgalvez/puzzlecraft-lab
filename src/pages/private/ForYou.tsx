@@ -817,7 +817,7 @@ function CreatePuzzleView({
 
   // ─── Preview step ───
   return (
-    <div className="space-y-5 pb-8">
+    <div className="space-y-5 pb-28 sm:pb-32">
       <div className="flex items-center justify-between">
         <button onClick={onBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-3 w-3" /> {isEditingDraft ? "Back to Drafts" : "Start over"}
@@ -857,7 +857,6 @@ function CreatePuzzleView({
         )}
       </div>
 
-      {/* Editable reveal message for drafts */}
       {isEditingDraft ? (
         <div className="space-y-1.5">
           <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
@@ -877,7 +876,6 @@ function CreatePuzzleView({
         </div>
       ) : null}
 
-      {/* Action buttons — always inline, always reachable */}
       <div className="space-y-2 pt-2 border-t border-border">
         <div className="grid grid-cols-2 gap-2">
           <Button variant="outline" onClick={onEditContent} disabled={sending}>
@@ -887,21 +885,24 @@ function CreatePuzzleView({
             <RefreshCw className="h-4 w-4 mr-2" /> Regenerate
           </Button>
         </div>
-        <div className={`grid gap-2 ${isEditingDraft ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"}`}>
-          {!isEditingDraft && (
-            <Button variant="outline" onClick={onSaveDraft} disabled={sending}>
-              <Save className="h-4 w-4 mr-2" /> Save Draft
-            </Button>
-          )}
+        {!isEditingDraft && (
+          <Button variant="outline" onClick={onSaveDraft} disabled={sending} className="w-full">
+            <Save className="h-4 w-4 mr-2" /> Save Draft
+          </Button>
+        )}
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="mx-auto flex max-w-2xl flex-col gap-2 px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:px-6">
           <Button onClick={onSend} disabled={sending} className="w-full">
             <SendIcon className="h-4 w-4 mr-2" />
             {sending ? "Sending…" : recipientName ? `Send to ${recipientName}` : "Send Puzzle"}
           </Button>
+          <Button variant="ghost" onClick={onBack} disabled={sending} className="w-full text-muted-foreground">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {isEditingDraft ? "Back to Drafts" : "Cancel"}
+          </Button>
         </div>
-        <Button variant="ghost" onClick={onBack} disabled={sending} className="w-full text-muted-foreground">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {isEditingDraft ? "Back to Drafts" : "Cancel"}
-        </Button>
       </div>
     </div>
   );
