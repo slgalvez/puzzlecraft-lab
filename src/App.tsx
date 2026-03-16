@@ -23,6 +23,7 @@ import AdminConversations from "./pages/private/AdminConversations";
 import AdminUsers from "./pages/private/AdminUsers";
 import UserConversation from "./pages/private/UserConversation";
 import PrivateSettings from "./pages/private/PrivateSettings";
+import ForYou from "./pages/private/ForYou";
 
 const queryClient = new QueryClient();
 
