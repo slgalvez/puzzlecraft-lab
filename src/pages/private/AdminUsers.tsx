@@ -284,6 +284,42 @@ const AdminUsers = () => {
                       )}
                     </div>
                   )}
+                  {confirmDelete === u.id && (
+                    <div className="mt-3 flex items-center gap-2 p-2.5 rounded-md bg-destructive/5 border border-destructive/20">
+                      <p className="text-xs text-destructive flex-1">
+                        Permanently delete {u.first_name} {u.last_name}? This removes all their messages and cannot be undone.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs border-border"
+                        onClick={() => setConfirmDelete(null)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="h-7 text-xs"
+                        disabled={deleting === u.id}
+                        onClick={async () => {
+                          if (!token) return;
+                          setDeleting(u.id);
+                          try {
+                            await invokeMessaging("delete-user", token, { authorized_user_id: u.id });
+                            setUsers((prev) => prev.filter((x) => x.id !== u.id));
+                            setConfirmDelete(null);
+                          } catch {
+                            // silent
+                          } finally {
+                            setDeleting(null);
+                          }
+                        }}
+                      >
+                        {deleting === u.id ? "Deleting..." : "Delete"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
