@@ -424,6 +424,7 @@ const ForYou = () => {
             onBack={resetCreate}
             onEditContent={() => setCreateStep("content")}
             onChangeRecipient={() => setCreateStep("recipient")}
+            onGoToPreview={() => setCreateStep("preview")}
           />
         )}
       </div>
