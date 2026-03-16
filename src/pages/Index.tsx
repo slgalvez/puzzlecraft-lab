@@ -38,20 +38,26 @@ const Index = () => {
 
       {/* Puzzle types */}
       <section className="container py-16">
-        <h2 className="font-display text-2xl font-semibold text-foreground sm:text-3xl">Three ways to play</h2>
-        <div className="mt-8 grid gap-6 sm:grid-cols-3">
+        <h2 className="font-display text-2xl font-semibold text-foreground sm:text-3xl">Eight ways to play</h2>
+        <p className="mt-2 text-muted-foreground">Unlimited puzzles with adjustable difficulty — generated fresh every time.</p>
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { icon: Grid3X3, title: "Crossword", desc: "Classic clue-based word puzzles in a variety of grid sizes." },
-            { icon: Hash, title: "Number Fill-In", desc: "Place numbers into the grid so every entry fits perfectly." },
-            { icon: Type, title: "Word Fill-In", desc: "Fit all the given words into the crossword-style grid." },
-          ].map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="rounded-xl border bg-card p-6">
+            { icon: Grid3X3, title: "Crossword", desc: "Classic clue-based word puzzles.", link: "/generate/crossword" },
+            { icon: Calculator, title: "Sudoku", desc: "Fill the 9×9 grid with digits 1–9.", link: "/generate/sudoku" },
+            { icon: Search, title: "Word Search", desc: "Find hidden words in a letter grid.", link: "/generate/word-search" },
+            { icon: Plus, title: "Kakuro", desc: "Cross-sums — a number crossword.", link: "/generate/kakuro" },
+            { icon: Palette, title: "Nonogram", desc: "Reveal a picture using number clues.", link: "/generate/nonogram" },
+            { icon: Lock, title: "Cryptogram", desc: "Decode the secret message.", link: "/generate/cryptogram" },
+            { icon: Hash, title: "Number Fill-In", desc: "Place numbers into the grid pattern.", link: "/generate/number-fill" },
+            { icon: Type, title: "Word Fill-In", desc: "Fit words into a crossword-style grid.", link: "/generate/word-fill" },
+          ].map(({ icon: Icon, title, desc, link }) => (
+            <Link key={title} to={link} className="group rounded-xl border bg-card p-5 transition-colors hover:border-primary/40">
               <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <Icon size={20} />
               </div>
-              <h3 className="font-display text-lg font-semibold text-foreground">{title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{desc}</p>
-            </div>
+              <h3 className="font-display text-base font-semibold text-foreground group-hover:text-primary transition-colors">{title}</h3>
+              <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{desc}</p>
+            </Link>
           ))}
         </div>
       </section>
