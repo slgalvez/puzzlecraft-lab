@@ -161,7 +161,7 @@ const Stats = () => {
         {stats.recentCompletions.length > 0 && (
           <div className="mt-12">
             <h2 className="font-display text-xl font-semibold text-foreground mb-4">Recent Solves</h2>
-            <div className="rounded-xl border bg-card overflow-hidden">
+            <div className="rounded-xl border bg-card overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-secondary/50">
