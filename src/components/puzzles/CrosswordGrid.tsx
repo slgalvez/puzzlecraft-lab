@@ -288,6 +288,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
           onDelete={deleteLetter}
         />
 
+        <div className="max-w-full overflow-x-auto">
         <div
           ref={containerRef}
           tabIndex={0}
