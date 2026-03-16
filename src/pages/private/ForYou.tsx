@@ -92,42 +92,33 @@ const ForYou = () => {
     }
   }, [token, handleSessionExpired]);
 
-  const fetchPartner = useCallback(async () => {
-    if (!token || !user) return;
+  const fetchRecipients = useCallback(async () => {
+    if (!token) return;
     try {
-      if (user.role === "admin") {
-        const data = await invokeMessaging("list-conversations", token);
-        const convos = data.conversations || [];
-        if (convos.length > 0) {
-          const first = convos[0];
-          setPartnerName(first.user_name || first.user_first_name || "User");
-        }
-      } else {
-        const data = await invokeMessaging("get-my-conversation", token);
-        if (data.conversation) {
-          setPartnerName(data.admin_name || "Admin");
-        }
+      const data = await invokeMessaging("list-recipients", token);
+      const list = data.recipients || [];
+      setRecipients(list);
+      // Auto-select if only one recipient
+      if (list.length === 1 && !selectedRecipientId) {
+        setSelectedRecipientId(list[0].id);
       }
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
     }
-  }, [token, user, handleSessionExpired]);
+  }, [token, handleSessionExpired, selectedRecipientId]);
 
   useEffect(() => {
     fetchPuzzles();
-    fetchPartner();
-  }, [fetchPuzzles, fetchPartner]);
+    fetchRecipients();
+  }, [fetchPuzzles, fetchRecipients]);
 
   const receivedPuzzles = puzzles.filter(p => p.sent_to === user?.id);
   const sentPuzzles = puzzles.filter(p => p.created_by === user?.id);
 
-  const resolvedPartnerName = partnerName
-    || receivedPuzzles.find(p => p.creator_name)?.creator_name
-    || sentPuzzles.find(p => p.recipient_name)?.recipient_name
-    || null;
-
-  // When editing a draft, use the draft's recipient name; otherwise use resolved partner
-  const activeRecipientName = editingDraftRecipientName || resolvedPartnerName;
+  const selectedRecipient = recipients.find(r => r.id === selectedRecipientId);
+  const activeRecipientName = selectedRecipient
+    ? `${selectedRecipient.first_name} ${selectedRecipient.last_name}`
+    : null;
 
   // ─── Create Flow ───
 
