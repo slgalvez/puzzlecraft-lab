@@ -230,6 +230,7 @@ const ForYou = () => {
           puzzle_data: generatedData,
           reveal_message: revealMessage.trim() || null,
           is_draft: true,
+          sent_to: selectedRecipientId,
         });
       }
       toast({ title: "Draft saved" });
