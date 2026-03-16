@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
 
     // ─── SESSION VERSION CHECK ───
     // Verify this session hasn't been superseded by a newer login
-    if (action !== "check-status") {
+    {
       const { data: profile } = await sb
         .from("profiles")
         .select("session_version")
@@ -95,6 +95,11 @@ Deno.serve(async (req) => {
       if (profile && user.session_version !== undefined && profile.session_version !== user.session_version) {
         return err("Session ended", 401);
       }
+    }
+
+    // ─── VERIFY SESSION (lightweight check for client polling) ───
+    if (action === "verify-session") {
+      return json({ ok: true });
     }
 
     const profileId = user.sub;
