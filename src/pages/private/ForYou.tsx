@@ -387,7 +387,7 @@ const ForYou = () => {
           />
         )}
 
-        {tab === "drafts" && (
+        {tab === "drafts" && !editingDraftId && (
           <DraftList
             drafts={drafts}
             loading={loading}
@@ -397,7 +397,7 @@ const ForYou = () => {
           />
         )}
 
-        {tab === "create" && (
+        {(tab === "create" || (tab === "drafts" && !!editingDraftId)) && (
           <CreatePuzzleView
             step={createStep}
             selectedType={selectedType}
@@ -421,7 +421,10 @@ const ForYou = () => {
             onRegenerate={handleRegenerate}
             onSend={handleSend}
             onSaveDraft={handleSaveDraft}
-            onBack={resetCreate}
+            onBack={() => {
+              resetCreate();
+              setTab(editingDraftId ? "drafts" : "create");
+            }}
             onEditContent={() => setCreateStep("content")}
             onChangeRecipient={() => setCreateStep("recipient")}
             onGoToPreview={() => setCreateStep("preview")}
