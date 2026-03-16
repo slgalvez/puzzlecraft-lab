@@ -295,6 +295,15 @@ Deno.serve(async (req) => {
         .single();
       if (!conv) return err("Not found");
 
+      // Clean up read view-once messages from the other party
+      await sb
+        .from("messages")
+        .delete()
+        .eq("conversation_id", conversation_id)
+        .eq("is_disappearing", true)
+        .neq("sender_profile_id", profileId)
+        .not("read_at", "is", null);
+
       const { data: messages } = await sb
         .from("messages")
         .select("id, sender_profile_id, body, created_at, read_at, is_disappearing, expires_at")
