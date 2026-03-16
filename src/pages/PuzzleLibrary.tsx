@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import PuzzleCard from "@/components/puzzles/PuzzleCard";
+import RandomPuzzleGenerator from "@/components/puzzles/RandomPuzzleGenerator";
 import { allPuzzles } from "@/data/puzzles";
 
 const categories = Object.entries(CATEGORY_INFO) as [PuzzleCategory, typeof CATEGORY_INFO[PuzzleCategory]][];
@@ -14,6 +15,11 @@ const PuzzleLibrary = () => {
         <p className="mt-2 text-muted-foreground">
           Choose a puzzle type to start playing — unlimited puzzles with adjustable difficulty.
         </p>
+
+        {/* Random Puzzle Generator */}
+        <div className="mt-8">
+          <RandomPuzzleGenerator />
+        </div>
 
         {/* Puzzle type cards */}
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">

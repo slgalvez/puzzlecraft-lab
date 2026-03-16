@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import DifficultySelector from "@/components/puzzles/DifficultySelector";
+import RandomPuzzleGenerator from "@/components/puzzles/RandomPuzzleGenerator";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CATEGORY_INFO, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
@@ -268,6 +269,11 @@ const PuzzleGenerator = () => {
               Generate Puzzle
             </Button>
           </div>
+        </div>
+
+        {/* Random Puzzle Generator */}
+        <div className="mb-8">
+          <RandomPuzzleGenerator compact />
         </div>
 
         {/* Puzzle */}
