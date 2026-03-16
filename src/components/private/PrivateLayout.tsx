@@ -5,6 +5,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Puzzle } from "lucide-react";
 
+const LAST_ACTIVE_KEY = "private_last_active";
+const GRACE_PERIOD_MS = 5 * 60 * 1000; // 5 minutes
+
+/** Record that the private app is currently active */
+function stampActive() {
+  localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
+}
+
 interface PrivateLayoutProps {
   children: React.ReactNode;
   title?: string;
@@ -17,10 +25,48 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
   const escTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const quickExit = useCallback(() => {
-    // Clear visual state without logging out
     sessionStorage.removeItem("private_view_state");
+    sessionStorage.removeItem("private_access_grant");
+    stampActive(); // record when we left
     navigate("/");
   }, [navigate]);
+
+  // Focus-loss privacy protection
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        quickExit();
+      }
+    };
+    const handleWindowBlur = () => {
+      quickExit();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", handleWindowBlur);
+
+    // Keep last-active timestamp fresh while using private app
+    stampActive();
+    const interval = setInterval(stampActive, 10_000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleWindowBlur);
+      clearInterval(interval);
+    };
+  }, [quickExit]);
+
+  // Check grace period on mount — if > 5 min away, force full logout
+  useEffect(() => {
+    const lastActive = localStorage.getItem(LAST_ACTIVE_KEY);
+    if (lastActive) {
+      const elapsed = Date.now() - Number(lastActive);
+      if (elapsed > GRACE_PERIOD_MS) {
+        signOut();
+        navigate("/");
+      }
+    }
+  }, [signOut, navigate]);
 
   // Escape × 2 keyboard shortcut
   useEffect(() => {

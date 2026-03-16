@@ -2,6 +2,8 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 const ACCESS_GRANT_KEY = "private_access_grant";
+const LAST_ACTIVE_KEY = "private_last_active";
+const GRACE_PERIOD_MS = 5 * 60 * 1000;
 
 function hasAccessGrant(): boolean {
   try {
@@ -19,8 +21,21 @@ function hasAccessGrant(): boolean {
   }
 }
 
+/** Check if user has been away longer than the grace period */
+function isGracePeriodExpired(): boolean {
+  const lastActive = localStorage.getItem(LAST_ACTIVE_KEY);
+  if (!lastActive) return false;
+  return Date.now() - Number(lastActive) > GRACE_PERIOD_MS;
+}
+
 export default function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
+
+  // If grace period expired, force full logout
+  if (user && isGracePeriodExpired()) {
+    signOut();
+    return <Navigate to="/" replace />;
+  }
 
   if (loading) {
     return (
@@ -30,13 +45,9 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
     );
   }
 
-  // Must have either an active login session or a valid access grant
-  if (!user && !hasAccessGrant()) {
-    return (
-      <div className="private-app flex items-center justify-center min-h-screen">
-        <p className="text-sm text-muted-foreground">Session unavailable</p>
-      </div>
-    );
+  // Must have a valid access grant to enter the private area
+  if (!hasAccessGrant()) {
+    return <Navigate to="/" replace />;
   }
 
   if (!user) {
