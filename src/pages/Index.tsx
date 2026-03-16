@@ -6,60 +6,63 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { dailyPuzzle, allPuzzles, getPuzzleById } from "@/data/puzzles";
 import PuzzleCard from "@/components/puzzles/PuzzleCard";
-import { seedFromString } from "@/lib/seededRandom";
 import { useToast } from "@/hooks/use-toast";
-import type { PuzzleCategory } from "@/lib/puzzleTypes";
-
-const PUZZLE_CODE_TYPES: PuzzleCategory[] = [
-  "sudoku", "crossword", "word-search", "kakuro", "nonogram", "cryptogram", "word-fill", "number-fill",
-];
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const featured = allPuzzles.slice(0, 3);
   const [puzzleCode, setPuzzleCode] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLoadCode = () => {
+  const handleLoadCode = async () => {
     const code = puzzleCode.trim();
     if (!code) return;
 
-    // Check if it matches a known puzzle ID
+    // Check if it matches a known puzzle ID first (no backend needed)
     const existing = getPuzzleById(code);
     if (existing) {
       navigate(`/play/${code}`);
       return;
     }
 
-    // Try parsing as "type-seed" format (e.g., "sudoku-12345")
-    const dashIdx = code.lastIndexOf("-");
-    if (dashIdx > 0) {
-      const typePart = code.slice(0, dashIdx).toLowerCase();
-      const seedPart = code.slice(dashIdx + 1);
-      if (PUZZLE_CODE_TYPES.includes(typePart as PuzzleCategory) && seedPart) {
-        const seed = /^\d+$/.test(seedPart) ? parseInt(seedPart) : seedFromString(seedPart);
-        navigate(`/generate/${typePart}?seed=${seed}`);
-        return;
+    // Validate via backend
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-code', {
+        body: { code },
+      });
+
+      if (error) throw error;
+
+      switch (data?.type) {
+        case 'unlock':
+          navigate(data.destination);
+          break;
+        case 'seed':
+          navigate(`/generate/sudoku?seed=${data.seed}`);
+          break;
+        case 'type-seed':
+          navigate(`/generate/${data.puzzleType}?seed=${data.seed}`);
+          break;
+        case 'type-name':
+          navigate(`/generate/${data.puzzleType}`);
+          break;
+        default:
+          toast({
+            title: "Code not found",
+            description: "We couldn't find a puzzle matching that code. Check the code and try again.",
+          });
       }
+    } catch {
+      toast({
+        title: "Code not found",
+        description: "We couldn't find a puzzle matching that code. Check the code and try again.",
+      });
+    } finally {
+      setLoading(false);
     }
-
-    // Try matching just a type name
-    const lower = code.toLowerCase().replace(/\s+/g, "-");
-    if (PUZZLE_CODE_TYPES.includes(lower as PuzzleCategory)) {
-      navigate(`/generate/${lower}`);
-      return;
-    }
-
-    // If it's a pure number, treat as a sudoku seed
-    if (/^\d+$/.test(code)) {
-      navigate(`/generate/sudoku?seed=${parseInt(code)}`);
-      return;
-    }
-
-    toast({
-      title: "Code not found",
-      description: "We couldn't find a puzzle matching that code. Check the code and try again.",
-    });
   };
 
   return (
@@ -95,9 +98,10 @@ const Index = () => {
                 placeholder="Enter a puzzle code..."
                 className="text-sm"
                 onKeyDown={(e) => e.key === "Enter" && handleLoadCode()}
+                disabled={loading}
               />
-              <Button variant="outline" size="sm" onClick={handleLoadCode} disabled={!puzzleCode.trim()}>
-                Load
+              <Button variant="outline" size="sm" onClick={handleLoadCode} disabled={!puzzleCode.trim() || loading}>
+                {loading ? "..." : "Load"}
               </Button>
             </div>
             <p className="mt-1.5 text-xs text-muted-foreground">
