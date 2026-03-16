@@ -17,7 +17,7 @@ import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import PrivateRoute from "./components/private/PrivateRoute";
 import Login from "./pages/private/Login";
-import AdminDashboard from "./pages/private/AdminDashboard";
+import PrivateHome from "./pages/private/PrivateHome";
 import AdminConversationView from "./pages/private/AdminConversationView";
 import AdminConversations from "./pages/private/AdminConversations";
 import AdminUsers from "./pages/private/AdminUsers";
