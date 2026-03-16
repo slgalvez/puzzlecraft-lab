@@ -33,6 +33,7 @@ export function GridSolver({ data, puzzleType, onComplete }: GridSolverProps) {
   const entries = (data.entries as string[]) || [];
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const mobileInputRef = useRef<MobileLetterInputHandle>(null);
   const [grid, setGrid] = useState<string[][]>(() =>
     Array.from({ length: gridSize }, () => Array(gridSize).fill(""))
   );
