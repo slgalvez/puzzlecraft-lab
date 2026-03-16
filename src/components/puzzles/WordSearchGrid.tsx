@@ -129,16 +129,43 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     setIsDragging(false);
   };
 
-  const handleCellClick = (r: number, c: number) => {
+  // Mouse drag handlers (desktop)
+  const handleMouseDown = (r: number, c: number) => {
     if (timer.isSolved || isMobile) return;
+    setStartCell([r, c]);
+    setHoverCell([r, c]);
     setCursor([r, c]);
-    if (!startCell) {
-      setStartCell([r, c]);
-    } else {
-      trySelectWord(startCell[0], startCell[1], r, c);
-      setStartCell(null);
-    }
+    setIsMouseDragging(true);
   };
+
+  const handleMouseEnterCell = (r: number, c: number) => {
+    if (!isMobile) setHoverCell([r, c]);
+  };
+
+  const handleMouseUp = () => {
+    if (isMouseDragging && startCell && hoverCell) {
+      trySelectWord(startCell[0], startCell[1], hoverCell[0], hoverCell[1]);
+    }
+    setStartCell(null);
+    setHoverCell(null);
+    setIsMouseDragging(false);
+  };
+
+  // Add global mouseup listener to handle releases outside the grid
+  useEffect(() => {
+    const onGlobalMouseUp = () => {
+      if (isMouseDragging) {
+        if (startCell && hoverCell) {
+          trySelectWord(startCell[0], startCell[1], hoverCell[0], hoverCell[1]);
+        }
+        setStartCell(null);
+        setHoverCell(null);
+        setIsMouseDragging(false);
+      }
+    };
+    window.addEventListener("mouseup", onGlobalMouseUp);
+    return () => window.removeEventListener("mouseup", onGlobalMouseUp);
+  }, [isMouseDragging, startCell, hoverCell, trySelectWord]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (timer.isSolved) return;
