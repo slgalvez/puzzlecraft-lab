@@ -779,12 +779,16 @@ function CreatePuzzleView({
           {PUZZLE_LABELS[selectedType!]} — {isEditingDraft ? "Edit Draft" : "Preview"}
         </h3>
         {recipientName && (
-          <div className="flex items-center gap-2 p-2.5 rounded-md bg-secondary/50 border border-border">
+          <button
+            onClick={onChangeRecipient}
+            className="flex items-center gap-2 p-2.5 rounded-md bg-secondary/50 border border-border w-full text-left hover:border-primary/40 transition-colors"
+          >
             <SendIcon className="h-3.5 w-3.5 text-primary shrink-0" />
-            <p className="text-xs">
+            <p className="text-xs flex-1">
               Sending to <span className="text-foreground font-semibold">{recipientName}</span>
             </p>
-          </div>
+            {recipients.length > 1 && <Pencil className="h-3 w-3 text-muted-foreground" />}
+          </button>
         )}
       </div>
 
