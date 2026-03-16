@@ -31,11 +31,11 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
     navigate("/");
   }, [navigate]);
 
-  // Focus-loss privacy protection (with mount grace period for mobile)
+  // Focus-loss privacy protection
+  // Only triggers on visibilitychange (tab/app switch), NOT window blur,
+  // so banner notifications and overlays don't kick the user out.
   useEffect(() => {
     let armed = false;
-    // Give a 2-second grace period after mount so mobile keyboard dismiss / 
-    // page transition blur events don't immediately kick the user out.
     const armTimer = setTimeout(() => { armed = true; }, 2000);
 
     const handleVisibilityChange = () => {
@@ -43,23 +43,15 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
         quickExit();
       }
     };
-    const handleWindowBlur = () => {
-      if (armed) {
-        quickExit();
-      }
-    };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("blur", handleWindowBlur);
 
-    // Keep last-active timestamp fresh while using private app
     stampActive();
     const interval = setInterval(stampActive, 10_000);
 
     return () => {
       clearTimeout(armTimer);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("blur", handleWindowBlur);
       clearInterval(interval);
     };
   }, [quickExit]);
