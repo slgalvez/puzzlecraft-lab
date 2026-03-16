@@ -203,6 +203,8 @@ const UserConversation = () => {
           ) : (
             messages.map((msg) => {
               const isMine = msg.sender_profile_id === user?.id;
+              const isViewOnce = msg.is_disappearing && msg.expires_at && msg.created_at &&
+                (new Date(msg.expires_at).getTime() - new Date(msg.created_at).getTime() > 8 * 24 * 60 * 60 * 1000);
               return (
                 <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                   <div
@@ -215,7 +217,9 @@ const UserConversation = () => {
                     <p className="text-sm whitespace-pre-wrap break-words">{msg.body}</p>
                     <div className={`flex items-center gap-1 mt-1 ${isMine ? "justify-end" : ""}`}>
                       {msg.is_disappearing && (
-                        <Timer size={8} className={isMine ? "text-primary-foreground/40" : "text-muted-foreground/60"} />
+                        isViewOnce
+                          ? <Eye size={8} className={isMine ? "text-primary-foreground/40" : "text-muted-foreground/60"} />
+                          : <Timer size={8} className={isMine ? "text-primary-foreground/40" : "text-muted-foreground/60"} />
                       )}
                       <span className={`text-[10px] ${isMine ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
                         {formatTime(msg.created_at)}
