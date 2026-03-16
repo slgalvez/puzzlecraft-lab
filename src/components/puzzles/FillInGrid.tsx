@@ -35,6 +35,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   const [direction, setDirection] = useState<Direction>("across");
   const [usedEntries, setUsedEntries] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Set<string>>(new Set());
+  const [focusTrigger, setFocusTrigger] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const timerKey = `fillin-${puzzle.id}`;
@@ -48,10 +49,8 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
 
   const isBlack = useCallback((r: number, c: number) => blacks.has(`${r}-${c}`), [blacks]);
 
-  // Compute all entry slots (contiguous runs of white cells, length >= 2)
   const entrySlots = useMemo(() => {
     const slots: EntrySlot[] = [];
-    // Across entries
     for (let r = 0; r < gridSize; r++) {
       let start = -1;
       for (let c = 0; c <= gridSize; c++) {
@@ -67,7 +66,6 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
         }
       }
     }
-    // Down entries
     for (let c = 0; c < gridSize; c++) {
       let start = -1;
       for (let r = 0; r <= gridSize; r++) {
@@ -86,7 +84,6 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
     return slots;
   }, [gridSize, blacks]);
 
-  // Build lookup: cell key -> entry slots it belongs to
   const cellToSlots = useMemo(() => {
     const map = new Map<string, EntrySlot[]>();
     for (const slot of entrySlots) {
@@ -99,19 +96,15 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
     return map;
   }, [entrySlots]);
 
-  // Get the active entry slot for the current cell + direction
   const getActiveSlot = useCallback((r: number, c: number, dir: Direction): EntrySlot | null => {
     const key = `${r}-${c}`;
     const slots = cellToSlots.get(key);
     if (!slots || slots.length === 0) return null;
-    // Prefer the slot matching the requested direction
     const match = slots.find(s => s.direction === dir);
     if (match) return match;
-    // Fall back to any available slot
     return slots[0];
   }, [cellToSlots]);
 
-  // Get cells in the active entry for highlighting
   const activeEntryCells = useMemo(() => {
     if (!activeCell) return new Set<string>();
     const slot = getActiveSlot(activeCell[0], activeCell[1], direction);
@@ -119,7 +112,6 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
     return new Set(slot.cells.map(([r, c]) => `${r}-${c}`));
   }, [activeCell, direction, getActiveSlot]);
 
-  // Check if a cell belongs to any slot in a given direction
   const cellHasDirection = useCallback((r: number, c: number, dir: Direction): boolean => {
     const slots = cellToSlots.get(`${r}-${c}`);
     return slots ? slots.some(s => s.direction === dir) : false;
@@ -145,15 +137,12 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
       return next;
     });
     setErrors(new Set());
-
-    // Auto-advance within the active entry slot
     const slot = getActiveSlot(r, c, direction);
     if (slot) {
       const idx = slot.cells.findIndex(([cr, cc]) => cr === r && cc === c);
       if (idx !== -1 && idx < slot.cells.length - 1) {
         setActiveCell(slot.cells[idx + 1]);
       }
-      // Stop at end of entry - don't advance further
     }
   }, [activeCell, timer.isSolved, direction, getActiveSlot]);
 
@@ -168,7 +157,6 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
       });
       setErrors(new Set());
     } else {
-      // Move backward within the active entry slot
       const slot = getActiveSlot(r, c, direction);
       if (slot) {
         const idx = slot.cells.findIndex(([cr, cc]) => cr === r && cc === c);
@@ -202,7 +190,6 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
         break;
       case "Tab": {
         e.preventDefault();
-        // Move to the next/previous entry slot
         const currentSlot = getActiveSlot(r, c, direction);
         if (currentSlot) {
           const currentIdx = entrySlots.indexOf(currentSlot);
@@ -232,7 +219,6 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   const handleCellClick = (r: number, c: number) => {
     if (isBlack(r, c)) return;
     if (activeCell && activeCell[0] === r && activeCell[1] === c) {
-      // Re-tap same cell: toggle direction if this cell belongs to both directions
       const hasAcross = cellHasDirection(r, c, "across");
       const hasDown = cellHasDirection(r, c, "down");
       if (hasAcross && hasDown) {
@@ -240,19 +226,22 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
       }
     } else {
       setActiveCell([r, c]);
-      // Pick the best direction for this cell
       const hasAcross = cellHasDirection(r, c, "across");
       const hasDown = cellHasDirection(r, c, "down");
       if (hasAcross && hasDown) {
-        // Keep current direction if available, otherwise switch
-        // (direction state persists)
+        // Keep current direction
       } else if (hasAcross) {
         setDirection("across");
       } else if (hasDown) {
         setDirection("down");
       }
     }
-    if (!isMobile) containerRef.current?.focus();
+    // Re-trigger mobile keyboard focus
+    if (isMobile) {
+      setFocusTrigger((t) => t + 1);
+    } else {
+      containerRef.current?.focus();
+    }
   };
 
   const toggleEntry = (entry: string) => {
@@ -313,6 +302,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
             active={isMobile && !!activeCell && !timer.isSolved}
             onLetter={enterChar}
             onDelete={deleteChar}
+            focusTrigger={focusTrigger}
           />
         )}
 
