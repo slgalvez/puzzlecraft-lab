@@ -101,7 +101,7 @@ const ForYou = () => {
           setPartnerName(first.user_name || first.user_first_name || "User");
         }
       } else {
-        const data = await invokeMessaging("get my conversation", token);
+        const data = await invokeMessaging("get-my-conversation", token);
         if (data.conversation) {
           setPartnerName(data.admin_name || "Admin");
         }
