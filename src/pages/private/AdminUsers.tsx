@@ -31,6 +31,12 @@ const AdminUsers = () => {
   const [adding, setAdding] = useState(false);
   const [addSuccess, setAddSuccess] = useState("");
 
+  // Reset password
+  const [resetUserId, setResetUserId] = useState<string | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetting, setResetting] = useState(false);
+  const [resetMsg, setResetMsg] = useState("");
+
   const fetchUsers = useCallback(async () => {
     if (!token) return;
     try {
