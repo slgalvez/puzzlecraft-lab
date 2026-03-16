@@ -195,6 +195,7 @@ export type Database = {
           solve_time: number | null
           solved_at: string | null
           solved_by: string | null
+          solver_state: Json | null
         }
         Insert: {
           created_at?: string
@@ -208,6 +209,7 @@ export type Database = {
           solve_time?: number | null
           solved_at?: string | null
           solved_by?: string | null
+          solver_state?: Json | null
         }
         Update: {
           created_at?: string
@@ -221,6 +223,7 @@ export type Database = {
           solve_time?: number | null
           solved_at?: string | null
           solved_by?: string | null
+          solver_state?: Json | null
         }
         Relationships: [
           {

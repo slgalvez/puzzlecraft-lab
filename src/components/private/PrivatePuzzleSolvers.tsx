@@ -22,9 +22,11 @@ interface GridSolverProps {
   data: Record<string, unknown>;
   puzzleType: "word-fill" | "crossword";
   onComplete: () => void;
+  savedState?: { grid: string[][] } | null;
+  onSaveProgress?: (state: { grid: string[][] }) => void;
 }
 
-export function GridSolver({ data, puzzleType, onComplete }: GridSolverProps) {
+export function GridSolver({ data, puzzleType, onComplete, savedState, onSaveProgress }: GridSolverProps) {
   const isMobile = useIsMobile();
   const gridSize = (data.gridSize as number) || 9;
   const blackCells = (data.blackCells as [number, number][]) || [];
@@ -34,9 +36,10 @@ export function GridSolver({ data, puzzleType, onComplete }: GridSolverProps) {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const mobileInputRef = useRef<MobileLetterInputHandle>(null);
-  const [grid, setGrid] = useState<string[][]>(() =>
-    Array.from({ length: gridSize }, () => Array(gridSize).fill(""))
-  );
+  const [grid, setGrid] = useState<string[][]>(() => {
+    if (savedState?.grid) return savedState.grid;
+    return Array.from({ length: gridSize }, () => Array(gridSize).fill(""));
+  });
   const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
   const [direction, setDirection] = useState<Direction>("across");
   const [errors, setErrors] = useState<Set<string>>(new Set());
@@ -50,6 +53,15 @@ export function GridSolver({ data, puzzleType, onComplete }: GridSolverProps) {
   }, [blackCells]);
 
   const isBlack = useCallback((r: number, c: number) => blacks.has(`${r}-${c}`), [blacks]);
+
+  // Listen for save-progress event from parent
+  useEffect(() => {
+    const handler = () => {
+      onSaveProgress?.({ grid });
+    };
+    window.addEventListener("save-puzzle-progress", handler);
+    return () => window.removeEventListener("save-puzzle-progress", handler);
+  }, [grid, onSaveProgress]);
 
   // Build solution map for crossword from clues
   const solutionMap = useMemo(() => {
@@ -445,10 +457,15 @@ export function GridSolver({ data, puzzleType, onComplete }: GridSolverProps) {
 interface CryptogramSolverProps {
   data: { encoded: string; decoded: string; reverseCipher: Record<string, string>; hints: Record<string, string> };
   onComplete: () => void;
+  savedState?: Record<string, string> | null;
+  onSaveProgress?: (state: Record<string, string>) => void;
 }
 
-export function CryptogramSolver({ data, onComplete }: CryptogramSolverProps) {
-  const [guesses, setGuesses] = useState<Record<string, string>>(() => ({ ...data.hints }));
+export function CryptogramSolver({ data, onComplete, savedState, onSaveProgress }: CryptogramSolverProps) {
+  const [guesses, setGuesses] = useState<Record<string, string>>(() => {
+    if (savedState && Object.keys(savedState).length > 0) return { ...data.hints, ...savedState };
+    return { ...data.hints };
+  });
   const [completed, setCompleted] = useState(false);
   const inputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
 
@@ -457,6 +474,15 @@ export function CryptogramSolver({ data, onComplete }: CryptogramSolverProps) {
     data.encoded.split("").map((ch, i) => ({ ch, i })).filter(({ ch }) => /[A-Z]/.test(ch) && !(ch in data.hints)).map(({ i }) => i),
     [data.encoded, data.hints]
   );
+
+  // Listen for save-progress event
+  useEffect(() => {
+    const handler = () => {
+      onSaveProgress?.(guesses);
+    };
+    window.addEventListener("save-puzzle-progress", handler);
+    return () => window.removeEventListener("save-puzzle-progress", handler);
+  }, [guesses, onSaveProgress]);
 
   useEffect(() => {
     if (editableIndices.length > 0) {
@@ -552,15 +578,44 @@ export function CryptogramSolver({ data, onComplete }: CryptogramSolverProps) {
 interface WordSearchSolverProps {
   data: { grid: string[][]; words: string[]; wordPositions: { word: string; row: number; col: number; dr: number; dc: number }[]; size: number };
   onComplete: () => void;
+  savedState?: { foundWords: string[] } | null;
+  onSaveProgress?: (state: { foundWords: string[]; foundCells: string[] }) => void;
 }
 
-export function WordSearchSolver({ data, onComplete }: WordSearchSolverProps) {
-  const [foundWords, setFoundWords] = useState<Set<string>>(new Set());
-  const [foundCells, setFoundCells] = useState<Set<string>>(new Set());
+export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress }: WordSearchSolverProps) {
+  const [foundWords, setFoundWords] = useState<Set<string>>(() => {
+    if (savedState?.foundWords) return new Set(savedState.foundWords);
+    return new Set();
+  });
+  const [foundCells, setFoundCells] = useState<Set<string>>(() => {
+    // Reconstruct found cells from saved words
+    if (savedState?.foundWords) {
+      const cells = new Set<string>();
+      for (const word of savedState.foundWords) {
+        const wp = data.wordPositions.find(w => w.word === word);
+        if (wp) {
+          for (let i = 0; i < wp.word.length; i++) {
+            cells.add(`${wp.row + wp.dr * i}-${wp.col + wp.dc * i}`);
+          }
+        }
+      }
+      return cells;
+    }
+    return new Set();
+  });
   const [selStart, setSelStart] = useState<[number, number] | null>(null);
   const [selEnd, setSelEnd] = useState<[number, number] | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const completed = foundWords.size === data.words.length;
+
+  // Listen for save-progress event
+  useEffect(() => {
+    const handler = () => {
+      onSaveProgress?.({ foundWords: [...foundWords], foundCells: [...foundCells] });
+    };
+    window.addEventListener("save-puzzle-progress", handler);
+    return () => window.removeEventListener("save-puzzle-progress", handler);
+  }, [foundWords, foundCells, onSaveProgress]);
 
   const getCellFromPoint = useCallback((x: number, y: number): [number, number] | null => {
     if (!gridRef.current) return null;
