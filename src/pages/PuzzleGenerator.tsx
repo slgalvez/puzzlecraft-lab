@@ -78,10 +78,24 @@ const PuzzleGenerator = () => {
     );
   }
 
-  const handleNewPuzzle = () => {
-    setSeed(randomSeed());
-    setPuzzleKey((k) => k + 1);
-  };
+  const handleNewPuzzle = useCallback(() => {
+    if (randomPool && randomPool.length > 1) {
+      const chosenType = randomPool[Math.floor(Math.random() * randomPool.length)];
+      const newSeed = randomSeed();
+      if (chosenType !== category) {
+        navigate(`/generate/${chosenType}?seed=${newSeed}`, {
+          state: { randomPool, randomDifficulty: difficulty },
+          replace: true,
+        });
+      } else {
+        setSeed(newSeed);
+        setPuzzleKey((k) => k + 1);
+      }
+    } else {
+      setSeed(randomSeed());
+      setPuzzleKey((k) => k + 1);
+    }
+  }, [randomPool, category, difficulty, navigate]);
 
   const handleLoadSeed = async () => {
     const code = seedInput.trim();
