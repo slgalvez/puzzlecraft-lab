@@ -31,15 +31,22 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
     navigate("/");
   }, [navigate]);
 
-  // Focus-loss privacy protection
+  // Focus-loss privacy protection (with mount grace period for mobile)
   useEffect(() => {
+    let armed = false;
+    // Give a 2-second grace period after mount so mobile keyboard dismiss / 
+    // page transition blur events don't immediately kick the user out.
+    const armTimer = setTimeout(() => { armed = true; }, 2000);
+
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
+      if (armed && document.visibilityState === "hidden") {
         quickExit();
       }
     };
     const handleWindowBlur = () => {
-      quickExit();
+      if (armed) {
+        quickExit();
+      }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -50,6 +57,7 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
     const interval = setInterval(stampActive, 10_000);
 
     return () => {
+      clearTimeout(armTimer);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("blur", handleWindowBlur);
       clearInterval(interval);
