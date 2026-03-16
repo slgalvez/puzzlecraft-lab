@@ -10,7 +10,7 @@ import { randomSeed } from "@/lib/seededRandom";
 import { useToast } from "@/hooks/use-toast";
 import { getPuzzleById } from "@/data/puzzles";
 import { supabase } from "@/integrations/supabase/client";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Dices } from "lucide-react";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
