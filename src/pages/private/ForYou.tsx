@@ -281,7 +281,7 @@ const ForYou = () => {
     setGeneratedData(draft.puzzle_data);
     setRevealMessage(draft.reveal_message || "");
     setCreateStep("preview");
-    setTab("create");
+    setTab("drafts");
   };
 
   const handleSendDraft = async (draftId: string) => {
