@@ -11,6 +11,7 @@ interface PrivateLayoutProps {
 
 export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
   const { signOut, user } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="private-app">
