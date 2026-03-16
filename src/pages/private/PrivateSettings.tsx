@@ -5,6 +5,8 @@ import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { getFocusLossEnabled, setFocusLossEnabled } from "@/lib/focusLossSettings";
 
 const PrivateSettings = () => {
   const { user, token, updateUser, signOut } = useAuth();
