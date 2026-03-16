@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Gift, Send as SendIcon, Check, ArrowLeft, Trash2, RefreshCw, Eye, Pencil } from "lucide-react";
+import { Plus, Gift, Send as SendIcon, Check, ArrowLeft, Trash2, RefreshCw, Eye, Pencil, FileText, Save } from "lucide-react";
 import {
   generateCustomFillIn,
   generateCustomCryptogram,
@@ -23,7 +23,7 @@ import {
 } from "@/components/private/PrivatePuzzleSolvers";
 
 type PuzzleType = "word-fill" | "cryptogram" | "crossword" | "word-search";
-type Tab = "received" | "sent" | "create";
+type Tab = "received" | "sent" | "drafts" | "create";
 
 interface PrivatePuzzle {
   id: string;
@@ -36,6 +36,7 @@ interface PrivatePuzzle {
   solved_at: string | null;
   solve_time: number | null;
   created_at: string;
+  is_draft?: boolean;
   creator_name?: string;
   recipient_name?: string;
 }
@@ -53,6 +54,7 @@ const ForYou = () => {
   const { toast } = useToast();
   const [tab, setTab] = useState<Tab>("received");
   const [puzzles, setPuzzles] = useState<PrivatePuzzle[]>([]);
+  const [drafts, setDrafts] = useState<PrivatePuzzle[]>([]);
   const [loading, setLoading] = useState(true);
   const [partnerName, setPartnerName] = useState<string | null>(null);
 
@@ -65,6 +67,7 @@ const ForYou = () => {
   const [revealMessage, setRevealMessage] = useState("");
   const [generatedData, setGeneratedData] = useState<Record<string, unknown> | null>(null);
   const [sending, setSending] = useState(false);
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
 
   // Solve state
   const [solvingPuzzle, setSolvingPuzzle] = useState<PrivatePuzzle | null>(null);
@@ -79,6 +82,7 @@ const ForYou = () => {
     try {
       const data = await invokeMessaging("list-puzzles", token);
       setPuzzles(data.puzzles || []);
+      setDrafts(data.drafts || []);
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
     } finally {
@@ -86,7 +90,6 @@ const ForYou = () => {
     }
   }, [token, handleSessionExpired]);
 
-  // Fetch the conversation partner name
   const fetchPartner = useCallback(async () => {
     if (!token || !user) return;
     try {
@@ -116,7 +119,6 @@ const ForYou = () => {
   const receivedPuzzles = puzzles.filter(p => p.sent_to === user?.id);
   const sentPuzzles = puzzles.filter(p => p.created_by === user?.id);
 
-  // Derive partner name from puzzles if API didn't return it
   const resolvedPartnerName = partnerName
     || receivedPuzzles.find(p => p.creator_name)?.creator_name
     || sentPuzzles.find(p => p.recipient_name)?.recipient_name
@@ -172,7 +174,6 @@ const ForYou = () => {
   };
 
   const handleRegenerate = () => {
-    // Re-run generation with same inputs
     handleGenerate();
   };
 
@@ -180,11 +181,22 @@ const ForYou = () => {
     if (!token || !generatedData || !selectedType) return;
     setSending(true);
     try {
-      await invokeMessaging("create-puzzle", token, {
-        puzzle_type: selectedType,
-        puzzle_data: generatedData,
-        reveal_message: revealMessage.trim() || null,
-      });
+      if (editingDraftId) {
+        // Update draft content first, then send it
+        await invokeMessaging("update-draft", token, {
+          puzzle_id: editingDraftId,
+          puzzle_type: selectedType,
+          puzzle_data: generatedData,
+          reveal_message: revealMessage.trim() || null,
+        });
+        await invokeMessaging("send-draft", token, { puzzle_id: editingDraftId });
+      } else {
+        await invokeMessaging("create-puzzle", token, {
+          puzzle_type: selectedType,
+          puzzle_data: generatedData,
+          reveal_message: revealMessage.trim() || null,
+        });
+      }
       toast({ title: "Puzzle sent!" });
       setTab("sent");
       resetCreate();
@@ -192,6 +204,37 @@ const ForYou = () => {
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
       toast({ title: "Failed to send puzzle", variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (!token || !generatedData || !selectedType) return;
+    setSending(true);
+    try {
+      if (editingDraftId) {
+        await invokeMessaging("update-draft", token, {
+          puzzle_id: editingDraftId,
+          puzzle_type: selectedType,
+          puzzle_data: generatedData,
+          reveal_message: revealMessage.trim() || null,
+        });
+      } else {
+        await invokeMessaging("create-puzzle", token, {
+          puzzle_type: selectedType,
+          puzzle_data: generatedData,
+          reveal_message: revealMessage.trim() || null,
+          is_draft: true,
+        });
+      }
+      toast({ title: "Draft saved" });
+      setTab("drafts");
+      resetCreate();
+      fetchPuzzles();
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Failed to save draft", variant: "destructive" });
     } finally {
       setSending(false);
     }
@@ -205,6 +248,7 @@ const ForYou = () => {
     setPhraseInput("");
     setClueEntries([{ answer: "", clue: "" }]);
     setRevealMessage("");
+    setEditingDraftId(null);
   };
 
   const handleDelete = async (puzzleId: string) => {
@@ -216,6 +260,27 @@ const ForYou = () => {
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
       toast({ title: (e as Error).message || "Could not delete puzzle", variant: "destructive" });
+    }
+  };
+
+  const handleEditDraft = (draft: PrivatePuzzle) => {
+    setEditingDraftId(draft.id);
+    setSelectedType(draft.puzzle_type);
+    setGeneratedData(draft.puzzle_data);
+    setRevealMessage(draft.reveal_message || "");
+    setCreateStep("preview");
+    setTab("create");
+  };
+
+  const handleSendDraft = async (draftId: string) => {
+    if (!token) return;
+    try {
+      await invokeMessaging("send-draft", token, { puzzle_id: draftId });
+      toast({ title: "Puzzle sent!" });
+      fetchPuzzles();
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Failed to send", variant: "destructive" });
     }
   };
 
@@ -251,21 +316,26 @@ const ForYou = () => {
     <PrivateLayout title="Puzzles for You">
       <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-6">
         {/* Tabs */}
-        <div className="flex gap-2 border-b border-border pb-2">
-          {(["received", "sent", "create"] as Tab[]).map(t => (
+        <div className="flex gap-1 border-b border-border pb-2 overflow-x-auto">
+          {(["received", "sent", "drafts", "create"] as Tab[]).map(t => (
             <button
               key={t}
               onClick={() => { setTab(t); if (t === "create") resetCreate(); }}
-              className={`px-3 py-1.5 text-sm rounded-t-md transition-colors ${
+              className={`px-3 py-1.5 text-sm rounded-t-md transition-colors whitespace-nowrap ${
                 tab === t
                   ? "bg-primary text-primary-foreground font-medium"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t === "received" ? "Received" : t === "sent" ? "Sent" : "Create"}
+              {t === "received" ? "Received" : t === "sent" ? "Sent" : t === "drafts" ? "Drafts" : "Create"}
               {t === "received" && receivedPuzzles.filter(p => !p.solved_by).length > 0 && (
                 <span className="ml-1.5 bg-primary-foreground text-primary text-[10px] px-1.5 py-0.5 rounded-full">
                   {receivedPuzzles.filter(p => !p.solved_by).length}
+                </span>
+              )}
+              {t === "drafts" && drafts.length > 0 && (
+                <span className="ml-1.5 bg-primary-foreground text-primary text-[10px] px-1.5 py-0.5 rounded-full">
+                  {drafts.length}
                 </span>
               )}
             </button>
@@ -280,6 +350,7 @@ const ForYou = () => {
             emptyMessage="No puzzles received yet"
             showCreator
             onSolve={(p) => setSolvingPuzzle(p)}
+            onDelete={handleDelete}
           />
         )}
 
@@ -290,6 +361,16 @@ const ForYou = () => {
             emptyMessage="No puzzles sent yet"
             showRecipient
             onDelete={handleDelete}
+          />
+        )}
+
+        {tab === "drafts" && (
+          <DraftList
+            drafts={drafts}
+            loading={loading}
+            onEdit={handleEditDraft}
+            onDelete={handleDelete}
+            onSend={handleSendDraft}
           />
         )}
 
@@ -308,10 +389,12 @@ const ForYou = () => {
             generatedData={generatedData}
             sending={sending}
             recipientName={resolvedPartnerName}
+            isEditingDraft={!!editingDraftId}
             onSelectType={handleSelectType}
             onGenerate={handleGenerate}
             onRegenerate={handleRegenerate}
             onSend={handleSend}
+            onSaveDraft={handleSaveDraft}
             onBack={resetCreate}
             onEditContent={() => setCreateStep("content")}
           />
@@ -377,7 +460,7 @@ function PuzzleList({
                 View
               </Button>
             )}
-            {onDelete && !p.solved_by && (
+            {onDelete && (
               <Button
                 size="sm"
                 variant="ghost"
@@ -387,6 +470,64 @@ function PuzzleList({
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Draft List ───
+
+function DraftList({
+  drafts, loading, onEdit, onDelete, onSend,
+}: {
+  drafts: PrivatePuzzle[];
+  loading: boolean;
+  onEdit: (draft: PrivatePuzzle) => void;
+  onDelete: (id: string) => void;
+  onSend: (id: string) => void;
+}) {
+  if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (drafts.length === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        <FileText className="mx-auto h-10 w-10 mb-3 opacity-40" />
+        <p className="text-sm">No drafts saved</p>
+        <p className="text-xs mt-1">Create a puzzle and save it as a draft to send later</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {drafts.map(d => (
+        <div key={d.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">{PUZZLE_LABELS[d.puzzle_type]}</span>
+              <Badge variant="outline" className="text-[10px]">Draft</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {d.recipient_name && `To ${d.recipient_name} · `}
+              {new Date(d.created_at).toLocaleDateString()}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Button size="sm" variant="outline" onClick={() => onEdit(d)} className="h-8 px-2.5">
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button size="sm" onClick={() => onSend(d.id)} className="h-8 px-2.5">
+              <SendIcon className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onDelete(d.id)}
+              className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
           </div>
         </div>
       ))}
@@ -405,8 +546,8 @@ function formatTime(seconds: number): string {
 function CreatePuzzleView({
   step, selectedType, wordInput, setWordInput, phraseInput, setPhraseInput,
   clueEntries, setClueEntries, revealMessage, setRevealMessage,
-  generatedData, sending, recipientName,
-  onSelectType, onGenerate, onRegenerate, onSend, onBack, onEditContent,
+  generatedData, sending, recipientName, isEditingDraft,
+  onSelectType, onGenerate, onRegenerate, onSend, onSaveDraft, onBack, onEditContent,
 }: {
   step: "type" | "content" | "preview";
   selectedType: PuzzleType | null;
@@ -421,10 +562,12 @@ function CreatePuzzleView({
   generatedData: Record<string, unknown> | null;
   sending: boolean;
   recipientName: string | null;
+  isEditingDraft: boolean;
   onSelectType: (t: PuzzleType) => void;
   onGenerate: () => void;
   onRegenerate: () => void;
   onSend: () => void;
+  onSaveDraft: () => void;
   onBack: () => void;
   onEditContent: () => void;
 }) {
@@ -563,9 +706,10 @@ function CreatePuzzleView({
         <ArrowLeft className="h-3 w-3" /> Start over
       </button>
 
-      {/* Header with recipient */}
       <div className="space-y-1">
-        <h3 className="text-sm font-medium">{PUZZLE_LABELS[selectedType!]} — Preview</h3>
+        <h3 className="text-sm font-medium">
+          {PUZZLE_LABELS[selectedType!]} — {isEditingDraft ? "Edit Draft" : "Preview"}
+        </h3>
         {recipientName && (
           <p className="text-xs text-muted-foreground">
             Recipient: <span className="text-foreground font-medium">{recipientName}</span>
@@ -573,7 +717,6 @@ function CreatePuzzleView({
         )}
       </div>
 
-      {/* Visual puzzle preview */}
       <div className="p-4 rounded-lg border border-border bg-card">
         <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-3 font-semibold">
           Puzzle as recipient will see it
@@ -583,7 +726,6 @@ function CreatePuzzleView({
         )}
       </div>
 
-      {/* Content summary */}
       {revealMessage && (
         <div className="p-3 rounded-lg border border-border bg-card/50">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 font-semibold">Reveal Message</p>
@@ -603,6 +745,9 @@ function CreatePuzzleView({
           </Button>
           <Button variant="outline" size="sm" className="flex-1" onClick={onRegenerate}>
             <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Regenerate
+          </Button>
+          <Button variant="outline" size="sm" className="flex-1" onClick={onSaveDraft} disabled={sending}>
+            <Save className="h-3.5 w-3.5 mr-1.5" /> {isEditingDraft ? "Update Draft" : "Save Draft"}
           </Button>
         </div>
       </div>
