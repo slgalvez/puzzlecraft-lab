@@ -671,9 +671,10 @@ function CreatePuzzleView({
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium">{PUZZLE_LABELS[selectedType!]}</h3>
           {recipientName && (
-            <span className="text-xs text-muted-foreground">
+            <button onClick={onChangeRecipient} className="text-xs text-muted-foreground hover:text-foreground">
               To <span className="text-foreground font-medium">{recipientName}</span>
-            </span>
+              {recipients.length > 1 && <Pencil className="inline h-3 w-3 ml-1" />}
+            </button>
           )}
         </div>
 
