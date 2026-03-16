@@ -58,11 +58,18 @@ Deno.serve(async (req) => {
     // Look up profile
     const { data: profile, error: profileErr } = await supabase
       .from("profiles")
-      .select("id, first_name, last_name, role, focus_loss_protection")
+      .select("id, first_name, last_name, role, focus_loss_protection, session_version")
       .eq("authorized_user_id", authUser.id)
       .single();
 
     if (profileErr || !profile) return deny();
+
+    // Increment session_version to invalidate older sessions
+    const newSessionVersion = (profile.session_version ?? 0) + 1;
+    await supabase
+      .from("profiles")
+      .update({ session_version: newSessionVersion })
+      .eq("id", profile.id);
 
     // Log access
     await supabase.from("access_logs").insert({ profile_id: profile.id, event_type: "login", success: true });
@@ -73,6 +80,7 @@ Deno.serve(async (req) => {
       first_name: profile.first_name,
       last_name: profile.last_name,
       role: profile.role,
+      session_version: newSessionVersion,
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 86400,
     }, serviceRoleKey);

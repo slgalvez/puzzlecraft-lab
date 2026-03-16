@@ -12,6 +12,7 @@ interface JwtPayload {
   first_name: string;
   last_name: string;
   exp: number;
+  session_version?: number;
 }
 
 async function verifyToken(token: string): Promise<JwtPayload | null> {
@@ -82,6 +83,24 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, serviceRoleKey);
+
+    // ─── SESSION VERSION CHECK ───
+    // Verify this session hasn't been superseded by a newer login
+    {
+      const { data: profile } = await sb
+        .from("profiles")
+        .select("session_version")
+        .eq("id", user.sub)
+        .single();
+      if (profile && user.session_version !== undefined && profile.session_version !== user.session_version) {
+        return err("Session ended", 401);
+      }
+    }
+
+    // ─── VERIFY SESSION (lightweight check for client polling) ───
+    if (action === "verify-session") {
+      return json({ ok: true });
+    }
 
     const profileId = user.sub;
     const isAdmin = user.role === "admin";

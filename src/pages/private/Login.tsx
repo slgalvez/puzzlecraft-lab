@@ -24,7 +24,7 @@ function getAccessGrant(): boolean {
 }
 
 export default function LoginPage() {
-  const { user, loading, signIn } = useAuth();
+  const { user, loading, signIn, signOut, sessionEnded, clearSessionEnded } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -32,6 +32,13 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [gateStatus, setGateStatus] = useState<"checking" | "granted" | "denied">("checking");
+
+  // If arriving at login with a stale session, clear it so the form shows
+  useEffect(() => {
+    if (sessionEnded) {
+      clearSessionEnded();
+    }
+  }, [sessionEnded, clearSessionEnded]);
 
   useEffect(() => {
     let cancelled = false;

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface PrivateUser {
@@ -13,12 +13,15 @@ interface AuthContextType {
   user: PrivateUser | null;
   loading: boolean;
   token: string | null;
+  sessionEnded: boolean;
   signIn: (firstName: string, lastName: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  clearSessionEnded: () => void;
   updateUser: (updates: Partial<Pick<PrivateUser, "first_name" | "last_name">>) => void;
 }
 
 const SESSION_KEY = "private_session";
+const SESSION_CHECK_INTERVAL = 30_000; // 30s
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -45,6 +48,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<PrivateUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionEnded, setSessionEnded] = useState(false);
+  const checkIntervalRef = useRef<ReturnType<typeof setInterval>>();
 
   useEffect(() => {
     const session = getStoredSession();
@@ -54,6 +59,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setLoading(false);
   }, []);
+
+  // Periodic session validity check — detects if another login invalidated this session
+  useEffect(() => {
+    if (!token || !user) {
+      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+      return;
+    }
+
+    const checkSession = async () => {
+      try {
+        const { data } = await supabase.functions.invoke("messaging", {
+          body: { action: "verify-session", token },
+        });
+        if (data?.error === "Session ended" || data?.error === "Access unavailable") {
+          localStorage.removeItem(SESSION_KEY);
+          setUser(null);
+          setToken(null);
+          setSessionEnded(true);
+        }
+      } catch {
+        // Network error — ignore, will retry
+      }
+    };
+
+    checkIntervalRef.current = setInterval(checkSession, SESSION_CHECK_INTERVAL);
+    return () => {
+      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+    };
+  }, [token, user]);
 
   const signIn = useCallback(async (firstName: string, lastName: string, password: string) => {
     try {
@@ -65,6 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("private_last_active", String(Date.now()));
       setUser(data.user);
       setToken(data.token);
+      setSessionEnded(false);
       return { error: null };
     } catch {
       return { error: "Access unavailable" };
@@ -78,11 +113,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
   }, []);
 
+  const clearSessionEnded = useCallback(() => {
+    setSessionEnded(false);
+  }, []);
+
   const updateUser = useCallback((updates: Partial<Pick<PrivateUser, "first_name" | "last_name">>) => {
     setUser((prev) => {
       if (!prev) return prev;
       const updated = { ...prev, ...updates };
-      // Update stored session too
       const raw = localStorage.getItem(SESSION_KEY);
       if (raw) {
         try {
@@ -96,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, token, signIn, signOut, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, token, sessionEnded, signIn, signOut, clearSessionEnded, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
@@ -109,8 +147,10 @@ export function useAuth() {
       user: null,
       loading: true,
       token: null,
+      sessionEnded: false,
       signIn: async () => ({ error: "Auth not ready" }),
       signOut: async () => {},
+      clearSessionEnded: () => {},
       updateUser: () => {},
     } as AuthContextType;
   }

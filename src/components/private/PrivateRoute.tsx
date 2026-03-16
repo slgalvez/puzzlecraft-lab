@@ -29,7 +29,24 @@ function isGracePeriodExpired(): boolean {
 }
 
 export default function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading, signOut, sessionEnded } = useAuth();
+
+  // If session was ended by a newer login elsewhere, redirect out
+  if (sessionEnded) {
+    return (
+      <div className="private-app flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-3">
+          <p className="text-sm text-muted-foreground">Session ended</p>
+          <button
+            onClick={() => window.location.href = "/"}
+            className="text-xs text-primary hover:underline"
+          >
+            Return home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // If grace period expired, force full logout
   if (user && isGracePeriodExpired()) {
