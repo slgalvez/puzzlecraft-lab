@@ -81,7 +81,9 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
       cr += dr; cc += dc;
     }
     const word = letters.join("");
-    if (puzzle.words.includes(word) && !foundWords.has(word)) {
+    const reversedWord = letters.slice().reverse().join("");
+    const matchedWord = puzzle.words.find((w) => (w === word || w === reversedWord) && !foundWords.has(w));
+    if (matchedWord) {
       const newFound = new Set([...foundWords, word]);
       setFoundWords(newFound);
       setFoundCells((prev) => { const next = new Set(prev); cells.forEach((c) => next.add(c)); return next; });
