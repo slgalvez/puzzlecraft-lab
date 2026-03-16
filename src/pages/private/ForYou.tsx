@@ -801,9 +801,11 @@ function CreatePuzzleView({
         <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-3 font-semibold">
           Puzzle as recipient will see it
         </p>
-        {generatedData && selectedType && (
-          <PuzzlePreview data={generatedData} puzzleType={selectedType} />
-        )}
+        <div className="max-h-[45vh] overflow-auto">
+          {generatedData && selectedType && (
+            <PuzzlePreview data={generatedData} puzzleType={selectedType} />
+          )}
+        </div>
       </div>
 
       {revealMessage && (
