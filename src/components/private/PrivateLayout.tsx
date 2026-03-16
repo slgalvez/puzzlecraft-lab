@@ -40,7 +40,7 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
     const armTimer = setTimeout(() => { armed = true; }, 2000);
 
     const handleVisibilityChange = () => {
-      if (armed && document.visibilityState === "hidden") {
+      if (armed && getFocusLossEnabled() && document.visibilityState === "hidden") {
         quickExit();
       }
     };
