@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       token,
-      user: { id: profile.id, first_name: profile.first_name, last_name: profile.last_name, role: profile.role },
+      user: { id: profile.id, first_name: profile.first_name, last_name: profile.last_name, role: profile.role, focus_loss_protection: profile.focus_loss_protection },
     }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch {
     return deny();
