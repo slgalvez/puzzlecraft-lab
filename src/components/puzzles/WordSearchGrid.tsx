@@ -26,6 +26,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const [hoverCell, setHoverCell] = useState<[number, number] | null>(null);
   const [cursor, setCursor] = useState<[number, number]>([0, 0]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isMouseDragging, setIsMouseDragging] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
