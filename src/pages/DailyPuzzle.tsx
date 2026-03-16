@@ -138,8 +138,8 @@ const DailyPuzzle = () => {
         {completion && (
           <div className="mb-8 rounded-xl border bg-card p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                <Trophy size={20} className="text-green-600" />
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Trophy size={20} className="text-primary" />
               </div>
               <div>
                 <p className="font-display font-semibold text-foreground">Challenge Complete!</p>
