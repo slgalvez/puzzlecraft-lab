@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.private-login]
 verify_jwt = false
+
+[functions.add-authorized-user]
+verify_jwt = false
