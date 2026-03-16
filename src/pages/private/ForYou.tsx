@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Puzzle, Send as SendIcon, Check, ArrowLeft, Trash2, RefreshCw, Eye, Pencil, FileText, Save } from "lucide-react";
+import { Plus, Puzzle, Send as SendIcon, Check, ArrowLeft, Trash2, RefreshCw, Eye, Pencil, FileText, Save, Loader2, CheckCircle2 } from "lucide-react";
 import {
   generateCustomFillIn,
   generateCustomCryptogram,
@@ -71,6 +71,11 @@ const ForYou = () => {
   const [sending, setSending] = useState(false);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
 
+  // Auto-save state
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const autoSaveResetRef = useRef<ReturnType<typeof setTimeout>>();
+
   // Solve state
   const [solvingPuzzle, setSolvingPuzzle] = useState<PrivatePuzzle | null>(null);
 
@@ -78,6 +83,30 @@ const ForYou = () => {
     signOut();
     navigate("/");
   }, [signOut, navigate]);
+
+  // Debounced auto-save for draft edits
+  const triggerAutoSave = useCallback(async (overrides?: { recipientId?: string; reveal?: string }) => {
+    if (!editingDraftId || !token || !generatedData || !selectedType) return;
+    clearTimeout(autoSaveTimerRef.current);
+    clearTimeout(autoSaveResetRef.current);
+    autoSaveTimerRef.current = setTimeout(async () => {
+      setAutoSaveStatus("saving");
+      try {
+        await invokeMessaging("update-draft", token, {
+          puzzle_id: editingDraftId,
+          puzzle_type: selectedType,
+          puzzle_data: generatedData,
+          reveal_message: (overrides?.reveal ?? revealMessage).trim() || null,
+          sent_to: overrides?.recipientId ?? selectedRecipientId,
+        });
+        setAutoSaveStatus("saved");
+        autoSaveResetRef.current = setTimeout(() => setAutoSaveStatus("idle"), 3000);
+      } catch (e) {
+        if (e instanceof SessionExpiredError) return handleSessionExpired();
+        setAutoSaveStatus("idle");
+      }
+    }, 800);
+  }, [editingDraftId, token, generatedData, selectedType, revealMessage, selectedRecipientId, handleSessionExpired]);
 
   const fetchPuzzles = useCallback(async () => {
     if (!token) return;
@@ -111,6 +140,13 @@ const ForYou = () => {
     fetchPuzzles();
     fetchRecipients();
   }, [fetchPuzzles, fetchRecipients]);
+
+  // Auto-save when generatedData changes (e.g. after regeneration) while editing a draft
+  useEffect(() => {
+    if (editingDraftId && generatedData) {
+      triggerAutoSave();
+    }
+  }, [generatedData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const receivedPuzzles = puzzles.filter(p => p.sent_to === user?.id);
   const sentPuzzles = puzzles.filter(p => p.created_by === user?.id);
@@ -408,20 +444,26 @@ const ForYou = () => {
             clueEntries={clueEntries}
             setClueEntries={setClueEntries}
             revealMessage={revealMessage}
-            setRevealMessage={setRevealMessage}
+            setRevealMessage={(v) => { setRevealMessage(v); if (editingDraftId) triggerAutoSave({ reveal: v }); }}
             generatedData={generatedData}
             sending={sending}
             recipientName={activeRecipientName}
             recipients={recipients}
             selectedRecipientId={selectedRecipientId}
-            onSelectRecipient={(id) => { setSelectedRecipientId(id); setCreateStep(editingDraftId ? "preview" : "content"); }}
+            onSelectRecipient={(id) => {
+              setSelectedRecipientId(id);
+              setCreateStep(editingDraftId ? "preview" : "content");
+              if (editingDraftId) triggerAutoSave({ recipientId: id });
+            }}
             isEditingDraft={!!editingDraftId}
+            autoSaveStatus={autoSaveStatus}
             onSelectType={handleSelectType}
             onGenerate={handleGenerate}
             onRegenerate={handleRegenerate}
             onSend={handleSend}
             onSaveDraft={handleSaveDraft}
             onBack={() => {
+              clearTimeout(autoSaveTimerRef.current);
               resetCreate();
               setTab(editingDraftId ? "drafts" : "create");
             }}
@@ -582,7 +624,7 @@ function CreatePuzzleView({
   step, selectedType, wordInput, setWordInput, phraseInput, setPhraseInput,
   clueEntries, setClueEntries, revealMessage, setRevealMessage,
   generatedData, sending, recipientName, recipients, selectedRecipientId,
-  onSelectRecipient, isEditingDraft,
+  onSelectRecipient, isEditingDraft, autoSaveStatus,
   onSelectType, onGenerate, onRegenerate, onSend, onSaveDraft, onBack, onEditContent, onChangeRecipient, onGoToPreview,
 }: {
   step: "type" | "recipient" | "content" | "preview";
@@ -602,6 +644,7 @@ function CreatePuzzleView({
   selectedRecipientId: string | null;
   onSelectRecipient: (id: string) => void;
   isEditingDraft: boolean;
+  autoSaveStatus?: "idle" | "saving" | "saved";
   onSelectType: (t: PuzzleType) => void;
   onGenerate: () => void;
   onRegenerate: () => void;
@@ -774,10 +817,18 @@ function CreatePuzzleView({
 
   // ─── Preview step ───
   return (
-    <div className="space-y-5 pb-6">
-      <button onClick={onBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-3 w-3" /> {isEditingDraft ? "Back to Drafts" : "Start over"}
-      </button>
+    <div className="space-y-5 pb-8">
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-3 w-3" /> {isEditingDraft ? "Back to Drafts" : "Start over"}
+        </button>
+        {isEditingDraft && autoSaveStatus && autoSaveStatus !== "idle" && (
+          <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            {autoSaveStatus === "saving" && <><Loader2 className="h-3 w-3 animate-spin" /> Saving…</>}
+            {autoSaveStatus === "saved" && <><CheckCircle2 className="h-3 w-3 text-primary" /> Saved</>}
+          </span>
+        )}
+      </div>
 
       <div className="space-y-1">
         <h3 className="text-sm font-medium">
@@ -806,12 +857,25 @@ function CreatePuzzleView({
         )}
       </div>
 
-      {revealMessage && (
+      {/* Editable reveal message for drafts */}
+      {isEditingDraft ? (
+        <div className="space-y-1.5">
+          <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+            Reveal Message
+          </label>
+          <Input
+            value={revealMessage}
+            onChange={e => setRevealMessage(e.target.value)}
+            placeholder="Message shown after solving (optional)"
+            maxLength={500}
+          />
+        </div>
+      ) : revealMessage ? (
         <div className="p-3 rounded-lg border border-border bg-card/50">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 font-semibold">Reveal Message</p>
           <p className="text-sm italic text-foreground">{revealMessage}</p>
         </div>
-      )}
+      ) : null}
 
       {/* Action buttons — always inline, always reachable */}
       <div className="space-y-2 pt-2 border-t border-border">
@@ -823,11 +887,13 @@ function CreatePuzzleView({
             <RefreshCw className="h-4 w-4 mr-2" /> Regenerate
           </Button>
         </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <Button variant="outline" onClick={onSaveDraft} disabled={sending}>
-            <Save className="h-4 w-4 mr-2" /> {isEditingDraft ? "Update Draft" : "Save Draft"}
-          </Button>
-          <Button onClick={onSend} disabled={sending}>
+        <div className={`grid gap-2 ${isEditingDraft ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"}`}>
+          {!isEditingDraft && (
+            <Button variant="outline" onClick={onSaveDraft} disabled={sending}>
+              <Save className="h-4 w-4 mr-2" /> Save Draft
+            </Button>
+          )}
+          <Button onClick={onSend} disabled={sending} className="w-full">
             <SendIcon className="h-4 w-4 mr-2" />
             {sending ? "Sending…" : recipientName ? `Send to ${recipientName}` : "Send Puzzle"}
           </Button>
