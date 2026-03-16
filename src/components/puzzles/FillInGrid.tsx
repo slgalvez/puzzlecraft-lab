@@ -2,6 +2,8 @@ import { useState, useRef } from "react";
 import type { FillInPuzzle } from "@/data/puzzles";
 import { cn } from "@/lib/utils";
 import PuzzleControls from "./PuzzleControls";
+import PuzzleTimer from "./PuzzleTimer";
+import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 
 interface Props {
@@ -25,6 +27,9 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
     Array.from({ length: gridSize }, () => Array(gridSize).fill(null))
   );
 
+  const timerKey = `fillin-${puzzle.id}`;
+  const timer = usePuzzleTimer(timerKey);
+
   const isBlack = (r: number, c: number) =>
     blackCells.some(([br, bc]) => br === r && bc === c);
 
@@ -35,6 +40,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   };
 
   const handleInput = (r: number, c: number, value: string) => {
+    if (timer.isSolved) return;
     const char = isNumbers
       ? value.replace(/[^0-9]/g, "").slice(-1)
       : value.toUpperCase().replace(/[^A-Z]/g, "").slice(-1);
@@ -80,6 +86,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
     setGrid(Array.from({ length: gridSize }, () => Array(gridSize).fill("")));
     setUsedEntries(new Set());
     setErrors(new Set());
+    timer.reset();
   };
 
   const handleCheck = () => {
@@ -93,9 +100,10 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
       }
     }
     setErrors(errs);
-    if (errs.size === 0 && filled)
-      toast({ title: "🎉 Congratulations!", description: "Puzzle solved correctly!" });
-    else if (errs.size > 0)
+    if (errs.size === 0 && filled) {
+      const { isNewBest } = timer.solve();
+      toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Puzzle solved correctly!" });
+    } else if (errs.size > 0)
       toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
     else
       toast({ title: "Keep going!", description: "No errors so far." });
@@ -104,6 +112,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
       <div className="flex-shrink-0">
+        <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
         <div
           className="inline-grid border-2 border-puzzle-border"
           style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}

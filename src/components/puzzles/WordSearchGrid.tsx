@@ -3,6 +3,8 @@ import { cn } from "@/lib/utils";
 import { generateWordSearch } from "@/lib/generators/wordSearch";
 import { WORDS } from "@/lib/wordList";
 import PuzzleControls from "./PuzzleControls";
+import PuzzleTimer from "./PuzzleTimer";
+import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import type { Difficulty } from "@/lib/puzzleTypes";
 
@@ -19,6 +21,9 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const [foundCells, setFoundCells] = useState<Set<string>>(new Set());
   const [startCell, setStartCell] = useState<[number, number] | null>(null);
   const [hoverCell, setHoverCell] = useState<[number, number] | null>(null);
+
+  const timerKey = `word-search-${seed}-${difficulty}`;
+  const timer = usePuzzleTimer(timerKey);
 
   const getPreviewCells = (): Set<string> => {
     if (!startCell || !hoverCell) return new Set();
@@ -41,6 +46,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const previewCells = getPreviewCells();
 
   const handleCellClick = (r: number, c: number) => {
+    if (timer.isSolved) return;
     if (!startCell) {
       setStartCell([r, c]);
     } else {
@@ -48,7 +54,6 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
       const dr = Math.sign(r - sr);
       const dc = Math.sign(c - sc);
 
-      // Must be straight line
       if (sr === r || sc === c || Math.abs(r - sr) === Math.abs(c - sc)) {
         const letters: string[] = [];
         const cells: string[] = [];
@@ -62,14 +67,16 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
         }
         const word = letters.join("");
         if (puzzle.words.includes(word) && !foundWords.has(word)) {
-          setFoundWords((prev) => new Set([...prev, word]));
+          const newFound = new Set([...foundWords, word]);
+          setFoundWords(newFound);
           setFoundCells((prev) => {
             const next = new Set(prev);
             cells.forEach((c) => next.add(c));
             return next;
           });
-          if (foundWords.size + 1 === puzzle.words.length) {
-            toast({ title: "🎉 Congratulations!", description: "All words found!" });
+          if (newFound.size === puzzle.words.length) {
+            const { isNewBest } = timer.solve();
+            toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "All words found!" });
           }
         }
       }
@@ -81,6 +88,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     setFoundWords(new Set());
     setFoundCells(new Set());
     setStartCell(null);
+    timer.reset();
   };
 
   const handleCheck = () => {
@@ -97,6 +105,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
       <div className="flex-shrink-0">
+        <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
         <p className="mb-2 text-xs text-muted-foreground">
           Click a start letter, then click the end letter to select a word.
         </p>
