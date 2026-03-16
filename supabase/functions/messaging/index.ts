@@ -301,6 +301,30 @@ Deno.serve(async (req) => {
       return json({ user: newUser });
     }
 
+    // ─── ADMIN: RESET PASSWORD ───
+    if (action === "reset-password") {
+      if (!isAdmin) return err("Access denied");
+      const { authorized_user_id, new_password } = body;
+      if (!authorized_user_id || !new_password || typeof new_password !== "string") return err("Missing fields", 400);
+      if (new_password.length < 4) return err("Password must be at least 4 characters", 400);
+
+      const encoder = new TextEncoder();
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const keyMaterial = await crypto.subtle.importKey("raw", encoder.encode(new_password), "PBKDF2", false, ["deriveBits"]);
+      const hash = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" }, keyMaterial, 256);
+      const saltB64 = btoa(String.fromCharCode(...salt));
+      const hashB64 = btoa(String.fromCharCode(...new Uint8Array(hash)));
+      const password_hash = `pbkdf2:100000:${saltB64}:${hashB64}`;
+
+      const { error: updateErr } = await sb
+        .from("authorized_users")
+        .update({ password_hash })
+        .eq("id", authorized_user_id);
+
+      if (updateErr) return err("Could not reset password");
+      return json({ ok: true });
+    }
+
     return err("Unknown action", 400);
   } catch (e) {
     console.error("Messaging error:", e);

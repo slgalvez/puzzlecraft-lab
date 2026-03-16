@@ -4,7 +4,7 @@ import { invokeMessaging } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { UserPlus } from "lucide-react";
+import { UserPlus, KeyRound } from "lucide-react";
 
 interface UserInfo {
   id: string;
@@ -30,6 +30,12 @@ const AdminUsers = () => {
   const [addError, setAddError] = useState("");
   const [adding, setAdding] = useState(false);
   const [addSuccess, setAddSuccess] = useState("");
+
+  // Reset password
+  const [resetUserId, setResetUserId] = useState<string | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetting, setResetting] = useState(false);
+  const [resetMsg, setResetMsg] = useState("");
 
   const fetchUsers = useCallback(async () => {
     if (!token) return;
@@ -96,6 +102,32 @@ const AdminUsers = () => {
       setAddError(err.message || "Could not add user");
     } finally {
       setAdding(false);
+    }
+  };
+
+  const handleResetPassword = async (userId: string) => {
+    if (!token || !resetPassword) return;
+    if (resetPassword.length < 4) {
+      setResetMsg("Password must be at least 4 characters");
+      return;
+    }
+    setResetting(true);
+    setResetMsg("");
+    try {
+      await invokeMessaging("reset-password", token, {
+        authorized_user_id: userId,
+        new_password: resetPassword,
+      });
+      setResetMsg("Password reset successfully");
+      setResetPassword("");
+      setTimeout(() => {
+        setResetUserId(null);
+        setResetMsg("");
+      }, 2000);
+    } catch (err: any) {
+      setResetMsg(err.message || "Could not reset password");
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -173,31 +205,73 @@ const AdminUsers = () => {
           ) : (
             <div className="divide-y divide-border">
               {users.map((u) => (
-                <div key={u.id} className="flex items-center justify-between px-5 py-4">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-foreground">
-                        {u.first_name} {u.last_name}
+                <div key={u.id} className="px-5 py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-foreground">
+                          {u.first_name} {u.last_name}
+                        </p>
+                        {u.role === "admin" && (
+                          <span className="text-[10px] uppercase tracking-wider text-primary font-medium">Admin</span>
+                        )}
+                      </div>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {u.is_active ? "Active" : "Deactivated"} · Joined{" "}
+                        {new Date(u.created_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
                       </p>
-                      {u.role === "admin" && (
-                        <span className="text-[10px] uppercase tracking-wider text-primary font-medium">Admin</span>
+                    </div>
+                    {u.role !== "admin" && (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs text-muted-foreground hover:text-foreground"
+                          onClick={() => {
+                            setResetUserId(resetUserId === u.id ? null : u.id);
+                            setResetPassword("");
+                            setResetMsg("");
+                          }}
+                        >
+                          <KeyRound size={12} className="mr-1" />
+                          Reset
+                        </Button>
+                        <Button
+                          variant={u.is_active ? "outline" : "default"}
+                          size="sm"
+                          className="text-xs border-border"
+                          disabled={toggling === u.id}
+                          onClick={() => handleToggle(u.id, u.is_active)}
+                        >
+                          {u.is_active ? "Deactivate" : "Activate"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  {resetUserId === u.id && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <Input
+                        type="text"
+                        value={resetPassword}
+                        onChange={(e) => setResetPassword(e.target.value)}
+                        placeholder="New password"
+                        className="bg-secondary border-border text-foreground font-mono text-xs h-8 max-w-[200px]"
+                        maxLength={200}
+                      />
+                      <Button
+                        size="sm"
+                        className="h-8 text-xs"
+                        disabled={resetting || !resetPassword}
+                        onClick={() => handleResetPassword(u.id)}
+                      >
+                        {resetting ? "Saving..." : "Save"}
+                      </Button>
+                      {resetMsg && (
+                        <span className={`text-xs ${resetMsg.includes("success") ? "text-primary" : "text-destructive"}`}>
+                          {resetMsg}
+                        </span>
                       )}
                     </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {u.is_active ? "Active" : "Deactivated"} · Joined{" "}
-                      {new Date(u.created_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
-                    </p>
-                  </div>
-                  {u.role !== "admin" && (
-                    <Button
-                      variant={u.is_active ? "outline" : "default"}
-                      size="sm"
-                      className="text-xs border-border"
-                      disabled={toggling === u.id}
-                      onClick={() => handleToggle(u.id, u.is_active)}
-                    >
-                      {u.is_active ? "Deactivate" : "Activate"}
-                    </Button>
                   )}
                 </div>
               ))}
