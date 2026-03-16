@@ -499,6 +499,63 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // ─── UPDATE DISPLAY NAME ───
+    if (action === "update-name") {
+      const { first_name, last_name } = body;
+      if (!first_name || !last_name || typeof first_name !== "string" || typeof last_name !== "string") return err("Invalid fields", 400);
+      const fn = first_name.trim();
+      const ln = last_name.trim();
+      if (fn.length === 0 || fn.length > 100 || ln.length === 0 || ln.length > 100) return err("Name too long or empty", 400);
+
+      // Get authorized_user_id from profile
+      const { data: profile } = await sb.from("profiles").select("authorized_user_id").eq("id", profileId).single();
+      if (!profile) return err("Profile not found");
+
+      // Update both tables
+      await sb.from("profiles").update({ first_name: fn, last_name: ln }).eq("id", profileId);
+      await sb.from("authorized_users").update({ first_name: fn, last_name: ln }).eq("id", profile.authorized_user_id);
+
+      return json({ ok: true, first_name: fn, last_name: ln });
+    }
+
+    // ─── CHANGE PASSWORD ───
+    if (action === "change-password") {
+      const { current_password, new_password } = body;
+      if (!current_password || !new_password || typeof current_password !== "string" || typeof new_password !== "string") return err("Invalid fields", 400);
+      if (new_password.length < 4) return err("Password must be at least 4 characters", 400);
+      if (new_password.length > 200) return err("Password too long", 400);
+
+      // Get authorized_user_id from profile
+      const { data: profile } = await sb.from("profiles").select("authorized_user_id").eq("id", profileId).single();
+      if (!profile) return err("Profile not found");
+
+      // Verify current password
+      const { data: authUser } = await sb.from("authorized_users").select("password_hash").eq("id", profile.authorized_user_id).single();
+      if (!authUser) return err("User not found");
+
+      // Verify old password using same logic as login
+      const parts = authUser.password_hash.split(":");
+      if (parts[0] !== "pbkdf2" || parts.length !== 4) return err("Password verification failed");
+      const iterations = parseInt(parts[1]);
+      const salt = Uint8Array.from(atob(parts[2]), c => c.charCodeAt(0));
+      const storedHash = atob(parts[3]);
+      const encoder = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey("raw", encoder.encode(current_password), "PBKDF2", false, ["deriveBits"]);
+      const hash = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations, hash: "SHA-256" }, keyMaterial, 256);
+      if (String.fromCharCode(...new Uint8Array(hash)) !== storedHash) return err("Current password is incorrect", 401);
+
+      // Hash new password
+      const newSalt = crypto.getRandomValues(new Uint8Array(16));
+      const newKeyMaterial = await crypto.subtle.importKey("raw", encoder.encode(new_password), "PBKDF2", false, ["deriveBits"]);
+      const newHash = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: newSalt, iterations: 100000, hash: "SHA-256" }, newKeyMaterial, 256);
+      const saltB64 = btoa(String.fromCharCode(...newSalt));
+      const hashB64 = btoa(String.fromCharCode(...new Uint8Array(newHash)));
+      const password_hash = `pbkdf2:100000:${saltB64}:${hashB64}`;
+
+      await sb.from("authorized_users").update({ password_hash }).eq("id", profile.authorized_user_id);
+      return json({ ok: true });
+    }
+
     // ─── CLEANUP EXPIRED MESSAGES ───
     if (action === "cleanup-expired") {
       if (!isAdmin) return err("Access denied");
