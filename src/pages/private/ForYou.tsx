@@ -207,7 +207,7 @@ const ForYou = () => {
   }
 
   return (
-    <PrivateLayout title="For You">
+    <PrivateLayout title="Puzzles for You">
       <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-6">
         {/* Tabs */}
         <div className="flex gap-2 border-b border-border pb-2">
