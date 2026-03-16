@@ -124,7 +124,7 @@ const DailyPuzzle = () => {
               )}
               {completion && (
                 <div className="flex items-center gap-1.5 rounded-lg border bg-card px-3 py-2">
-                  <CheckCircle2 size={16} className="text-green-600" />
+                  <CheckCircle2 size={16} className="text-primary" />
                   <span className="text-sm font-medium text-foreground">
                     Solved in {formatTime(completion.time)}
                   </span>
