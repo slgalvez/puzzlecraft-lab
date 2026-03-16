@@ -259,6 +259,7 @@ export type Database = {
           id: string
           last_name: string
           role: string
+          session_version: number
         }
         Insert: {
           activity_cleared_at?: string | null
@@ -269,6 +270,7 @@ export type Database = {
           id?: string
           last_name: string
           role?: string
+          session_version?: number
         }
         Update: {
           activity_cleared_at?: string | null
@@ -279,6 +281,7 @@ export type Database = {
           id?: string
           last_name?: string
           role?: string
+          session_version?: number
         }
         Relationships: [
           {
