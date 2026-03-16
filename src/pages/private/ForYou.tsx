@@ -254,7 +254,12 @@ const ForYou = () => {
     setClueEntries([{ answer: "", clue: "" }]);
     setRevealMessage("");
     setEditingDraftId(null);
-    setEditingDraftRecipientName(null);
+    // Reset recipient to default (first if only one)
+    if (recipients.length === 1) {
+      setSelectedRecipientId(recipients[0].id);
+    } else {
+      setSelectedRecipientId(null);
+    }
   };
 
   const handleDelete = async (puzzleId: string) => {
