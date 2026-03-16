@@ -26,7 +26,7 @@ interface ConversationInfo {
   disappearing_duration: string;
 }
 
-const DURATION_LABELS: Record<string, string> = { "1h": "1 hour", "24h": "24 hours", "7d": "7 days" };
+const DURATION_LABELS: Record<string, string> = { "view-once": "View once", "1h": "1 hour", "24h": "24 hours", "7d": "7 days" };
 
 const AdminConversationView = () => {
   const { conversationId } = useParams<{ conversationId: string }>();
