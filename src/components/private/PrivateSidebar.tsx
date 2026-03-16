@@ -40,7 +40,7 @@ export function PrivateSidebar() {
   const navItems = isAdmin ? adminNav : userNav;
 
   const fetchUnread = useCallback(async () => {
-    if (!token || !isAdmin) return;
+    if (!token) return;
     try {
       const data = await invokeMessaging("list-conversations", token);
       const total = (data.conversations || []).reduce(
