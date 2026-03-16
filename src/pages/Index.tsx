@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Grid3X3, Hash, Type, Search, Plus, Palette, Lock, Calculator, Flame, CheckCircle2, Calendar, Trophy, Clock, Target, Infinity } from "lucide-react";
+import { ArrowRight, Grid3X3, Hash, Type, Search, Plus, Palette, Lock, Calculator, Flame, CheckCircle2, Calendar, Trophy, Clock, Target, Infinity, Dices } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +10,9 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getTodaysChallenge, getDailyCompletion, getDailyStreak } from "@/lib/dailyChallenge";
 import { getProgressStats } from "@/lib/progressTracker";
-import { CATEGORY_INFO } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
+import { randomSeed } from "@/lib/seededRandom";
 
 const Index = () => {
   const featured = allPuzzles.slice(0, 3);
@@ -122,6 +123,20 @@ const Index = () => {
                   <Infinity size={16} />
                   Endless Mode
                 </Link>
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="gap-1.5"
+                onClick={() => {
+                  const types = Object.keys(CATEGORY_INFO) as PuzzleCategory[];
+                  const type = types[Math.floor(Math.random() * types.length)];
+                  const seed = randomSeed();
+                  navigate(`/generate/${type}?seed=${seed}`);
+                }}
+              >
+                <Dices size={16} />
+                Surprise Me
               </Button>
             </div>
 
