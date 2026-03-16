@@ -76,6 +76,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
   }, []);
 
+  const updateUser = useCallback((updates: Partial<Pick<PrivateUser, "first_name" | "last_name">>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...updates };
+      // Update stored session too
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          parsed.user = updated;
+          localStorage.setItem(SESSION_KEY, JSON.stringify(parsed));
+        } catch {}
+      }
+      return updated;
+    });
+  }, []);
+
   return (
     <AuthContext.Provider value={{ user, loading, token, signIn, signOut }}>
       {children}
