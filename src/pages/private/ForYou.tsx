@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Gift, Send as SendIcon, Check, ArrowLeft, Trash2, RefreshCw, Eye, Pencil, FileText, Save } from "lucide-react";
+import { Plus, Puzzle, Send as SendIcon, Check, ArrowLeft, Trash2, RefreshCw, Eye, Pencil, FileText, Save } from "lucide-react";
 import {
   generateCustomFillIn,
   generateCustomCryptogram,
