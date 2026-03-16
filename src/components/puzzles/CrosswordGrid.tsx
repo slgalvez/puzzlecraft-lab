@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import PuzzleControls from "./PuzzleControls";
 import PuzzleTimer from "./PuzzleTimer";
 import MobileLetterInput from "./MobileLetterInput";
+import type { MobileLetterInputHandle } from "./MobileLetterInput";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
