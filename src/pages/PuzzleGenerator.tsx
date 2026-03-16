@@ -285,12 +285,27 @@ const PuzzleGenerator = () => {
 
           {/* Generate + seed display */}
           <div className="flex items-center justify-between pt-1">
-            <p className="text-xs text-muted-foreground">
-              Seed: <span className="font-mono text-foreground">{seed}</span>
-            </p>
+            <div>
+              <p className="text-xs text-muted-foreground">
+                Seed: <span className="font-mono text-foreground">{seed}</span>
+              </p>
+              {randomPool && randomPool.length > 1 && (
+                <p className="text-[10px] text-primary/70 mt-0.5 flex items-center gap-1">
+                  <Dices size={10} />
+                  Random from: {randomPool.map(t => CATEGORY_INFO[t]?.name).join(", ")}
+                  <button
+                    onClick={() => setRandomPool(null)}
+                    className="ml-1 text-muted-foreground hover:text-foreground"
+                    title="Exit random mode"
+                  >
+                    ✕
+                  </button>
+                </p>
+              )}
+            </div>
             <Button onClick={handleNewPuzzle} size="sm" className="gap-1.5">
               <RefreshCw size={14} />
-              Generate Puzzle
+              {randomPool && randomPool.length > 1 ? "Random Puzzle" : "Generate Puzzle"}
             </Button>
           </div>
         </div>
