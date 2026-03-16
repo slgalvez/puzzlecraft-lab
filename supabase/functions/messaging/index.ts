@@ -93,6 +93,15 @@ Deno.serve(async (req) => {
         conv = newConv;
       }
 
+      // Clean up read view-once messages from the other party
+      await sb
+        .from("messages")
+        .delete()
+        .eq("conversation_id", conv.id)
+        .eq("is_disappearing", true)
+        .neq("sender_profile_id", profileId)
+        .not("read_at", "is", null);
+
       // Get messages, filtering out expired ones
       const { data: messages } = await sb
         .from("messages")
