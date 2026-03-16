@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Check, RotateCcw } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobileLetterInput from "@/components/puzzles/MobileLetterInput";
+import type { MobileLetterInputHandle } from "@/components/puzzles/MobileLetterInput";
 
 // ─── Types ───
 
