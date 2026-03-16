@@ -1,5 +1,6 @@
 import { useLocation } from "react-router-dom";
-import { LayoutDashboard, List, Settings } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Users, Settings } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -12,9 +13,14 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const navItems = [
+const adminNav = [
   { title: "Overview", url: "/p", icon: LayoutDashboard },
-  { title: "Threads", url: "/p/threads", icon: List },
+  { title: "Users", url: "/p/users", icon: Users },
+  { title: "Settings", url: "/p/settings", icon: Settings },
+];
+
+const userNav = [
+  { title: "Conversation", url: "/p/conversation", icon: MessageSquare },
   { title: "Settings", url: "/p/settings", icon: Settings },
 ];
 
@@ -22,8 +28,14 @@ export function PrivateSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const isActive = (path: string) =>
-    path === "/p" ? location.pathname === "/p" : location.pathname.startsWith(path);
+  const { user } = useAuth();
+
+  const navItems = user?.role === "admin" ? adminNav : userNav;
+
+  const isActive = (path: string) => {
+    if (path === "/p") return location.pathname === "/p";
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">

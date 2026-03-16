@@ -14,29 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
-      approved_users: {
+      access_logs: {
         Row: {
           created_at: string
-          email: string
+          event_type: string
           id: string
+          profile_id: string | null
+          success: boolean
         }
         Insert: {
           created_at?: string
-          email: string
+          event_type: string
           id?: string
+          profile_id?: string | null
+          success?: boolean
         }
         Update: {
           created_at?: string
-          email?: string
+          event_type?: string
           id?: string
+          profile_id?: string | null
+          success?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "access_logs_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       authorized_users: {
         Row: {
           created_at: string
           first_name: string
           id: string
+          is_active: boolean
           last_name: string
           password_hash: string
         }
@@ -44,6 +59,7 @@ export type Database = {
           created_at?: string
           first_name: string
           id?: string
+          is_active?: boolean
           last_name: string
           password_hash: string
         }
@@ -51,44 +67,131 @@ export type Database = {
           created_at?: string
           first_name?: string
           id?: string
+          is_active?: boolean
           last_name?: string
           password_hash?: string
         }
         Relationships: []
       }
-      profiles: {
+      conversations: {
         Row: {
+          admin_profile_id: string
           created_at: string
-          display_name: string | null
-          email: string | null
           id: string
-          updated_at: string
-          user_id: string
+          user_profile_id: string
         }
         Insert: {
+          admin_profile_id: string
           created_at?: string
-          display_name?: string | null
-          email?: string | null
           id?: string
-          updated_at?: string
-          user_id: string
+          user_profile_id: string
         }
         Update: {
+          admin_profile_id?: string
           created_at?: string
-          display_name?: string | null
-          email?: string | null
           id?: string
-          updated_at?: string
-          user_id?: string
+          user_profile_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "conversations_admin_profile_id_fkey"
+            columns: ["admin_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_user_profile_id_fkey"
+            columns: ["user_profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          read_at: string | null
+          sender_profile_id: string
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_profile_id: string
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_profile_id_fkey"
+            columns: ["sender_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          authorized_user_id: string
+          created_at: string
+          first_name: string
+          id: string
+          last_name: string
+          role: string
+        }
+        Insert: {
+          authorized_user_id: string
+          created_at?: string
+          first_name: string
+          id?: string
+          last_name: string
+          role?: string
+        }
+        Update: {
+          authorized_user_id?: string
+          created_at?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_authorized_user_id_fkey"
+            columns: ["authorized_user_id"]
+            isOneToOne: true
+            referencedRelation: "authorized_users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      is_user_approved: { Args: { check_email: string }; Returns: boolean }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
