@@ -5,7 +5,7 @@ import { invokeMessaging } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Send, Timer, Check, CheckCheck } from "lucide-react";
+import { ArrowLeft, Send, Timer, Check, CheckCheck, Eye } from "lucide-react";
 
 interface Message {
   id: string;
