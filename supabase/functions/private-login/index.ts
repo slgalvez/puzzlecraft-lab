@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
     // Look up profile
     const { data: profile, error: profileErr } = await supabase
       .from("profiles")
-      .select("id, first_name, last_name, role")
+      .select("id, first_name, last_name, role, focus_loss_protection")
       .eq("authorized_user_id", authUser.id)
       .single();
 
@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       token,
-      user: { id: profile.id, first_name: profile.first_name, last_name: profile.last_name, role: profile.role },
+      user: { id: profile.id, first_name: profile.first_name, last_name: profile.last_name, role: profile.role, focus_loss_protection: profile.focus_loss_protection },
     }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch {
     return deny();

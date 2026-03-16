@@ -6,6 +6,7 @@ export interface PrivateUser {
   first_name: string;
   last_name: string;
   role: "admin" | "user";
+  focus_loss_protection: boolean;
 }
 
 interface AuthContextType {

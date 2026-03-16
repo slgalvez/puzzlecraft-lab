@@ -6,7 +6,7 @@ import PrivateLayout from "@/components/private/PrivateLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { getFocusLossEnabled, setFocusLossEnabled } from "@/lib/focusLossSettings";
+import { setFocusLossEnabled } from "@/lib/focusLossSettings";
 
 const PrivateSettings = () => {
   const { user, token, updateUser, signOut } = useAuth();
@@ -24,7 +24,7 @@ const PrivateSettings = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMsg, setPwMsg] = useState("");
-  const [focusLossOn, setFocusLossOn] = useState(() => getFocusLossEnabled());
+  const [focusLossOn, setFocusLossOn] = useState(() => user?.focus_loss_protection !== false);
 
   const handleSessionExpired = useCallback(() => {
     signOut();
@@ -207,7 +207,8 @@ const PrivateSettings = () => {
               checked={focusLossOn}
               onCheckedChange={(val) => {
                 setFocusLossOn(val);
-                setFocusLossEnabled(val);
+                if (token) setFocusLossEnabled(val, token);
+                if (updateUser) updateUser({ focus_loss_protection: val } as any);
               }}
             />
           </div>

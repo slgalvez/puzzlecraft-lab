@@ -912,6 +912,22 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // ─── GET SETTINGS ───
+    if (action === "get-settings") {
+      const { data: profile } = await sb.from("profiles").select("focus_loss_protection").eq("id", profileId).single();
+      if (!profile) return err("Profile not found");
+      return json({ focus_loss_protection: profile.focus_loss_protection });
+    }
+
+    // ─── UPDATE SETTINGS ───
+    if (action === "update-settings") {
+      const { focus_loss_protection } = body;
+      if (typeof focus_loss_protection !== "boolean") return err("Invalid params", 400);
+      const { error: updateErr } = await sb.from("profiles").update({ focus_loss_protection }).eq("id", profileId);
+      if (updateErr) return err("Could not update settings");
+      return json({ ok: true, focus_loss_protection });
+    }
+
     return err("Unknown action", 400);
   } catch (e) {
     console.error("Messaging error:", e);

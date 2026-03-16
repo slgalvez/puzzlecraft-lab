@@ -251,6 +251,7 @@ export type Database = {
           authorized_user_id: string
           created_at: string
           first_name: string
+          focus_loss_protection: boolean
           id: string
           last_name: string
           role: string
@@ -259,6 +260,7 @@ export type Database = {
           authorized_user_id: string
           created_at?: string
           first_name: string
+          focus_loss_protection?: boolean
           id?: string
           last_name: string
           role?: string
@@ -267,6 +269,7 @@ export type Database = {
           authorized_user_id?: string
           created_at?: string
           first_name?: string
+          focus_loss_protection?: boolean
           id?: string
           last_name?: string
           role?: string
