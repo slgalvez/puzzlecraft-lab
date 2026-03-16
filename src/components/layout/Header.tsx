@@ -22,7 +22,7 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-surface-elevated/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b bg-surface-elevated/80 backdrop-blur-md" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="font-display text-2xl font-bold tracking-tight text-foreground">
           Puzzlecraft
