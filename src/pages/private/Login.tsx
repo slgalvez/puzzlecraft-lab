@@ -24,7 +24,7 @@ function getAccessGrant(): boolean {
 }
 
 export default function LoginPage() {
-  const { user, loading, signIn } = useAuth();
+  const { user, loading, signIn, signOut } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
