@@ -76,7 +76,10 @@ Deno.serve(async (req) => {
           .insert({ user_profile_id: profileId, admin_profile_id: admin.id })
           .select("id, admin_profile_id")
           .single();
-        if (convErr) return err("Could not create conversation");
+        if (convErr) {
+          console.error("Create conversation error:", JSON.stringify(convErr));
+          return err("Could not create conversation");
+        }
         conv = newConv;
       }
 
