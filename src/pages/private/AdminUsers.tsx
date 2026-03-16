@@ -4,7 +4,7 @@ import { invokeMessaging } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { UserPlus, KeyRound } from "lucide-react";
+import { UserPlus, KeyRound, Trash2 } from "lucide-react";
 
 interface UserInfo {
   id: string;
@@ -21,6 +21,8 @@ const AdminUsers = () => {
   const [users, setUsers] = useState<UserInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   // Add user form
   const [showForm, setShowForm] = useState(false);
@@ -245,6 +247,15 @@ const AdminUsers = () => {
                         >
                           {u.is_active ? "Deactivate" : "Activate"}
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                          disabled={deleting === u.id}
+                          onClick={() => setConfirmDelete(confirmDelete === u.id ? null : u.id)}
+                        >
+                          <Trash2 size={12} />
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -271,6 +282,42 @@ const AdminUsers = () => {
                           {resetMsg}
                         </span>
                       )}
+                    </div>
+                  )}
+                  {confirmDelete === u.id && (
+                    <div className="mt-3 flex items-center gap-2 p-2.5 rounded-md bg-destructive/5 border border-destructive/20">
+                      <p className="text-xs text-destructive flex-1">
+                        Permanently delete {u.first_name} {u.last_name}? This removes all their messages and cannot be undone.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs border-border"
+                        onClick={() => setConfirmDelete(null)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="h-7 text-xs"
+                        disabled={deleting === u.id}
+                        onClick={async () => {
+                          if (!token) return;
+                          setDeleting(u.id);
+                          try {
+                            await invokeMessaging("delete-user", token, { authorized_user_id: u.id });
+                            setUsers((prev) => prev.filter((x) => x.id !== u.id));
+                            setConfirmDelete(null);
+                          } catch {
+                            // silent
+                          } finally {
+                            setDeleting(null);
+                          }
+                        }}
+                      >
+                        {deleting === u.id ? "Deleting..." : "Delete"}
+                      </Button>
                     </div>
                   )}
                 </div>
