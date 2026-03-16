@@ -271,6 +271,11 @@ const PuzzleGenerator = () => {
           </div>
         </div>
 
+        {/* Random Puzzle Generator */}
+        <div className="mb-8">
+          <RandomPuzzleGenerator compact />
+        </div>
+
         {/* Puzzle */}
         <div className="min-h-[300px]">{renderPuzzle()}</div>
       </div>
