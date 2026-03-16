@@ -180,7 +180,7 @@ const UserOverview = () => {
             className="h-auto py-3 flex flex-col gap-1.5 text-xs"
             onClick={() => navigate("/p/for-you")}
           >
-            <Gift size={16} className="text-primary" />
+            <Puzzle size={16} className="text-primary" />
             <span>Puzzles for You</span>
             {unsolved.length > 0 && (
               <span className="text-[10px] text-primary font-medium">{unsolved.length} unsolved</span>

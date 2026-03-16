@@ -421,7 +421,7 @@ function PuzzleList({
   if (puzzles.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        <Gift className="mx-auto h-10 w-10 mb-3 opacity-40" />
+        <Puzzle className="mx-auto h-10 w-10 mb-3 opacity-40" />
         <p className="text-sm">{emptyMessage}</p>
       </div>
     );
