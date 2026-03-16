@@ -124,6 +124,20 @@ const Index = () => {
                   Endless Mode
                 </Link>
               </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="gap-1.5"
+                onClick={() => {
+                  const types = Object.keys(CATEGORY_INFO) as PuzzleCategory[];
+                  const type = types[Math.floor(Math.random() * types.length)];
+                  const seed = randomSeed();
+                  navigate(`/generate/${type}?seed=${seed}`);
+                }}
+              >
+                <Dices size={16} />
+                Surprise Me
+              </Button>
             </div>
 
             {/* Puzzle code input */}
