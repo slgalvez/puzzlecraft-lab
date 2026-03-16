@@ -248,6 +248,7 @@ const ForYou = () => {
             loading={loading}
             emptyMessage="No puzzles sent yet"
             showRecipient
+            onDelete={handleDelete}
           />
         )}
 
