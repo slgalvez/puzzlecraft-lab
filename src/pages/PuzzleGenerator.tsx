@@ -35,6 +35,7 @@ const PuzzleGenerator = () => {
   const [seed, setSeed] = useState(() => initialSeed ? parseInt(initialSeed) || randomSeed() : randomSeed());
   const [seedInput, setSeedInput] = useState(initialSeed || "");
   const [puzzleKey, setPuzzleKey] = useState(0);
+  const { toast } = useToast();
 
   if (!info) {
     return (
