@@ -3,6 +3,7 @@
  * to the main Puzzlecraft site puzzle components.
  */
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import GroupedEntryList from "@/components/puzzles/GroupedEntryList";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
