@@ -105,6 +105,32 @@ const AdminUsers = () => {
     }
   };
 
+  const handleResetPassword = async (userId: string) => {
+    if (!token || !resetPassword) return;
+    if (resetPassword.length < 4) {
+      setResetMsg("Password must be at least 4 characters");
+      return;
+    }
+    setResetting(true);
+    setResetMsg("");
+    try {
+      await invokeMessaging("reset-password", token, {
+        authorized_user_id: userId,
+        new_password: resetPassword,
+      });
+      setResetMsg("Password reset successfully");
+      setResetPassword("");
+      setTimeout(() => {
+        setResetUserId(null);
+        setResetMsg("");
+      }, 2000);
+    } catch (err: any) {
+      setResetMsg(err.message || "Could not reset password");
+    } finally {
+      setResetting(false);
+    }
+  };
+
   return (
     <PrivateLayout title="Users">
       <div className="p-6 space-y-6">
