@@ -24,7 +24,7 @@ const adminNav = [
 ];
 
 const userNav = [
-  { title: "Conversation", url: "/p/conversation", icon: MessageSquare },
+  { title: "Conversation", url: "/p/conversation", icon: MessageSquare, badgeKey: "unread" as const },
   { title: "Settings", url: "/p/settings", icon: Settings },
 ];
 
@@ -40,14 +40,19 @@ export function PrivateSidebar() {
   const navItems = isAdmin ? adminNav : userNav;
 
   const fetchUnread = useCallback(async () => {
-    if (!token || !isAdmin) return;
+    if (!token) return;
     try {
-      const data = await invokeMessaging("list-conversations", token);
-      const total = (data.conversations || []).reduce(
-        (sum: number, c: { unread_count: number }) => sum + c.unread_count,
-        0
-      );
-      setUnreadCount(total);
+      if (isAdmin) {
+        const data = await invokeMessaging("list-conversations", token);
+        const total = (data.conversations || []).reduce(
+          (sum: number, c: { unread_count: number }) => sum + c.unread_count,
+          0
+        );
+        setUnreadCount(total);
+      } else {
+        const data = await invokeMessaging("get-my-conversation", token);
+        setUnreadCount(data.unread_count || 0);
+      }
     } catch {
       // silent
     }
