@@ -100,7 +100,7 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
         <div className="min-h-screen flex w-full">
           <PrivateSidebar />
           <div className="flex-1 flex flex-col min-w-0">
-            <header className="h-14 flex items-center justify-between border-b border-border px-4 shrink-0">
+            <header className="flex items-center justify-between border-b border-border px-4 shrink-0 pt-[env(safe-area-inset-top,0px)]" style={{ minHeight: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}>
               <div className="flex items-center gap-3">
                 <SidebarTrigger />
                 {title && (
