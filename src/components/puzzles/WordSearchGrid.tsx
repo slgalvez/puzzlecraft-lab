@@ -168,7 +168,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
-      <div className="flex-shrink-0" ref={containerRef} tabIndex={0} onKeyDown={handleKeyDown} className2="outline-none">
+      <div className="flex-shrink-0 outline-none" ref={containerRef} tabIndex={0} onKeyDown={handleKeyDown}>
         <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
 
         {isMobile ? (
