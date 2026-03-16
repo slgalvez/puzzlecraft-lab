@@ -50,10 +50,9 @@ const Index = () => {
       return;
     }
 
-    // Use as a generic seed for sudoku (most common)
-    const seed = /^\d+$/.test(code) ? parseInt(code) : seedFromString(code);
-    if (seed > 0) {
-      navigate(`/generate/sudoku?seed=${seed}`);
+    // If it's a pure number, treat as a sudoku seed
+    if (/^\d+$/.test(code)) {
+      navigate(`/generate/sudoku?seed=${parseInt(code)}`);
       return;
     }
 
