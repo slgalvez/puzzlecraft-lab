@@ -10,6 +10,7 @@ import DailyPuzzle from "./pages/DailyPuzzle";
 import PlayPuzzle from "./pages/PlayPuzzle";
 import About from "./pages/About";
 import Help from "./pages/Help";
+import Stats from "./pages/Stats";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
