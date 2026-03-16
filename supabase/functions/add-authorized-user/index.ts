@@ -6,7 +6,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// PBKDF2-based password hashing using Web Crypto API
 async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
   const salt = crypto.getRandomValues(new Uint8Array(16));
@@ -28,6 +27,19 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Only allow calls with service role key
+    const authHeader = req.headers.get("authorization") || "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    const token = authHeader.replace("Bearer ", "");
+    // Reject if using anon key or no auth
+    if (!token || token === anonKey) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { first_name, last_name, password } = await req.json();
 
     if (!first_name || !last_name || !password) {
@@ -40,7 +52,6 @@ Deno.serve(async (req) => {
     const password_hash = await hashPassword(password);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const { data, error } = await supabase
