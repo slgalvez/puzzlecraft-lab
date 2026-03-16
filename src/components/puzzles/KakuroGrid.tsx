@@ -277,7 +277,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
 
             if (black) {
               return (
-                <div key={`${r}-${c}`} className="relative w-10 h-10 sm:w-12 sm:h-12 bg-puzzle-cell-black border border-puzzle-border overflow-hidden">
+                <div key={`${r}-${c}`} className="relative w-8 h-8 sm:w-12 sm:h-12 bg-puzzle-cell-black border border-puzzle-border overflow-hidden">
                   {clue && (
                     <>
                       <div className="absolute inset-0" style={{
