@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { haptic } from "@/lib/haptic";
 
 interface Props {
   onNumber: (n: number) => void;
@@ -20,7 +21,7 @@ const MobileNumberPad = ({ onNumber, onDelete, visible, maxDigit = 9 }: Props) =
             "h-11 rounded-lg border border-border bg-card text-foreground font-semibold text-lg",
             "active:bg-puzzle-cell-active active:scale-95 transition-all touch-manipulation"
           )}
-          onClick={() => onNumber(i + 1)}
+          onClick={() => { haptic(); onNumber(i + 1); }}
         >
           {i + 1}
         </button>
@@ -31,7 +32,7 @@ const MobileNumberPad = ({ onNumber, onDelete, visible, maxDigit = 9 }: Props) =
           "h-11 rounded-lg border border-border bg-card text-muted-foreground font-semibold text-sm",
           "active:bg-destructive/10 active:scale-95 transition-all touch-manipulation"
         )}
-        onClick={onDelete}
+        onClick={() => { haptic(); onDelete(); }}
       >
         ⌫
       </button>

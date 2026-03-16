@@ -7,6 +7,7 @@ import MobileNumberPad from "./MobileNumberPad";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { haptic } from "@/lib/haptic";
 import type { Difficulty } from "@/lib/puzzleTypes";
 
 interface Props {
@@ -202,6 +203,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
 
   const handleCellClick = (r: number, c: number) => {
     if (isBlack[r][c]) return;
+    if (isMobile) haptic();
     if (activeCell && activeCell[0] === r && activeCell[1] === c) {
       const hasAcross = cellHasDirection(r, c, "across");
       const hasDown = cellHasDirection(r, c, "down");
@@ -297,7 +299,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
               <div
                 key={`${r}-${c}`}
                 className={cn(
-                  "relative w-8 h-8 sm:w-12 sm:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation",
+                  "relative w-8 h-8 sm:w-12 sm:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
                   hasError && "bg-puzzle-cell-error",
                   !hasError && isActive && "bg-puzzle-cell-active",
                   !hasError && !isActive && isInActiveEntry && "bg-puzzle-cell-highlight",

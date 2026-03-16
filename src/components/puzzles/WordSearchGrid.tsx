@@ -7,6 +7,7 @@ import PuzzleTimer from "./PuzzleTimer";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { haptic } from "@/lib/haptic";
 import type { Difficulty } from "@/lib/puzzleTypes";
 
 interface Props {
@@ -102,7 +103,8 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     const touch = e.touches[0];
     const cell = getCellFromPoint(touch.clientX, touch.clientY);
     if (cell) {
-      e.preventDefault(); // Prevent scroll on touch start within grid
+      e.preventDefault();
+      haptic();
       setStartCell(cell);
       setHoverCell(cell);
       setIsDragging(true);
@@ -213,7 +215,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
                   key={key}
                   className={cn(
                     cellSizeClass,
-                    "border border-puzzle-border flex items-center justify-center cursor-pointer font-semibold transition-colors touch-manipulation",
+                    "border border-puzzle-border flex items-center justify-center cursor-pointer font-semibold transition-colors touch-manipulation active:animate-cell-pop",
                     isFound && "bg-puzzle-cell-highlight text-primary",
                     isStart && "bg-puzzle-cell-active",
                     isPreview && !isFound && !isStart && "bg-secondary",

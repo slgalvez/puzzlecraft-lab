@@ -6,6 +6,7 @@ import PuzzleTimer from "./PuzzleTimer";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { haptic } from "@/lib/haptic";
 import type { Difficulty } from "@/lib/puzzleTypes";
 
 interface Props {
@@ -53,6 +54,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const handleCellTap = (r: number, c: number) => {
     if (timer.isSolved) return;
     setCursor([r, c]);
+    if (isMobile) haptic();
     if (isMobile) {
       // Mobile: use touchMode
       const current = grid[r][c];
@@ -183,7 +185,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
                   key={c}
                   className={cn(
                     cellSize,
-                    "border border-puzzle-border cursor-pointer select-none flex items-center justify-center transition-colors touch-manipulation",
+                    "border border-puzzle-border cursor-pointer select-none flex items-center justify-center transition-colors touch-manipulation active:animate-cell-pop",
                     c % 5 === 4 && c < cols - 1 && "border-r-2 border-r-foreground/30",
                     r % 5 === 4 && r < rows - 1 && "border-b-2 border-b-foreground/30",
                     hasError && "bg-puzzle-cell-error",
