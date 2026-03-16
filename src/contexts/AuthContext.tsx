@@ -14,6 +14,7 @@ interface AuthContextType {
   token: string | null;
   signIn: (firstName: string, lastName: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  updateUser: (updates: Partial<Pick<PrivateUser, "first_name" | "last_name">>) => void;
 }
 
 const SESSION_KEY = "private_session";
