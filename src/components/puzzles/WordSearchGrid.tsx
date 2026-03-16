@@ -215,7 +215,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
                   key={key}
                   className={cn(
                     cellSizeClass,
-                    "border border-puzzle-border flex items-center justify-center cursor-pointer font-semibold transition-colors touch-manipulation",
+                    "border border-puzzle-border flex items-center justify-center cursor-pointer font-semibold transition-colors touch-manipulation active:animate-cell-pop",
                     isFound && "bg-puzzle-cell-highlight text-primary",
                     isStart && "bg-puzzle-cell-active",
                     isPreview && !isFound && !isStart && "bg-secondary",

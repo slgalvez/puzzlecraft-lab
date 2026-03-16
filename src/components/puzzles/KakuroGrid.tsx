@@ -299,7 +299,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
               <div
                 key={`${r}-${c}`}
                 className={cn(
-                  "relative w-8 h-8 sm:w-12 sm:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation",
+                  "relative w-8 h-8 sm:w-12 sm:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
                   hasError && "bg-puzzle-cell-error",
                   !hasError && isActive && "bg-puzzle-cell-active",
                   !hasError && !isActive && isInActiveEntry && "bg-puzzle-cell-highlight",
