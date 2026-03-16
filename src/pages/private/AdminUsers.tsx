@@ -247,6 +247,15 @@ const AdminUsers = () => {
                         >
                           {u.is_active ? "Deactivate" : "Activate"}
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                          disabled={deleting === u.id}
+                          onClick={() => setConfirmDelete(confirmDelete === u.id ? null : u.id)}
+                        >
+                          <Trash2 size={12} />
+                        </Button>
                       </div>
                     )}
                   </div>
