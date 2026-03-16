@@ -253,7 +253,11 @@ const AdminConversations = () => {
                         )}
                       </div>
                       <p className={`mt-0.5 text-xs truncate ${conv.unread_count > 0 ? "text-foreground/80" : "text-muted-foreground"}`}>
-                        {conv.last_message || "No messages yet"}
+                        {conv.last_message?.startsWith("__PUZZLE_SENT__:")
+                          ? "🧩 Sent a puzzle"
+                          : conv.last_message?.startsWith("__PUZZLE_SOLVED__:")
+                          ? "🧩 Solved a puzzle"
+                          : conv.last_message || "No messages yet"}
                       </p>
                     </div>
                     <div className="ml-4 flex flex-col items-end gap-1 shrink-0">

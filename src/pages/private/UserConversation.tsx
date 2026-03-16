@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Send, Timer, Check, CheckCheck, Eye, Trash2 } from "lucide-react";
+import { isPuzzleMessage, PuzzleMessageBubble } from "@/components/private/PuzzleMessageBubble";
 
 interface Message {
   id: string;
@@ -295,6 +296,20 @@ const UserConversation = () => {
           ) : (
             messages.map((msg) => {
               const isMine = msg.sender_profile_id === user?.id;
+
+              // Render puzzle system messages as special bubbles
+              if (isPuzzleMessage(msg.body)) {
+                return (
+                  <PuzzleMessageBubble
+                    key={msg.id}
+                    body={msg.body}
+                    isMine={isMine}
+                    formatTime={formatTime}
+                    createdAt={msg.created_at}
+                  />
+                );
+              }
+
               const isViewOnce = msg.is_disappearing && msg.expires_at && msg.created_at &&
                 (new Date(msg.expires_at).getTime() - new Date(msg.created_at).getTime() > 8 * 24 * 60 * 60 * 1000);
               return (
