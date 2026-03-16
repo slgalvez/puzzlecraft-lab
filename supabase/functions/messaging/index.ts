@@ -297,14 +297,16 @@ Deno.serve(async (req) => {
         .single();
       if (!conv) return err("Not found");
 
-      // Clean up read view-once messages from the other party
-      await sb
-        .from("messages")
-        .delete()
-        .eq("conversation_id", conversation_id)
-        .eq("is_disappearing", true)
-        .neq("sender_profile_id", profileId)
-        .not("read_at", "is", null);
+      // Clean up read view-once messages (only when view-once mode is active)
+      if (conv.disappearing_duration === "view-once") {
+        await sb
+          .from("messages")
+          .delete()
+          .eq("conversation_id", conversation_id)
+          .eq("is_disappearing", true)
+          .neq("sender_profile_id", profileId)
+          .not("read_at", "is", null);
+      }
 
       const { data: messages } = await sb
         .from("messages")
