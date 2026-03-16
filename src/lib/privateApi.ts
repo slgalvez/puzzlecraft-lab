@@ -34,7 +34,7 @@ export async function invokeMessaging(action: string, token: string, extra: Reco
   }
 
   if (data?.error) {
-    if (data.error === "Access unavailable" || data.error === "Token expired") {
+    if (data.error === "Access unavailable" || data.error === "Token expired" || data.error === "Session ended") {
       throw new SessionExpiredError();
     }
     throw new Error(data.error);
