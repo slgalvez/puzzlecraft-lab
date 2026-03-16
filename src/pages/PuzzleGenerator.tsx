@@ -62,22 +62,6 @@ const PuzzleGenerator = () => {
   const [loadingSeed, setLoadingSeed] = useState(false);
   const { toast } = useToast();
 
-  if (!info) {
-    return (
-      <Layout>
-        <div className="container py-20 text-center">
-          <h1 className="font-display text-2xl font-bold text-foreground">Unknown puzzle type</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            The puzzle type you requested doesn't exist.
-          </p>
-          <Link to="/puzzles" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
-            ← Browse puzzle types
-          </Link>
-        </div>
-      </Layout>
-    );
-  }
-
   const handleNewPuzzle = useCallback(() => {
     if (randomPool && randomPool.length > 1) {
       const chosenType = randomPool[Math.floor(Math.random() * randomPool.length)];
@@ -96,6 +80,22 @@ const PuzzleGenerator = () => {
       setPuzzleKey((k) => k + 1);
     }
   }, [randomPool, category, difficulty, navigate]);
+
+  if (!info) {
+    return (
+      <Layout>
+        <div className="container py-20 text-center">
+          <h1 className="font-display text-2xl font-bold text-foreground">Unknown puzzle type</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            The puzzle type you requested doesn't exist.
+          </p>
+          <Link to="/puzzles" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
+            ← Browse puzzle types
+          </Link>
+        </div>
+      </Layout>
+    );
+  }
 
   const handleLoadSeed = async () => {
     const code = seedInput.trim();
