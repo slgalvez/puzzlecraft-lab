@@ -334,6 +334,7 @@ export function GridSolver({ data, puzzleType, onComplete }: GridSolverProps) {
         )}
 
         <MobileLetterInput
+          ref={mobileInputRef}
           active={isMobile && !!activeCell && !solved}
           onLetter={enterChar}
           onDelete={deleteChar}
