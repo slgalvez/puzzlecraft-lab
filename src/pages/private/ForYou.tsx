@@ -412,6 +412,9 @@ const ForYou = () => {
             generatedData={generatedData}
             sending={sending}
             recipientName={activeRecipientName}
+            recipients={recipients}
+            selectedRecipientId={selectedRecipientId}
+            onSelectRecipient={(id) => { setSelectedRecipientId(id); setCreateStep("content"); }}
             isEditingDraft={!!editingDraftId}
             onSelectType={handleSelectType}
             onGenerate={handleGenerate}
@@ -420,6 +423,7 @@ const ForYou = () => {
             onSaveDraft={handleSaveDraft}
             onBack={resetCreate}
             onEditContent={() => setCreateStep("content")}
+            onChangeRecipient={() => setCreateStep("recipient")}
           />
         )}
       </div>
