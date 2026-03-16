@@ -104,7 +104,7 @@ const Index = () => {
               <span className="text-primary">one puzzle at a time.</span>
             </h1>
             <p className="mt-5 text-lg text-muted-foreground leading-relaxed">
-              Crosswords, sudoku, word search, and more — unlimited procedurally generated puzzles, beautifully crafted for every skill level.
+              Crosswords, sudoku, word search, and more — unlimited puzzles, beautifully crafted for every skill level.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg">
