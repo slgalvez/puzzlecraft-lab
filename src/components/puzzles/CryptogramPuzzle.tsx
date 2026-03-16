@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { generateCryptogram } from "@/lib/generators/cryptogram";
 import PuzzleControls from "./PuzzleControls";
@@ -20,7 +20,9 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
 
   const [guesses, setGuesses] = useState<Record<string, string>>(() => ({ ...hints }));
   const [errors, setErrors] = useState<Set<string>>(new Set());
+  const [activeIdx, setActiveIdx] = useState<number>(-1);
   const inputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const timerKey = `cryptogram-${seed}-${difficulty}`;
   const timer = usePuzzleTimer(timerKey, { category: "cryptogram", difficulty });
@@ -29,7 +31,67 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
     return [...new Set(encoded.split("").filter((ch) => /[A-Z]/.test(ch)))];
   }, [encoded]);
 
-  const words = encoded.split(" ");
+  // Build ordered list of editable character indices
+  const editableIndices = useMemo(() => {
+    const indices: number[] = [];
+    let idx = 0;
+    for (const ch of encoded) {
+      if (/[A-Z]/.test(ch)) {
+        if (!hints[ch]) indices.push(idx);
+        idx++;
+      } else if (ch !== " ") {
+        idx++;
+      }
+    }
+    return indices;
+  }, [encoded, hints]);
+
+  // Map from flat char index to encoded letter
+  const charMap = useMemo(() => {
+    const map: { idx: number; letter: string }[] = [];
+    let idx = 0;
+    for (const ch of encoded) {
+      if (/[A-Z]/.test(ch)) {
+        map.push({ idx, letter: ch });
+        idx++;
+      } else if (ch !== " ") {
+        map.push({ idx, letter: ch });
+        idx++;
+      }
+    }
+    return map;
+  }, [encoded]);
+
+  // Auto-focus first editable
+  useEffect(() => {
+    if (editableIndices.length > 0) {
+      setActiveIdx(editableIndices[0]);
+      setTimeout(() => inputRefs.current.get(editableIndices[0])?.focus(), 50);
+    }
+  }, [seed, difficulty]);
+
+  const focusIdx = (idx: number) => {
+    setActiveIdx(idx);
+    inputRefs.current.get(idx)?.focus();
+  };
+
+  const findNextEditable = (fromIdx: number, dir: number): number | null => {
+    const pos = editableIndices.indexOf(fromIdx);
+    if (pos === -1) {
+      // Find closest
+      if (dir > 0) {
+        const next = editableIndices.find((i) => i > fromIdx);
+        return next ?? null;
+      } else {
+        for (let i = editableIndices.length - 1; i >= 0; i--)
+          if (editableIndices[i] < fromIdx) return editableIndices[i];
+        return null;
+      }
+    }
+    const nextPos = pos + dir;
+    if (nextPos >= 0 && nextPos < editableIndices.length) return editableIndices[nextPos];
+    return null;
+  };
 
   const handleInput = (encodedLetter: string, value: string, idx: number) => {
     if (hints[encodedLetter] || timer.isSolved) return;
@@ -38,24 +100,63 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
     setErrors(new Set());
 
     if (letter) {
-      const allInputs = Array.from(inputRefs.current.entries())
-        .sort(([a], [b]) => a - b);
-      const currentIdx = allInputs.findIndex(([i]) => i === idx);
-      for (let j = currentIdx + 1; j < allInputs.length; j++) {
-        const [, input] = allInputs[j];
-        const el = input as HTMLInputElement;
-        if (!el.readOnly && !el.value) {
-          el.focus();
-          return;
+      const next = findNextEditable(idx, 1);
+      if (next !== null) focusIdx(next);
+    }
+  };
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, encodedLetter: string, idx: number) => {
+    if (timer.isSolved) return;
+
+    switch (e.key) {
+      case "ArrowRight": {
+        e.preventDefault();
+        const next = findNextEditable(idx, 1);
+        if (next !== null) focusIdx(next);
+        break;
+      }
+      case "ArrowLeft": {
+        e.preventDefault();
+        const prev = findNextEditable(idx, -1);
+        if (prev !== null) focusIdx(prev);
+        break;
+      }
+      case "Tab": {
+        e.preventDefault();
+        const next = findNextEditable(idx, e.shiftKey ? -1 : 1);
+        if (next !== null) focusIdx(next);
+        break;
+      }
+      case "Backspace":
+      case "Delete":
+        e.preventDefault();
+        if (!hints[encodedLetter]) {
+          setGuesses((prev) => ({ ...prev, [encodedLetter]: "" }));
+          setErrors(new Set());
+        }
+        if (e.key === "Backspace") {
+          const prev = findNextEditable(idx, -1);
+          if (prev !== null) focusIdx(prev);
+        }
+        break;
+      default: {
+        const letter = e.key.toUpperCase();
+        if (/^[A-Z]$/.test(letter) && !hints[encodedLetter]) {
+          e.preventDefault();
+          setGuesses((prev) => ({ ...prev, [encodedLetter]: letter }));
+          setErrors(new Set());
+          const next = findNextEditable(idx, 1);
+          if (next !== null) focusIdx(next);
         }
       }
     }
-  };
+  }, [timer.isSolved, hints, editableIndices]);
 
   const handleReset = () => {
     setGuesses({ ...hints });
     setErrors(new Set());
     timer.reset();
+    if (editableIndices.length > 0) focusIdx(editableIndices[0]);
   };
 
   const handleCheck = () => {
@@ -76,11 +177,15 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
       toast({ title: "Keep going!", description: "No errors so far." });
   };
 
+  const words = encoded.split(" ");
   let charIndex = 0;
 
   return (
-    <div>
+    <div ref={containerRef}>
       <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
+      <p className="mb-3 text-xs text-muted-foreground">
+        Type letters to guess • Arrow keys to move • All matching letters update together
+      </p>
       <div className="flex flex-wrap gap-x-4 gap-y-4 mb-4">
         {words.map((word, wi) => (
           <div key={wi} className="flex gap-0.5">
@@ -90,6 +195,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
               const isHint = isLetter && hints[ch];
               const hasError = isLetter && errors.has(ch);
               const guess = isLetter ? guesses[ch] || "" : "";
+              const isActive = idx === activeIdx;
 
               if (!isLetter) {
                 return (
@@ -107,12 +213,15 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
                       "w-8 h-9 text-center text-lg font-semibold outline-none border-b-2 bg-transparent uppercase",
                       isHint && "text-primary border-primary/50",
                       hasError && "text-destructive border-destructive",
-                      !isHint && !hasError && "text-foreground border-border focus:border-primary"
+                      !isHint && !hasError && isActive && "text-foreground border-primary",
+                      !isHint && !hasError && !isActive && "text-foreground border-border focus:border-primary"
                     )}
                     value={guess}
                     readOnly={!!isHint}
                     maxLength={1}
                     onChange={(e) => handleInput(ch, e.target.value, idx)}
+                    onKeyDown={(e) => handleKeyDown(e, ch, idx)}
+                    onFocus={() => setActiveIdx(idx)}
                   />
                   <span className="mt-1 text-xs font-medium text-muted-foreground">{ch}</span>
                 </div>

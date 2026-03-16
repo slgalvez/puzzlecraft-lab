@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { generateNonogram } from "@/lib/generators/nonogram";
 import PuzzleControls from "./PuzzleControls";
@@ -24,12 +24,19 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     Array.from({ length: rows }, () => Array(cols).fill("empty"))
   );
   const [errors, setErrors] = useState<Set<string>>(new Set());
+  const [cursor, setCursor] = useState<[number, number]>([0, 0]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const timerKey = `nonogram-${seed}-${difficulty}`;
   const timer = usePuzzleTimer(timerKey, { category: "nonogram", difficulty });
 
   const maxRowClueLen = Math.max(...rowClues.map((c) => c.length));
   const maxColClueLen = Math.max(...colClues.map((c) => c.length));
+
+  useEffect(() => {
+    setCursor([0, 0]);
+    containerRef.current?.focus();
+  }, [seed, difficulty]);
 
   const toggleCell = (r: number, c: number) => {
     if (timer.isSolved) return;
@@ -42,10 +49,62 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     setErrors(new Set());
   };
 
+  const setCellState = (r: number, c: number, state: CellState) => {
+    if (timer.isSolved) return;
+    setGrid((prev) => {
+      const next = prev.map((row) => [...row]);
+      next[r][c] = state;
+      return next;
+    });
+    setErrors(new Set());
+  };
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (timer.isSolved) return;
+    const [r, c] = cursor;
+
+    switch (e.key) {
+      case "ArrowUp":
+        e.preventDefault();
+        setCursor([Math.max(0, r - 1), c]);
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        setCursor([Math.min(rows - 1, r + 1), c]);
+        break;
+      case "ArrowLeft":
+        e.preventDefault();
+        setCursor([r, Math.max(0, c - 1)]);
+        break;
+      case "ArrowRight":
+        e.preventDefault();
+        setCursor([r, Math.min(cols - 1, c + 1)]);
+        break;
+      case " ":
+        e.preventDefault();
+        // Space toggles fill
+        setCellState(r, c, grid[r][c] === "filled" ? "empty" : "filled");
+        break;
+      case "x":
+      case "X":
+        e.preventDefault();
+        // X toggles mark
+        setCellState(r, c, grid[r][c] === "marked" ? "empty" : "marked");
+        break;
+      case "Delete":
+      case "Backspace":
+        e.preventDefault();
+        setCellState(r, c, "empty");
+        break;
+    }
+  }, [cursor, timer.isSolved, grid, rows, cols]);
+
   const handleReset = () => {
     setGrid(Array.from({ length: rows }, () => Array(cols).fill("empty")));
     setErrors(new Set());
+    setCursor([0, 0]);
     timer.reset();
+    containerRef.current?.focus();
   };
 
   const handleCheck = () => {
@@ -68,10 +127,15 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const clueTextSize = rows <= 10 ? "text-xs sm:text-sm" : "text-[9px] sm:text-[10px]";
 
   return (
-    <div>
+    <div
+      ref={containerRef}
+      tabIndex={0}
+      className="outline-none"
+      onKeyDown={handleKeyDown}
+    >
       <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
       <p className="mb-3 text-xs text-muted-foreground">
-        Click to fill • Click again to mark ✕ • Click again to clear
+        Arrow keys to move • Space to fill • X to mark • Delete to clear
       </p>
       <div className="inline-block">
         {/* Column clues */}
@@ -107,6 +171,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
             {Array.from({ length: cols }, (_, c) => {
               const state = grid[r][c];
               const hasError = errors.has(`${r}-${c}`);
+              const isCursor = cursor[0] === r && cursor[1] === c;
 
               return (
                 <div
@@ -119,9 +184,14 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
                     hasError && "bg-puzzle-cell-error",
                     !hasError && state === "filled" && "bg-foreground",
                     !hasError && state === "marked" && "bg-puzzle-cell",
-                    !hasError && state === "empty" && "bg-puzzle-cell hover:bg-secondary"
+                    !hasError && state === "empty" && "bg-puzzle-cell hover:bg-secondary",
+                    isCursor && "ring-2 ring-inset ring-primary"
                   )}
-                  onClick={() => toggleCell(r, c)}
+                  onClick={() => {
+                    setCursor([r, c]);
+                    toggleCell(r, c);
+                    containerRef.current?.focus();
+                  }}
                 >
                   {state === "marked" && (
                     <span className={cn("text-muted-foreground font-bold", clueTextSize)}>✕</span>
