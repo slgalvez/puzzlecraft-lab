@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useSearchParams, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import DifficultySelector from "@/components/puzzles/DifficultySelector";
 import { Input } from "@/components/ui/input";
