@@ -775,7 +775,7 @@ export function PuzzlePreview({ data, puzzleType }: PuzzlePreviewProps) {
         <div className="inline-grid gap-0" style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}>
           {grid.map((row, r) =>
             row.map((cell, c) => (
-              <div key={`${r}-${c}`} className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center text-[10px] sm:text-xs font-mono bg-puzzle-cell border border-puzzle-border">
+              <div key={`${r}-${c}`} className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-[9px] sm:text-[10px] font-mono bg-puzzle-cell border border-puzzle-border">
                 {cell}
               </div>
             ))
