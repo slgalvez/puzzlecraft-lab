@@ -337,7 +337,7 @@ const ForYou = () => {
 
   return (
     <PrivateLayout title="Puzzles for You">
-      <div className="p-4 sm:p-6 pb-24 max-w-2xl mx-auto space-y-6">
+      <div className="p-4 sm:p-6 pb-32 sm:pb-36 max-w-2xl mx-auto space-y-6">
         {/* Tabs */}
         <div className="flex gap-1 border-b border-border pb-2 overflow-x-auto">
           {(["received", "sent", "drafts", "create"] as Tab[]).map(t => (
@@ -776,7 +776,7 @@ function CreatePuzzleView({
   return (
     <div className="space-y-5">
       <button onClick={onBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-3 w-3" /> Start over
+        <ArrowLeft className="h-3 w-3" /> {isEditingDraft ? "Back to Drafts" : "Start over"}
       </button>
 
       <div className="space-y-1">
@@ -801,11 +801,9 @@ function CreatePuzzleView({
         <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-3 font-semibold">
           Puzzle as recipient will see it
         </p>
-        <div className="max-h-[45vh] overflow-auto">
-          {generatedData && selectedType && (
-            <PuzzlePreview data={generatedData} puzzleType={selectedType} />
-          )}
-        </div>
+        {generatedData && selectedType && (
+          <PuzzlePreview data={generatedData} puzzleType={selectedType} />
+        )}
       </div>
 
       {revealMessage && (
@@ -815,22 +813,29 @@ function CreatePuzzleView({
         </div>
       )}
 
-      {/* Actions */}
-      <div className="flex flex-col gap-2">
-        <Button onClick={onSend} disabled={sending} className="w-full">
-          <SendIcon className="h-4 w-4 mr-2" />
-          {sending ? "Sending…" : recipientName ? `Send to ${recipientName}` : "Send Puzzle"}
-        </Button>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="flex-1" onClick={onEditContent}>
-            <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit
-          </Button>
-          <Button variant="outline" size="sm" className="flex-1" onClick={onRegenerate}>
-            <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Regenerate
-          </Button>
-          <Button variant="outline" size="sm" className="flex-1" onClick={onSaveDraft} disabled={sending}>
-            <Save className="h-3.5 w-3.5 mr-1.5" /> {isEditingDraft ? "Update Draft" : "Save Draft"}
-          </Button>
+      <div className="sticky bottom-0 z-20 -mx-4 sm:-mx-6 border-t border-border bg-background/95 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 backdrop-blur supports-[backdrop-filter]:bg-background/90">
+        <div className="mx-auto flex max-w-2xl flex-col gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <Button variant="outline" onClick={onBack} disabled={sending}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {isEditingDraft ? "Back to Drafts" : "Cancel"}
+            </Button>
+            <Button variant="outline" onClick={onEditContent} disabled={sending}>
+              <Pencil className="h-4 w-4 mr-2" /> Edit Content
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+            <Button variant="outline" onClick={onRegenerate} disabled={sending}>
+              <RefreshCw className="h-4 w-4 mr-2" /> Regenerate
+            </Button>
+            <Button variant="outline" onClick={onSaveDraft} disabled={sending}>
+              <Save className="h-4 w-4 mr-2" /> {isEditingDraft ? "Update Draft" : "Save Draft"}
+            </Button>
+            <Button onClick={onSend} disabled={sending} className="sm:px-6">
+              <SendIcon className="h-4 w-4 mr-2" />
+              {sending ? "Sending…" : recipientName ? `Send to ${recipientName}` : "Send Puzzle"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
