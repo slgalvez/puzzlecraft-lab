@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CATEGORY_INFO, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { randomSeed, seedFromString } from "@/lib/seededRandom";
+import { useToast } from "@/hooks/use-toast";
+import { getPuzzleById } from "@/data/puzzles";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
