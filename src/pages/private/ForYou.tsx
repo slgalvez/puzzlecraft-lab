@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Puzzle, Send as SendIcon, Check, ArrowLeft, Trash2, RefreshCw, Eye, Pencil, FileText, Save } from "lucide-react";
+import { Plus, Puzzle, Send as SendIcon, Check, ArrowLeft, Trash2, RefreshCw, Eye, Pencil, FileText, Save, Loader2, CheckCircle2 } from "lucide-react";
 import {
   generateCustomFillIn,
   generateCustomCryptogram,
