@@ -153,6 +153,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
           Arrow keys to move • 1–9 to enter • Delete to clear
         </p>
       )}
+      <div className="max-w-full overflow-x-auto">
       <div
         ref={containerRef}
         tabIndex={0}
