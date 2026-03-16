@@ -24,6 +24,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
   const [direction, setDirection] = useState<"across" | "down">("across");
   const [errors, setErrors] = useState<Set<string>>(new Set());
+  const [focusTrigger, setFocusTrigger] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const timerKey = `crossword-${puzzle.id}`;
@@ -204,7 +205,12 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
     } else {
       setActiveCell([r, c]);
     }
-    if (!isMobile) containerRef.current?.focus();
+    // Re-trigger mobile keyboard focus
+    if (isMobile) {
+      setFocusTrigger((t) => t + 1);
+    } else {
+      containerRef.current?.focus();
+    }
   };
 
   const handleReset = () => {
@@ -286,6 +292,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
           active={isMobile && !!activeCell && !timer.isSolved}
           onLetter={enterLetter}
           onDelete={deleteLetter}
+          focusTrigger={focusTrigger}
         />
 
         <div className="max-w-full overflow-x-auto">

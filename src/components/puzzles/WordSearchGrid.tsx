@@ -102,6 +102,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     const touch = e.touches[0];
     const cell = getCellFromPoint(touch.clientX, touch.clientY);
     if (cell) {
+      e.preventDefault(); // Prevent scroll on touch start within grid
       setStartCell(cell);
       setHoverCell(cell);
       setIsDragging(true);
@@ -126,7 +127,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   };
 
   const handleCellClick = (r: number, c: number) => {
-    if (timer.isSolved || isMobile) return; // On mobile, use touch drag instead
+    if (timer.isSolved || isMobile) return;
     setCursor([r, c]);
     if (!startCell) {
       setStartCell([r, c]);
@@ -168,9 +169,16 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     }
   };
 
+  // Compute responsive cell size: fit grid to ~95vw on mobile
+  const cellSizeClass = puzzle.size > 12
+    ? "w-6 h-6 sm:w-8 sm:h-8 text-[10px] sm:text-sm"
+    : puzzle.size > 8
+      ? "w-7 h-7 sm:w-9 sm:h-9 text-xs sm:text-base"
+      : "w-8 h-8 sm:w-9 sm:h-9 text-xs sm:text-base";
+
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
-      <div className="flex-shrink-0 outline-none" ref={containerRef} tabIndex={0} onKeyDown={handleKeyDown}>
+      <div className="flex-shrink-0 outline-none min-w-0" ref={containerRef} tabIndex={0} onKeyDown={handleKeyDown}>
         <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
 
         {isMobile ? (
@@ -204,7 +212,8 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
                 <div
                   key={key}
                   className={cn(
-                    "w-7 h-7 sm:w-9 sm:h-9 border border-puzzle-border flex items-center justify-center cursor-pointer text-xs sm:text-base font-semibold transition-colors touch-manipulation",
+                    cellSizeClass,
+                    "border border-puzzle-border flex items-center justify-center cursor-pointer font-semibold transition-colors touch-manipulation",
                     isFound && "bg-puzzle-cell-highlight text-primary",
                     isStart && "bg-puzzle-cell-active",
                     isPreview && !isFound && !isStart && "bg-secondary",
@@ -224,7 +233,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
         <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} />
       </div>
 
-      <div className="lg:max-w-xs">
+      <div className="lg:max-w-xs min-w-0">
         <h3 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Words to Find ({foundWords.size}/{puzzle.words.length})
         </h3>

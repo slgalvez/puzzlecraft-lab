@@ -5,22 +5,27 @@ interface Props {
   onLetter: (letter: string) => void;
   onDelete: () => void;
   inputMode?: "text" | "numeric";
+  /** Increment to re-trigger focus (e.g. on each cell tap) */
+  focusTrigger?: number;
 }
 
 /**
  * Hidden input that triggers the mobile keyboard when a cell is active.
- * On desktop this is invisible and non-interfering.
+ * Uses opacity:0 + fixed positioning so mobile browsers reliably open the keyboard
+ * (sr-only / clip prevents keyboard on many devices).
  */
-const MobileLetterInput = ({ active, onLetter, onDelete, inputMode = "text" }: Props) => {
+const MobileLetterInput = ({ active, onLetter, onDelete, inputMode = "text", focusTrigger = 0 }: Props) => {
   const ref = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (active && ref.current) {
       // Small delay to avoid scroll jumps on mobile
-      const timer = setTimeout(() => ref.current?.focus(), 80);
+      const timer = setTimeout(() => {
+        ref.current?.focus({ preventScroll: true });
+      }, 80);
       return () => clearTimeout(timer);
     }
-  }, [active]);
+  }, [active, focusTrigger]);
 
   const handleInput = useCallback((e: React.FormEvent<HTMLInputElement>) => {
     const value = (e.target as HTMLInputElement).value;
@@ -42,10 +47,24 @@ const MobileLetterInput = ({ active, onLetter, onDelete, inputMode = "text" }: P
     }
   }, [onDelete]);
 
+  if (!active) return null;
+
   return (
     <input
       ref={ref}
-      className="sr-only"
+      style={{
+        position: "fixed",
+        bottom: 0,
+        left: "50%",
+        opacity: 0,
+        width: "1px",
+        height: "1px",
+        border: "none",
+        padding: 0,
+        margin: 0,
+        pointerEvents: "none",
+        zIndex: -1,
+      }}
       inputMode={inputMode === "numeric" ? "numeric" : "text"}
       autoCapitalize="characters"
       autoComplete="off"
