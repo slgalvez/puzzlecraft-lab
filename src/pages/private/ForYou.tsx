@@ -222,6 +222,7 @@ const ForYou = () => {
           puzzle_type: selectedType,
           puzzle_data: generatedData,
           reveal_message: revealMessage.trim() || null,
+          sent_to: selectedRecipientId,
         });
       } else {
         await invokeMessaging("create-puzzle", token, {
