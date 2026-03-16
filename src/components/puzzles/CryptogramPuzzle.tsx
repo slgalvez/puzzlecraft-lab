@@ -1,7 +1,9 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { generateCryptogram } from "@/lib/generators/cryptogram";
 import PuzzleControls from "./PuzzleControls";
+import PuzzleTimer from "./PuzzleTimer";
+import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import type { Difficulty } from "@/lib/puzzleTypes";
 
@@ -20,21 +22,21 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const inputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
 
-  // Collect unique encoded letters
+  const timerKey = `cryptogram-${seed}-${difficulty}`;
+  const timer = usePuzzleTimer(timerKey);
+
   const encodedLetters = useMemo(() => {
     return [...new Set(encoded.split("").filter((ch) => /[A-Z]/.test(ch)))];
   }, [encoded]);
 
-  // Build words for display
   const words = encoded.split(" ");
 
   const handleInput = (encodedLetter: string, value: string, idx: number) => {
-    if (hints[encodedLetter]) return; // Don't allow editing hints
+    if (hints[encodedLetter] || timer.isSolved) return;
     const letter = value.toUpperCase().replace(/[^A-Z]/g, "").slice(-1);
     setGuesses((prev) => ({ ...prev, [encodedLetter]: letter }));
     setErrors(new Set());
 
-    // Auto-advance to next empty input
     if (letter) {
       const allInputs = Array.from(inputRefs.current.entries())
         .sort(([a], [b]) => a - b);
@@ -53,6 +55,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const handleReset = () => {
     setGuesses({ ...hints });
     setErrors(new Set());
+    timer.reset();
   };
 
   const handleCheck = () => {
@@ -64,9 +67,10 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
       if (guess !== reverseCipher[el]) errs.add(el);
     }
     setErrors(errs);
-    if (errs.size === 0 && allFilled)
-      toast({ title: "🎉 Congratulations!", description: "Message decoded correctly!" });
-    else if (errs.size > 0)
+    if (errs.size === 0 && allFilled) {
+      const { isNewBest } = timer.solve();
+      toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Message decoded correctly!" });
+    } else if (errs.size > 0)
       toast({ title: "Not quite right", description: `${errs.size} letter(s) are incorrect.`, variant: "destructive" });
     else
       toast({ title: "Keep going!", description: "No errors so far." });
@@ -76,6 +80,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
 
   return (
     <div>
+      <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
       <div className="flex flex-wrap gap-x-4 gap-y-4 mb-4">
         {words.map((word, wi) => (
           <div key={wi} className="flex gap-0.5">
@@ -117,7 +122,6 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
         ))}
       </div>
 
-      {/* Letter frequency helper */}
       <details className="mt-4 text-sm text-muted-foreground">
         <summary className="cursor-pointer hover:text-foreground transition-colors">
           Letter frequency

@@ -2,6 +2,8 @@ import { useState, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { generateSudoku } from "@/lib/generators/sudoku";
 import PuzzleControls from "./PuzzleControls";
+import PuzzleTimer from "./PuzzleTimer";
+import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import type { Difficulty } from "@/lib/puzzleTypes";
 
@@ -21,10 +23,13 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     Array.from({ length: 9 }, () => Array(9).fill(null))
   );
 
+  const timerKey = `sudoku-${seed}-${difficulty}`;
+  const timer = usePuzzleTimer(timerKey);
+
   const isGiven = (r: number, c: number) => puzzle.grid[r][c] !== null;
 
   const handleInput = (r: number, c: number, value: string) => {
-    if (isGiven(r, c)) return;
+    if (isGiven(r, c) || timer.isSolved) return;
     const digit = value.replace(/[^1-9]/g, "").slice(-1);
     const num = digit ? parseInt(digit) : null;
     setGrid((prev) => {
@@ -33,7 +38,6 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
       return next;
     });
     setErrors(new Set());
-    // Auto-advance
     if (num) {
       const nextCell = findNextEmpty(r, c);
       if (nextCell) inputRefs.current[nextCell[0]][nextCell[1]]?.focus();
@@ -63,6 +67,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const handleReset = () => {
     setGrid(puzzle.grid.map((r) => [...r]));
     setErrors(new Set());
+    timer.reset();
   };
 
   const handleCheck = () => {
@@ -74,9 +79,10 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
         else if (grid[r][c] !== puzzle.solution[r][c]) errs.add(`${r}-${c}`);
       }
     setErrors(errs);
-    if (errs.size === 0 && filled)
-      toast({ title: "🎉 Congratulations!", description: "Puzzle solved correctly!" });
-    else if (errs.size > 0)
+    if (errs.size === 0 && filled) {
+      const { isNewBest } = timer.solve();
+      toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Puzzle solved correctly!" });
+    } else if (errs.size > 0)
       toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
     else
       toast({ title: "Keep going!", description: "No errors so far — fill in the rest." });
@@ -84,6 +90,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
 
   return (
     <div>
+      <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
       <div
         className="inline-grid border-2 border-foreground"
         style={{ gridTemplateColumns: "repeat(9, 1fr)" }}

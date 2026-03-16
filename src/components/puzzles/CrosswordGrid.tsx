@@ -2,6 +2,8 @@ import { useState, useCallback, useRef } from "react";
 import type { CrosswordPuzzle, CrosswordClue } from "@/data/puzzles";
 import { cn } from "@/lib/utils";
 import PuzzleControls from "./PuzzleControls";
+import PuzzleTimer from "./PuzzleTimer";
+import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 
 interface Props {
@@ -22,6 +24,9 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   const inputRefs = useRef<(HTMLInputElement | null)[][]>(
     Array.from({ length: gridSize }, () => Array(gridSize).fill(null))
   );
+
+  const timerKey = `crossword-${puzzle.id}`;
+  const timer = usePuzzleTimer(timerKey);
 
   const isBlack = (r: number, c: number) =>
     blackCells.some(([br, bc]) => br === r && bc === c);
@@ -64,6 +69,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   };
 
   const handleInput = (r: number, c: number, value: string) => {
+    if (timer.isSolved) return;
     const letter = value.toUpperCase().replace(/[^A-Z]/g, "").slice(-1);
     setGrid((prev) => {
       const next = prev.map((row) => [...row]);
@@ -107,10 +113,10 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   const handleReset = () => {
     setGrid(Array.from({ length: gridSize }, () => Array(gridSize).fill("")));
     setErrors(new Set());
+    timer.reset();
   };
 
   const handleCheck = () => {
-    // Build solution grid from clues
     const solutionGrid: string[][] = Array.from({ length: gridSize }, () => Array(gridSize).fill(""));
     for (const clue of clues) {
       const dr = clue.direction === "down" ? 1 : 0;
@@ -130,9 +136,10 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
       }
     }
     setErrors(errs);
-    if (errs.size === 0 && filled)
-      toast({ title: "🎉 Congratulations!", description: "Crossword solved correctly!" });
-    else if (errs.size > 0)
+    if (errs.size === 0 && filled) {
+      const { isNewBest } = timer.solve();
+      toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Crossword solved correctly!" });
+    } else if (errs.size > 0)
       toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
     else
       toast({ title: "Keep going!", description: "No errors so far." });
@@ -144,6 +151,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
       <div className="flex-shrink-0">
+        <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
         <div
           className="inline-grid border-2 border-puzzle-border"
           style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}

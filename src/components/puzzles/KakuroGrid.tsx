@@ -2,6 +2,8 @@ import { useState, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { generateKakuro } from "@/lib/generators/kakuro";
 import PuzzleControls from "./PuzzleControls";
+import PuzzleTimer from "./PuzzleTimer";
+import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import type { Difficulty } from "@/lib/puzzleTypes";
 
@@ -24,6 +26,9 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     Array.from({ length: size }, () => Array(size).fill(null))
   );
 
+  const timerKey = `kakuro-${seed}-${difficulty}`;
+  const timer = usePuzzleTimer(timerKey);
+
   const clueMap = useMemo(() => {
     const map = new Map<string, { across?: number; down?: number }>();
     for (const c of clues) map.set(`${c.row}-${c.col}`, { across: c.across, down: c.down });
@@ -31,6 +36,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   }, [clues]);
 
   const handleInput = (r: number, c: number, value: string) => {
+    if (timer.isSolved) return;
     const digit = value.replace(/[^1-9]/g, "").slice(-1);
     setGrid((prev) => {
       const next = prev.map((row) => [...row]);
@@ -43,6 +49,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const handleReset = () => {
     setGrid(Array.from({ length: size }, () => Array(size).fill("")));
     setErrors(new Set());
+    timer.reset();
   };
 
   const handleCheck = () => {
@@ -56,9 +63,10 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
       }
     }
     setErrors(errs);
-    if (errs.size === 0 && filled)
-      toast({ title: "🎉 Congratulations!", description: "Puzzle solved correctly!" });
-    else if (errs.size > 0)
+    if (errs.size === 0 && filled) {
+      const { isNewBest } = timer.solve();
+      toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Puzzle solved correctly!" });
+    } else if (errs.size > 0)
       toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
     else
       toast({ title: "Keep going!", description: "No errors so far." });
@@ -66,6 +74,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
 
   return (
     <div>
+      <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
       <div
         className="inline-grid border-2 border-foreground"
         style={{ gridTemplateColumns: `repeat(${size}, 1fr)` }}
@@ -84,7 +93,6 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
                 >
                   {clue && (
                     <>
-                      {/* Diagonal line */}
                       <div
                         className="absolute inset-0"
                         style={{

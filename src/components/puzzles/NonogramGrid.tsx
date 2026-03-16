@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { generateNonogram } from "@/lib/generators/nonogram";
 import PuzzleControls from "./PuzzleControls";
+import PuzzleTimer from "./PuzzleTimer";
+import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import type { Difficulty } from "@/lib/puzzleTypes";
 
@@ -23,10 +25,14 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   );
   const [errors, setErrors] = useState<Set<string>>(new Set());
 
+  const timerKey = `nonogram-${seed}-${difficulty}`;
+  const timer = usePuzzleTimer(timerKey);
+
   const maxRowClueLen = Math.max(...rowClues.map((c) => c.length));
   const maxColClueLen = Math.max(...colClues.map((c) => c.length));
 
   const toggleCell = (r: number, c: number) => {
+    if (timer.isSolved) return;
     setGrid((prev) => {
       const next = prev.map((row) => [...row]);
       const current = next[r][c];
@@ -39,6 +45,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const handleReset = () => {
     setGrid(Array.from({ length: rows }, () => Array(cols).fill("empty")));
     setErrors(new Set());
+    timer.reset();
   };
 
   const handleCheck = () => {
@@ -50,9 +57,10 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
         if (shouldBeFilled !== isFilled) errs.add(`${r}-${c}`);
       }
     setErrors(errs);
-    if (errs.size === 0)
-      toast({ title: "🎉 Congratulations!", description: "Nonogram solved correctly!" });
-    else
+    if (errs.size === 0) {
+      const { isNewBest } = timer.solve();
+      toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Nonogram solved correctly!" });
+    } else
       toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
   };
 
@@ -61,6 +69,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
 
   return (
     <div>
+      <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
       <p className="mb-3 text-xs text-muted-foreground">
         Click to fill • Click again to mark ✕ • Click again to clear
       </p>
