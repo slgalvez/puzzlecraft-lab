@@ -259,6 +259,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
           Arrow keys to move • 1–9 to enter • Delete to clear • Tap same cell to toggle direction
         </p>
       )}
+      <div className="max-w-full overflow-x-auto">
       <div
         ref={containerRef}
         tabIndex={0}
