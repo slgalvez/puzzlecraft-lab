@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
+import { useState, useCallback } from "react";
+import { useParams, useSearchParams, Link, useNavigate, useLocation } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import DifficultySelector from "@/components/puzzles/DifficultySelector";
 import RandomPuzzleGenerator from "@/components/puzzles/RandomPuzzleGenerator";
