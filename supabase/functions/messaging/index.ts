@@ -806,6 +806,13 @@ Deno.serve(async (req) => {
       if (puzzle_type) updates.puzzle_type = puzzle_type;
       if (puzzle_data) updates.puzzle_data = puzzle_data;
       if (reveal_message !== undefined) updates.reveal_message = reveal_message || null;
+      // Allow changing recipient on drafts
+      if (body.sent_to) {
+        const { data: targetProfile } = await sb.from("profiles").select("id").eq("id", body.sent_to).single();
+        if (!targetProfile) return err("Invalid recipient");
+        if (targetProfile.id === profileId) return err("Cannot send to yourself");
+        updates.sent_to = body.sent_to;
+      }
 
       const { error: updateErr } = await sb
         .from("private_puzzles")
