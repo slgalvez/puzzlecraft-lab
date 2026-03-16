@@ -337,7 +337,7 @@ const ForYou = () => {
 
   return (
     <PrivateLayout title="Puzzles for You">
-      <div className="p-4 sm:p-6 pb-32 sm:pb-36 max-w-2xl mx-auto space-y-6">
+      <div className="p-4 sm:p-6 pb-6 max-w-2xl mx-auto space-y-6">
         {/* Tabs */}
         <div className="flex gap-1 border-b border-border pb-2 overflow-x-auto">
           {(["received", "sent", "drafts", "create"] as Tab[]).map(t => (
