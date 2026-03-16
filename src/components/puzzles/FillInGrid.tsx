@@ -1,20 +1,26 @@
 import { useState, useRef } from "react";
 import type { FillInPuzzle } from "@/data/puzzles";
 import { cn } from "@/lib/utils";
+import PuzzleControls from "./PuzzleControls";
+import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   puzzle: FillInPuzzle;
+  showControls?: boolean;
+  onNewPuzzle?: () => void;
 }
 
-const FillInGrid = ({ puzzle }: Props) => {
+const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   const { gridSize, blackCells, entries, type, solution } = puzzle;
   const isNumbers = type === "number-fill";
+  const { toast } = useToast();
 
   const [grid, setGrid] = useState<string[][]>(
     Array.from({ length: gridSize }, () => Array(gridSize).fill(""))
   );
   const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
   const [usedEntries, setUsedEntries] = useState<Set<string>>(new Set());
+  const [errors, setErrors] = useState<Set<string>>(new Set());
   const inputRefs = useRef<(HTMLInputElement | null)[][]>(
     Array.from({ length: gridSize }, () => Array(gridSize).fill(null))
   );
@@ -32,14 +38,14 @@ const FillInGrid = ({ puzzle }: Props) => {
     const char = isNumbers
       ? value.replace(/[^0-9]/g, "").slice(-1)
       : value.toUpperCase().replace(/[^A-Z]/g, "").slice(-1);
-    
+
     setGrid((prev) => {
       const next = prev.map((row) => [...row]);
       next[r][c] = char;
       return next;
     });
+    setErrors(new Set());
 
-    // Auto-advance right then down
     if (char) {
       for (let nc = c + 1; nc < gridSize; nc++) {
         if (!isBlack(r, nc) && !grid[r][nc]) {
@@ -70,9 +76,33 @@ const FillInGrid = ({ puzzle }: Props) => {
     });
   };
 
+  const handleReset = () => {
+    setGrid(Array.from({ length: gridSize }, () => Array(gridSize).fill("")));
+    setUsedEntries(new Set());
+    setErrors(new Set());
+  };
+
+  const handleCheck = () => {
+    const errs = new Set<string>();
+    let filled = true;
+    for (let r = 0; r < gridSize; r++) {
+      for (let c = 0; c < gridSize; c++) {
+        if (isBlack(r, c) || solution[r][c] === null) continue;
+        if (!grid[r][c]) { filled = false; continue; }
+        if (grid[r][c] !== solution[r][c]) errs.add(`${r}-${c}`);
+      }
+    }
+    setErrors(errs);
+    if (errs.size === 0 && filled)
+      toast({ title: "🎉 Congratulations!", description: "Puzzle solved correctly!" });
+    else if (errs.size > 0)
+      toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
+    else
+      toast({ title: "Keep going!", description: "No errors so far." });
+  };
+
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
-      {/* Grid */}
       <div className="flex-shrink-0">
         <div
           className="inline-grid border-2 border-puzzle-border"
@@ -82,6 +112,7 @@ const FillInGrid = ({ puzzle }: Props) => {
             Array.from({ length: gridSize }, (_, c) => {
               const black = isBlack(r, c);
               const isActive = activeCell?.[0] === r && activeCell?.[1] === c;
+              const hasError = errors.has(`${r}-${c}`);
 
               return (
                 <div
@@ -89,8 +120,9 @@ const FillInGrid = ({ puzzle }: Props) => {
                   className={cn(
                     "relative w-10 h-10 sm:w-12 sm:h-12 border border-puzzle-border",
                     black && "bg-puzzle-cell-black",
-                    !black && isActive && "bg-puzzle-cell-active",
-                    !black && !isActive && "bg-puzzle-cell"
+                    !black && hasError && "bg-puzzle-cell-error",
+                    !black && !hasError && isActive && "bg-puzzle-cell-active",
+                    !black && !hasError && !isActive && "bg-puzzle-cell"
                   )}
                   onClick={() => handleCellClick(r, c)}
                 >
@@ -111,9 +143,11 @@ const FillInGrid = ({ puzzle }: Props) => {
             })
           )}
         </div>
+        {showControls && onNewPuzzle && (
+          <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} />
+        )}
       </div>
 
-      {/* Word/Number bank */}
       <div className="lg:max-w-xs">
         <h3 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           {isNumbers ? "Numbers to Place" : "Words to Place"}
