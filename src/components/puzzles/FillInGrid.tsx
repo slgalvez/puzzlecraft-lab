@@ -239,9 +239,8 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
         setDirection("down");
       }
     }
-    // Re-trigger mobile keyboard focus
     if (isMobile) {
-      setFocusTrigger((t) => t + 1);
+      mobileInputRef.current?.focus();
     } else {
       containerRef.current?.focus();
     }
