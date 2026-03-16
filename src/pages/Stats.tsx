@@ -4,11 +4,15 @@ import Layout from "@/components/layout/Layout";
 import { getProgressStats } from "@/lib/progressTracker";
 import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
-import { Trophy, Flame, Clock, Target, BarChart3, Calendar } from "lucide-react";
+import { getDailyStreak, getTotalDailyCompleted } from "@/lib/dailyChallenge";
+import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const Stats = () => {
   const stats = useMemo(() => getProgressStats(), []);
+  const dailyStreak = useMemo(() => getDailyStreak(), []);
+  const dailyCompleted = useMemo(() => getTotalDailyCompleted(), []);
 
   const statCards = [
     { icon: Target, label: "Puzzles Solved", value: stats.totalSolved.toString() },
@@ -24,8 +28,22 @@ const Stats = () => {
   return (
     <Layout>
       <div className="container py-12">
-        <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Your Progress</h1>
-        <p className="mt-2 text-muted-foreground">Track your solving stats, streaks, and best times.</p>
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Your Progress</h1>
+          <div className="flex gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/daily">
+                <Calendar size={14} /> Daily Challenge
+              </Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link to="/generate/sudoku">
+                <Infinity size={14} /> Endless Mode
+              </Link>
+            </Button>
+          </div>
+        </div>
+        <p className="text-muted-foreground">Track your solving stats, streaks, and best times.</p>
 
         {/* Overview cards */}
         <div className="mt-8 grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
@@ -37,6 +55,30 @@ const Stats = () => {
             </div>
           ))}
         </div>
+
+        {/* Daily challenge stats */}
+        {dailyCompleted > 0 && (
+          <div className="mt-8 rounded-xl border bg-card p-5">
+            <h2 className="font-display text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+              <Calendar size={18} className="text-primary" />
+              Daily Challenge
+            </h2>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="font-mono text-2xl font-bold text-foreground">{dailyCompleted}</p>
+                <p className="text-xs text-muted-foreground">Completed</p>
+              </div>
+              <div>
+                <p className="font-mono text-2xl font-bold text-foreground">{dailyStreak.current}</p>
+                <p className="text-xs text-muted-foreground">Current Streak</p>
+              </div>
+              <div>
+                <p className="font-mono text-2xl font-bold text-foreground">{dailyStreak.longest}</p>
+                <p className="text-xs text-muted-foreground">Best Streak</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* By category */}
         {categoryKeys.length > 0 && (
@@ -155,9 +197,16 @@ const Stats = () => {
         {stats.totalSolved === 0 && (
           <div className="mt-16 text-center">
             <p className="text-lg text-muted-foreground">No puzzles solved yet!</p>
-            <Link to="/puzzles" className="mt-3 inline-block text-sm font-medium text-primary hover:underline">
-              Start solving →
-            </Link>
+            <div className="mt-4 flex justify-center gap-3">
+              <Button asChild>
+                <Link to="/daily">
+                  Start with Today's Challenge <ArrowRight size={14} />
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/generate/sudoku">Try Endless Mode</Link>
+              </Button>
+            </div>
           </div>
         )}
       </div>
