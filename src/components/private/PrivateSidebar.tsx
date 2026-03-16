@@ -1,6 +1,8 @@
+import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, MessageSquare, Users, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { invokeMessaging } from "@/lib/privateApi";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -10,12 +12,13 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuBadge,
   useSidebar,
 } from "@/components/ui/sidebar";
 
 const adminNav = [
   { title: "Overview", url: "/p", icon: LayoutDashboard },
-  { title: "Conversations", url: "/p/conversations", icon: MessageSquare },
+  { title: "Conversations", url: "/p/conversations", icon: MessageSquare, badgeKey: "unread" as const },
   { title: "Users", url: "/p/users", icon: Users },
   { title: "Settings", url: "/p/settings", icon: Settings },
 ];
@@ -30,9 +33,31 @@ export function PrivateSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, token, signOut } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const navItems = user?.role === "admin" ? adminNav : userNav;
+  const isAdmin = user?.role === "admin";
+  const navItems = isAdmin ? adminNav : userNav;
+
+  const fetchUnread = useCallback(async () => {
+    if (!token || !isAdmin) return;
+    try {
+      const data = await invokeMessaging("list-conversations", token);
+      const total = (data.conversations || []).reduce(
+        (sum: number, c: { unread_count: number }) => sum + c.unread_count,
+        0
+      );
+      setUnreadCount(total);
+    } catch {
+      // silent
+    }
+  }, [token, isAdmin]);
+
+  useEffect(() => {
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 10000);
+    return () => clearInterval(interval);
+  }, [fetchUnread]);
 
   const isActive = (path: string) => {
     if (path === "/p") return location.pathname === "/p";
@@ -70,6 +95,11 @@ export function PrivateSidebar() {
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
+                  {"badgeKey" in item && item.badgeKey === "unread" && unreadCount > 0 && (
+                    <SidebarMenuBadge className="bg-primary text-primary-foreground text-[10px] min-w-[18px] h-[18px] flex items-center justify-center rounded-full">
+                      {unreadCount}
+                    </SidebarMenuBadge>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
