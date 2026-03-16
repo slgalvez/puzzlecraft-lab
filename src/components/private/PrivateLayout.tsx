@@ -37,7 +37,7 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
   // so banner notifications and overlays don't kick the user out.
   useEffect(() => {
     let armed = false;
-    const armTimer = setTimeout(() => { armed = true; }, 2000);
+    const armTimer = setTimeout(() => { armed = true; }, 30_000);
 
     const handleVisibilityChange = () => {
       if (armed && getFocusLossEnabled() && document.visibilityState === "hidden") {
