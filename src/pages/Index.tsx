@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Grid3X3, Hash, Type, Search, Plus, Palette, Lock, Calculator } from "lucide-react";
 import Layout from "@/components/layout/Layout";
@@ -13,8 +13,33 @@ const Index = () => {
   const featured = allPuzzles.slice(0, 3);
   const [puzzleCode, setPuzzleCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [hasUpdate, setHasUpdate] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Silent status check — only if a private session exists
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("private_session");
+      if (!raw) return;
+      const { token } = JSON.parse(raw);
+      if (!token) return;
+      // Verify token not expired
+      const payloadB64 = token.split(".")?.[1];
+      if (!payloadB64) return;
+      const payload = JSON.parse(atob(payloadB64));
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return;
+
+      supabase.functions
+        .invoke("messaging", { body: { action: "check-status", token } })
+        .then(({ data }) => {
+          if (data?.updated) setHasUpdate(true);
+        })
+        .catch(() => {});
+    } catch {
+      // silent
+    }
+  }, []);
 
   const handleLoadCode = async () => {
     const code = puzzleCode.trim();
