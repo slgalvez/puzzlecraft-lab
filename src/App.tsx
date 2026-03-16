@@ -13,7 +13,10 @@ import Help from "./pages/Help";
 import Stats from "./pages/Stats";
 import NotFound from "./pages/NotFound";
 
-// Private app pages
+// Private app
+import { AuthProvider } from "./contexts/AuthContext";
+import PrivateRoute from "./components/private/PrivateRoute";
+import Login from "./pages/private/Login";
 import Dashboard from "./pages/private/Dashboard";
 import ThreadList from "./pages/private/ThreadList";
 import ConversationView from "./pages/private/ConversationView";
@@ -27,25 +30,28 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          {/* Public puzzle site */}
-          <Route path="/" element={<Index />} />
-          <Route path="/puzzles" element={<PuzzleLibrary />} />
-          <Route path="/generate/:type" element={<PuzzleGenerator />} />
-          <Route path="/daily" element={<DailyPuzzle />} />
-          <Route path="/play/:id" element={<PlayPuzzle />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/help" element={<Help />} />
-          <Route path="/stats" element={<Stats />} />
+        <AuthProvider>
+          <Routes>
+            {/* Public puzzle site */}
+            <Route path="/" element={<Index />} />
+            <Route path="/puzzles" element={<PuzzleLibrary />} />
+            <Route path="/generate/:type" element={<PuzzleGenerator />} />
+            <Route path="/daily" element={<DailyPuzzle />} />
+            <Route path="/play/:id" element={<PlayPuzzle />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/help" element={<Help />} />
+            <Route path="/stats" element={<Stats />} />
 
-          {/* Private app */}
-          <Route path="/p" element={<Dashboard />} />
-          <Route path="/p/threads" element={<ThreadList />} />
-          <Route path="/p/threads/:threadId" element={<ConversationView />} />
-          <Route path="/p/settings" element={<PrivateSettings />} />
+            {/* Private app */}
+            <Route path="/p/login" element={<Login />} />
+            <Route path="/p" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+            <Route path="/p/threads" element={<PrivateRoute><ThreadList /></PrivateRoute>} />
+            <Route path="/p/threads/:threadId" element={<PrivateRoute><ConversationView /></PrivateRoute>} />
+            <Route path="/p/settings" element={<PrivateRoute><PrivateSettings /></PrivateRoute>} />
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
