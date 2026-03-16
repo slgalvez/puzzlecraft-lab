@@ -187,6 +187,7 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
+          is_draft: boolean
           puzzle_data: Json
           puzzle_type: string
           reveal_message: string | null
@@ -199,6 +200,7 @@ export type Database = {
           created_at?: string
           created_by: string
           id?: string
+          is_draft?: boolean
           puzzle_data: Json
           puzzle_type: string
           reveal_message?: string | null
@@ -211,6 +213,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
+          is_draft?: boolean
           puzzle_data?: Json
           puzzle_type?: string
           reveal_message?: string | null
