@@ -29,6 +29,7 @@ const PuzzleGenerator = () => {
   const [searchParams] = useSearchParams();
   const category = type as PuzzleCategory;
   const info = CATEGORY_INFO[category];
+  const navigate = useNavigate();
 
   const initialSeed = searchParams.get("seed");
 
@@ -36,6 +37,7 @@ const PuzzleGenerator = () => {
   const [seed, setSeed] = useState(() => initialSeed ? parseInt(initialSeed) || randomSeed() : randomSeed());
   const [seedInput, setSeedInput] = useState(initialSeed || "");
   const [puzzleKey, setPuzzleKey] = useState(0);
+  const [loadingSeed, setLoadingSeed] = useState(false);
   const { toast } = useToast();
 
   if (!info) {
