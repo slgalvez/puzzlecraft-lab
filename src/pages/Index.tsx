@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Grid3X3, Hash, Type } from "lucide-react";
+import { ArrowRight, Grid3X3, Hash, Type, Search, Plus, Palette, Lock, Calculator } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { dailyPuzzle, allPuzzles } from "@/data/puzzles";
