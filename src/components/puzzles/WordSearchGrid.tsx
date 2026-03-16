@@ -103,7 +103,8 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     const touch = e.touches[0];
     const cell = getCellFromPoint(touch.clientX, touch.clientY);
     if (cell) {
-      e.preventDefault(); // Prevent scroll on touch start within grid
+      e.preventDefault();
+      haptic();
       setStartCell(cell);
       setHoverCell(cell);
       setIsDragging(true);
