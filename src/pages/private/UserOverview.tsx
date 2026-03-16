@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Gift, Plus, Check, Clock, Send } from "lucide-react";
+import { MessageSquare, Puzzle, Plus, Check, Clock, Send } from "lucide-react";
 
 interface PuzzleSummary {
   id: string;
