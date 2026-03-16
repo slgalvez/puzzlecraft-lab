@@ -207,7 +207,8 @@ const PrivateSettings = () => {
               checked={focusLossOn}
               onCheckedChange={(val) => {
                 setFocusLossOn(val);
-                setFocusLossEnabled(val);
+                if (token) setFocusLossEnabled(val, token);
+                if (updateUser) updateUser({ focus_loss_protection: val } as any);
               }}
             />
           </div>
