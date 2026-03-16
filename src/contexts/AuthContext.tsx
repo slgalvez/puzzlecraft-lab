@@ -62,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       if (error || !data?.token) return { error: "Access unavailable" };
       localStorage.setItem(SESSION_KEY, JSON.stringify({ user: data.user, token: data.token }));
+      localStorage.setItem("private_last_active", String(Date.now()));
       setUser(data.user);
       setToken(data.token);
       return { error: null };
