@@ -337,7 +337,7 @@ const ForYou = () => {
 
   return (
     <PrivateLayout title="Puzzles for You">
-      <div className="p-4 sm:p-6 pb-32 sm:pb-36 max-w-2xl mx-auto space-y-6">
+      <div className="p-4 sm:p-6 pb-6 max-w-2xl mx-auto space-y-6">
         {/* Tabs */}
         <div className="flex gap-1 border-b border-border pb-2 overflow-x-auto">
           {(["received", "sent", "drafts", "create"] as Tab[]).map(t => (
@@ -774,7 +774,7 @@ function CreatePuzzleView({
 
   // ─── Preview step ───
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-6">
       <button onClick={onBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-3 w-3" /> {isEditingDraft ? "Back to Drafts" : "Start over"}
       </button>
@@ -813,30 +813,29 @@ function CreatePuzzleView({
         </div>
       )}
 
-      <div className="sticky bottom-0 z-20 -mx-4 sm:-mx-6 border-t border-border bg-background/95 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 backdrop-blur supports-[backdrop-filter]:bg-background/90">
-        <div className="mx-auto flex max-w-2xl flex-col gap-2">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <Button variant="outline" onClick={onBack} disabled={sending}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              {isEditingDraft ? "Back to Drafts" : "Cancel"}
-            </Button>
-            <Button variant="outline" onClick={onEditContent} disabled={sending}>
-              <Pencil className="h-4 w-4 mr-2" /> Edit Content
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-            <Button variant="outline" onClick={onRegenerate} disabled={sending}>
-              <RefreshCw className="h-4 w-4 mr-2" /> Regenerate
-            </Button>
-            <Button variant="outline" onClick={onSaveDraft} disabled={sending}>
-              <Save className="h-4 w-4 mr-2" /> {isEditingDraft ? "Update Draft" : "Save Draft"}
-            </Button>
-            <Button onClick={onSend} disabled={sending} className="sm:px-6">
-              <SendIcon className="h-4 w-4 mr-2" />
-              {sending ? "Sending…" : recipientName ? `Send to ${recipientName}` : "Send Puzzle"}
-            </Button>
-          </div>
+      {/* Action buttons — always inline, always reachable */}
+      <div className="space-y-2 pt-2 border-t border-border">
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" onClick={onEditContent} disabled={sending}>
+            <Pencil className="h-4 w-4 mr-2" /> Edit Content
+          </Button>
+          <Button variant="outline" onClick={onRegenerate} disabled={sending}>
+            <RefreshCw className="h-4 w-4 mr-2" /> Regenerate
+          </Button>
         </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <Button variant="outline" onClick={onSaveDraft} disabled={sending}>
+            <Save className="h-4 w-4 mr-2" /> {isEditingDraft ? "Update Draft" : "Save Draft"}
+          </Button>
+          <Button onClick={onSend} disabled={sending}>
+            <SendIcon className="h-4 w-4 mr-2" />
+            {sending ? "Sending…" : recipientName ? `Send to ${recipientName}` : "Send Puzzle"}
+          </Button>
+        </div>
+        <Button variant="ghost" onClick={onBack} disabled={sending} className="w-full text-muted-foreground">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          {isEditingDraft ? "Back to Drafts" : "Cancel"}
+        </Button>
       </div>
     </div>
   );
