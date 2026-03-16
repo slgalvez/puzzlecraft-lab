@@ -57,10 +57,11 @@ const ForYou = () => {
   const [puzzles, setPuzzles] = useState<PrivatePuzzle[]>([]);
   const [drafts, setDrafts] = useState<PrivatePuzzle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [partnerName, setPartnerName] = useState<string | null>(null);
+  const [recipients, setRecipients] = useState<{ id: string; first_name: string; last_name: string }[]>([]);
+  const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null);
 
   // Create state
-  const [createStep, setCreateStep] = useState<"type" | "content" | "preview">("type");
+  const [createStep, setCreateStep] = useState<"type" | "recipient" | "content" | "preview">("type");
   const [selectedType, setSelectedType] = useState<PuzzleType | null>(null);
   const [wordInput, setWordInput] = useState("");
   const [phraseInput, setPhraseInput] = useState("");
@@ -69,7 +70,6 @@ const ForYou = () => {
   const [generatedData, setGeneratedData] = useState<Record<string, unknown> | null>(null);
   const [sending, setSending] = useState(false);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
-  const [editingDraftRecipientName, setEditingDraftRecipientName] = useState<string | null>(null);
 
   // Solve state
   const [solvingPuzzle, setSolvingPuzzle] = useState<PrivatePuzzle | null>(null);
@@ -92,48 +92,45 @@ const ForYou = () => {
     }
   }, [token, handleSessionExpired]);
 
-  const fetchPartner = useCallback(async () => {
-    if (!token || !user) return;
+  const fetchRecipients = useCallback(async () => {
+    if (!token) return;
     try {
-      if (user.role === "admin") {
-        const data = await invokeMessaging("list-conversations", token);
-        const convos = data.conversations || [];
-        if (convos.length > 0) {
-          const first = convos[0];
-          setPartnerName(first.user_name || first.user_first_name || "User");
-        }
-      } else {
-        const data = await invokeMessaging("get-my-conversation", token);
-        if (data.conversation) {
-          setPartnerName(data.admin_name || "Admin");
-        }
+      const data = await invokeMessaging("list-recipients", token);
+      const list = data.recipients || [];
+      setRecipients(list);
+      // Auto-select if only one recipient
+      if (list.length === 1 && !selectedRecipientId) {
+        setSelectedRecipientId(list[0].id);
       }
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
     }
-  }, [token, user, handleSessionExpired]);
+  }, [token, handleSessionExpired, selectedRecipientId]);
 
   useEffect(() => {
     fetchPuzzles();
-    fetchPartner();
-  }, [fetchPuzzles, fetchPartner]);
+    fetchRecipients();
+  }, [fetchPuzzles, fetchRecipients]);
 
   const receivedPuzzles = puzzles.filter(p => p.sent_to === user?.id);
   const sentPuzzles = puzzles.filter(p => p.created_by === user?.id);
 
-  const resolvedPartnerName = partnerName
-    || receivedPuzzles.find(p => p.creator_name)?.creator_name
-    || sentPuzzles.find(p => p.recipient_name)?.recipient_name
-    || null;
-
-  // When editing a draft, use the draft's recipient name; otherwise use resolved partner
-  const activeRecipientName = editingDraftRecipientName || resolvedPartnerName;
+  const selectedRecipient = recipients.find(r => r.id === selectedRecipientId);
+  const activeRecipientName = selectedRecipient
+    ? `${selectedRecipient.first_name} ${selectedRecipient.last_name}`
+    : null;
 
   // ─── Create Flow ───
 
   const handleSelectType = (type: PuzzleType) => {
     setSelectedType(type);
-    setCreateStep("content");
+    // If only one recipient, skip recipient step
+    if (recipients.length <= 1) {
+      if (recipients.length === 1) setSelectedRecipientId(recipients[0].id);
+      setCreateStep("content");
+    } else {
+      setCreateStep("recipient");
+    }
     setWordInput("");
     setPhraseInput("");
     setClueEntries([{ answer: "", clue: "" }]);
@@ -192,6 +189,7 @@ const ForYou = () => {
           puzzle_type: selectedType,
           puzzle_data: generatedData,
           reveal_message: revealMessage.trim() || null,
+          sent_to: selectedRecipientId,
         });
         await invokeMessaging("send-draft", token, { puzzle_id: editingDraftId });
       } else {
@@ -199,6 +197,7 @@ const ForYou = () => {
           puzzle_type: selectedType,
           puzzle_data: generatedData,
           reveal_message: revealMessage.trim() || null,
+          sent_to: selectedRecipientId,
         });
       }
       toast({ title: "Puzzle sent!" });
@@ -223,6 +222,7 @@ const ForYou = () => {
           puzzle_type: selectedType,
           puzzle_data: generatedData,
           reveal_message: revealMessage.trim() || null,
+          sent_to: selectedRecipientId,
         });
       } else {
         await invokeMessaging("create-puzzle", token, {
@@ -230,6 +230,7 @@ const ForYou = () => {
           puzzle_data: generatedData,
           reveal_message: revealMessage.trim() || null,
           is_draft: true,
+          sent_to: selectedRecipientId,
         });
       }
       toast({ title: "Draft saved" });
@@ -253,7 +254,12 @@ const ForYou = () => {
     setClueEntries([{ answer: "", clue: "" }]);
     setRevealMessage("");
     setEditingDraftId(null);
-    setEditingDraftRecipientName(null);
+    // Reset recipient to default (first if only one)
+    if (recipients.length === 1) {
+      setSelectedRecipientId(recipients[0].id);
+    } else {
+      setSelectedRecipientId(null);
+    }
   };
 
   const handleDelete = async (puzzleId: string) => {
@@ -270,7 +276,7 @@ const ForYou = () => {
 
   const handleEditDraft = (draft: PrivatePuzzle) => {
     setEditingDraftId(draft.id);
-    setEditingDraftRecipientName(draft.recipient_name || null);
+    setSelectedRecipientId(draft.sent_to);
     setSelectedType(draft.puzzle_type);
     setGeneratedData(draft.puzzle_data);
     setRevealMessage(draft.reveal_message || "");
@@ -406,6 +412,9 @@ const ForYou = () => {
             generatedData={generatedData}
             sending={sending}
             recipientName={activeRecipientName}
+            recipients={recipients}
+            selectedRecipientId={selectedRecipientId}
+            onSelectRecipient={(id) => { setSelectedRecipientId(id); setCreateStep("content"); }}
             isEditingDraft={!!editingDraftId}
             onSelectType={handleSelectType}
             onGenerate={handleGenerate}
@@ -414,6 +423,7 @@ const ForYou = () => {
             onSaveDraft={handleSaveDraft}
             onBack={resetCreate}
             onEditContent={() => setCreateStep("content")}
+            onChangeRecipient={() => setCreateStep("recipient")}
           />
         )}
       </div>
@@ -567,10 +577,11 @@ function formatTime(seconds: number): string {
 function CreatePuzzleView({
   step, selectedType, wordInput, setWordInput, phraseInput, setPhraseInput,
   clueEntries, setClueEntries, revealMessage, setRevealMessage,
-  generatedData, sending, recipientName, isEditingDraft,
-  onSelectType, onGenerate, onRegenerate, onSend, onSaveDraft, onBack, onEditContent,
+  generatedData, sending, recipientName, recipients, selectedRecipientId,
+  onSelectRecipient, isEditingDraft,
+  onSelectType, onGenerate, onRegenerate, onSend, onSaveDraft, onBack, onEditContent, onChangeRecipient,
 }: {
-  step: "type" | "content" | "preview";
+  step: "type" | "recipient" | "content" | "preview";
   selectedType: PuzzleType | null;
   wordInput: string;
   setWordInput: (v: string) => void;
@@ -583,6 +594,9 @@ function CreatePuzzleView({
   generatedData: Record<string, unknown> | null;
   sending: boolean;
   recipientName: string | null;
+  recipients: { id: string; first_name: string; last_name: string }[];
+  selectedRecipientId: string | null;
+  onSelectRecipient: (id: string) => void;
   isEditingDraft: boolean;
   onSelectType: (t: PuzzleType) => void;
   onGenerate: () => void;
@@ -591,6 +605,7 @@ function CreatePuzzleView({
   onSaveDraft: () => void;
   onBack: () => void;
   onEditContent: () => void;
+  onChangeRecipient: () => void;
 }) {
   if (step === "type") {
     return (
@@ -619,6 +634,34 @@ function CreatePuzzleView({
     );
   }
 
+  if (step === "recipient") {
+    return (
+      <div className="space-y-4">
+        <button onClick={onBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-3 w-3" /> Back
+        </button>
+        <h3 className="text-sm font-medium text-foreground">Select recipient</h3>
+        <p className="text-xs text-muted-foreground">Who should receive this {PUZZLE_LABELS[selectedType!]}?</p>
+        <div className="space-y-2">
+          {recipients.map(r => (
+            <button
+              key={r.id}
+              onClick={() => onSelectRecipient(r.id)}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left ${
+                selectedRecipientId === r.id
+                  ? "border-primary bg-primary/5"
+                  : "border-border bg-card hover:border-primary/50"
+              }`}
+            >
+              <SendIcon className="h-4 w-4 text-primary shrink-0" />
+              <span className="text-sm font-medium">{r.first_name} {r.last_name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (step === "content") {
     return (
       <div className="space-y-4">
@@ -628,9 +671,10 @@ function CreatePuzzleView({
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium">{PUZZLE_LABELS[selectedType!]}</h3>
           {recipientName && (
-            <span className="text-xs text-muted-foreground">
+            <button onClick={onChangeRecipient} className="text-xs text-muted-foreground hover:text-foreground">
               To <span className="text-foreground font-medium">{recipientName}</span>
-            </span>
+              {recipients.length > 1 && <Pencil className="inline h-3 w-3 ml-1" />}
+            </button>
           )}
         </div>
 
@@ -735,12 +779,16 @@ function CreatePuzzleView({
           {PUZZLE_LABELS[selectedType!]} — {isEditingDraft ? "Edit Draft" : "Preview"}
         </h3>
         {recipientName && (
-          <div className="flex items-center gap-2 p-2.5 rounded-md bg-secondary/50 border border-border">
+          <button
+            onClick={onChangeRecipient}
+            className="flex items-center gap-2 p-2.5 rounded-md bg-secondary/50 border border-border w-full text-left hover:border-primary/40 transition-colors"
+          >
             <SendIcon className="h-3.5 w-3.5 text-primary shrink-0" />
-            <p className="text-xs">
+            <p className="text-xs flex-1">
               Sending to <span className="text-foreground font-semibold">{recipientName}</span>
             </p>
-          </div>
+            {recipients.length > 1 && <Pencil className="h-3 w-3 text-muted-foreground" />}
+          </button>
         )}
       </div>
 

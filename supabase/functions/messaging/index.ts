@@ -710,16 +710,49 @@ Deno.serve(async (req) => {
       return json({ puzzles: enrich(puzzles), drafts: enrich(drafts) });
     }
 
+    // ─── LIST RECIPIENTS ───
+    if (action === "list-recipients") {
+      let recipients: { id: string; first_name: string; last_name: string }[] = [];
+      if (isAdmin) {
+        // Admin can send to any non-admin active user
+        const { data: profiles } = await sb
+          .from("profiles")
+          .select("id, first_name, last_name, role")
+          .neq("id", profileId);
+        recipients = (profiles || []).filter(p => p.role !== "admin").map(p => ({
+          id: p.id, first_name: p.first_name, last_name: p.last_name,
+        }));
+      } else {
+        // Regular user sends to their admin
+        const { data: conv } = await sb
+          .from("conversations")
+          .select("admin_profile_id")
+          .eq("user_profile_id", profileId)
+          .maybeSingle();
+        if (conv) {
+          const { data: admin } = await sb.from("profiles").select("id, first_name, last_name").eq("id", conv.admin_profile_id).single();
+          if (admin) recipients = [admin];
+        }
+      }
+      return json({ recipients });
+    }
+
     // ─── CREATE PUZZLE ───
     if (action === "create-puzzle") {
-      const { puzzle_type, puzzle_data, reveal_message, is_draft } = body;
+      const { puzzle_type, puzzle_data, reveal_message, is_draft, sent_to: explicitSentTo } = body;
       if (!puzzle_type || !puzzle_data) return err("Missing fields", 400);
       const validTypes = ["word-fill", "cryptogram", "crossword", "word-search"];
       if (!validTypes.includes(puzzle_type)) return err("Invalid puzzle type", 400);
 
-      // Find the other participant
+      // Determine recipient — use explicit sent_to if provided, else find default partner
       let sentTo: string;
-      if (isAdmin) {
+      if (explicitSentTo) {
+        // Validate this is a real profile the user can send to
+        const { data: targetProfile } = await sb.from("profiles").select("id, role").eq("id", explicitSentTo).single();
+        if (!targetProfile) return err("Invalid recipient");
+        if (targetProfile.id === profileId) return err("Cannot send to yourself");
+        sentTo = explicitSentTo;
+      } else if (isAdmin) {
         const { data: convs } = await sb
           .from("conversations")
           .select("user_profile_id")
@@ -800,6 +833,13 @@ Deno.serve(async (req) => {
       if (puzzle_type) updates.puzzle_type = puzzle_type;
       if (puzzle_data) updates.puzzle_data = puzzle_data;
       if (reveal_message !== undefined) updates.reveal_message = reveal_message || null;
+      // Allow changing recipient on drafts
+      if (body.sent_to) {
+        const { data: targetProfile } = await sb.from("profiles").select("id").eq("id", body.sent_to).single();
+        if (!targetProfile) return err("Invalid recipient");
+        if (targetProfile.id === profileId) return err("Cannot send to yourself");
+        updates.sent_to = body.sent_to;
+      }
 
       const { error: updateErr } = await sb
         .from("private_puzzles")
