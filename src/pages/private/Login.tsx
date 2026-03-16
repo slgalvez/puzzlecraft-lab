@@ -86,7 +86,7 @@ export default function LoginPage() {
 
   if (user) {
     // Route based on role
-    const dest = user.role === "admin" ? "/p" : "/p/conversation";
+    const dest = user.role === "admin" ? "/p" : "/p";
     return <Navigate to={dest} replace />;
   }
 
