@@ -28,7 +28,8 @@ export function PrivateSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
   const navItems = user?.role === "admin" ? adminNav : userNav;
 
@@ -37,9 +38,14 @@ export function PrivateSidebar() {
     return location.pathname.startsWith(path);
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/p/login");
+  };
+
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
-      <SidebarContent className="pt-4">
+      <SidebarContent className="pt-4 flex flex-col h-full">
         <div className="px-4 pb-4">
           {!collapsed && (
             <span className="text-sm font-semibold tracking-tight text-foreground">
@@ -47,7 +53,7 @@ export function PrivateSidebar() {
             </span>
           )}
         </div>
-        <SidebarGroup>
+        <SidebarGroup className="flex-1">
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
@@ -68,6 +74,15 @@ export function PrivateSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        <div className="p-3 border-t border-border">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 w-full px-2 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60 rounded-md transition-colors"
+          >
+            <LogOut className="h-4 w-4 shrink-0" />
+            {!collapsed && <span>Log out</span>}
+          </button>
+        </div>
       </SidebarContent>
     </Sidebar>
   );
