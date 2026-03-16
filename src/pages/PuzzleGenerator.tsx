@@ -58,28 +58,53 @@ const PuzzleGenerator = () => {
     setPuzzleKey((k) => k + 1);
   };
 
-  const handleLoadSeed = () => {
+  const handleLoadSeed = async () => {
     const code = seedInput.trim();
     if (!code) return;
 
-    // Accept known puzzle IDs
+    // Accept known puzzle IDs locally
     if (getPuzzleById(code)) {
-      setSeed(seedFromString(code));
-      setPuzzleKey((k) => k + 1);
+      navigate(`/play/${code}`);
       return;
     }
 
-    // Accept pure numeric seeds
-    if (/^\d+$/.test(code)) {
-      setSeed(parseInt(code));
-      setPuzzleKey((k) => k + 1);
-      return;
-    }
+    // Validate via backend
+    setLoadingSeed(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-code', {
+        body: { code },
+      });
 
-    toast({
-      title: "Code not found",
-      description: "We couldn't find a puzzle matching that code. Check the code and try again.",
-    });
+      if (error) throw error;
+
+      switch (data?.type) {
+        case 'unlock':
+          navigate(data.destination);
+          break;
+        case 'seed':
+          setSeed(data.seed);
+          setPuzzleKey((k) => k + 1);
+          break;
+        case 'type-seed':
+          navigate(`/generate/${data.puzzleType}?seed=${data.seed}`);
+          break;
+        case 'type-name':
+          navigate(`/generate/${data.puzzleType}`);
+          break;
+        default:
+          toast({
+            title: "Code not found",
+            description: "We couldn't find a puzzle matching that code. Check the code and try again.",
+          });
+      }
+    } catch {
+      toast({
+        title: "Code not found",
+        description: "We couldn't find a puzzle matching that code. Check the code and try again.",
+      });
+    } finally {
+      setLoadingSeed(false);
+    }
   };
 
   const handleDifficultyChange = (d: Difficulty) => {
