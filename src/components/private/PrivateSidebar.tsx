@@ -37,13 +37,15 @@ export function PrivateSidebar() {
   const navigate = useNavigate();
   const { user, token, signOut } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unsolvedPuzzles, setUnsolvedPuzzles] = useState(0);
 
   const isAdmin = user?.role === "admin";
   const navItems = isAdmin ? adminNav : userNav;
 
-  const fetchUnread = useCallback(async () => {
+  const fetchCounts = useCallback(async () => {
     if (!token) return;
     try {
+      // Fetch unread messages
       if (isAdmin) {
         const data = await invokeMessaging("list-conversations", token);
         const total = (data.conversations || []).reduce(
@@ -55,10 +57,17 @@ export function PrivateSidebar() {
         const data = await invokeMessaging("get-my-conversation", token);
         setUnreadCount(data.unread_count || 0);
       }
+
+      // Fetch unsolved puzzles
+      const puzzleData = await invokeMessaging("list-puzzles", token);
+      const unsolved = (puzzleData.puzzles || []).filter(
+        (p: { sent_to: string; solved_by: string | null }) => p.sent_to === user?.id && !p.solved_by
+      ).length;
+      setUnsolvedPuzzles(unsolved);
     } catch {
       // silent
     }
-  }, [token, isAdmin]);
+  }, [token, isAdmin, user?.id]);
 
   useEffect(() => {
     fetchUnread();
