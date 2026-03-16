@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useSearchParams, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import DifficultySelector from "@/components/puzzles/DifficultySelector";
 import { Input } from "@/components/ui/input";
@@ -23,12 +23,15 @@ import type { CrosswordPuzzle, FillInPuzzle } from "@/data/puzzles";
 
 const PuzzleGenerator = () => {
   const { type } = useParams<{ type: string }>();
+  const [searchParams] = useSearchParams();
   const category = type as PuzzleCategory;
   const info = CATEGORY_INFO[category];
 
+  const initialSeed = searchParams.get("seed");
+
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
-  const [seed, setSeed] = useState(() => randomSeed());
-  const [seedInput, setSeedInput] = useState("");
+  const [seed, setSeed] = useState(() => initialSeed ? parseInt(initialSeed) || randomSeed() : randomSeed());
+  const [seedInput, setSeedInput] = useState(initialSeed || "");
   const [puzzleKey, setPuzzleKey] = useState(0);
 
   if (!info) {
