@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS focus_loss_protection boolean NOT NULL DEFAULT true;
