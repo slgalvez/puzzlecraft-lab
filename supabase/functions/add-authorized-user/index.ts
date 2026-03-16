@@ -7,26 +7,23 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Admin-only: adds a user to authorized_users with a bcrypt-hashed password.
-// Requires service role key in Authorization header.
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Verify caller is using service role key
-    const authHeader = req.headers.get("authorization") || "";
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const token = authHeader.replace("Bearer ", "");
-    if (token !== serviceRoleKey) {
+    const { first_name, last_name, password, admin_secret } = await req.json();
+
+    // Verify admin secret
+    const expectedSecret = Deno.env.get("PUZZLE_UNLOCK_PHRASE");
+    if (!admin_secret || admin_secret !== expectedSecret) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { first_name, last_name, password } = await req.json();
     if (!first_name || !last_name || !password) {
       return new Response(JSON.stringify({ error: "Missing fields" }), {
         status: 400,
@@ -37,6 +34,7 @@ Deno.serve(async (req) => {
     const password_hash = await bcrypt.hash(password);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const { data, error } = await supabase
