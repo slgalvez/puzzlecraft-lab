@@ -634,7 +634,7 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress 
     return cells;
   };
 
-  const trySelectWord = (sr: number, sc: number, er: number, ec: number) => {
+  const trySelectWord = useCallback((sr: number, sc: number, er: number, ec: number) => {
     const dr = Math.sign(er - sr);
     const dc = Math.sign(ec - sc);
     const len = Math.max(Math.abs(er - sr), Math.abs(ec - sc));
@@ -657,7 +657,7 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress 
         return;
       }
     }
-  };
+  }, [data, foundWords, foundCells, onComplete]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     e.preventDefault();
