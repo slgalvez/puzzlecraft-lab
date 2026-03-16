@@ -153,7 +153,7 @@ const AdminConversationView = () => {
   if (loading) {
     return (
       <PrivateLayout title="Conversation">
-        <div className="flex items-center justify-center h-[calc(100vh-3.5rem)]">
+        <div className="flex items-center justify-center h-full">
           <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
         </div>
       </PrivateLayout>
