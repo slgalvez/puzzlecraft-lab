@@ -32,7 +32,7 @@ const MobileNumberPad = ({ onNumber, onDelete, visible, maxDigit = 9 }: Props) =
           "h-11 rounded-lg border border-border bg-card text-muted-foreground font-semibold text-sm",
           "active:bg-destructive/10 active:scale-95 transition-all touch-manipulation"
         )}
-        onClick={onDelete}
+        onClick={() => { haptic(); onDelete(); }}
       >
         ⌫
       </button>
