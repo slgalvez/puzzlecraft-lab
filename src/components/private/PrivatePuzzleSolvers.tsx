@@ -847,9 +847,11 @@ export function PuzzlePreview({ data, puzzleType }: PuzzlePreviewProps) {
         </div>
       )}
       {puzzleType === "word-fill" && entries.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {entries.map((entry, i) => <Badge key={i} variant="outline" className="text-xs font-mono">{entry}</Badge>)}
-        </div>
+        <GroupedEntryList
+          entries={entries}
+          isNumbers={false}
+          badgeMode
+        />
       )}
     </div>
   );

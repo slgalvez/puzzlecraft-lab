@@ -355,22 +355,13 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
         <h3 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           {isNumbers ? "Numbers to Place" : "Words to Place"}
         </h3>
-        <div className="flex flex-wrap gap-2">
-          {entries.map((entry) => (
-            <button
-              key={entry}
-              onClick={() => toggleEntry(entry)}
-              className={cn(
-                "rounded-md border px-3 py-1.5 text-sm font-medium transition-colors touch-manipulation",
-                usedEntries.has(entry)
-                  ? "border-primary/30 bg-primary/10 text-primary line-through"
-                  : "border-border bg-card text-foreground hover:bg-secondary"
-              )}
-            >
-              {entry}
-            </button>
-          ))}
-        </div>
+        <GroupedEntryList
+          entries={entries}
+          isNumbers={isNumbers}
+          interactive
+          usedEntries={usedEntries}
+          onToggle={toggleEntry}
+        />
       </div>
     </div>
   );
