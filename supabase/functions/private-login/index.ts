@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
     // Look up profile
     const { data: profile, error: profileErr } = await supabase
       .from("profiles")
-      .select("id, first_name, last_name, role")
+      .select("id, first_name, last_name, role, focus_loss_protection")
       .eq("authorized_user_id", authUser.id)
       .single();
 
