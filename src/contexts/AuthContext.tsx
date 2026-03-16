@@ -70,15 +70,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const checkSession = async () => {
       try {
         const { data } = await supabase.functions.invoke("messaging", {
-          body: { action: "check-status", token },
+          body: { action: "verify-session", token },
         });
-        // check-status is exempted from session_version check on server,
-        // but if the token itself is expired the server returns error
-        // For session version, we do a lightweight check via any action
-        const { data: verifyData } = await supabase.functions.invoke("messaging", {
-          body: { action: "get-my-conversation", token },
-        });
-        if (verifyData?.error === "Session ended") {
+        if (data?.error === "Session ended" || data?.error === "Access unavailable") {
           localStorage.removeItem(SESSION_KEY);
           setUser(null);
           setToken(null);
