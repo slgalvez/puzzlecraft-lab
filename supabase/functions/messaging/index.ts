@@ -138,8 +138,13 @@ Deno.serve(async (req) => {
       let is_disappearing = false;
       if (conv.disappearing_enabled) {
         is_disappearing = true;
-        const ms = parseDuration(conv.disappearing_duration);
-        expires_at = new Date(Date.now() + ms).toISOString();
+        if (conv.disappearing_duration === "view-once") {
+          // View-once: set a far-future expiry; actual deletion happens on mark-read
+          expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        } else {
+          const ms = parseDuration(conv.disappearing_duration);
+          expires_at = new Date(Date.now() + ms).toISOString();
+        }
       }
 
       const { data: msg, error: msgErr } = await sb
