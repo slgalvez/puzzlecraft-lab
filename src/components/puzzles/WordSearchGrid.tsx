@@ -183,6 +183,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
           </p>
         )}
 
+        <div className="max-w-full overflow-x-auto">
         <div
           ref={gridRef}
           className="inline-grid border-2 border-puzzle-border select-none outline-none"
@@ -203,7 +204,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
                 <div
                   key={key}
                   className={cn(
-                    "w-8 h-8 sm:w-9 sm:h-9 border border-puzzle-border flex items-center justify-center cursor-pointer text-sm sm:text-base font-semibold transition-colors touch-manipulation",
+                    "w-7 h-7 sm:w-9 sm:h-9 border border-puzzle-border flex items-center justify-center cursor-pointer text-xs sm:text-base font-semibold transition-colors touch-manipulation",
                     isFound && "bg-puzzle-cell-highlight text-primary",
                     isStart && "bg-puzzle-cell-active",
                     isPreview && !isFound && !isStart && "bg-secondary",
@@ -218,6 +219,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
               );
             })
           )}
+        </div>
         </div>
         <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} />
       </div>

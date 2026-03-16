@@ -259,6 +259,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
           Arrow keys to move • 1–9 to enter • Delete to clear • Tap same cell to toggle direction
         </p>
       )}
+      <div className="max-w-full overflow-x-auto">
       <div
         ref={containerRef}
         tabIndex={0}
@@ -276,7 +277,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
 
             if (black) {
               return (
-                <div key={`${r}-${c}`} className="relative w-10 h-10 sm:w-12 sm:h-12 bg-puzzle-cell-black border border-puzzle-border overflow-hidden">
+                <div key={`${r}-${c}`} className="relative w-8 h-8 sm:w-12 sm:h-12 bg-puzzle-cell-black border border-puzzle-border overflow-hidden">
                   {clue && (
                     <>
                       <div className="absolute inset-0" style={{
@@ -296,7 +297,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
               <div
                 key={`${r}-${c}`}
                 className={cn(
-                  "relative w-10 h-10 sm:w-12 sm:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation",
+                  "relative w-8 h-8 sm:w-12 sm:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation",
                   hasError && "bg-puzzle-cell-error",
                   !hasError && isActive && "bg-puzzle-cell-active",
                   !hasError && !isActive && isInActiveEntry && "bg-puzzle-cell-highlight",
@@ -304,11 +305,12 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
                 )}
                 onClick={() => handleCellClick(r, c)}
               >
-                <span className="text-lg sm:text-xl font-semibold text-foreground">{grid[r][c]}</span>
+                <span className="text-sm sm:text-xl font-semibold text-foreground">{grid[r][c]}</span>
               </div>
             );
           })
         )}
+      </div>
       </div>
       <MobileNumberPad
         visible={isMobile && !!activeCell && !timer.isSolved}

@@ -316,6 +316,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
           />
         )}
 
+        <div className="max-w-full overflow-x-auto">
         <div
           ref={containerRef}
           tabIndex={0}
@@ -334,7 +335,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
                 <div
                   key={`${r}-${c}`}
                   className={cn(
-                    "relative w-10 h-10 sm:w-12 sm:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation",
+                    "relative w-8 h-8 sm:w-12 sm:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation",
                     black && "bg-puzzle-cell-black",
                     !black && hasError && "bg-puzzle-cell-error",
                     !black && !hasError && isActive && "bg-puzzle-cell-active",
@@ -344,12 +345,13 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
                   onClick={() => handleCellClick(r, c)}
                 >
                   {!black && (
-                    <span className="text-lg sm:text-xl font-semibold text-foreground uppercase">{grid[r][c]}</span>
+                    <span className="text-sm sm:text-xl font-semibold text-foreground uppercase">{grid[r][c]}</span>
                   )}
                 </div>
               );
             })
           )}
+        </div>
         </div>
         {showControls && onNewPuzzle && (
           <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} />

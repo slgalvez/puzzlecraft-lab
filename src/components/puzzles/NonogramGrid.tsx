@@ -108,7 +108,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
       toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
   };
 
-  const cellSize = rows <= 10 ? "w-8 h-8 sm:w-9 sm:h-9" : "w-6 h-6 sm:w-6 sm:h-6";
+  const cellSize = rows <= 10 ? "w-7 h-7 sm:w-9 sm:h-9" : "w-5 h-5 sm:w-6 sm:h-6";
   const clueTextSize = rows <= 10 ? "text-xs sm:text-sm" : "text-[9px] sm:text-[10px]";
 
   return (
@@ -152,7 +152,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
         </p>
       )}
 
-      <div className="inline-block">
+      <div className="max-w-full overflow-x-auto inline-block">
         {/* Column clues */}
         <div className="flex">
           <div style={{ width: `${maxRowClueLen * 1.5}rem` }} />

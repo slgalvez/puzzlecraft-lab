@@ -153,6 +153,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
           Arrow keys to move • 1–9 to enter • Delete to clear
         </p>
       )}
+      <div className="max-w-full overflow-x-auto">
       <div
         ref={containerRef}
         tabIndex={0}
@@ -171,7 +172,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
               <div
                 key={`${r}-${c}`}
                 className={cn(
-                  "relative w-9 h-9 sm:w-11 sm:h-11 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation",
+                  "relative w-8 h-8 sm:w-11 sm:h-11 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation",
                   c % 3 === 2 && c < 8 && "border-r-2 border-r-foreground",
                   r % 3 === 2 && r < 8 && "border-b-2 border-b-foreground",
                   hasError && "bg-puzzle-cell-error",
@@ -191,6 +192,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
             );
           })
         )}
+      </div>
       </div>
       <MobileNumberPad
         visible={isMobile && !!activeCell && !timer.isSolved}
