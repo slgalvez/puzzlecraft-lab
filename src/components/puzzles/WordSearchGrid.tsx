@@ -222,7 +222,6 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
                 <div
                   key={key}
                   className={cn(
-                    cellSizeClass,
                     "border border-puzzle-border flex items-center justify-center cursor-pointer font-semibold transition-colors touch-manipulation active:animate-cell-pop",
                     isFound && "bg-puzzle-cell-highlight text-primary",
                     isStart && "bg-puzzle-cell-active",
@@ -230,6 +229,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
                     isCursor && !isFound && !isStart && !isPreview && !isMobile && "ring-2 ring-inset ring-primary bg-puzzle-cell-active",
                     !isFound && !isStart && !isPreview && !(isCursor && !isMobile) && "bg-puzzle-cell hover:bg-secondary"
                   )}
+                  style={{ width: cellSizeStyle.width, height: cellSizeStyle.height, fontSize: cellSizeStyle.fontSize }}
                   onClick={() => handleCellClick(r, c)}
                   onMouseEnter={() => !isMobile && setHoverCell([r, c])}
                 >
