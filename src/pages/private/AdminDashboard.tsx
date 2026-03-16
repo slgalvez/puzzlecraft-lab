@@ -181,7 +181,7 @@ const AdminDashboard = () => {
       case "message":
         return <MessageSquare size={12} className="text-primary" />;
       case "puzzle_received":
-        return <Gift size={12} className="text-primary" />;
+        return <Puzzle size={12} className="text-primary" />;
       case "puzzle_sent":
         return <Send size={12} className="text-muted-foreground" />;
       case "puzzle_solved":
