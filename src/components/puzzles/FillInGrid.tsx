@@ -301,10 +301,10 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
           />
         ) : (
           <MobileLetterInput
+            ref={mobileInputRef}
             active={isMobile && !!activeCell && !timer.isSolved}
             onLetter={enterChar}
             onDelete={deleteChar}
-            focusTrigger={focusTrigger}
           />
         )}
 
