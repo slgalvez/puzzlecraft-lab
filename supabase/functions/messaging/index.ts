@@ -253,6 +253,50 @@ Deno.serve(async (req) => {
       return json({ users: result });
     }
 
+    // ─── ADMIN: ADD USER ───
+    if (action === "add-user") {
+      if (!isAdmin) return err("Access denied");
+      const { first_name, last_name, password } = body;
+      if (!first_name || !last_name || !password || typeof first_name !== "string" || typeof last_name !== "string" || typeof password !== "string") {
+        return err("Missing fields", 400);
+      }
+      if (first_name.trim().length === 0 || last_name.trim().length === 0 || password.length < 4) {
+        return err("Invalid fields", 400);
+      }
+
+      // Hash password with PBKDF2
+      const encoder = new TextEncoder();
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const keyMaterial = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
+      const hash = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" }, keyMaterial, 256);
+      const saltB64 = btoa(String.fromCharCode(...salt));
+      const hashB64 = btoa(String.fromCharCode(...new Uint8Array(hash)));
+      const password_hash = `pbkdf2:100000:${saltB64}:${hashB64}`;
+
+      // Insert authorized_user
+      const { data: newUser, error: insertErr } = await sb
+        .from("authorized_users")
+        .insert({ first_name: first_name.trim(), last_name: last_name.trim(), password_hash })
+        .select("id, first_name, last_name")
+        .single();
+
+      if (insertErr) {
+        if (insertErr.message?.includes("duplicate") || insertErr.message?.includes("unique")) {
+          return err("A user with that name already exists", 400);
+        }
+        return err("Could not create user", 400);
+      }
+
+      // Create profile
+      const { error: profileErr } = await sb
+        .from("profiles")
+        .insert({ authorized_user_id: newUser.id, first_name: newUser.first_name, last_name: newUser.last_name, role: "user" });
+
+      if (profileErr) return err("User created but profile failed", 500);
+
+      return json({ user: newUser });
+    }
+
     return err("Unknown action", 400);
   } catch (e) {
     console.error("Messaging error:", e);
