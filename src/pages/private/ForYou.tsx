@@ -414,7 +414,7 @@ const ForYou = () => {
             recipientName={activeRecipientName}
             recipients={recipients}
             selectedRecipientId={selectedRecipientId}
-            onSelectRecipient={(id) => { setSelectedRecipientId(id); setCreateStep("content"); }}
+            onSelectRecipient={(id) => { setSelectedRecipientId(id); setCreateStep(editingDraftId ? "preview" : "content"); }}
             isEditingDraft={!!editingDraftId}
             onSelectType={handleSelectType}
             onGenerate={handleGenerate}
