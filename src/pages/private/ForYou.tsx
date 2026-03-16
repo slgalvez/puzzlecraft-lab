@@ -637,7 +637,7 @@ function CreatePuzzleView({
   if (step === "recipient") {
     return (
       <div className="space-y-4">
-        <button onClick={isEditingDraft ? onEditContent : onBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+        <button onClick={() => { if (isEditingDraft && generatedData) { onEditContent(); } else { onBack(); } }} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-3 w-3" /> Back
         </button>
         <h3 className="text-sm font-medium text-foreground">Select recipient</h3>
