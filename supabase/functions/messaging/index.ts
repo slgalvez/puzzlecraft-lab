@@ -20,7 +20,8 @@ async function verifyToken(token: string): Promise<JwtPayload | null> {
   const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
-  const sigRestored = sigB64.replace(/-/g, "+").replace(/_/g, "/");
+  let sigRestored = sigB64.replace(/-/g, "+").replace(/_/g, "/");
+  while (sigRestored.length % 4) sigRestored += "=";
   const sigBytes = Uint8Array.from(atob(sigRestored), (c) => c.charCodeAt(0));
   const valid = await crypto.subtle.verify("HMAC", key, sigBytes, encoder.encode(`${headerB64}.${payloadB64}`));
   if (!valid) return null;
