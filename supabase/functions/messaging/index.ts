@@ -12,6 +12,7 @@ interface JwtPayload {
   first_name: string;
   last_name: string;
   exp: number;
+  session_version?: number;
 }
 
 async function verifyToken(token: string): Promise<JwtPayload | null> {
