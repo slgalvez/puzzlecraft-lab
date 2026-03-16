@@ -33,7 +33,7 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
                   {user?.first_name} {user?.last_name}
                 </span>
                 <button
-                  onClick={() => signOut()}
+                  onClick={() => { signOut(); navigate("/"); }}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                   title="Sign out"
                 >
