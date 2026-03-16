@@ -3,8 +3,10 @@ import { cn } from "@/lib/utils";
 import { generateSudoku } from "@/lib/generators/sudoku";
 import PuzzleControls from "./PuzzleControls";
 import PuzzleTimer from "./PuzzleTimer";
+import MobileNumberPad from "./MobileNumberPad";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Difficulty } from "@/lib/puzzleTypes";
 
 interface Props {
@@ -15,6 +17,7 @@ interface Props {
 
 const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateSudoku(seed, difficulty), [seed, difficulty]);
   const [grid, setGrid] = useState(() => puzzle.grid.map((r) => [...r]));
   const [errors, setErrors] = useState<Set<string>>(new Set());
@@ -26,49 +29,67 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
 
   const isGiven = (r: number, c: number) => puzzle.grid[r][c] !== null;
 
-  // Auto-focus first empty cell on mount
   useEffect(() => {
     containerRef.current?.focus();
     for (let i = 0; i < 81; i++) {
       const r = Math.floor(i / 9), c = i % 9;
-      if (!isGiven(r, c)) {
-        setActiveCell([r, c]);
+      if (!isGiven(r, c)) { setActiveCell([r, c]); return; }
+    }
+  }, [seed, difficulty]);
+
+  const enterNumber = useCallback((num: number) => {
+    if (!activeCell || timer.isSolved) return;
+    const [r, c] = activeCell;
+    if (isGiven(r, c)) return;
+    setGrid((prev) => {
+      const next = prev.map((row) => [...row]);
+      next[r][c] = num;
+      return next;
+    });
+    setErrors(new Set());
+    // Auto-advance
+    for (let i = r * 9 + c + 1; i < 81; i++) {
+      const nr = Math.floor(i / 9), nc = i % 9;
+      if (!isGiven(nr, nc) && grid[nr][nc] === null) {
+        setActiveCell([nr, nc]);
         return;
       }
     }
-  }, [seed, difficulty]);
+  }, [activeCell, timer.isSolved, grid, puzzle.grid]);
+
+  const deleteCell = useCallback(() => {
+    if (!activeCell || timer.isSolved) return;
+    const [r, c] = activeCell;
+    if (isGiven(r, c)) return;
+    setGrid((prev) => {
+      const next = prev.map((row) => [...row]);
+      next[r][c] = null;
+      return next;
+    });
+    setErrors(new Set());
+    // Move backward to previous non-given cell
+    for (let i = r * 9 + c - 1; i >= 0; i--) {
+      const nr = Math.floor(i / 9), nc = i % 9;
+      if (!isGiven(nr, nc)) { setActiveCell([nr, nc]); return; }
+    }
+  }, [activeCell, timer.isSolved, puzzle.grid]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (!activeCell || timer.isSolved) return;
     const [r, c] = activeCell;
 
     switch (e.key) {
-      case "ArrowUp":
-        e.preventDefault();
-        if (r > 0) setActiveCell([r - 1, c]);
-        break;
-      case "ArrowDown":
-        e.preventDefault();
-        if (r < 8) setActiveCell([r + 1, c]);
-        break;
-      case "ArrowLeft":
-        e.preventDefault();
-        if (c > 0) setActiveCell([r, c - 1]);
-        break;
-      case "ArrowRight":
-        e.preventDefault();
-        if (c < 8) setActiveCell([r, c + 1]);
-        break;
+      case "ArrowUp": e.preventDefault(); if (r > 0) setActiveCell([r - 1, c]); break;
+      case "ArrowDown": e.preventDefault(); if (r < 8) setActiveCell([r + 1, c]); break;
+      case "ArrowLeft": e.preventDefault(); if (c > 0) setActiveCell([r, c - 1]); break;
+      case "ArrowRight": e.preventDefault(); if (c < 8) setActiveCell([r, c + 1]); break;
       case "Tab": {
         e.preventDefault();
         const dir = e.shiftKey ? -1 : 1;
         let idx = r * 9 + c + dir;
         while (idx >= 0 && idx < 81) {
           const nr = Math.floor(idx / 9), nc = idx % 9;
-          if (!isGiven(nr, nc)) {
-            setActiveCell([nr, nc]);
-            return;
-          }
+          if (!isGiven(nr, nc)) { setActiveCell([nr, nc]); return; }
           idx += dir;
         }
         break;
@@ -76,48 +97,16 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
       case "Backspace":
       case "Delete":
         e.preventDefault();
-        if (!isGiven(r, c)) {
-          setGrid((prev) => {
-            const next = prev.map((row) => [...row]);
-            next[r][c] = null;
-            return next;
-          });
-          setErrors(new Set());
-          // On backspace, move to previous non-given cell
-          if (e.key === "Backspace") {
-            for (let i = r * 9 + c - 1; i >= 0; i--) {
-              const nr = Math.floor(i / 9), nc = i % 9;
-              if (!isGiven(nr, nc)) {
-                setActiveCell([nr, nc]);
-                return;
-              }
-            }
-          }
-        }
+        deleteCell();
         break;
       default: {
-        const digit = e.key;
-        if (/^[1-9]$/.test(digit) && !isGiven(r, c)) {
+        if (/^[1-9]$/.test(e.key)) {
           e.preventDefault();
-          const num = parseInt(digit);
-          setGrid((prev) => {
-            const next = prev.map((row) => [...row]);
-            next[r][c] = num;
-            return next;
-          });
-          setErrors(new Set());
-          // Auto-advance to next empty cell
-          for (let i = r * 9 + c + 1; i < 81; i++) {
-            const nr = Math.floor(i / 9), nc = i % 9;
-            if (!isGiven(nr, nc) && grid[nr][nc] === null) {
-              setActiveCell([nr, nc]);
-              return;
-            }
-          }
+          enterNumber(parseInt(e.key));
         }
       }
     }
-  }, [activeCell, timer.isSolved, grid, puzzle.grid]);
+  }, [activeCell, timer.isSolved, grid, puzzle.grid, enterNumber, deleteCell]);
 
   const handleReset = () => {
     setGrid(puzzle.grid.map((r) => [...r]));
@@ -144,20 +133,13 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
       toast({ title: "Keep going!", description: "No errors so far — fill in the rest." });
   };
 
-  // Compute row/col/box highlight
   const getHighlightSet = (): Set<string> => {
     if (!activeCell) return new Set();
     const [ar, ac] = activeCell;
     const cells = new Set<string>();
-    for (let i = 0; i < 9; i++) {
-      cells.add(`${ar}-${i}`);
-      cells.add(`${i}-${ac}`);
-    }
-    const br = Math.floor(ar / 3) * 3;
-    const bc = Math.floor(ac / 3) * 3;
-    for (let i = 0; i < 3; i++)
-      for (let j = 0; j < 3; j++)
-        cells.add(`${br + i}-${bc + j}`);
+    for (let i = 0; i < 9; i++) { cells.add(`${ar}-${i}`); cells.add(`${i}-${ac}`); }
+    const br = Math.floor(ar / 3) * 3, bc = Math.floor(ac / 3) * 3;
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) cells.add(`${br + i}-${bc + j}`);
     return cells;
   };
 
@@ -166,6 +148,11 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   return (
     <div>
       <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
+      {!isMobile && (
+        <p className="mb-2 text-xs text-muted-foreground">
+          Arrow keys to move • 1–9 to enter • Delete to clear
+        </p>
+      )}
       <div
         ref={containerRef}
         tabIndex={0}
@@ -184,7 +171,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
               <div
                 key={`${r}-${c}`}
                 className={cn(
-                  "relative w-9 h-9 sm:w-11 sm:h-11 border border-puzzle-border flex items-center justify-center cursor-pointer select-none",
+                  "relative w-9 h-9 sm:w-11 sm:h-11 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation",
                   c % 3 === 2 && c < 8 && "border-r-2 border-r-foreground",
                   r % 3 === 2 && r < 8 && "border-b-2 border-b-foreground",
                   hasError && "bg-puzzle-cell-error",
@@ -194,15 +181,10 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
                 )}
                 onClick={() => {
                   setActiveCell([r, c]);
-                  containerRef.current?.focus();
+                  if (!isMobile) containerRef.current?.focus();
                 }}
               >
-                <span
-                  className={cn(
-                    "text-sm sm:text-lg font-semibold",
-                    given ? "text-foreground" : "text-primary"
-                  )}
-                >
+                <span className={cn("text-sm sm:text-lg font-semibold", given ? "text-foreground" : "text-primary")}>
                   {grid[r][c]?.toString() || ""}
                 </span>
               </div>
@@ -210,6 +192,11 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
           })
         )}
       </div>
+      <MobileNumberPad
+        visible={isMobile && !!activeCell && !timer.isSolved}
+        onNumber={enterNumber}
+        onDelete={deleteCell}
+      />
       <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} />
     </div>
   );
