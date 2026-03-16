@@ -113,7 +113,7 @@ export default function LoginPage() {
     <div className="private-app flex items-center justify-center min-h-screen px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
-          <h1 className="text-lg font-semibold text-foreground tracking-tight">Sign in</h1>
+          <h1 className="text-lg font-semibold text-foreground tracking-tight">Puzzle Lab</h1>
           <p className="mt-1 text-xs text-muted-foreground">Enter your credentials to continue</p>
         </div>
 
