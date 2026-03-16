@@ -76,6 +76,8 @@ export type Database = {
       conversations: {
         Row: {
           admin_profile_id: string
+          cleared_at_admin: string | null
+          cleared_at_user: string | null
           created_at: string
           disappearing_duration: string
           disappearing_enabled: boolean
@@ -86,6 +88,8 @@ export type Database = {
         }
         Insert: {
           admin_profile_id: string
+          cleared_at_admin?: string | null
+          cleared_at_user?: string | null
           created_at?: string
           disappearing_duration?: string
           disappearing_enabled?: boolean
@@ -96,6 +100,8 @@ export type Database = {
         }
         Update: {
           admin_profile_id?: string
+          cleared_at_admin?: string | null
+          cleared_at_user?: string | null
           created_at?: string
           disappearing_duration?: string
           disappearing_enabled?: boolean
