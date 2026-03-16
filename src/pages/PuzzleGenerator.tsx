@@ -40,13 +40,22 @@ const puzzleTypes: { value: PuzzleCategory; label: string }[] = [
 const PuzzleGenerator = () => {
   const { type } = useParams<{ type: string }>();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const category = type as PuzzleCategory;
   const info = CATEGORY_INFO[category];
   const navigate = useNavigate();
 
   const initialSeed = searchParams.get("seed");
 
-  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
+  // Random pool from RandomPuzzleGenerator route state
+  const routeState = location.state as { randomPool?: PuzzleCategory[]; randomDifficulty?: Difficulty } | null;
+  const [randomPool, setRandomPool] = useState<PuzzleCategory[] | null>(
+    () => routeState?.randomPool && routeState.randomPool.length > 1 ? routeState.randomPool : null
+  );
+
+  const [difficulty, setDifficulty] = useState<Difficulty>(
+    () => routeState?.randomDifficulty || "medium"
+  );
   const [seed, setSeed] = useState(() => initialSeed ? parseInt(initialSeed) || randomSeed() : randomSeed());
   const [seedInput, setSeedInput] = useState(initialSeed || "");
   const [puzzleKey, setPuzzleKey] = useState(0);
