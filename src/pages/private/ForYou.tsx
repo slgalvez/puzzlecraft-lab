@@ -71,6 +71,11 @@ const ForYou = () => {
   const [sending, setSending] = useState(false);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
 
+  // Auto-save state
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const autoSaveResetRef = useRef<ReturnType<typeof setTimeout>>();
+
   // Solve state
   const [solvingPuzzle, setSolvingPuzzle] = useState<PrivatePuzzle | null>(null);
 
