@@ -57,10 +57,11 @@ const ForYou = () => {
   const [puzzles, setPuzzles] = useState<PrivatePuzzle[]>([]);
   const [drafts, setDrafts] = useState<PrivatePuzzle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [partnerName, setPartnerName] = useState<string | null>(null);
+  const [recipients, setRecipients] = useState<{ id: string; first_name: string; last_name: string }[]>([]);
+  const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null);
 
   // Create state
-  const [createStep, setCreateStep] = useState<"type" | "content" | "preview">("type");
+  const [createStep, setCreateStep] = useState<"type" | "recipient" | "content" | "preview">("type");
   const [selectedType, setSelectedType] = useState<PuzzleType | null>(null);
   const [wordInput, setWordInput] = useState("");
   const [phraseInput, setPhraseInput] = useState("");
@@ -69,7 +70,6 @@ const ForYou = () => {
   const [generatedData, setGeneratedData] = useState<Record<string, unknown> | null>(null);
   const [sending, setSending] = useState(false);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
-  const [editingDraftRecipientName, setEditingDraftRecipientName] = useState<string | null>(null);
 
   // Solve state
   const [solvingPuzzle, setSolvingPuzzle] = useState<PrivatePuzzle | null>(null);
