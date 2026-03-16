@@ -712,6 +712,16 @@ Deno.serve(async (req) => {
         sentTo = conv.admin_profile_id;
       }
 
+      // Find the conversation between creator and recipient
+      let convId: string | null = null;
+      if (isAdmin) {
+        const { data: conv } = await sb.from("conversations").select("id").eq("admin_profile_id", profileId).eq("user_profile_id", sentTo).maybeSingle();
+        convId = conv?.id || null;
+      } else {
+        const { data: conv } = await sb.from("conversations").select("id").eq("user_profile_id", profileId).eq("admin_profile_id", sentTo).maybeSingle();
+        convId = conv?.id || null;
+      }
+
       const { data: puzzle, error: insertErr } = await sb
         .from("private_puzzles")
         .insert({
@@ -728,6 +738,20 @@ Deno.serve(async (req) => {
         console.error("Create puzzle error:", JSON.stringify(insertErr));
         return err("Could not create puzzle");
       }
+
+      // Insert system message into conversation
+      if (convId) {
+        const typeLabels: Record<string, string> = { "word-fill": "Word Fill-In", "cryptogram": "Cryptogram", "crossword": "Crossword", "word-search": "Word Search" };
+        const label = typeLabels[puzzle_type] || puzzle_type;
+        await sb.from("messages").insert({
+          conversation_id: convId,
+          sender_profile_id: profileId,
+          body: `__PUZZLE_SENT__:${puzzle.id}:${puzzle_type}:${label}`,
+          is_disappearing: false,
+          expires_at: null,
+        });
+      }
+
       return json({ puzzle });
     }
 
