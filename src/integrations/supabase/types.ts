@@ -32,6 +32,30 @@ export type Database = {
         }
         Relationships: []
       }
+      authorized_users: {
+        Row: {
+          created_at: string
+          first_name: string
+          id: string
+          last_name: string
+          password_hash: string
+        }
+        Insert: {
+          created_at?: string
+          first_name: string
+          id?: string
+          last_name: string
+          password_hash: string
+        }
+        Update: {
+          created_at?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          password_hash?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

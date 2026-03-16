@@ -28,7 +28,7 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-muted-foreground hidden sm:inline">
-                  {user?.email}
+                  {user?.first_name} {user?.last_name}
                 </span>
                 <button
                   onClick={() => signOut()}
