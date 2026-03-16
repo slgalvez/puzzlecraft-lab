@@ -40,7 +40,7 @@ export function PrivateSidebar() {
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/p/login");
+    navigate("/");
   };
 
   return (
