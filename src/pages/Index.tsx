@@ -129,8 +129,14 @@ const Index = () => {
                 {loading ? "..." : "Load"}
               </Button>
             </div>
-            <p className="mt-1.5 text-xs text-muted-foreground">
+            <p className="mt-1.5 text-xs text-muted-foreground flex items-center gap-2">
               Have a puzzle code? Enter it above to jump straight to that puzzle.
+              {hasUpdate && (
+                <span className="inline-flex items-center gap-1 text-primary/70">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-pulse" />
+                  Updated
+                </span>
+              )}
             </p>
           </div>
         </div>
