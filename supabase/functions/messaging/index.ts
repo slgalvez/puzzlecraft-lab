@@ -464,6 +464,41 @@ Deno.serve(async (req) => {
       return json({ conversation_id: newConv.id, already_existed: false });
     }
 
+    // ─── ADMIN: DELETE USER ───
+    if (action === "delete-user") {
+      if (!isAdmin) return err("Access denied");
+      const { authorized_user_id } = body;
+      if (!authorized_user_id) return err("Missing authorized_user_id", 400);
+
+      // Find profile
+      const { data: profile } = await sb
+        .from("profiles")
+        .select("id, role")
+        .eq("authorized_user_id", authorized_user_id)
+        .maybeSingle();
+
+      if (profile?.role === "admin") return err("Cannot delete admin users", 403);
+
+      // Delete messages in any conversation for this user
+      if (profile) {
+        const { data: conv } = await sb
+          .from("conversations")
+          .select("id")
+          .eq("user_profile_id", profile.id)
+          .maybeSingle();
+
+        if (conv) {
+          await sb.from("messages").delete().eq("conversation_id", conv.id);
+          await sb.from("conversations").delete().eq("id", conv.id);
+        }
+
+        await sb.from("profiles").delete().eq("id", profile.id);
+      }
+
+      await sb.from("authorized_users").delete().eq("id", authorized_user_id);
+      return json({ ok: true });
+    }
+
     // ─── CLEANUP EXPIRED MESSAGES ───
     if (action === "cleanup-expired") {
       if (!isAdmin) return err("Access denied");
