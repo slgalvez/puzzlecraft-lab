@@ -649,7 +649,7 @@ Deno.serve(async (req) => {
       return json({ updated: hasUpdate });
     }
 
-    // ─── LIST PUZZLES (For You) ───
+    // ─── LIST PUZZLES (Puzzles for You) ───
     if (action === "list-puzzles") {
       // Get the other participant's profile id
       const { data: myProfile } = await sb.from("profiles").select("id, role").eq("id", profileId).single();

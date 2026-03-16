@@ -181,7 +181,7 @@ const UserOverview = () => {
             onClick={() => navigate("/p/for-you")}
           >
             <Gift size={16} className="text-primary" />
-            <span>For You</span>
+            <span>Puzzles for You</span>
             {unsolved.length > 0 && (
               <span className="text-[10px] text-primary font-medium">{unsolved.length} unsolved</span>
             )}

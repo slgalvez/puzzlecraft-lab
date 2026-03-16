@@ -19,7 +19,7 @@ import {
 const adminNav = [
   { title: "Overview", url: "/p", icon: LayoutDashboard },
   { title: "Conversations", url: "/p/conversations", icon: MessageSquare, badgeKey: "unread" as const },
-  { title: "For You", url: "/p/for-you", icon: Gift, badgeKey: "puzzles" as const },
+  { title: "Puzzles for You", url: "/p/for-you", icon: Gift, badgeKey: "puzzles" as const },
   { title: "Users", url: "/p/users", icon: Users },
   { title: "Settings", url: "/p/settings", icon: Settings },
 ];
@@ -27,7 +27,7 @@ const adminNav = [
 const userNav = [
   { title: "Overview", url: "/p", icon: LayoutDashboard },
   { title: "Conversation", url: "/p/conversation", icon: MessageSquare, badgeKey: "unread" as const },
-  { title: "For You", url: "/p/for-you", icon: Gift, badgeKey: "puzzles" as const },
+  { title: "Puzzles for You", url: "/p/for-you", icon: Gift, badgeKey: "puzzles" as const },
   { title: "Settings", url: "/p/settings", icon: Settings },
 ];
 
