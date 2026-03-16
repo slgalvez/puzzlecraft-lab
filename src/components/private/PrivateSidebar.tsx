@@ -70,10 +70,10 @@ export function PrivateSidebar() {
   }, [token, isAdmin, user?.id]);
 
   useEffect(() => {
-    fetchUnread();
-    const interval = setInterval(fetchUnread, 10000);
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 10000);
     return () => clearInterval(interval);
-  }, [fetchUnread]);
+  }, [fetchCounts]);
 
   const isActive = (path: string) => {
     if (path === "/p") return location.pathname === "/p";
