@@ -77,21 +77,21 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
 
   const moveToNext = useCallback((r: number, c: number) => {
     if (direction === "across") {
-      for (let nc = c + 1; nc < gridSize; nc++)
-        if (!isBlack(r, nc)) { setActiveCell([r, nc]); return; }
+      const nc = c + 1;
+      if (nc < gridSize && !isBlack(r, nc)) { setActiveCell([r, nc]); }
     } else {
-      for (let nr = r + 1; nr < gridSize; nr++)
-        if (!isBlack(nr, c)) { setActiveCell([nr, c]); return; }
+      const nr = r + 1;
+      if (nr < gridSize && !isBlack(nr, c)) { setActiveCell([nr, c]); }
     }
   }, [direction, gridSize, blacks]);
 
   const moveToPrev = useCallback((r: number, c: number) => {
     if (direction === "across") {
-      for (let nc = c - 1; nc >= 0; nc--)
-        if (!isBlack(r, nc)) { setActiveCell([r, nc]); return; }
+      const nc = c - 1;
+      if (nc >= 0 && !isBlack(r, nc)) { setActiveCell([r, nc]); }
     } else {
-      for (let nr = r - 1; nr >= 0; nr--)
-        if (!isBlack(nr, c)) { setActiveCell([nr, c]); return; }
+      const nr = r - 1;
+      if (nr >= 0 && !isBlack(nr, c)) { setActiveCell([nr, c]); }
     }
   }, [direction, gridSize, blacks]);
 
