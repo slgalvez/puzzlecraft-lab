@@ -651,20 +651,28 @@ Deno.serve(async (req) => {
 
     // ─── LIST PUZZLES (Puzzles for You) ───
     if (action === "list-puzzles") {
-      // Get the other participant's profile id
       const { data: myProfile } = await sb.from("profiles").select("id, role").eq("id", profileId).single();
       if (!myProfile) return err("Profile not found");
 
-      // Get puzzles where user is creator or recipient
+      // Get non-draft puzzles where user is creator or recipient
       const { data: puzzles } = await sb
         .from("private_puzzles")
         .select("*")
+        .eq("is_draft", false)
         .or(`created_by.eq.${profileId},sent_to.eq.${profileId}`)
+        .order("created_at", { ascending: false });
+
+      // Get drafts (only own)
+      const { data: drafts } = await sb
+        .from("private_puzzles")
+        .select("*")
+        .eq("is_draft", true)
+        .eq("created_by", profileId)
         .order("created_at", { ascending: false });
 
       // Enrich with names
       const profileIds = new Set<string>();
-      for (const p of puzzles || []) {
+      for (const p of [...(puzzles || []), ...(drafts || [])]) {
         profileIds.add(p.created_by);
         profileIds.add(p.sent_to);
       }
@@ -674,26 +682,25 @@ Deno.serve(async (req) => {
         .in("id", [...profileIds]);
       const nameMap = new Map((profiles || []).map(p => [p.id, `${p.first_name} ${p.last_name}`]));
 
-      const enriched = (puzzles || []).map(p => ({
+      const enrich = (list: typeof puzzles) => (list || []).map(p => ({
         ...p,
         creator_name: nameMap.get(p.created_by) || "Unknown",
         recipient_name: nameMap.get(p.sent_to) || "Unknown",
       }));
 
-      return json({ puzzles: enriched });
+      return json({ puzzles: enrich(puzzles), drafts: enrich(drafts) });
     }
 
     // ─── CREATE PUZZLE ───
     if (action === "create-puzzle") {
-      const { puzzle_type, puzzle_data, reveal_message } = body;
+      const { puzzle_type, puzzle_data, reveal_message, is_draft } = body;
       if (!puzzle_type || !puzzle_data) return err("Missing fields", 400);
       const validTypes = ["word-fill", "cryptogram", "crossword", "word-search"];
       if (!validTypes.includes(puzzle_type)) return err("Invalid puzzle type", 400);
 
-      // Find the other participant (admin finds user's conversation, user finds admin)
+      // Find the other participant
       let sentTo: string;
       if (isAdmin) {
-        // Admin sends to their most recent conversation user, or first user
         const { data: convs } = await sb
           .from("conversations")
           .select("user_profile_id")
@@ -712,16 +719,6 @@ Deno.serve(async (req) => {
         sentTo = conv.admin_profile_id;
       }
 
-      // Find the conversation between creator and recipient
-      let convId: string | null = null;
-      if (isAdmin) {
-        const { data: conv } = await sb.from("conversations").select("id").eq("admin_profile_id", profileId).eq("user_profile_id", sentTo).maybeSingle();
-        convId = conv?.id || null;
-      } else {
-        const { data: conv } = await sb.from("conversations").select("id").eq("user_profile_id", profileId).eq("admin_profile_id", sentTo).maybeSingle();
-        convId = conv?.id || null;
-      }
-
       const { data: puzzle, error: insertErr } = await sb
         .from("private_puzzles")
         .insert({
@@ -730,6 +727,7 @@ Deno.serve(async (req) => {
           puzzle_type,
           puzzle_data,
           reveal_message: reveal_message || null,
+          is_draft: is_draft === true,
         })
         .select("*")
         .single();
@@ -739,20 +737,103 @@ Deno.serve(async (req) => {
         return err("Could not create puzzle");
       }
 
-      // Insert system message into conversation
+      // Only insert system message if not a draft
+      if (!is_draft) {
+        let convId: string | null = null;
+        if (isAdmin) {
+          const { data: conv } = await sb.from("conversations").select("id").eq("admin_profile_id", profileId).eq("user_profile_id", sentTo).maybeSingle();
+          convId = conv?.id || null;
+        } else {
+          const { data: conv } = await sb.from("conversations").select("id").eq("user_profile_id", profileId).eq("admin_profile_id", sentTo).maybeSingle();
+          convId = conv?.id || null;
+        }
+        if (convId) {
+          const typeLabels: Record<string, string> = { "word-fill": "Word Fill-In", "cryptogram": "Cryptogram", "crossword": "Crossword", "word-search": "Word Search" };
+          const label = typeLabels[puzzle_type] || puzzle_type;
+          await sb.from("messages").insert({
+            conversation_id: convId,
+            sender_profile_id: profileId,
+            body: `__PUZZLE_SENT__:${puzzle.id}:${puzzle_type}:${label}`,
+            is_disappearing: false,
+            expires_at: null,
+          });
+        }
+      }
+
+      return json({ puzzle });
+    }
+
+    // ─── UPDATE DRAFT ───
+    if (action === "update-draft") {
+      const { puzzle_id, puzzle_type, puzzle_data, reveal_message } = body;
+      if (!puzzle_id) return err("Missing puzzle_id", 400);
+
+      const { data: puzzle } = await sb
+        .from("private_puzzles")
+        .select("id, created_by, is_draft")
+        .eq("id", puzzle_id)
+        .single();
+      if (!puzzle) return err("Draft not found");
+      if (puzzle.created_by !== profileId) return err("Access denied");
+      if (!puzzle.is_draft) return err("Not a draft", 400);
+
+      const updates: Record<string, unknown> = {};
+      if (puzzle_type) updates.puzzle_type = puzzle_type;
+      if (puzzle_data) updates.puzzle_data = puzzle_data;
+      if (reveal_message !== undefined) updates.reveal_message = reveal_message || null;
+
+      const { error: updateErr } = await sb
+        .from("private_puzzles")
+        .update(updates)
+        .eq("id", puzzle_id);
+
+      if (updateErr) return err("Could not update draft");
+      return json({ ok: true });
+    }
+
+    // ─── SEND DRAFT ───
+    if (action === "send-draft") {
+      const { puzzle_id } = body;
+      if (!puzzle_id) return err("Missing puzzle_id", 400);
+
+      const { data: puzzle } = await sb
+        .from("private_puzzles")
+        .select("id, created_by, sent_to, is_draft, puzzle_type")
+        .eq("id", puzzle_id)
+        .single();
+      if (!puzzle) return err("Draft not found");
+      if (puzzle.created_by !== profileId) return err("Access denied");
+      if (!puzzle.is_draft) return err("Already sent", 400);
+
+      const { error: updateErr } = await sb
+        .from("private_puzzles")
+        .update({ is_draft: false })
+        .eq("id", puzzle_id);
+
+      if (updateErr) return err("Could not send draft");
+
+      // Insert system message
+      let convId: string | null = null;
+      if (isAdmin) {
+        const { data: conv } = await sb.from("conversations").select("id").eq("admin_profile_id", profileId).eq("user_profile_id", puzzle.sent_to).maybeSingle();
+        convId = conv?.id || null;
+      } else {
+        const { data: conv } = await sb.from("conversations").select("id").eq("user_profile_id", profileId).eq("admin_profile_id", puzzle.sent_to).maybeSingle();
+        convId = conv?.id || null;
+      }
       if (convId) {
         const typeLabels: Record<string, string> = { "word-fill": "Word Fill-In", "cryptogram": "Cryptogram", "crossword": "Crossword", "word-search": "Word Search" };
-        const label = typeLabels[puzzle_type] || puzzle_type;
+        const label = typeLabels[puzzle.puzzle_type] || puzzle.puzzle_type;
         await sb.from("messages").insert({
           conversation_id: convId,
           sender_profile_id: profileId,
-          body: `__PUZZLE_SENT__:${puzzle.id}:${puzzle_type}:${label}`,
+          body: `__PUZZLE_SENT__:${puzzle.id}:${puzzle.puzzle_type}:${label}`,
           is_disappearing: false,
           expires_at: null,
         });
       }
 
-      return json({ puzzle });
+      return json({ ok: true });
     }
 
     // ─── SOLVE PUZZLE ───
@@ -812,12 +893,15 @@ Deno.serve(async (req) => {
 
       const { data: puzzle } = await sb
         .from("private_puzzles")
-        .select("id, created_by, solved_by")
+        .select("id, created_by, sent_to, is_draft")
         .eq("id", puzzle_id)
         .single();
       if (!puzzle) return err("Puzzle not found");
-      if (puzzle.created_by !== profileId) return err("Access denied");
-      if (puzzle.solved_by) return err("Cannot delete a solved puzzle", 400);
+
+      // Allow creator or recipient to delete
+      if (puzzle.created_by !== profileId && puzzle.sent_to !== profileId) {
+        return err("Access denied");
+      }
 
       const { error: delErr } = await sb
         .from("private_puzzles")
