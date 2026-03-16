@@ -824,7 +824,7 @@ export function PuzzlePreview({ data, puzzleType }: PuzzlePreviewProps) {
                 )}
               >
                 {num && !black && (
-                  <span className="absolute left-0.5 top-0 text-[7px] font-medium text-puzzle-number leading-tight">{num}</span>
+                  <span className="absolute left-px top-0 text-[6px] font-medium text-puzzle-number leading-tight">{num}</span>
                 )}
               </div>
             );
