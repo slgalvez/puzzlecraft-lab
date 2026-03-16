@@ -28,7 +28,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   );
 
   const timerKey = `fillin-${puzzle.id}`;
-  const timer = usePuzzleTimer(timerKey);
+  const timer = usePuzzleTimer(timerKey, { category: puzzle.type as "word-fill" | "number-fill", difficulty: puzzle.difficulty });
 
   const isBlack = (r: number, c: number) =>
     blackCells.some(([br, bc]) => br === r && bc === c);

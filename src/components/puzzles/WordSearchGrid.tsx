@@ -23,7 +23,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const [hoverCell, setHoverCell] = useState<[number, number] | null>(null);
 
   const timerKey = `word-search-${seed}-${difficulty}`;
-  const timer = usePuzzleTimer(timerKey);
+  const timer = usePuzzleTimer(timerKey, { category: "word-search", difficulty });
 
   const getPreviewCells = (): Set<string> => {
     if (!startCell || !hoverCell) return new Set();

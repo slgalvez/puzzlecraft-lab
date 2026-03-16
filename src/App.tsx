@@ -10,6 +10,7 @@ import DailyPuzzle from "./pages/DailyPuzzle";
 import PlayPuzzle from "./pages/PlayPuzzle";
 import About from "./pages/About";
 import Help from "./pages/Help";
+import Stats from "./pages/Stats";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/play/:id" element={<PlayPuzzle />} />
           <Route path="/about" element={<About />} />
           <Route path="/help" element={<Help />} />
+          <Route path="/stats" element={<Stats />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

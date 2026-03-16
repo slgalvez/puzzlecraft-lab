@@ -1,0 +1,168 @@
+import { useMemo } from "react";
+import { Link } from "react-router-dom";
+import Layout from "@/components/layout/Layout";
+import { getProgressStats } from "@/lib/progressTracker";
+import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
+import { formatTime } from "@/hooks/usePuzzleTimer";
+import { Trophy, Flame, Clock, Target, BarChart3, Calendar } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const Stats = () => {
+  const stats = useMemo(() => getProgressStats(), []);
+
+  const statCards = [
+    { icon: Target, label: "Puzzles Solved", value: stats.totalSolved.toString() },
+    { icon: Flame, label: "Current Streak", value: `${stats.currentStreak} day${stats.currentStreak !== 1 ? "s" : ""}` },
+    { icon: Trophy, label: "Longest Streak", value: `${stats.longestStreak} day${stats.longestStreak !== 1 ? "s" : ""}` },
+    { icon: Clock, label: "Avg Solve Time", value: stats.totalSolved > 0 ? formatTime(stats.averageTime) : "—" },
+    { icon: BarChart3, label: "Total Time", value: stats.totalSolved > 0 ? formatTime(stats.totalTime) : "—" },
+    { icon: Trophy, label: "Fastest Solve", value: stats.bestTime !== null ? formatTime(stats.bestTime) : "—" },
+  ];
+
+  const categoryKeys = Object.keys(stats.byCategory) as PuzzleCategory[];
+
+  return (
+    <Layout>
+      <div className="container py-12">
+        <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Your Progress</h1>
+        <p className="mt-2 text-muted-foreground">Track your solving stats, streaks, and best times.</p>
+
+        {/* Overview cards */}
+        <div className="mt-8 grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+          {statCards.map(({ icon: Icon, label, value }) => (
+            <div key={label} className="rounded-xl border bg-card p-4 text-center">
+              <Icon className="mx-auto h-5 w-5 text-primary mb-2" />
+              <p className="font-mono text-xl font-bold text-foreground">{value}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* By category */}
+        {categoryKeys.length > 0 && (
+          <div className="mt-12">
+            <h2 className="font-display text-xl font-semibold text-foreground mb-4">By Puzzle Type</h2>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {categoryKeys.map((cat) => {
+                const info = CATEGORY_INFO[cat];
+                const data = stats.byCategory[cat];
+                return (
+                  <Link
+                    key={cat}
+                    to={`/generate/${cat}`}
+                    className="group rounded-xl border bg-card p-4 transition-colors hover:border-primary/40"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-lg">{info?.icon}</span>
+                      <span className="font-display text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                        {info?.name || cat}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div>
+                        <p className="font-mono text-lg font-bold text-foreground">{data.solved}</p>
+                        <p className="text-[10px] text-muted-foreground">Solved</p>
+                      </div>
+                      <div>
+                        <p className="font-mono text-lg font-bold text-foreground">
+                          {formatTime(data.bestTime)}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">Best</p>
+                      </div>
+                      <div>
+                        <p className="font-mono text-lg font-bold text-foreground">
+                          {formatTime(Math.round(data.totalTime / data.solved))}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">Avg</p>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Activity calendar (last 30 days) */}
+        <div className="mt-12">
+          <h2 className="font-display text-xl font-semibold text-foreground mb-4">
+            <Calendar className="inline h-5 w-5 mr-2 text-primary" />
+            Last 30 Days
+          </h2>
+          <div className="flex flex-wrap gap-1.5">
+            {Array.from({ length: 30 }, (_, i) => {
+              const d = new Date();
+              d.setDate(d.getDate() - (29 - i));
+              const dateStr = d.toISOString().slice(0, 10);
+              const active = stats.solvedDates.includes(dateStr);
+              const isToday = i === 29;
+              return (
+                <div
+                  key={dateStr}
+                  title={`${dateStr}${active ? " ✓" : ""}`}
+                  className={cn(
+                    "w-7 h-7 sm:w-8 sm:h-8 rounded-md border text-[9px] flex items-center justify-center font-medium transition-colors",
+                    active
+                      ? "bg-primary/20 border-primary/40 text-primary"
+                      : "bg-card border-border text-muted-foreground/50",
+                    isToday && "ring-1 ring-primary/50"
+                  )}
+                >
+                  {d.getDate()}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Recent completions */}
+        {stats.recentCompletions.length > 0 && (
+          <div className="mt-12">
+            <h2 className="font-display text-xl font-semibold text-foreground mb-4">Recent Solves</h2>
+            <div className="rounded-xl border bg-card overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-secondary/50">
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Difficulty</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Time</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.recentCompletions.map((r, i) => {
+                    const info = CATEGORY_INFO[r.category as PuzzleCategory];
+                    return (
+                      <tr key={i} className="border-b last:border-0">
+                        <td className="px-4 py-2.5 text-foreground">
+                          <span className="mr-1.5">{info?.icon}</span>
+                          {info?.name || r.category}
+                        </td>
+                        <td className="px-4 py-2.5 capitalize text-muted-foreground">{r.difficulty}</td>
+                        <td className="px-4 py-2.5 font-mono font-medium text-foreground">{formatTime(r.time)}</td>
+                        <td className="px-4 py-2.5 text-muted-foreground hidden sm:table-cell">
+                          {new Date(r.date).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {stats.totalSolved === 0 && (
+          <div className="mt-16 text-center">
+            <p className="text-lg text-muted-foreground">No puzzles solved yet!</p>
+            <Link to="/puzzles" className="mt-3 inline-block text-sm font-medium text-primary hover:underline">
+              Start solving →
+            </Link>
+          </div>
+        )}
+      </div>
+    </Layout>
+  );
+};
+
+export default Stats;

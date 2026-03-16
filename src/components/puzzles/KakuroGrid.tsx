@@ -27,7 +27,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   );
 
   const timerKey = `kakuro-${seed}-${difficulty}`;
-  const timer = usePuzzleTimer(timerKey);
+  const timer = usePuzzleTimer(timerKey, { category: "kakuro", difficulty });
 
   const clueMap = useMemo(() => {
     const map = new Map<string, { across?: number; down?: number }>();

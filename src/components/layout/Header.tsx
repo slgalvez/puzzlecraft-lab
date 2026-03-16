@@ -7,6 +7,7 @@ const navLinks = [
   { to: "/", label: "Home" },
   { to: "/puzzles", label: "Puzzle Library" },
   { to: "/daily", label: "Daily Puzzle" },
+  { to: "/stats", label: "Progress" },
   { to: "/about", label: "About" },
   { to: "/help", label: "Help" },
 ];
