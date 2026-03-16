@@ -93,14 +93,16 @@ Deno.serve(async (req) => {
         conv = newConv;
       }
 
-      // Clean up read view-once messages from the other party
-      await sb
-        .from("messages")
-        .delete()
-        .eq("conversation_id", conv.id)
-        .eq("is_disappearing", true)
-        .neq("sender_profile_id", profileId)
-        .not("read_at", "is", null);
+      // Clean up read view-once messages (only when view-once mode is active)
+      if (conv.disappearing_duration === "view-once") {
+        await sb
+          .from("messages")
+          .delete()
+          .eq("conversation_id", conv.id)
+          .eq("is_disappearing", true)
+          .neq("sender_profile_id", profileId)
+          .not("read_at", "is", null);
+      }
 
       // Get messages, filtering out expired ones
       const { data: messages } = await sb
