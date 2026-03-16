@@ -24,7 +24,7 @@ const PrivateSettings = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMsg, setPwMsg] = useState("");
-  const [focusLossOn, setFocusLossOn] = useState(() => getFocusLossEnabled());
+  const [focusLossOn, setFocusLossOn] = useState(() => user?.focus_loss_protection !== false);
 
   const handleSessionExpired = useCallback(() => {
     signOut();
