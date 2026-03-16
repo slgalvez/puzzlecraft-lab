@@ -141,6 +141,16 @@
   --sidebar-border: 220 12% 16%;
   --sidebar-ring: 172 50% 45%;
 
+  /* Puzzle tokens — match the dark-mode site aesthetic */
+  --puzzle-cell: 220 14% 18%;
+  --puzzle-cell-active: 172 40% 22%;
+  --puzzle-cell-highlight: 172 25% 18%;
+  --puzzle-cell-black: 220 14% 6%;
+  --puzzle-border: 220 10% 30%;
+  --puzzle-number: 220 8% 55%;
+  --puzzle-cell-error: 0 50% 20%;
+  --puzzle-cell-correct: 142 40% 18%;
+
   font-family: 'DM Sans', sans-serif;
   background: hsl(220 14% 10%);
   color: hsl(220 10% 90%);

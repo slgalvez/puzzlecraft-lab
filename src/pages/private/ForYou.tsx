@@ -8,13 +8,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Gift, Send as SendIcon, Check, Clock, ArrowLeft, Trash2 } from "lucide-react";
+import { Plus, Gift, Send as SendIcon, Check, ArrowLeft, Trash2, RefreshCw, Eye, Pencil } from "lucide-react";
 import {
   generateCustomFillIn,
   generateCustomCryptogram,
   generateCustomCrossword,
   generateCustomWordSearch,
 } from "@/lib/generators/customPuzzles";
+import {
+  GridSolver,
+  CryptogramSolver,
+  WordSearchSolver,
+  PuzzlePreview,
+} from "@/components/private/PrivatePuzzleSolvers";
 
 type PuzzleType = "word-fill" | "cryptogram" | "crossword" | "word-search";
 type Tab = "received" | "sent" | "create";
@@ -48,6 +54,7 @@ const ForYou = () => {
   const [tab, setTab] = useState<Tab>("received");
   const [puzzles, setPuzzles] = useState<PrivatePuzzle[]>([]);
   const [loading, setLoading] = useState(true);
+  const [partnerName, setPartnerName] = useState<string | null>(null);
 
   // Create state
   const [createStep, setCreateStep] = useState<"type" | "content" | "preview">("type");
@@ -79,12 +86,41 @@ const ForYou = () => {
     }
   }, [token, handleSessionExpired]);
 
+  // Fetch the conversation partner name
+  const fetchPartner = useCallback(async () => {
+    if (!token || !user) return;
+    try {
+      if (user.role === "admin") {
+        const data = await invokeMessaging("list-conversations", token);
+        const convos = data.conversations || [];
+        if (convos.length > 0) {
+          const first = convos[0];
+          setPartnerName(first.user_name || first.user_first_name || "User");
+        }
+      } else {
+        const data = await invokeMessaging("get my conversation", token);
+        if (data.conversation) {
+          setPartnerName(data.admin_name || "Admin");
+        }
+      }
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+    }
+  }, [token, user, handleSessionExpired]);
+
   useEffect(() => {
     fetchPuzzles();
-  }, [fetchPuzzles]);
+    fetchPartner();
+  }, [fetchPuzzles, fetchPartner]);
 
   const receivedPuzzles = puzzles.filter(p => p.sent_to === user?.id);
   const sentPuzzles = puzzles.filter(p => p.created_by === user?.id);
+
+  // Derive partner name from puzzles if API didn't return it
+  const resolvedPartnerName = partnerName
+    || receivedPuzzles.find(p => p.creator_name)?.creator_name
+    || sentPuzzles.find(p => p.recipient_name)?.recipient_name
+    || null;
 
   // ─── Create Flow ───
 
@@ -133,6 +169,11 @@ const ForYou = () => {
     } catch (e) {
       toast({ title: (e as Error).message || "Generation failed", variant: "destructive" });
     }
+  };
+
+  const handleRegenerate = () => {
+    // Re-run generation with same inputs
+    handleGenerate();
   };
 
   const handleSend = async () => {
@@ -266,10 +307,13 @@ const ForYou = () => {
             setRevealMessage={setRevealMessage}
             generatedData={generatedData}
             sending={sending}
+            recipientName={resolvedPartnerName}
             onSelectType={handleSelectType}
             onGenerate={handleGenerate}
+            onRegenerate={handleRegenerate}
             onSend={handleSend}
             onBack={resetCreate}
+            onEditContent={() => setCreateStep("content")}
           />
         )}
       </div>
@@ -361,7 +405,8 @@ function formatTime(seconds: number): string {
 function CreatePuzzleView({
   step, selectedType, wordInput, setWordInput, phraseInput, setPhraseInput,
   clueEntries, setClueEntries, revealMessage, setRevealMessage,
-  generatedData, sending, onSelectType, onGenerate, onSend, onBack,
+  generatedData, sending, recipientName,
+  onSelectType, onGenerate, onRegenerate, onSend, onBack, onEditContent,
 }: {
   step: "type" | "content" | "preview";
   selectedType: PuzzleType | null;
@@ -375,21 +420,29 @@ function CreatePuzzleView({
   setRevealMessage: (v: string) => void;
   generatedData: Record<string, unknown> | null;
   sending: boolean;
+  recipientName: string | null;
   onSelectType: (t: PuzzleType) => void;
   onGenerate: () => void;
+  onRegenerate: () => void;
   onSend: () => void;
   onBack: () => void;
+  onEditContent: () => void;
 }) {
   if (step === "type") {
     return (
       <div className="space-y-4">
         <h3 className="text-sm font-medium text-foreground">Choose puzzle type</h3>
+        {recipientName && (
+          <p className="text-xs text-muted-foreground">
+            Sending to <span className="text-foreground font-medium">{recipientName}</span>
+          </p>
+        )}
         <div className="grid grid-cols-2 gap-3">
           {(Object.entries(PUZZLE_LABELS) as [PuzzleType, string][]).map(([type, label]) => (
             <button
               key={type}
               onClick={() => onSelectType(type)}
-              className="p-4 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/30 transition-colors text-left"
+              className="p-4 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/10 transition-colors text-left"
             >
               <span className="text-sm font-medium">{label}</span>
             </button>
@@ -405,7 +458,14 @@ function CreatePuzzleView({
         <button onClick={onBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-3 w-3" /> Back
         </button>
-        <h3 className="text-sm font-medium">{PUZZLE_LABELS[selectedType!]}</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium">{PUZZLE_LABELS[selectedType!]}</h3>
+          {recipientName && (
+            <span className="text-xs text-muted-foreground">
+              To <span className="text-foreground font-medium">{recipientName}</span>
+            </span>
+          )}
+        </div>
 
         {(selectedType === "word-fill" || selectedType === "word-search") && (
           <div className="space-y-2">
@@ -489,47 +549,63 @@ function CreatePuzzleView({
           />
         </div>
 
-        <Button onClick={onGenerate} className="w-full">Generate Puzzle</Button>
+        <Button onClick={onGenerate} className="w-full">
+          <Eye className="h-4 w-4 mr-2" /> Generate Preview
+        </Button>
       </div>
     );
   }
 
-  // Preview step
+  // ─── Preview step ───
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <button onClick={onBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-3 w-3" /> Start over
       </button>
-      <div className="p-4 rounded-lg border border-border bg-card space-y-2">
-        <h3 className="text-sm font-medium">{PUZZLE_LABELS[selectedType!]} — Ready to send</h3>
-        {selectedType === "word-fill" && generatedData && (
+
+      {/* Header with recipient */}
+      <div className="space-y-1">
+        <h3 className="text-sm font-medium">{PUZZLE_LABELS[selectedType!]} — Preview</h3>
+        {recipientName && (
           <p className="text-xs text-muted-foreground">
-            {(generatedData as { entries?: string[] }).entries?.length || 0} words placed on a {(generatedData as { gridSize?: number }).gridSize}×{(generatedData as { gridSize?: number }).gridSize} grid
+            Recipient: <span className="text-foreground font-medium">{recipientName}</span>
           </p>
-        )}
-        {selectedType === "word-search" && generatedData && (
-          <p className="text-xs text-muted-foreground">
-            {(generatedData as { words?: string[] }).words?.length || 0} words hidden in a {(generatedData as { size?: number }).size}×{(generatedData as { size?: number }).size} grid
-          </p>
-        )}
-        {selectedType === "crossword" && generatedData && (
-          <p className="text-xs text-muted-foreground">
-            {(generatedData as { clues?: unknown[] }).clues?.length || 0} clues placed on a {(generatedData as { gridSize?: number }).gridSize}×{(generatedData as { gridSize?: number }).gridSize} grid
-          </p>
-        )}
-        {selectedType === "cryptogram" && generatedData && (
-          <p className="text-xs text-muted-foreground">
-            Encoded message: {((generatedData as { encoded?: string }).encoded || "").slice(0, 40)}…
-          </p>
-        )}
-        {revealMessage && (
-          <p className="text-xs text-muted-foreground italic">Reveal: "{revealMessage}"</p>
         )}
       </div>
-      <Button onClick={onSend} disabled={sending} className="w-full">
-        <SendIcon className="h-4 w-4 mr-2" />
-        {sending ? "Sending…" : "Send Puzzle"}
-      </Button>
+
+      {/* Visual puzzle preview */}
+      <div className="p-4 rounded-lg border border-border bg-card">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-3 font-semibold">
+          Puzzle as recipient will see it
+        </p>
+        {generatedData && selectedType && (
+          <PuzzlePreview data={generatedData} puzzleType={selectedType} />
+        )}
+      </div>
+
+      {/* Content summary */}
+      {revealMessage && (
+        <div className="p-3 rounded-lg border border-border bg-card/50">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 font-semibold">Reveal Message</p>
+          <p className="text-sm italic text-foreground">{revealMessage}</p>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex flex-col gap-2">
+        <Button onClick={onSend} disabled={sending} className="w-full">
+          <SendIcon className="h-4 w-4 mr-2" />
+          {sending ? "Sending…" : recipientName ? `Send to ${recipientName}` : "Send Puzzle"}
+        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="flex-1" onClick={onEditContent}>
+            <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit
+          </Button>
+          <Button variant="outline" size="sm" className="flex-1" onClick={onRegenerate}>
+            <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Regenerate
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -548,7 +624,6 @@ function SolvePuzzleView({
   const alreadySolved = !!puzzle.solved_by;
   const data = puzzle.puzzle_data;
 
-  // For solved puzzles, just show reveal message
   if (alreadySolved) {
     return (
       <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-4">
@@ -571,7 +646,6 @@ function SolvePuzzleView({
     );
   }
 
-  // Render inline solver based on type
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-4">
       <button onClick={onBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
@@ -600,229 +674,6 @@ function SolvePuzzleView({
           puzzleType={puzzle.puzzle_type}
           onComplete={() => onSolve(puzzle.id, Math.floor((Date.now() - startTime) / 1000))}
         />
-      )}
-    </div>
-  );
-}
-
-// ─── Inline Solvers ───
-
-function CryptogramSolver({
-  data, onComplete,
-}: {
-  data: { encoded: string; decoded: string; reverseCipher: Record<string, string>; hints: Record<string, string> };
-  onComplete: () => void;
-}) {
-  const [guesses, setGuesses] = useState<Record<string, string>>(() => ({ ...data.hints }));
-  const [completed, setCompleted] = useState(false);
-
-  const encodedLetters = [...new Set(data.encoded.split("").filter(ch => /[A-Z]/.test(ch)))];
-
-  const handleGuess = (encodedChar: string, value: string) => {
-    const upper = value.toUpperCase().replace(/[^A-Z]/g, "");
-    const newGuesses = { ...guesses, [encodedChar]: upper };
-    setGuesses(newGuesses);
-
-    // Check if solved
-    const allFilled = encodedLetters.every(ch => newGuesses[ch]);
-    if (allFilled) {
-      const decoded = data.encoded.split("").map(ch => /[A-Z]/.test(ch) ? (newGuesses[ch] || "") : ch).join("");
-      if (decoded === data.decoded) {
-        setCompleted(true);
-        onComplete();
-      }
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="font-mono text-sm leading-relaxed flex flex-wrap gap-1">
-        {data.encoded.split("").map((ch, i) => {
-          if (!/[A-Z]/.test(ch)) return <span key={i} className="px-0.5">{ch === " " ? "\u00A0\u00A0" : ch}</span>;
-          const isHint = ch in data.hints;
-          return (
-            <span key={i} className="inline-flex flex-col items-center">
-              <input
-                className={`w-6 h-7 text-center text-xs border-b-2 bg-transparent outline-none ${
-                  isHint ? "border-primary text-primary font-bold" : "border-border focus:border-primary"
-                } ${completed ? "text-primary" : ""}`}
-                maxLength={1}
-                value={guesses[ch] || ""}
-                onChange={e => !isHint && handleGuess(ch, e.target.value)}
-                readOnly={isHint || completed}
-              />
-              <span className="text-[9px] text-muted-foreground">{ch}</span>
-            </span>
-          );
-        })}
-      </div>
-      {completed && <p className="text-sm text-primary font-medium text-center">✓ Solved!</p>}
-    </div>
-  );
-}
-
-function WordSearchSolver({
-  data, onComplete,
-}: {
-  data: { grid: string[][]; words: string[]; wordPositions: { word: string; row: number; col: number; dr: number; dc: number }[]; size: number };
-  onComplete: () => void;
-}) {
-  const [foundWords, setFoundWords] = useState<Set<string>>(new Set());
-  const [foundCells, setFoundCells] = useState<Set<string>>(new Set());
-
-  const handleCellClick = (r: number, c: number) => {
-    // Simple: check if clicking reveals a word starting/ending here
-    for (const wp of data.wordPositions) {
-      if (foundWords.has(wp.word)) continue;
-      // Check if this cell is part of the word
-      for (let i = 0; i < wp.word.length; i++) {
-        if (wp.row + wp.dr * i === r && wp.col + wp.dc * i === c) {
-          // Found a match, mark entire word
-          const newFound = new Set(foundWords);
-          newFound.add(wp.word);
-          setFoundWords(newFound);
-          const newCells = new Set(foundCells);
-          for (let j = 0; j < wp.word.length; j++) {
-            newCells.add(`${wp.row + wp.dr * j}-${wp.col + wp.dc * j}`);
-          }
-          setFoundCells(newCells);
-          if (newFound.size === data.words.length) onComplete();
-          return;
-        }
-      }
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="inline-grid gap-0.5" style={{ gridTemplateColumns: `repeat(${data.size}, minmax(0, 1fr))` }}>
-        {data.grid.map((row, r) =>
-          row.map((cell, c) => (
-            <button
-              key={`${r}-${c}`}
-              onClick={() => handleCellClick(r, c)}
-              className={`w-7 h-7 sm:w-8 sm:h-8 text-xs font-mono flex items-center justify-center rounded transition-colors ${
-                foundCells.has(`${r}-${c}`)
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-card border border-border hover:bg-accent/30"
-              }`}
-            >
-              {cell}
-            </button>
-          ))
-        )}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {data.words.map(w => (
-          <Badge key={w} variant={foundWords.has(w) ? "default" : "outline"} className="text-xs">
-            {foundWords.has(w) ? <Check className="h-3 w-3 mr-0.5" /> : null}
-            {w}
-          </Badge>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function GridSolver({
-  data, puzzleType, onComplete,
-}: {
-  data: Record<string, unknown>;
-  puzzleType: "word-fill" | "crossword";
-  onComplete: () => void;
-}) {
-  const gridSize = (data.gridSize as number) || 9;
-  const blackCells = (data.blackCells as [number, number][]) || [];
-  const blackSet = new Set(blackCells.map(([r, c]) => `${r}-${c}`));
-  const solution = (data.solution as (string | null)[][]) || null;
-  const clues = (data.clues as { number: number; clue: string; answer: string; row: number; col: number; direction: string }[]) || [];
-
-  const [grid, setGrid] = useState<string[][]>(
-    Array.from({ length: gridSize }, () => Array(gridSize).fill(""))
-  );
-  const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
-
-  // Build solution map for crossword from clues
-  const solutionMap = (() => {
-    if (solution) return solution;
-    const map: (string | null)[][] = Array.from({ length: gridSize }, () => Array(gridSize).fill(null));
-    for (const c of clues) {
-      const dr = c.direction === "down" ? 1 : 0;
-      const dc = c.direction === "across" ? 1 : 0;
-      for (let i = 0; i < c.answer.length; i++) {
-        map[c.row + dr * i][c.col + dc * i] = c.answer[i];
-      }
-    }
-    return map;
-  })();
-
-  const handleInput = (r: number, c: number, value: string) => {
-    const upper = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-    const newGrid = grid.map(row => [...row]);
-    newGrid[r][c] = upper;
-    setGrid(newGrid);
-
-    // Check completion
-    let complete = true;
-    for (let rr = 0; rr < gridSize; rr++) {
-      for (let cc = 0; cc < gridSize; cc++) {
-        if (!blackSet.has(`${rr}-${cc}`) && solutionMap[rr]?.[cc]) {
-          if (newGrid[rr][cc] !== solutionMap[rr][cc]) complete = false;
-        }
-      }
-    }
-    if (complete) onComplete();
-  };
-
-  return (
-    <div className="space-y-4">
-      <div
-        className="inline-grid gap-0"
-        style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
-      >
-        {Array.from({ length: gridSize }, (_, r) =>
-          Array.from({ length: gridSize }, (_, c) => {
-            if (blackSet.has(`${r}-${c}`)) {
-              return <div key={`${r}-${c}`} className="w-7 h-7 sm:w-8 sm:h-8 bg-foreground/90" />;
-            }
-            const isActive = activeCell?.[0] === r && activeCell?.[1] === c;
-            return (
-              <input
-                key={`${r}-${c}`}
-                className={`w-7 h-7 sm:w-8 sm:h-8 text-center text-xs font-mono border border-border bg-card outline-none ${
-                  isActive ? "bg-primary/10 border-primary" : ""
-                }`}
-                maxLength={1}
-                value={grid[r][c]}
-                onChange={e => handleInput(r, c, e.target.value)}
-                onFocus={() => setActiveCell([r, c])}
-              />
-            );
-          })
-        )}
-      </div>
-      {puzzleType === "crossword" && clues.length > 0 && (
-        <div className="grid grid-cols-2 gap-4 text-xs">
-          <div>
-            <h4 className="font-medium mb-1">Across</h4>
-            {clues.filter(c => c.direction === "across").map(c => (
-              <p key={`a-${c.number}`} className="text-muted-foreground">{c.number}. {c.clue}</p>
-            ))}
-          </div>
-          <div>
-            <h4 className="font-medium mb-1">Down</h4>
-            {clues.filter(c => c.direction === "down").map(c => (
-              <p key={`d-${c.number}`} className="text-muted-foreground">{c.number}. {c.clue}</p>
-            ))}
-          </div>
-        </div>
-      )}
-      {puzzleType === "word-fill" && (data.entries as string[])?.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {(data.entries as string[]).map((entry, i) => (
-            <Badge key={i} variant="outline" className="text-xs font-mono">{entry}</Badge>
-          ))}
-        </div>
       )}
     </div>
   );
