@@ -205,31 +205,73 @@ const AdminUsers = () => {
           ) : (
             <div className="divide-y divide-border">
               {users.map((u) => (
-                <div key={u.id} className="flex items-center justify-between px-5 py-4">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-foreground">
-                        {u.first_name} {u.last_name}
+                <div key={u.id} className="px-5 py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-foreground">
+                          {u.first_name} {u.last_name}
+                        </p>
+                        {u.role === "admin" && (
+                          <span className="text-[10px] uppercase tracking-wider text-primary font-medium">Admin</span>
+                        )}
+                      </div>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {u.is_active ? "Active" : "Deactivated"} · Joined{" "}
+                        {new Date(u.created_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
                       </p>
-                      {u.role === "admin" && (
-                        <span className="text-[10px] uppercase tracking-wider text-primary font-medium">Admin</span>
+                    </div>
+                    {u.role !== "admin" && (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs text-muted-foreground hover:text-foreground"
+                          onClick={() => {
+                            setResetUserId(resetUserId === u.id ? null : u.id);
+                            setResetPassword("");
+                            setResetMsg("");
+                          }}
+                        >
+                          <KeyRound size={12} className="mr-1" />
+                          Reset
+                        </Button>
+                        <Button
+                          variant={u.is_active ? "outline" : "default"}
+                          size="sm"
+                          className="text-xs border-border"
+                          disabled={toggling === u.id}
+                          onClick={() => handleToggle(u.id, u.is_active)}
+                        >
+                          {u.is_active ? "Deactivate" : "Activate"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  {resetUserId === u.id && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <Input
+                        type="text"
+                        value={resetPassword}
+                        onChange={(e) => setResetPassword(e.target.value)}
+                        placeholder="New password"
+                        className="bg-secondary border-border text-foreground font-mono text-xs h-8 max-w-[200px]"
+                        maxLength={200}
+                      />
+                      <Button
+                        size="sm"
+                        className="h-8 text-xs"
+                        disabled={resetting || !resetPassword}
+                        onClick={() => handleResetPassword(u.id)}
+                      >
+                        {resetting ? "Saving..." : "Save"}
+                      </Button>
+                      {resetMsg && (
+                        <span className={`text-xs ${resetMsg.includes("success") ? "text-primary" : "text-destructive"}`}>
+                          {resetMsg}
+                        </span>
                       )}
                     </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {u.is_active ? "Active" : "Deactivated"} · Joined{" "}
-                      {new Date(u.created_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
-                    </p>
-                  </div>
-                  {u.role !== "admin" && (
-                    <Button
-                      variant={u.is_active ? "outline" : "default"}
-                      size="sm"
-                      className="text-xs border-border"
-                      disabled={toggling === u.id}
-                      onClick={() => handleToggle(u.id, u.is_active)}
-                    >
-                      {u.is_active ? "Deactivate" : "Activate"}
-                    </Button>
                   )}
                 </div>
               ))}
