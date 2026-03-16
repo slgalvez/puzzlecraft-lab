@@ -124,7 +124,13 @@ const ForYou = () => {
 
   const handleSelectType = (type: PuzzleType) => {
     setSelectedType(type);
-    setCreateStep("content");
+    // If only one recipient, skip recipient step
+    if (recipients.length <= 1) {
+      if (recipients.length === 1) setSelectedRecipientId(recipients[0].id);
+      setCreateStep("content");
+    } else {
+      setCreateStep("recipient");
+    }
     setWordInput("");
     setPhraseInput("");
     setClueEntries([{ answer: "", clue: "" }]);
