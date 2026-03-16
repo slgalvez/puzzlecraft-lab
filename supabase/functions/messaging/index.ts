@@ -928,6 +928,20 @@ Deno.serve(async (req) => {
       return json({ ok: true, focus_loss_protection });
     }
 
+    // ─── CLEAR ACTIVITY ───
+    if (action === "clear-activity") {
+      const { error: updateErr } = await sb.from("profiles").update({ activity_cleared_at: now }).eq("id", profileId);
+      if (updateErr) return err("Could not clear activity");
+      return json({ ok: true, activity_cleared_at: now });
+    }
+
+    // ─── GET ACTIVITY CLEARED AT ───
+    if (action === "get-activity-cleared-at") {
+      const { data: profile } = await sb.from("profiles").select("activity_cleared_at").eq("id", profileId).single();
+      if (!profile) return err("Profile not found");
+      return json({ activity_cleared_at: profile.activity_cleared_at });
+    }
+
     return err("Unknown action", 400);
   } catch (e) {
     console.error("Messaging error:", e);

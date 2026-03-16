@@ -248,6 +248,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          activity_cleared_at: string | null
           authorized_user_id: string
           created_at: string
           first_name: string
@@ -257,6 +258,7 @@ export type Database = {
           role: string
         }
         Insert: {
+          activity_cleared_at?: string | null
           authorized_user_id: string
           created_at?: string
           first_name: string
@@ -266,6 +268,7 @@ export type Database = {
           role?: string
         }
         Update: {
+          activity_cleared_at?: string | null
           authorized_user_id?: string
           created_at?: string
           first_name?: string

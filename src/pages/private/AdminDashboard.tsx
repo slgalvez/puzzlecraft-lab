@@ -57,6 +57,8 @@ const AdminDashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [showClearAll, setShowClearAll] = useState(false);
   const [clearingAll, setClearingAll] = useState(false);
+  const [showClearActivity, setShowClearActivity] = useState(false);
+  const [clearingActivity, setClearingActivity] = useState(false);
 
   const handleSessionExpired = useCallback(() => {
     signOut();
@@ -66,12 +68,16 @@ const AdminDashboard = () => {
   const fetchData = useCallback(async () => {
     if (!token || !user) return;
     try {
-      const [convData, puzzleData] = await Promise.all([
+      const [convData, puzzleData, activityData] = await Promise.all([
         invokeMessaging("list-conversations", token),
         invokeMessaging("list-puzzles", token),
+        invokeMessaging("get-activity-cleared-at", token),
       ]);
       setConversations(convData.conversations || []);
       setPuzzles(puzzleData.puzzles || []);
+
+      const clearedAt = activityData.activity_cleared_at;
+      const clearedTime = clearedAt ? new Date(clearedAt).getTime() : 0;
 
       // Build activity feed from puzzles
       const items: ActivityItem[] = [];
@@ -92,34 +98,44 @@ const AdminDashboard = () => {
       for (const p of puzzleData.puzzles || []) {
         const label = PUZZLE_LABELS[p.puzzle_type] || p.puzzle_type;
         if (p.sent_to === user.id && p.solved_by) {
-          items.push({
-            id: `solved-${p.id}`,
-            type: "puzzle_solved",
-            description: `You solved ${p.creator_name}'s ${label}`,
-            timestamp: p.solved_at || p.created_at,
-          });
-        } else if (p.sent_to === user.id && !p.solved_by) {
-          items.push({
-            id: `recv-${p.id}`,
-            type: "puzzle_received",
-            description: `${p.creator_name} sent you a ${label}`,
-            timestamp: p.created_at,
-          });
-        } else if (p.created_by === user.id) {
-          if (p.solved_by) {
+          const ts = p.solved_at || p.created_at;
+          if (new Date(ts).getTime() > clearedTime) {
             items.push({
-              id: `their-solve-${p.id}`,
+              id: `solved-${p.id}`,
               type: "puzzle_solved",
-              description: `${p.recipient_name} solved your ${label}`,
-              timestamp: p.solved_at || p.created_at,
+              description: `You solved ${p.creator_name}'s ${label}`,
+              timestamp: ts,
             });
-          } else {
+          }
+        } else if (p.sent_to === user.id && !p.solved_by) {
+          if (new Date(p.created_at).getTime() > clearedTime) {
             items.push({
-              id: `sent-${p.id}`,
-              type: "puzzle_sent",
-              description: `You sent ${p.recipient_name} a ${label}`,
+              id: `recv-${p.id}`,
+              type: "puzzle_received",
+              description: `${p.creator_name} sent you a ${label}`,
               timestamp: p.created_at,
             });
+          }
+        } else if (p.created_by === user.id) {
+          if (p.solved_by) {
+            const ts = p.solved_at || p.created_at;
+            if (new Date(ts).getTime() > clearedTime) {
+              items.push({
+                id: `their-solve-${p.id}`,
+                type: "puzzle_solved",
+                description: `${p.recipient_name} solved your ${label}`,
+                timestamp: ts,
+              });
+            }
+          } else {
+            if (new Date(p.created_at).getTime() > clearedTime) {
+              items.push({
+                id: `sent-${p.id}`,
+                type: "puzzle_sent",
+                description: `You sent ${p.recipient_name} a ${label}`,
+                timestamp: p.created_at,
+              });
+            }
           }
         }
       }
@@ -157,6 +173,22 @@ const AdminDashboard = () => {
       toast({ title: "Could not clear conversations", description: "Please try again." });
     } finally {
       setClearingAll(false);
+    }
+  };
+
+  const handleClearActivity = async () => {
+    if (!token || clearingActivity) return;
+    setClearingActivity(true);
+    try {
+      await invokeMessaging("clear-activity", token);
+      setActivities([]);
+      setShowClearActivity(false);
+      fetchData();
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Could not clear activity", description: "Please try again." });
+    } finally {
+      setClearingActivity(false);
     }
   };
 
@@ -261,7 +293,42 @@ const AdminDashboard = () => {
 
         {/* Recent Activity */}
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-foreground">Recent Activity</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-foreground">Recent Activity</h3>
+            {activities.length > 0 && !showClearActivity && (
+              <button
+                onClick={() => setShowClearActivity(true)}
+                className="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              >
+                <Trash2 size={12} />
+                <span>Clear</span>
+              </button>
+            )}
+          </div>
+          {showClearActivity && (
+            <div className="rounded-lg border border-border bg-destructive/5 p-3 space-y-2">
+              <p className="text-xs text-muted-foreground">Clear all recent activity?</p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="h-7 text-xs"
+                  disabled={clearingActivity}
+                  onClick={handleClearActivity}
+                >
+                  {clearingActivity ? "Clearing..." : "Clear All"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs border-border"
+                  onClick={() => setShowClearActivity(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
           {loading ? (
             <p className="text-xs text-muted-foreground animate-pulse py-4 text-center">Loading…</p>
           ) : activities.length === 0 ? (
