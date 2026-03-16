@@ -28,17 +28,17 @@ const Stats = () => {
   return (
     <Layout>
       <div className="container py-12">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
           <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Your Progress</h1>
           <div className="flex gap-2">
             <Button asChild variant="outline" size="sm">
               <Link to="/daily">
-                <Calendar size={14} /> Daily Challenge
+                <Calendar size={14} /> Daily
               </Link>
             </Button>
             <Button asChild size="sm">
               <Link to="/generate/sudoku">
-                <Infinity size={14} /> Endless Mode
+                <Infinity size={14} /> Endless
               </Link>
             </Button>
           </div>
