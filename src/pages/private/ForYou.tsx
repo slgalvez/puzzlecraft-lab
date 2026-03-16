@@ -84,7 +84,30 @@ const ForYou = () => {
     navigate("/");
   }, [signOut, navigate]);
 
-  const fetchPuzzles = useCallback(async () => {
+  // Debounced auto-save for draft edits
+  const triggerAutoSave = useCallback(async (overrides?: { recipientId?: string; reveal?: string }) => {
+    if (!editingDraftId || !token || !generatedData || !selectedType) return;
+    clearTimeout(autoSaveTimerRef.current);
+    clearTimeout(autoSaveResetRef.current);
+    autoSaveTimerRef.current = setTimeout(async () => {
+      setAutoSaveStatus("saving");
+      try {
+        await invokeMessaging("update-draft", token, {
+          puzzle_id: editingDraftId,
+          puzzle_type: selectedType,
+          puzzle_data: generatedData,
+          reveal_message: (overrides?.reveal ?? revealMessage).trim() || null,
+          sent_to: overrides?.recipientId ?? selectedRecipientId,
+        });
+        setAutoSaveStatus("saved");
+        autoSaveResetRef.current = setTimeout(() => setAutoSaveStatus("idle"), 3000);
+      } catch (e) {
+        if (e instanceof SessionExpiredError) return handleSessionExpired();
+        setAutoSaveStatus("idle");
+      }
+    }, 800);
+  }, [editingDraftId, token, generatedData, selectedType, revealMessage, selectedRecipientId, handleSessionExpired]);
+
     if (!token) return;
     try {
       const data = await invokeMessaging("list-puzzles", token);
