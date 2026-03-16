@@ -201,6 +201,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
 
   const handleCellClick = (r: number, c: number) => {
     if (isBlack(r, c)) return;
+    if (isMobile) haptic();
     if (activeCell && activeCell[0] === r && activeCell[1] === c) {
       setDirection((d) => (d === "across" ? "down" : "across"));
     } else {
