@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Puzzle, Gift, Check } from "lucide-react";
+import { Puzzle, Check } from "lucide-react";
 
 interface Props {
   body: string;
