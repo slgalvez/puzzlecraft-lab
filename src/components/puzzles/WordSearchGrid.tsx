@@ -171,12 +171,20 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     }
   };
 
-  // Compute responsive cell size: fit grid to ~95vw on mobile
-  const cellSizeClass = puzzle.size > 12
-    ? "w-6 h-6 sm:w-8 sm:h-8 text-[10px] sm:text-sm"
-    : puzzle.size > 8
-      ? "w-7 h-7 sm:w-9 sm:h-9 text-xs sm:text-base"
-      : "w-8 h-8 sm:w-9 sm:h-9 text-xs sm:text-base";
+  // Compute responsive cell size based on grid size
+  const cellSizeStyle = useMemo(() => {
+    if (!isMobile) {
+      // Desktop: fixed sizes
+      return puzzle.size > 12
+        ? { width: 32, height: 32, fontSize: 14 }
+        : { width: 36, height: 36, fontSize: 16 };
+    }
+    // Mobile: fit to viewport width (~95vw minus padding)
+    const availableWidth = Math.min(window.innerWidth * 0.92, 380);
+    const cellSize = Math.floor(availableWidth / puzzle.size);
+    const fontSize = cellSize < 20 ? 9 : cellSize < 26 ? 11 : 13;
+    return { width: cellSize, height: cellSize, fontSize };
+  }, [puzzle.size, isMobile]);
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
@@ -193,7 +201,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
           </p>
         )}
 
-        <div className="max-w-full overflow-x-auto" style={{ touchAction: isMobile ? "none" : "auto" }}>
+        <div className="w-full overflow-x-auto pb-2" style={{ touchAction: isMobile ? "none" : "auto" }}>
         <div
           ref={gridRef}
           className="inline-grid border-2 border-puzzle-border select-none outline-none"
@@ -214,7 +222,6 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
                 <div
                   key={key}
                   className={cn(
-                    cellSizeClass,
                     "border border-puzzle-border flex items-center justify-center cursor-pointer font-semibold transition-colors touch-manipulation active:animate-cell-pop",
                     isFound && "bg-puzzle-cell-highlight text-primary",
                     isStart && "bg-puzzle-cell-active",
@@ -222,6 +229,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
                     isCursor && !isFound && !isStart && !isPreview && !isMobile && "ring-2 ring-inset ring-primary bg-puzzle-cell-active",
                     !isFound && !isStart && !isPreview && !(isCursor && !isMobile) && "bg-puzzle-cell hover:bg-secondary"
                   )}
+                  style={{ width: cellSizeStyle.width, height: cellSizeStyle.height, fontSize: cellSizeStyle.fontSize }}
                   onClick={() => handleCellClick(r, c)}
                   onMouseEnter={() => !isMobile && setHoverCell([r, c])}
                 >
