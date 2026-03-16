@@ -431,6 +431,39 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // ─── ADMIN: START CONVERSATION ───
+    if (action === "start-conversation") {
+      if (!isAdmin) return err("Access denied");
+      const { user_profile_id } = body;
+      if (!user_profile_id) return err("Missing user_profile_id", 400);
+
+      // Check user exists
+      const { data: targetProfile } = await sb
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .eq("id", user_profile_id)
+        .single();
+      if (!targetProfile) return err("User not found", 404);
+
+      // Check if conversation already exists
+      const { data: existing } = await sb
+        .from("conversations")
+        .select("id")
+        .eq("user_profile_id", user_profile_id)
+        .maybeSingle();
+      if (existing) return json({ conversation_id: existing.id, already_existed: true });
+
+      // Create new conversation
+      const { data: newConv, error: convErr } = await sb
+        .from("conversations")
+        .insert({ user_profile_id, admin_profile_id: profileId })
+        .select("id")
+        .single();
+      if (convErr) return err("Could not create conversation");
+
+      return json({ conversation_id: newConv.id, already_existed: false });
+    }
+
     // ─── CLEANUP EXPIRED MESSAGES ───
     if (action === "cleanup-expired") {
       if (!isAdmin) return err("Access denied");

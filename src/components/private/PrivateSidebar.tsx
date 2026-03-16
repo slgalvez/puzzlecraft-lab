@@ -15,6 +15,7 @@ import {
 
 const adminNav = [
   { title: "Overview", url: "/p", icon: LayoutDashboard },
+  { title: "Conversations", url: "/p/conversations", icon: MessageSquare },
   { title: "Users", url: "/p/users", icon: Users },
   { title: "Settings", url: "/p/settings", icon: Settings },
 ];

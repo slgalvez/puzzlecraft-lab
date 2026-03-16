@@ -19,6 +19,7 @@ import PrivateRoute from "./components/private/PrivateRoute";
 import Login from "./pages/private/Login";
 import AdminDashboard from "./pages/private/AdminDashboard";
 import AdminConversationView from "./pages/private/AdminConversationView";
+import AdminConversations from "./pages/private/AdminConversations";
 import AdminUsers from "./pages/private/AdminUsers";
 import UserConversation from "./pages/private/UserConversation";
 import PrivateSettings from "./pages/private/PrivateSettings";
@@ -46,6 +47,7 @@ const App = () => (
             {/* Private app */}
             <Route path="/p/login" element={<Login />} />
             <Route path="/p" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
+            <Route path="/p/conversations" element={<PrivateRoute><AdminConversations /></PrivateRoute>} />
             <Route path="/p/conversation" element={<PrivateRoute><UserConversation /></PrivateRoute>} />
             <Route path="/p/conversation/:conversationId" element={<PrivateRoute><AdminConversationView /></PrivateRoute>} />
             <Route path="/p/users" element={<PrivateRoute><AdminUsers /></PrivateRoute>} />
