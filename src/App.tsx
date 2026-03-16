@@ -12,7 +12,12 @@ import About from "./pages/About";
 import Help from "./pages/Help";
 import Stats from "./pages/Stats";
 import NotFound from "./pages/NotFound";
-import PrivatePage from "./pages/PrivatePage";
+
+// Private app pages
+import Dashboard from "./pages/private/Dashboard";
+import ThreadList from "./pages/private/ThreadList";
+import ConversationView from "./pages/private/ConversationView";
+import PrivateSettings from "./pages/private/PrivateSettings";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +28,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          {/* Public puzzle site */}
           <Route path="/" element={<Index />} />
           <Route path="/puzzles" element={<PuzzleLibrary />} />
           <Route path="/generate/:type" element={<PuzzleGenerator />} />
@@ -31,7 +37,13 @@ const App = () => (
           <Route path="/about" element={<About />} />
           <Route path="/help" element={<Help />} />
           <Route path="/stats" element={<Stats />} />
-          <Route path="/p" element={<PrivatePage />} />
+
+          {/* Private app */}
+          <Route path="/p" element={<Dashboard />} />
+          <Route path="/p/threads" element={<ThreadList />} />
+          <Route path="/p/threads/:threadId" element={<ConversationView />} />
+          <Route path="/p/settings" element={<PrivateSettings />} />
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

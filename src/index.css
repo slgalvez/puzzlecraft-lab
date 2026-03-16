@@ -110,3 +110,49 @@
     font-family: 'DM Sans', sans-serif;
   }
 }
+
+/* Private app theme — applied via .private-app wrapper */
+.private-app {
+  --background: 220 14% 10%;
+  --foreground: 220 10% 90%;
+  --card: 220 14% 13%;
+  --card-foreground: 220 10% 90%;
+  --popover: 220 14% 13%;
+  --popover-foreground: 220 10% 90%;
+  --primary: 172 50% 45%;
+  --primary-foreground: 220 14% 10%;
+  --secondary: 220 12% 18%;
+  --secondary-foreground: 220 10% 85%;
+  --muted: 220 12% 18%;
+  --muted-foreground: 220 8% 55%;
+  --accent: 172 50% 45%;
+  --accent-foreground: 220 14% 10%;
+  --destructive: 0 62% 45%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 220 12% 20%;
+  --input: 220 12% 20%;
+  --ring: 172 50% 45%;
+  --sidebar-background: 220 14% 8%;
+  --sidebar-foreground: 220 10% 85%;
+  --sidebar-primary: 172 50% 45%;
+  --sidebar-primary-foreground: 220 14% 10%;
+  --sidebar-accent: 220 12% 15%;
+  --sidebar-accent-foreground: 220 10% 85%;
+  --sidebar-border: 220 12% 16%;
+  --sidebar-ring: 172 50% 45%;
+
+  font-family: 'DM Sans', sans-serif;
+  background: hsl(220 14% 10%);
+  color: hsl(220 10% 90%);
+  min-height: 100vh;
+}
+
+.private-app h1,
+.private-app h2,
+.private-app h3,
+.private-app h4,
+.private-app h5,
+.private-app h6 {
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: -0.02em;
+}
