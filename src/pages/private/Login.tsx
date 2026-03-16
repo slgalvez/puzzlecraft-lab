@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
-  const { user, isApproved, loading, signIn } = useAuth();
-  const [email, setEmail] = useState("");
+  const { user, loading, signIn } = useAuth();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -19,18 +20,28 @@ export default function LoginPage() {
     );
   }
 
-  if (user && isApproved) {
+  if (user) {
     return <Navigate to="/p" replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setSubmitting(true);
 
-    const { error: signInError } = await signIn(email.trim(), password);
+    if (!firstName.trim() || !lastName.trim() || !password) {
+      setError("All fields are required");
+      return;
+    }
+
+    if (firstName.length > 100 || lastName.length > 100 || password.length > 200) {
+      setError("Access unavailable");
+      return;
+    }
+
+    setSubmitting(true);
+    const { error: signInError } = await signIn(firstName, lastName, password);
     if (signInError) {
-      setError("Invalid credentials");
+      setError("Access unavailable");
     }
     setSubmitting(false);
   };
@@ -50,16 +61,32 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-              Email
+              First Name
             </label>
             <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="First name"
               className="bg-secondary border-border text-foreground"
               required
-              autoComplete="email"
+              autoComplete="given-name"
+              maxLength={100}
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              Last Name
+            </label>
+            <Input
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Last name"
+              className="bg-secondary border-border text-foreground"
+              required
+              autoComplete="family-name"
+              maxLength={100}
             />
           </div>
           <div>
@@ -74,6 +101,7 @@ export default function LoginPage() {
               className="bg-secondary border-border text-foreground"
               required
               autoComplete="current-password"
+              maxLength={200}
             />
           </div>
 

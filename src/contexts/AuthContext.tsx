@@ -1,82 +1,80 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { User, Session } from "@supabase/supabase-js";
+
+interface PrivateUser {
+  id: string;
+  first_name: string;
+  last_name: string;
+}
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  isApproved: boolean | null;
+  user: PrivateUser | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signIn: (firstName: string, lastName: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
+const SESSION_KEY = "private_session";
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function getStoredSession(): { user: PrivateUser; token: string } | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Check token expiry from payload
+    const payloadB64 = parsed.token?.split(".")?.[1];
+    if (!payloadB64) return null;
+    const payload = JSON.parse(atob(payloadB64));
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    localStorage.removeItem(SESSION_KEY);
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [isApproved, setIsApproved] = useState<boolean | null>(null);
+  const [user, setUser] = useState<PrivateUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const checkApproval = async (email: string) => {
-    const { data, error } = await supabase.rpc("is_user_approved", {
-      check_email: email,
-    });
-    if (error) {
-      console.error("Approval check failed:", error);
-      return false;
-    }
-    return data === true;
-  };
-
   useEffect(() => {
-    // Set up auth listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-
-        if (newSession?.user?.email) {
-          const approved = await checkApproval(newSession.user.email);
-          setIsApproved(approved);
-        } else {
-          setIsApproved(null);
-        }
-        setLoading(false);
-      }
-    );
-
-    // THEN check existing session
-    supabase.auth.getSession().then(async ({ data: { session: existing } }) => {
-      setSession(existing);
-      setUser(existing?.user ?? null);
-
-      if (existing?.user?.email) {
-        const approved = await checkApproval(existing.user.email);
-        setIsApproved(approved);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    const session = getStoredSession();
+    if (session) {
+      setUser(session.user);
+    }
+    setLoading(false);
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { error: error.message };
-    return { error: null };
+  const signIn = async (firstName: string, lastName: string, password: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("private-login", {
+        body: { first_name: firstName.trim(), last_name: lastName.trim(), password },
+      });
+
+      if (error || !data?.token) {
+        return { error: "Access unavailable" };
+      }
+
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ user: data.user, token: data.token }));
+      setUser(data.user);
+      return { error: null };
+    } catch {
+      return { error: "Access unavailable" };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    localStorage.removeItem(SESSION_KEY);
     setUser(null);
-    setSession(null);
-    setIsApproved(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isApproved, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
@@ -85,11 +83,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) {
-    // Return a safe default during HMR or context mismatch
     return {
       user: null,
-      session: null,
-      isApproved: null,
       loading: true,
       signIn: async () => ({ error: "Auth not ready" }),
       signOut: async () => {},
