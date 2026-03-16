@@ -166,12 +166,30 @@ Deno.serve(async (req) => {
       if (!conv) return err("Not found");
       if (!isAdmin && conv.user_profile_id !== profileId) return err("Access denied");
 
+      // Mark unread messages as read
       await sb
         .from("messages")
         .update({ read_at: now })
         .eq("conversation_id", conversation_id)
         .neq("sender_profile_id", profileId)
         .is("read_at", null);
+
+      // Delete view-once messages that were just read (sent by the other party)
+      const { data: convForViewOnce } = await sb
+        .from("conversations")
+        .select("disappearing_duration")
+        .eq("id", conversation_id)
+        .single();
+
+      if (convForViewOnce?.disappearing_duration === "view-once") {
+        await sb
+          .from("messages")
+          .delete()
+          .eq("conversation_id", conversation_id)
+          .eq("is_disappearing", true)
+          .neq("sender_profile_id", profileId)
+          .not("read_at", "is", null);
+      }
 
       return json({ ok: true });
     }

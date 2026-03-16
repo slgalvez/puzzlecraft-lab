@@ -161,7 +161,7 @@ const AdminConversationView = () => {
               {conversation?.disappearing_enabled ? "Messages auto-delete after the set duration." : "Enable auto-delete for new messages."}
             </p>
             <div className="flex items-center gap-2 flex-wrap">
-              {(["1h", "24h", "7d"] as const).map((dur) => (
+              {(["view-once", "1h", "24h", "7d"] as const).map((dur) => (
                 <button
                   key={dur}
                   disabled={togglingDisappearing}
