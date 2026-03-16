@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        display: ['"Playfair Display"', 'serif'],
+        body: ['"DM Sans"', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -56,6 +60,16 @@ export default {
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
+        },
+        "surface-warm": "hsl(var(--surface-warm))",
+        "surface-elevated": "hsl(var(--surface-elevated))",
+        puzzle: {
+          cell: "hsl(var(--puzzle-cell))",
+          "cell-active": "hsl(var(--puzzle-cell-active))",
+          "cell-highlight": "hsl(var(--puzzle-cell-highlight))",
+          "cell-black": "hsl(var(--puzzle-cell-black))",
+          border: "hsl(var(--puzzle-border))",
+          number: "hsl(var(--puzzle-number))",
         },
       },
       borderRadius: {
