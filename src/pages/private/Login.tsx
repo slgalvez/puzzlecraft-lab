@@ -1,21 +1,98 @@
-import { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+const ACCESS_GRANT_KEY = "private_access_grant";
+
+function getAccessGrant(): boolean {
+  try {
+    const raw = sessionStorage.getItem(ACCESS_GRANT_KEY);
+    if (!raw) return false;
+    const { exp } = JSON.parse(raw);
+    if (!exp || exp < Math.floor(Date.now() / 1000)) {
+      sessionStorage.removeItem(ACCESS_GRANT_KEY);
+      return false;
+    }
+    return true;
+  } catch {
+    sessionStorage.removeItem(ACCESS_GRANT_KEY);
+    return false;
+  }
+}
+
 export default function LoginPage() {
   const { user, loading, signIn } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [gateStatus, setGateStatus] = useState<"checking" | "granted" | "denied">("checking");
 
-  if (loading) {
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkAccess() {
+      // Already have a valid access grant in session
+      if (getAccessGrant()) {
+        if (!cancelled) setGateStatus("granted");
+        return;
+      }
+
+      // Check for ticket in URL
+      const ticket = searchParams.get("t");
+      if (!ticket) {
+        if (!cancelled) setGateStatus("denied");
+        return;
+      }
+
+      // Verify ticket via backend
+      try {
+        const { data, error } = await supabase.functions.invoke("verify-ticket", {
+          body: { ticket },
+        });
+
+        if (error || !data?.valid) {
+          if (!cancelled) setGateStatus("denied");
+          return;
+        }
+
+        // Store access grant in sessionStorage (30 min)
+        sessionStorage.setItem(
+          ACCESS_GRANT_KEY,
+          JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 1800 })
+        );
+
+        // Strip ticket from URL
+        searchParams.delete("t");
+        setSearchParams(searchParams, { replace: true });
+
+        if (!cancelled) setGateStatus("granted");
+      } catch {
+        if (!cancelled) setGateStatus("denied");
+      }
+    }
+
+    checkAccess();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loading || gateStatus === "checking") {
     return (
       <div className="private-app flex items-center justify-center min-h-screen">
         <div className="text-sm text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (gateStatus === "denied") {
+    return (
+      <div className="private-app flex items-center justify-center min-h-screen">
+        <p className="text-sm text-muted-foreground">Session unavailable</p>
       </div>
     );
   }
