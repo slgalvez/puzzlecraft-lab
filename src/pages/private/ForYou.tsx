@@ -197,6 +197,7 @@ const ForYou = () => {
           puzzle_type: selectedType,
           puzzle_data: generatedData,
           reveal_message: revealMessage.trim() || null,
+          sent_to: selectedRecipientId,
         });
       }
       toast({ title: "Puzzle sent!" });
