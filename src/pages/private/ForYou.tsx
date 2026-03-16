@@ -166,6 +166,18 @@ const ForYou = () => {
     setRevealMessage("");
   };
 
+  const handleDelete = async (puzzleId: string) => {
+    if (!token) return;
+    try {
+      await invokeMessaging("delete-puzzle", token, { puzzle_id: puzzleId });
+      toast({ title: "Puzzle deleted" });
+      fetchPuzzles();
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: (e as Error).message || "Could not delete puzzle", variant: "destructive" });
+    }
+  };
+
   const handleSolve = async (puzzleId: string, solveTime: number) => {
     if (!token) return;
     try {
