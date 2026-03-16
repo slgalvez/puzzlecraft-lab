@@ -171,18 +171,21 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     }
   };
 
-  // Compute responsive cell size based on grid size
+  // Compute responsive cell size based on grid size — always fit on screen
   const cellSizeStyle = useMemo(() => {
     if (!isMobile) {
-      // Desktop: fixed sizes
       return puzzle.size > 12
         ? { width: 32, height: 32, fontSize: 14 }
         : { width: 36, height: 36, fontSize: 16 };
     }
-    // Mobile: fit to viewport width (~95vw minus padding)
-    const availableWidth = Math.min(window.innerWidth * 0.92, 380);
+    // Mobile: fit exactly within viewport. Account for page padding (16px*2),
+    // grid outer border (2px*2), and per-cell borders (1px per cell + 1px).
+    const pagePadding = 32;
+    const gridBorder = 4;
+    const cellBorders = puzzle.size + 1;
+    const availableWidth = window.innerWidth - pagePadding - gridBorder - cellBorders;
     const cellSize = Math.floor(availableWidth / puzzle.size);
-    const fontSize = cellSize < 20 ? 9 : cellSize < 26 ? 11 : 13;
+    const fontSize = cellSize < 18 ? 8 : cellSize < 24 ? 10 : 13;
     return { width: cellSize, height: cellSize, fontSize };
   }, [puzzle.size, isMobile]);
 
@@ -201,7 +204,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
           </p>
         )}
 
-        <div className="w-full overflow-x-auto pb-2" style={{ touchAction: isMobile ? "none" : "auto" }}>
+        <div style={{ touchAction: isMobile ? "none" : "auto" }}>
         <div
           ref={gridRef}
           className="inline-grid border-2 border-puzzle-border select-none outline-none"
