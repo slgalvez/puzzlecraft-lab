@@ -102,7 +102,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
       case "ArrowUp": e.preventDefault(); for (let nr = r - 1; nr >= 0; nr--) if (!isBlack(nr, c)) { setActiveCell([nr, c]); return; } break;
       case "ArrowDown": e.preventDefault(); for (let nr = r + 1; nr < gridSize; nr++) if (!isBlack(nr, c)) { setActiveCell([nr, c]); return; } break;
       case "ArrowLeft": e.preventDefault(); for (let nc = c - 1; nc >= 0; nc--) if (!isBlack(r, nc)) { setActiveCell([r, nc]); return; } break;
-      case "ArrowRight": e.preventDefault(); for (let nc = c + 1; nc < gridSize; nc++) if (!isBlack(r, nc]) { setActiveCell([r, nc]); return; } break;
+      case "ArrowRight": e.preventDefault(); for (let nc = c + 1; nc < gridSize; nc++) if (!isBlack(r, nc)) { setActiveCell([r, nc]); return; } break;
       case "Tab": { e.preventDefault(); const next = findNextWhite(r, c, e.shiftKey ? -1 : 1); if (next) setActiveCell(next); break; }
       case "Backspace": case "Delete": e.preventDefault(); deleteChar(); break;
       default: {
