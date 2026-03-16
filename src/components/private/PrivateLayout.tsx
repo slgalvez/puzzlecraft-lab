@@ -130,7 +130,7 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
                 </button>
               </div>
             </header>
-            <main className="flex-1 overflow-auto">{children}</main>
+            <main className="flex-1 overflow-auto min-h-0">{children}</main>
           </div>
         </div>
       </SidebarProvider>

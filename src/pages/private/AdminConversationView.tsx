@@ -343,7 +343,7 @@ const AdminConversationView = () => {
         </div>
 
         {/* Compose */}
-        <form onSubmit={handleSend} className="border-t border-border px-4 sm:px-5 py-3 shrink-0">
+        <form onSubmit={handleSend} className="border-t border-border px-4 sm:px-5 py-3 shrink-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}>
           <div className="flex items-center gap-2">
             <Input
               value={newMessage}

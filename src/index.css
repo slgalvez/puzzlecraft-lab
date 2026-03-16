@@ -168,7 +168,15 @@ html {
   font-family: 'DM Sans', sans-serif;
   background: hsl(220 14% 10%);
   color: hsl(220 10% 90%);
-  min-height: 100vh;
+  height: 100dvh;
+  height: 100vh; /* fallback for older browsers */
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Match overscroll / bounce background to private app */
+body:has(.private-app) {
+  background: hsl(220 14% 10%);
 }
 
 .private-app h1,
