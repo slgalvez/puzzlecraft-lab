@@ -37,8 +37,8 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   const [direction, setDirection] = useState<Direction>("across");
   const [usedEntries, setUsedEntries] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Set<string>>(new Set());
-  const [focusTrigger, setFocusTrigger] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const mobileInputRef = useRef<MobileLetterInputHandle>(null);
 
   const timerKey = `fillin-${puzzle.id}`;
   const timer = usePuzzleTimer(timerKey, { category: puzzle.type as "word-fill" | "number-fill", difficulty: puzzle.difficulty });
