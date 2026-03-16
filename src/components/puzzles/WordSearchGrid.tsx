@@ -240,6 +240,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
+          onMouseUp={handleMouseUp}
         >
           {puzzle.grid.map((row, r) =>
             row.map((letter, c) => {
