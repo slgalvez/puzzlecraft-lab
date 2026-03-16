@@ -5,6 +5,7 @@ import PuzzleControls from "./PuzzleControls";
 import PuzzleTimer from "./PuzzleTimer";
 import MobileNumberPad from "./MobileNumberPad";
 import MobileLetterInput from "./MobileLetterInput";
+import type { MobileLetterInputHandle } from "./MobileLetterInput";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
