@@ -6,7 +6,7 @@ import PrivateLayout from "@/components/private/PrivateLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Timer, Trash2, MessageSquare, Gift, Plus, Check, Clock, Send } from "lucide-react";
+import { Timer, Trash2, MessageSquare, Puzzle, Plus, Check, Clock, Send } from "lucide-react";
 
 interface ConversationSummary {
   id: string;
