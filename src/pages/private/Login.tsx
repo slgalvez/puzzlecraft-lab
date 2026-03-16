@@ -137,6 +137,15 @@ export default function LoginPage() {
             {submitting ? "Signing in..." : "Sign in"}
           </Button>
         </form>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full text-xs text-muted-foreground hover:text-foreground"
+          onClick={() => window.location.href = "/"}
+        >
+          Exit
+        </Button>
       </div>
     </div>
   );
