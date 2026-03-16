@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PrivateSidebar } from "@/components/private/PrivateSidebar";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
 
 interface PrivateLayoutProps {
@@ -10,6 +11,7 @@ interface PrivateLayoutProps {
 
 export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
   const { signOut, user } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="private-app">
@@ -31,7 +33,7 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
                   {user?.first_name} {user?.last_name}
                 </span>
                 <button
-                  onClick={() => signOut()}
+                  onClick={() => { signOut(); navigate("/"); }}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                   title="Sign out"
                 >
