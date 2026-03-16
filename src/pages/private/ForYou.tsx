@@ -276,7 +276,7 @@ const ForYou = () => {
 
   const handleEditDraft = (draft: PrivatePuzzle) => {
     setEditingDraftId(draft.id);
-    setEditingDraftRecipientName(draft.recipient_name || null);
+    setSelectedRecipientId(draft.sent_to);
     setSelectedType(draft.puzzle_type);
     setGeneratedData(draft.puzzle_data);
     setRevealMessage(draft.reveal_message || "");
