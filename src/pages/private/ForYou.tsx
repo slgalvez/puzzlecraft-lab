@@ -281,7 +281,7 @@ const ForYou = () => {
     setGeneratedData(draft.puzzle_data);
     setRevealMessage(draft.reveal_message || "");
     setCreateStep("preview");
-    setTab("create");
+    setTab("drafts");
   };
 
   const handleSendDraft = async (draftId: string) => {
@@ -387,7 +387,7 @@ const ForYou = () => {
           />
         )}
 
-        {tab === "drafts" && (
+        {tab === "drafts" && !editingDraftId && (
           <DraftList
             drafts={drafts}
             loading={loading}
@@ -397,7 +397,7 @@ const ForYou = () => {
           />
         )}
 
-        {tab === "create" && (
+        {(tab === "create" || (tab === "drafts" && !!editingDraftId)) && (
           <CreatePuzzleView
             step={createStep}
             selectedType={selectedType}
@@ -421,7 +421,10 @@ const ForYou = () => {
             onRegenerate={handleRegenerate}
             onSend={handleSend}
             onSaveDraft={handleSaveDraft}
-            onBack={resetCreate}
+            onBack={() => {
+              resetCreate();
+              setTab(editingDraftId ? "drafts" : "create");
+            }}
             onEditContent={() => setCreateStep("content")}
             onChangeRecipient={() => setCreateStep("recipient")}
             onGoToPreview={() => setCreateStep("preview")}
@@ -798,9 +801,11 @@ function CreatePuzzleView({
         <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-3 font-semibold">
           Puzzle as recipient will see it
         </p>
-        {generatedData && selectedType && (
-          <PuzzlePreview data={generatedData} puzzleType={selectedType} />
-        )}
+        <div className="max-h-[45vh] overflow-auto">
+          {generatedData && selectedType && (
+            <PuzzlePreview data={generatedData} puzzleType={selectedType} />
+          )}
+        </div>
       </div>
 
       {revealMessage && (
