@@ -10,9 +10,9 @@ const PuzzleLibrary = () => {
   return (
     <Layout>
       <div className="container py-12">
-        <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Puzzle Library</h1>
+        <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Puzzle Types</h1>
         <p className="mt-2 text-muted-foreground">
-          Choose a puzzle type to start playing — unlimited procedurally generated puzzles with adjustable difficulty.
+          Choose a puzzle type to start playing — unlimited puzzles with adjustable difficulty.
         </p>
 
         {/* Puzzle type cards */}
@@ -36,17 +36,19 @@ const PuzzleLibrary = () => {
         </div>
 
         {/* Sample puzzles section */}
-        <div className="mt-16">
-          <h2 className="font-display text-2xl font-bold text-foreground">Sample Puzzles</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Hand-crafted puzzles to get started.
-          </p>
-          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {allPuzzles.map((p) => (
-              <PuzzleCard key={p.id} puzzle={p} />
-            ))}
+        {allPuzzles.length > 0 && (
+          <div className="mt-16">
+            <h2 className="font-display text-2xl font-bold text-foreground">Sample Puzzles</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Hand-crafted puzzles to get started.
+            </p>
+            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {allPuzzles.map((p) => (
+                <PuzzleCard key={p.id} puzzle={p} />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </Layout>
   );

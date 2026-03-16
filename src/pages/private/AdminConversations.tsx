@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { invokeMessaging } from "@/lib/privateApi";
+import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Timer, Plus, Eye } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -41,8 +42,9 @@ const DURATION_LABELS: Record<string, string> = {
 };
 
 const AdminConversations = () => {
-  const { token } = useAuth();
+  const { token, signOut } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewDialog, setShowNewDialog] = useState(false);
@@ -50,17 +52,22 @@ const AdminConversations = () => {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [starting, setStarting] = useState<string | null>(null);
 
+  const handleSessionExpired = useCallback(() => {
+    signOut();
+    navigate("/");
+  }, [signOut, navigate]);
+
   const fetchConversations = useCallback(async () => {
     if (!token) return;
     try {
       const data = await invokeMessaging("list-conversations", token);
       setConversations(data.conversations);
-    } catch {
-      // silent
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, handleSessionExpired]);
 
   useEffect(() => {
     fetchConversations();
@@ -81,8 +88,8 @@ const AdminConversations = () => {
             profile_id: u.profile_id || u.id,
           }))
       );
-    } catch {
-      // silent
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
     } finally {
       setLoadingUsers(false);
     }
@@ -102,8 +109,9 @@ const AdminConversations = () => {
       });
       setShowNewDialog(false);
       navigate(`/p/conversation/${data.conversation_id}`);
-    } catch {
-      // silent
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Could not start conversation", description: "Please try again." });
     } finally {
       setStarting(null);
     }
@@ -122,7 +130,7 @@ const AdminConversations = () => {
 
   return (
     <PrivateLayout title="Conversations">
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-foreground">
             All Conversations
@@ -135,7 +143,7 @@ const AdminConversations = () => {
 
         <div className="rounded-lg border border-border bg-card">
           {loading ? (
-            <div className="px-5 py-8 text-center text-sm text-muted-foreground">Loading...</div>
+            <div className="px-5 py-8 text-center text-sm text-muted-foreground animate-pulse">Loading...</div>
           ) : conversations.length === 0 ? (
             <div className="px-5 py-8 text-center text-sm text-muted-foreground">
               No conversations yet. Click "New" to start one.
@@ -146,7 +154,7 @@ const AdminConversations = () => {
                 <Link
                   key={conv.id}
                   to={`/p/conversation/${conv.id}`}
-                  className="flex items-center justify-between px-5 py-4 hover:bg-secondary/40 transition-colors"
+                  className="flex items-center justify-between px-4 sm:px-5 py-4 hover:bg-secondary/40 transition-colors"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -195,7 +203,7 @@ const AdminConversations = () => {
           </DialogHeader>
           <div className="space-y-1 max-h-64 overflow-auto">
             {loadingUsers ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">Loading users...</p>
+              <p className="text-sm text-muted-foreground py-4 text-center animate-pulse">Loading users...</p>
             ) : availableUsers.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">
                 {users.length === 0 ? "No users found." : "All users already have a conversation."}

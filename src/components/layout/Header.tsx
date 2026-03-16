@@ -5,16 +5,21 @@ import { cn } from "@/lib/utils";
 
 const navLinks = [
   { to: "/", label: "Home" },
-  { to: "/puzzles", label: "Puzzle Library" },
   { to: "/daily", label: "Daily Puzzle" },
-  { to: "/stats", label: "Progress" },
-  { to: "/about", label: "About" },
-  { to: "/help", label: "Help" },
+  { to: "/puzzles", label: "Puzzle Types" },
+  { to: "/generate/sudoku", label: "Puzzle Lab" },
+  { to: "/stats", label: "Stats" },
 ];
 
 const Header = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const isActive = (to: string) => {
+    if (to === "/") return location.pathname === "/";
+    if (to.startsWith("/generate")) return location.pathname.startsWith("/generate");
+    return location.pathname === to;
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b bg-surface-elevated/80 backdrop-blur-md">
@@ -31,7 +36,7 @@ const Header = () => {
               to={link.to}
               className={cn(
                 "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                location.pathname === link.to
+                isActive(link.to)
                   ? "bg-secondary text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               )}
@@ -45,6 +50,7 @@ const Header = () => {
         <button
           className="inline-flex items-center justify-center rounded-md p-2 text-foreground md:hidden"
           onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label={mobileOpen ? "Close menu" : "Open menu"}
         >
           {mobileOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
@@ -60,7 +66,7 @@ const Header = () => {
               onClick={() => setMobileOpen(false)}
               className={cn(
                 "block rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                location.pathname === link.to
+                isActive(link.to)
                   ? "bg-secondary text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               )}

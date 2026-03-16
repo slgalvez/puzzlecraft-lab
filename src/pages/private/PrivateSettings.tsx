@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { invokeMessaging } from "@/lib/privateApi";
+import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 const PrivateSettings = () => {
-  const { user, token, updateUser } = useAuth();
+  const { user, token, updateUser, signOut } = useAuth();
+  const navigate = useNavigate();
 
   // Name form
   const [firstName, setFirstName] = useState(user?.first_name || "");
@@ -20,6 +22,11 @@ const PrivateSettings = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMsg, setPwMsg] = useState("");
+
+  const handleSessionExpired = useCallback(() => {
+    signOut();
+    navigate("/");
+  }, [signOut, navigate]);
 
   const handleNameSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,8 +47,9 @@ const PrivateSettings = () => {
       }
       setNameMsg("Name updated");
       setTimeout(() => setNameMsg(""), 3000);
-    } catch (err: any) {
-      setNameMsg(err.message || "Could not update name");
+    } catch (e: any) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      setNameMsg(e.message || "Could not update name");
     } finally {
       setNameSaving(false);
     }
@@ -74,8 +82,9 @@ const PrivateSettings = () => {
       setConfirmPassword("");
       setPwMsg("Password changed");
       setTimeout(() => setPwMsg(""), 3000);
-    } catch (err: any) {
-      setPwMsg(err.message || "Could not change password");
+    } catch (e: any) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      setPwMsg(e.message || "Could not change password");
     } finally {
       setPwSaving(false);
     }
@@ -83,11 +92,11 @@ const PrivateSettings = () => {
 
   return (
     <PrivateLayout title="Settings">
-      <div className="p-6 max-w-lg space-y-8">
+      <div className="p-4 sm:p-6 max-w-lg space-y-8">
         {/* Display Name */}
         <form onSubmit={handleNameSave} className="space-y-4">
           <h2 className="text-sm font-semibold text-foreground">Display Name</h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
                 First Name

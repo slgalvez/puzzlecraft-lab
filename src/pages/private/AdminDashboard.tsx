@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { invokeMessaging } from "@/lib/privateApi";
+import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Timer } from "lucide-react";
 
 interface ConversationSummary {
@@ -18,21 +19,29 @@ interface ConversationSummary {
 }
 
 const AdminDashboard = () => {
-  const { token } = useAuth();
+  const { token, signOut } = useAuth();
+  const navigate = useNavigate();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchConversations = useCallback(async () => {
     if (!token) return;
     try {
       const data = await invokeMessaging("list-conversations", token);
       setConversations(data.conversations);
-    } catch {
-      // Silently fail
+      setError(null);
+    } catch (e) {
+      if (e instanceof SessionExpiredError) {
+        signOut();
+        navigate("/");
+        return;
+      }
+      if (loading) setError("Unable to load conversations");
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, loading, signOut, navigate]);
 
   useEffect(() => {
     fetchConversations();
@@ -43,6 +52,10 @@ const AdminDashboard = () => {
   const formatTime = (iso: string) => {
     const d = new Date(iso);
     const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return "Just now";
+    if (diffMin < 60) return `${diffMin}m ago`;
     const isToday = d.toDateString() === now.toDateString();
     if (isToday) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     return d.toLocaleDateString([], { month: "short", day: "numeric" });
@@ -52,21 +65,21 @@ const AdminDashboard = () => {
 
   return (
     <PrivateLayout title="Overview">
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-6">
         {/* Stats */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-lg border border-border bg-card p-5">
+        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
+          <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Conversations</p>
             <p className="mt-2 text-2xl font-semibold text-foreground">{conversations.length}</p>
           </div>
-          <div className="rounded-lg border border-border bg-card p-5 relative">
+          <div className="rounded-lg border border-border bg-card p-4 sm:p-5 relative">
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Unread</p>
             <p className="mt-2 text-2xl font-semibold text-foreground">{totalUnread}</p>
             {totalUnread > 0 && (
               <span className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary animate-pulse" />
             )}
           </div>
-          <div className="rounded-lg border border-border bg-card p-5">
+          <div className="rounded-lg border border-border bg-card p-4 sm:p-5 col-span-2 sm:col-span-1">
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Active</p>
             <p className="mt-2 text-2xl font-semibold text-foreground">
               {conversations.filter((c) => c.last_message).length}
@@ -76,14 +89,21 @@ const AdminDashboard = () => {
 
         {/* Conversation list */}
         <div className="rounded-lg border border-border bg-card">
-          <div className="px-5 py-3 border-b border-border">
+          <div className="px-4 sm:px-5 py-3 border-b border-border">
             <h2 className="text-sm font-semibold text-foreground">Conversations</h2>
           </div>
           {loading ? (
-            <div className="px-5 py-8 text-center text-sm text-muted-foreground">Loading...</div>
+            <div className="px-5 py-8 text-center text-sm text-muted-foreground animate-pulse">Loading...</div>
+          ) : error ? (
+            <div className="px-5 py-8 text-center space-y-3">
+              <p className="text-sm text-muted-foreground">{error}</p>
+              <Button variant="outline" size="sm" onClick={() => { setLoading(true); setError(null); fetchConversations(); }}>
+                Retry
+              </Button>
+            </div>
           ) : conversations.length === 0 ? (
             <div className="px-5 py-8 text-center text-sm text-muted-foreground">
-              No conversations yet. Users will appear here once they send their first message.
+              No conversations yet. Users will appear here once they start a conversation.
             </div>
           ) : (
             <div className="divide-y divide-border">
@@ -91,7 +111,7 @@ const AdminDashboard = () => {
                 <Link
                   key={conv.id}
                   to={`/p/conversation/${conv.id}`}
-                  className="flex items-center justify-between px-5 py-4 hover:bg-secondary/40 transition-colors"
+                  className="flex items-center justify-between px-4 sm:px-5 py-4 hover:bg-secondary/40 transition-colors"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
