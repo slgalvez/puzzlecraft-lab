@@ -819,7 +819,7 @@ export function PuzzlePreview({ data, puzzleType }: PuzzlePreviewProps) {
               <div
                 key={`${r}-${c}`}
                 className={cn(
-                  "relative w-6 h-6 sm:w-8 sm:h-8 border border-puzzle-border flex items-center justify-center",
+                  "relative w-5 h-5 sm:w-6 sm:h-6 border border-puzzle-border flex items-center justify-center",
                   black ? "bg-puzzle-cell-black" : "bg-puzzle-cell"
                 )}
               >
