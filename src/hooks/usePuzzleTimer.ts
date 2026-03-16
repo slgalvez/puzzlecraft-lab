@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { recordCompletion } from "@/lib/progressTracker";
+import type { PuzzleCategory } from "@/lib/puzzleTypes";
 
 interface TimerState {
   elapsed: number;
@@ -38,14 +40,18 @@ export function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function usePuzzleTimer(puzzleKey: string) {
+interface TimerOptions {
+  category?: PuzzleCategory;
+  difficulty?: string;
+}
+
+export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
   const [state, setState] = useState<TimerState>({ elapsed: 0, isRunning: true, isSolved: false });
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const bestTime = getBestTimes()[puzzleKey]?.time ?? null;
 
   useEffect(() => {
-    // Reset on puzzle change
     setState({ elapsed: 0, isRunning: true, isSolved: false });
   }, [puzzleKey]);
 
@@ -66,8 +72,11 @@ export function usePuzzleTimer(puzzleKey: string) {
   const solve = useCallback(() => {
     setState((s) => ({ ...s, isRunning: false, isSolved: true }));
     const isNew = saveBestTime(puzzleKey, state.elapsed);
+    if (options?.category && options?.difficulty) {
+      recordCompletion(puzzleKey, options.category, options.difficulty, state.elapsed);
+    }
     return { time: state.elapsed, isNewBest: isNew };
-  }, [puzzleKey, state.elapsed]);
+  }, [puzzleKey, state.elapsed, options?.category, options?.difficulty]);
 
   const reset = useCallback(() => {
     setState({ elapsed: 0, isRunning: true, isSolved: false });
