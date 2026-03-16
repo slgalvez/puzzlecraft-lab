@@ -26,7 +26,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const [errors, setErrors] = useState<Set<string>>(new Set());
 
   const timerKey = `nonogram-${seed}-${difficulty}`;
-  const timer = usePuzzleTimer(timerKey);
+  const timer = usePuzzleTimer(timerKey, { category: "nonogram", difficulty });
 
   const maxRowClueLen = Math.max(...rowClues.map((c) => c.length));
   const maxColClueLen = Math.max(...colClues.map((c) => c.length));

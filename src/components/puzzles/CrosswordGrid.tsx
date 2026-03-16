@@ -26,7 +26,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   );
 
   const timerKey = `crossword-${puzzle.id}`;
-  const timer = usePuzzleTimer(timerKey);
+  const timer = usePuzzleTimer(timerKey, { category: "crossword", difficulty: puzzle.difficulty });
 
   const isBlack = (r: number, c: number) =>
     blackCells.some(([br, bc]) => br === r && bc === c);

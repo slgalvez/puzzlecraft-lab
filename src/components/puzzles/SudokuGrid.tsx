@@ -24,7 +24,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   );
 
   const timerKey = `sudoku-${seed}-${difficulty}`;
-  const timer = usePuzzleTimer(timerKey);
+  const timer = usePuzzleTimer(timerKey, { category: "sudoku", difficulty });
 
   const isGiven = (r: number, c: number) => puzzle.grid[r][c] !== null;
 

@@ -23,7 +23,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const inputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
 
   const timerKey = `cryptogram-${seed}-${difficulty}`;
-  const timer = usePuzzleTimer(timerKey);
+  const timer = usePuzzleTimer(timerKey, { category: "cryptogram", difficulty });
 
   const encodedLetters = useMemo(() => {
     return [...new Set(encoded.split("").filter((ch) => /[A-Z]/.test(ch)))];
