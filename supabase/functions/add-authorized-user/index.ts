@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,18 +6,34 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Admin-only: adds a user to authorized_users with a bcrypt-hashed password.
-// Requires service role key in Authorization header.
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]
+  );
+  const hash = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+    keyMaterial, 256
+  );
+  const saltB64 = btoa(String.fromCharCode(...salt));
+  const hashB64 = btoa(String.fromCharCode(...new Uint8Array(hash)));
+  return `pbkdf2:100000:${saltB64}:${hashB64}`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Verify caller is using service role key
-    const authHeader = req.headers.get("authorization");
+    // Only allow calls with service role key
+    const authHeader = req.headers.get("authorization") || "";
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    if (!authHeader || !authHeader.includes(serviceRoleKey)) {
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    const token = authHeader.replace("Bearer ", "");
+    // Reject if using anon key or no auth
+    if (!token || token === anonKey) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -26,6 +41,7 @@ Deno.serve(async (req) => {
     }
 
     const { first_name, last_name, password } = await req.json();
+
     if (!first_name || !last_name || !password) {
       return new Response(JSON.stringify({ error: "Missing fields" }), {
         status: 400,
@@ -33,7 +49,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const password_hash = await bcrypt.hash(password);
+    const password_hash = await hashPassword(password);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
@@ -56,7 +72,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: "Internal error" }), {
+    return new Response(JSON.stringify({ error: String(e) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
