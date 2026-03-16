@@ -345,7 +345,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
                   onClick={() => handleCellClick(r, c)}
                 >
                   {!black && (
-                    <span className="text-lg sm:text-xl font-semibold text-foreground uppercase">{grid[r][c]}</span>
+                    <span className="text-sm sm:text-xl font-semibold text-foreground uppercase">{grid[r][c]}</span>
                   )}
                 </div>
               );
