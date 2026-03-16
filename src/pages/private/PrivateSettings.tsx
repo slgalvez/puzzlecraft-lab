@@ -5,6 +5,8 @@ import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { getFocusLossEnabled, setFocusLossEnabled } from "@/lib/focusLossSettings";
 
 const PrivateSettings = () => {
   const { user, token, updateUser, signOut } = useAuth();
@@ -22,6 +24,7 @@ const PrivateSettings = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMsg, setPwMsg] = useState("");
+  const [focusLossOn, setFocusLossOn] = useState(() => getFocusLossEnabled());
 
   const handleSessionExpired = useCallback(() => {
     signOut();
@@ -187,6 +190,28 @@ const PrivateSettings = () => {
             {pwSaving ? "Saving..." : "Change Password"}
           </Button>
         </form>
+
+        <div className="border-t border-border" />
+
+        {/* Privacy */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-semibold text-foreground">Privacy</h2>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm text-foreground">Focus-loss protection</p>
+              <p className="text-xs text-muted-foreground">
+                Automatically exit when you switch apps or tabs
+              </p>
+            </div>
+            <Switch
+              checked={focusLossOn}
+              onCheckedChange={(val) => {
+                setFocusLossOn(val);
+                setFocusLossEnabled(val);
+              }}
+            />
+          </div>
+        </div>
       </div>
     </PrivateLayout>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
+import { getFocusLossEnabled } from "@/lib/focusLossSettings";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PrivateSidebar } from "@/components/private/PrivateSidebar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -39,7 +40,7 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
     const armTimer = setTimeout(() => { armed = true; }, 2000);
 
     const handleVisibilityChange = () => {
-      if (armed && document.visibilityState === "hidden") {
+      if (armed && getFocusLossEnabled() && document.visibilityState === "hidden") {
         quickExit();
       }
     };
