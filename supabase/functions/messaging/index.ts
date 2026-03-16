@@ -47,7 +47,7 @@ function parseDuration(dur: string): number {
   return val * 24 * 60 * 60 * 1000;
 }
 
-const VALID_DURATIONS = ["1h", "24h", "7d"];
+const VALID_DURATIONS = ["view-once", "1h", "24h", "7d"];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
