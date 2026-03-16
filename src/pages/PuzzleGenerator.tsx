@@ -162,6 +162,7 @@ const PuzzleGenerator = () => {
   };
 
   const handleTypeChange = (newType: PuzzleCategory) => {
+    setRandomPool(null); // Exit random mode when manually picking a type
     navigate(`/generate/${newType}`, { replace: true });
   };
 
