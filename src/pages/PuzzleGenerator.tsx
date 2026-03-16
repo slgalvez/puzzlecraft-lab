@@ -1,13 +1,14 @@
-import { useState, useMemo } from "react";
-import { useParams, useSearchParams, Link } from "react-router-dom";
+import { useState } from "react";
+import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import DifficultySelector from "@/components/puzzles/DifficultySelector";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CATEGORY_INFO, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
-import { randomSeed, seedFromString } from "@/lib/seededRandom";
+import { randomSeed } from "@/lib/seededRandom";
 import { useToast } from "@/hooks/use-toast";
 import { getPuzzleById } from "@/data/puzzles";
+import { supabase } from "@/integrations/supabase/client";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
