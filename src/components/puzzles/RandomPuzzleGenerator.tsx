@@ -44,7 +44,9 @@ const RandomPuzzleGenerator = ({ compact }: Props) => {
     const types = Array.from(selected);
     const chosenType = types[Math.floor(Math.random() * types.length)];
     const seed = randomSeed();
-    navigate(`/generate/${chosenType}?seed=${seed}`);
+    navigate(`/generate/${chosenType}?seed=${seed}`, {
+      state: { randomPool: types, randomDifficulty: difficulty },
+    });
   };
 
   return (

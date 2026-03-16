@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
+import { useState, useCallback } from "react";
+import { useParams, useSearchParams, Link, useNavigate, useLocation } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import DifficultySelector from "@/components/puzzles/DifficultySelector";
 import RandomPuzzleGenerator from "@/components/puzzles/RandomPuzzleGenerator";
@@ -10,7 +10,7 @@ import { randomSeed } from "@/lib/seededRandom";
 import { useToast } from "@/hooks/use-toast";
 import { getPuzzleById } from "@/data/puzzles";
 import { supabase } from "@/integrations/supabase/client";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Dices } from "lucide-react";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
@@ -40,18 +40,46 @@ const puzzleTypes: { value: PuzzleCategory; label: string }[] = [
 const PuzzleGenerator = () => {
   const { type } = useParams<{ type: string }>();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const category = type as PuzzleCategory;
   const info = CATEGORY_INFO[category];
   const navigate = useNavigate();
 
   const initialSeed = searchParams.get("seed");
 
-  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
+  // Random pool from RandomPuzzleGenerator route state
+  const routeState = location.state as { randomPool?: PuzzleCategory[]; randomDifficulty?: Difficulty } | null;
+  const [randomPool, setRandomPool] = useState<PuzzleCategory[] | null>(
+    () => routeState?.randomPool && routeState.randomPool.length > 1 ? routeState.randomPool : null
+  );
+
+  const [difficulty, setDifficulty] = useState<Difficulty>(
+    () => routeState?.randomDifficulty || "medium"
+  );
   const [seed, setSeed] = useState(() => initialSeed ? parseInt(initialSeed) || randomSeed() : randomSeed());
   const [seedInput, setSeedInput] = useState(initialSeed || "");
   const [puzzleKey, setPuzzleKey] = useState(0);
   const [loadingSeed, setLoadingSeed] = useState(false);
   const { toast } = useToast();
+
+  const handleNewPuzzle = useCallback(() => {
+    if (randomPool && randomPool.length > 1) {
+      const chosenType = randomPool[Math.floor(Math.random() * randomPool.length)];
+      const newSeed = randomSeed();
+      if (chosenType !== category) {
+        navigate(`/generate/${chosenType}?seed=${newSeed}`, {
+          state: { randomPool, randomDifficulty: difficulty },
+          replace: true,
+        });
+      } else {
+        setSeed(newSeed);
+        setPuzzleKey((k) => k + 1);
+      }
+    } else {
+      setSeed(randomSeed());
+      setPuzzleKey((k) => k + 1);
+    }
+  }, [randomPool, category, difficulty, navigate]);
 
   if (!info) {
     return (
@@ -68,11 +96,6 @@ const PuzzleGenerator = () => {
       </Layout>
     );
   }
-
-  const handleNewPuzzle = () => {
-    setSeed(randomSeed());
-    setPuzzleKey((k) => k + 1);
-  };
 
   const handleLoadSeed = async () => {
     const code = seedInput.trim();
@@ -139,6 +162,7 @@ const PuzzleGenerator = () => {
   };
 
   const handleTypeChange = (newType: PuzzleCategory) => {
+    setRandomPool(null); // Exit random mode when manually picking a type
     navigate(`/generate/${newType}`, { replace: true });
   };
 
@@ -261,12 +285,27 @@ const PuzzleGenerator = () => {
 
           {/* Generate + seed display */}
           <div className="flex items-center justify-between pt-1">
-            <p className="text-xs text-muted-foreground">
-              Seed: <span className="font-mono text-foreground">{seed}</span>
-            </p>
+            <div>
+              <p className="text-xs text-muted-foreground">
+                Seed: <span className="font-mono text-foreground">{seed}</span>
+              </p>
+              {randomPool && randomPool.length > 1 && (
+                <p className="text-[10px] text-primary/70 mt-0.5 flex items-center gap-1">
+                  <Dices size={10} />
+                  Random from: {randomPool.map(t => CATEGORY_INFO[t]?.name).join(", ")}
+                  <button
+                    onClick={() => setRandomPool(null)}
+                    className="ml-1 text-muted-foreground hover:text-foreground"
+                    title="Exit random mode"
+                  >
+                    ✕
+                  </button>
+                </p>
+              )}
+            </div>
             <Button onClick={handleNewPuzzle} size="sm" className="gap-1.5">
               <RefreshCw size={14} />
-              Generate Puzzle
+              {randomPool && randomPool.length > 1 ? "Random Puzzle" : "Generate Puzzle"}
             </Button>
           </div>
         </div>
