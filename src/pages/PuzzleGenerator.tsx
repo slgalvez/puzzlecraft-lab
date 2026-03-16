@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CATEGORY_INFO, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { randomSeed, seedFromString } from "@/lib/seededRandom";
+import { useToast } from "@/hooks/use-toast";
+import { getPuzzleById } from "@/data/puzzles";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
@@ -33,6 +35,7 @@ const PuzzleGenerator = () => {
   const [seed, setSeed] = useState(() => initialSeed ? parseInt(initialSeed) || randomSeed() : randomSeed());
   const [seedInput, setSeedInput] = useState(initialSeed || "");
   const [puzzleKey, setPuzzleKey] = useState(0);
+  const { toast } = useToast();
 
   if (!info) {
     return (
@@ -53,10 +56,27 @@ const PuzzleGenerator = () => {
   };
 
   const handleLoadSeed = () => {
-    if (seedInput.trim()) {
-      setSeed(seedFromString(seedInput.trim()));
+    const code = seedInput.trim();
+    if (!code) return;
+
+    // Accept known puzzle IDs
+    if (getPuzzleById(code)) {
+      setSeed(seedFromString(code));
       setPuzzleKey((k) => k + 1);
+      return;
     }
+
+    // Accept pure numeric seeds
+    if (/^\d+$/.test(code)) {
+      setSeed(parseInt(code));
+      setPuzzleKey((k) => k + 1);
+      return;
+    }
+
+    toast({
+      title: "Code not found",
+      description: "We couldn't find a puzzle matching that code. Check the code and try again.",
+    });
   };
 
   const handleDifficultyChange = (d: Difficulty) => {
