@@ -141,6 +141,13 @@ const ForYou = () => {
     fetchRecipients();
   }, [fetchPuzzles, fetchRecipients]);
 
+  // Auto-save when generatedData changes (e.g. after regeneration) while editing a draft
+  useEffect(() => {
+    if (editingDraftId && generatedData) {
+      triggerAutoSave();
+    }
+  }, [generatedData]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const receivedPuzzles = puzzles.filter(p => p.sent_to === user?.id);
   const sentPuzzles = puzzles.filter(p => p.created_by === user?.id);
 
