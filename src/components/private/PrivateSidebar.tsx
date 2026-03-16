@@ -156,7 +156,7 @@ export function PrivateSidebar() {
         <div className="px-4 pb-4">
           {!collapsed && (
             <span className="text-sm font-semibold tracking-tight text-foreground">
-              Workspace
+              The Lab
             </span>
           )}
         </div>
