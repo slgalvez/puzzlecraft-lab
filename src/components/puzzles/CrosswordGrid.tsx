@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import PuzzleControls from "./PuzzleControls";
 import PuzzleTimer from "./PuzzleTimer";
 import MobileLetterInput from "./MobileLetterInput";
+import type { MobileLetterInputHandle } from "./MobileLetterInput";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -25,8 +26,8 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
   const [direction, setDirection] = useState<"across" | "down">("across");
   const [errors, setErrors] = useState<Set<string>>(new Set());
-  const [focusTrigger, setFocusTrigger] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const mobileInputRef = useRef<MobileLetterInputHandle>(null);
 
   const timerKey = `crossword-${puzzle.id}`;
   const timer = usePuzzleTimer(timerKey, { category: "crossword", difficulty: puzzle.difficulty });
@@ -207,9 +208,8 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
     } else {
       setActiveCell([r, c]);
     }
-    // Re-trigger mobile keyboard focus
     if (isMobile) {
-      setFocusTrigger((t) => t + 1);
+      mobileInputRef.current?.focus();
     } else {
       containerRef.current?.focus();
     }
@@ -291,10 +291,10 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
         )}
 
         <MobileLetterInput
+          ref={mobileInputRef}
           active={isMobile && !!activeCell && !timer.isSolved}
           onLetter={enterLetter}
           onDelete={deleteLetter}
-          focusTrigger={focusTrigger}
         />
 
         <div className="max-w-full overflow-x-auto">

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Check, RotateCcw } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobileLetterInput from "@/components/puzzles/MobileLetterInput";
+import type { MobileLetterInputHandle } from "@/components/puzzles/MobileLetterInput";
 
 // ─── Types ───
 
@@ -32,6 +33,7 @@ export function GridSolver({ data, puzzleType, onComplete }: GridSolverProps) {
   const entries = (data.entries as string[]) || [];
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const mobileInputRef = useRef<MobileLetterInputHandle>(null);
   const [grid, setGrid] = useState<string[][]>(() =>
     Array.from({ length: gridSize }, () => Array(gridSize).fill(""))
   );
@@ -268,7 +270,11 @@ export function GridSolver({ data, puzzleType, onComplete }: GridSolverProps) {
       if (hasAcross && !hasDown) setDirection("across");
       else if (hasDown && !hasAcross) setDirection("down");
     }
-    if (!isMobile) containerRef.current?.focus();
+    if (isMobile) {
+      mobileInputRef.current?.focus();
+    } else {
+      containerRef.current?.focus();
+    }
   };
 
   const handleReset = () => {
@@ -328,6 +334,7 @@ export function GridSolver({ data, puzzleType, onComplete }: GridSolverProps) {
         )}
 
         <MobileLetterInput
+          ref={mobileInputRef}
           active={isMobile && !!activeCell && !solved}
           onLetter={enterChar}
           onDelete={deleteChar}

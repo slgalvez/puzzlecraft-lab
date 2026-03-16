@@ -5,6 +5,7 @@ import PuzzleControls from "./PuzzleControls";
 import PuzzleTimer from "./PuzzleTimer";
 import MobileNumberPad from "./MobileNumberPad";
 import MobileLetterInput from "./MobileLetterInput";
+import type { MobileLetterInputHandle } from "./MobileLetterInput";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -36,8 +37,8 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   const [direction, setDirection] = useState<Direction>("across");
   const [usedEntries, setUsedEntries] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Set<string>>(new Set());
-  const [focusTrigger, setFocusTrigger] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const mobileInputRef = useRef<MobileLetterInputHandle>(null);
 
   const timerKey = `fillin-${puzzle.id}`;
   const timer = usePuzzleTimer(timerKey, { category: puzzle.type as "word-fill" | "number-fill", difficulty: puzzle.difficulty });
@@ -238,9 +239,8 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
         setDirection("down");
       }
     }
-    // Re-trigger mobile keyboard focus
     if (isMobile) {
-      setFocusTrigger((t) => t + 1);
+      mobileInputRef.current?.focus();
     } else {
       containerRef.current?.focus();
     }
@@ -301,10 +301,10 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
           />
         ) : (
           <MobileLetterInput
+            ref={mobileInputRef}
             active={isMobile && !!activeCell && !timer.isSolved}
             onLetter={enterChar}
             onDelete={deleteChar}
-            focusTrigger={focusTrigger}
           />
         )}
 
