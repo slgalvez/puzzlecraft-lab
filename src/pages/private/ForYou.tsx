@@ -617,7 +617,7 @@ function CreatePuzzleView({
   step, selectedType, wordInput, setWordInput, phraseInput, setPhraseInput,
   clueEntries, setClueEntries, revealMessage, setRevealMessage,
   generatedData, sending, recipientName, recipients, selectedRecipientId,
-  onSelectRecipient, isEditingDraft,
+  onSelectRecipient, isEditingDraft, autoSaveStatus,
   onSelectType, onGenerate, onRegenerate, onSend, onSaveDraft, onBack, onEditContent, onChangeRecipient, onGoToPreview,
 }: {
   step: "type" | "recipient" | "content" | "preview";
@@ -637,6 +637,7 @@ function CreatePuzzleView({
   selectedRecipientId: string | null;
   onSelectRecipient: (id: string) => void;
   isEditingDraft: boolean;
+  autoSaveStatus?: "idle" | "saving" | "saved";
   onSelectType: (t: PuzzleType) => void;
   onGenerate: () => void;
   onRegenerate: () => void;
