@@ -13,16 +13,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { first_name, last_name, password, admin_secret } = await req.json();
-
-    // Verify admin secret
-    const expectedSecret = Deno.env.get("PUZZLE_UNLOCK_PHRASE");
-    if (!admin_secret || admin_secret !== expectedSecret) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const { first_name, last_name, password } = await req.json();
 
     if (!first_name || !last_name || !password) {
       return new Response(JSON.stringify({ error: "Missing fields" }), {
