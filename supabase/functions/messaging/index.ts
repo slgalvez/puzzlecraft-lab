@@ -84,6 +84,19 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, serviceRoleKey);
 
+    // ─── SESSION VERSION CHECK ───
+    // Verify this session hasn't been superseded by a newer login
+    if (action !== "check-status") {
+      const { data: profile } = await sb
+        .from("profiles")
+        .select("session_version")
+        .eq("id", user.sub)
+        .single();
+      if (profile && user.session_version !== undefined && profile.session_version !== user.session_version) {
+        return err("Session ended", 401);
+      }
+    }
+
     const profileId = user.sub;
     const isAdmin = user.role === "admin";
     const now = new Date().toISOString();
