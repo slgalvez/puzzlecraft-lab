@@ -189,6 +189,28 @@ const PrivateSettings = () => {
             {pwSaving ? "Saving..." : "Change Password"}
           </Button>
         </form>
+
+        <div className="border-t border-border" />
+
+        {/* Privacy */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-semibold text-foreground">Privacy</h2>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm text-foreground">Focus-loss protection</p>
+              <p className="text-xs text-muted-foreground">
+                Automatically exit when you switch apps or tabs
+              </p>
+            </div>
+            <Switch
+              checked={focusLossOn}
+              onCheckedChange={(val) => {
+                setFocusLossOn(val);
+                setFocusLossEnabled(val);
+              }}
+            />
+          </div>
+        </div>
       </div>
     </PrivateLayout>
   );
