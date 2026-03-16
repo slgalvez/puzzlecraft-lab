@@ -15,6 +15,13 @@ interface Props {
   onNewPuzzle: () => void;
 }
 
+type Direction = "across" | "down";
+
+interface EntrySlot {
+  cells: [number, number][];
+  direction: Direction;
+}
+
 const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -26,6 +33,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   );
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
+  const [direction, setDirection] = useState<Direction>("across");
   const containerRef = useRef<HTMLDivElement>(null);
 
   const timerKey = `kakuro-${seed}-${difficulty}`;
@@ -37,21 +45,79 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     return map;
   }, [clues]);
 
+  // Compute entry slots (contiguous runs of white cells)
+  const entrySlots = useMemo(() => {
+    const slots: EntrySlot[] = [];
+    // Across
+    for (let r = 0; r < size; r++) {
+      let start = -1;
+      for (let c = 0; c <= size; c++) {
+        if (c < size && !isBlack[r][c]) {
+          if (start === -1) start = c;
+        } else {
+          if (start !== -1 && c - start >= 2) {
+            const cells: [number, number][] = [];
+            for (let cc = start; cc < c; cc++) cells.push([r, cc]);
+            slots.push({ cells, direction: "across" });
+          }
+          start = -1;
+        }
+      }
+    }
+    // Down
+    for (let c = 0; c < size; c++) {
+      let start = -1;
+      for (let r = 0; r <= size; r++) {
+        if (r < size && !isBlack[r][c]) {
+          if (start === -1) start = r;
+        } else {
+          if (start !== -1 && r - start >= 2) {
+            const cells: [number, number][] = [];
+            for (let rr = start; rr < r; rr++) cells.push([rr, c]);
+            slots.push({ cells, direction: "down" });
+          }
+          start = -1;
+        }
+      }
+    }
+    return slots;
+  }, [size, isBlack]);
+
+  const cellToSlots = useMemo(() => {
+    const map = new Map<string, EntrySlot[]>();
+    for (const slot of entrySlots) {
+      for (const [r, c] of slot.cells) {
+        const key = `${r}-${c}`;
+        if (!map.has(key)) map.set(key, []);
+        map.get(key)!.push(slot);
+      }
+    }
+    return map;
+  }, [entrySlots]);
+
+  const getActiveSlot = useCallback((r: number, c: number, dir: Direction): EntrySlot | null => {
+    const slots = cellToSlots.get(`${r}-${c}`);
+    if (!slots || slots.length === 0) return null;
+    return slots.find(s => s.direction === dir) || slots[0];
+  }, [cellToSlots]);
+
+  const activeEntryCells = useMemo(() => {
+    if (!activeCell) return new Set<string>();
+    const slot = getActiveSlot(activeCell[0], activeCell[1], direction);
+    if (!slot) return new Set<string>();
+    return new Set(slot.cells.map(([r, c]) => `${r}-${c}`));
+  }, [activeCell, direction, getActiveSlot]);
+
+  const cellHasDirection = useCallback((r: number, c: number, dir: Direction): boolean => {
+    const slots = cellToSlots.get(`${r}-${c}`);
+    return slots ? slots.some(s => s.direction === dir) : false;
+  }, [cellToSlots]);
+
   useEffect(() => {
     for (let r = 0; r < size; r++)
       for (let c = 0; c < size; c++)
-        if (!isBlack[r][c]) { setActiveCell([r, c]); containerRef.current?.focus(); return; }
+        if (!isBlack[r][c]) { setActiveCell([r, c]); setDirection("across"); containerRef.current?.focus(); return; }
   }, [seed, difficulty]);
-
-  const findNextWhite = (r: number, c: number, dir: number): [number, number] | null => {
-    let idx = r * size + c + dir;
-    while (idx >= 0 && idx < size * size) {
-      const nr = Math.floor(idx / size), nc = idx % size;
-      if (!isBlack[nr][nc]) return [nr, nc];
-      idx += dir;
-    }
-    return null;
-  };
 
   const enterNumber = useCallback((num: number) => {
     if (!activeCell || timer.isSolved) return;
@@ -62,41 +128,105 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
       return next;
     });
     setErrors(new Set());
-    const next = findNextWhite(r, c, 1);
-    if (next) setActiveCell(next);
-  }, [activeCell, timer.isSolved, size, isBlack]);
+    // Auto-advance within entry
+    const slot = getActiveSlot(r, c, direction);
+    if (slot) {
+      const idx = slot.cells.findIndex(([cr, cc]) => cr === r && cc === c);
+      if (idx !== -1 && idx < slot.cells.length - 1) {
+        setActiveCell(slot.cells[idx + 1]);
+      }
+    }
+  }, [activeCell, timer.isSolved, direction, getActiveSlot]);
 
   const deleteCell = useCallback(() => {
     if (!activeCell || timer.isSolved) return;
     const [r, c] = activeCell;
-    setGrid((prev) => {
-      const next = prev.map((row) => [...row]);
-      next[r][c] = "";
-      return next;
-    });
-    setErrors(new Set());
-    const prev = findNextWhite(r, c, -1);
-    if (prev) setActiveCell(prev);
-  }, [activeCell, timer.isSolved, size, isBlack]);
+    if (grid[r][c]) {
+      setGrid((prev) => {
+        const next = prev.map((row) => [...row]);
+        next[r][c] = "";
+        return next;
+      });
+      setErrors(new Set());
+    } else {
+      // Move backward within entry
+      const slot = getActiveSlot(r, c, direction);
+      if (slot) {
+        const idx = slot.cells.findIndex(([cr, cc]) => cr === r && cc === c);
+        if (idx > 0) {
+          setActiveCell(slot.cells[idx - 1]);
+        }
+      }
+    }
+  }, [activeCell, timer.isSolved, grid, direction, getActiveSlot]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (!activeCell || timer.isSolved) return;
     const [r, c] = activeCell;
 
     switch (e.key) {
-      case "ArrowUp": e.preventDefault(); for (let nr = r - 1; nr >= 0; nr--) if (!isBlack[nr][c]) { setActiveCell([nr, c]); return; } break;
-      case "ArrowDown": e.preventDefault(); for (let nr = r + 1; nr < size; nr++) if (!isBlack[nr][c]) { setActiveCell([nr, c]); return; } break;
-      case "ArrowLeft": e.preventDefault(); for (let nc = c - 1; nc >= 0; nc--) if (!isBlack[r][nc]) { setActiveCell([r, nc]); return; } break;
-      case "ArrowRight": e.preventDefault(); for (let nc = c + 1; nc < size; nc++) if (!isBlack[r][nc]) { setActiveCell([r, nc]); return; } break;
-      case "Tab": { e.preventDefault(); const next = findNextWhite(r, c, e.shiftKey ? -1 : 1); if (next) setActiveCell(next); break; }
+      case "ArrowUp":
+        e.preventDefault();
+        for (let nr = r - 1; nr >= 0; nr--) if (!isBlack[nr][c]) { setActiveCell([nr, c]); setDirection("down"); return; }
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        for (let nr = r + 1; nr < size; nr++) if (!isBlack[nr][c]) { setActiveCell([nr, c]); setDirection("down"); return; }
+        break;
+      case "ArrowLeft":
+        e.preventDefault();
+        for (let nc = c - 1; nc >= 0; nc--) if (!isBlack[r][nc]) { setActiveCell([r, nc]); setDirection("across"); return; }
+        break;
+      case "ArrowRight":
+        e.preventDefault();
+        for (let nc = c + 1; nc < size; nc++) if (!isBlack[r][nc]) { setActiveCell([r, nc]); setDirection("across"); return; }
+        break;
+      case "Tab": {
+        e.preventDefault();
+        const currentSlot = getActiveSlot(r, c, direction);
+        if (currentSlot) {
+          const currentIdx = entrySlots.indexOf(currentSlot);
+          const nextIdx = e.shiftKey
+            ? (currentIdx - 1 + entrySlots.length) % entrySlots.length
+            : (currentIdx + 1) % entrySlots.length;
+          const nextSlot = entrySlots[nextIdx];
+          setActiveCell(nextSlot.cells[0]);
+          setDirection(nextSlot.direction);
+        }
+        break;
+      }
       case "Backspace": case "Delete": e.preventDefault(); deleteCell(); break;
       default: { if (/^[1-9]$/.test(e.key)) { e.preventDefault(); enterNumber(parseInt(e.key)); } }
     }
-  }, [activeCell, timer.isSolved, grid, size, isBlack, enterNumber, deleteCell]);
+  }, [activeCell, timer.isSolved, size, isBlack, enterNumber, deleteCell, direction, getActiveSlot, entrySlots]);
+
+  const handleCellClick = (r: number, c: number) => {
+    if (isBlack[r][c]) return;
+    if (activeCell && activeCell[0] === r && activeCell[1] === c) {
+      const hasAcross = cellHasDirection(r, c, "across");
+      const hasDown = cellHasDirection(r, c, "down");
+      if (hasAcross && hasDown) {
+        setDirection(prev => prev === "across" ? "down" : "across");
+      }
+    } else {
+      setActiveCell([r, c]);
+      const hasAcross = cellHasDirection(r, c, "across");
+      const hasDown = cellHasDirection(r, c, "down");
+      if (hasAcross && hasDown) {
+        // keep current direction
+      } else if (hasAcross) {
+        setDirection("across");
+      } else if (hasDown) {
+        setDirection("down");
+      }
+    }
+    if (!isMobile) containerRef.current?.focus();
+  };
 
   const handleReset = () => {
     setGrid(Array.from({ length: size }, () => Array(size).fill("")));
     setErrors(new Set());
+    setDirection("across");
     timer.reset();
     containerRef.current?.focus();
   };
@@ -126,7 +256,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
       <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
       {!isMobile && (
         <p className="mb-2 text-xs text-muted-foreground">
-          Arrow keys to move • 1–9 to enter • Delete to clear
+          Arrow keys to move • 1–9 to enter • Delete to clear • Tap same cell to toggle direction
         </p>
       )}
       <div
@@ -142,6 +272,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
             const clue = clueMap.get(`${r}-${c}`);
             const hasError = errors.has(`${r}-${c}`);
             const isActive = activeCell?.[0] === r && activeCell?.[1] === c;
+            const isInActiveEntry = activeEntryCells.has(`${r}-${c}`);
 
             if (black) {
               return (
@@ -168,12 +299,10 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
                   "relative w-10 h-10 sm:w-12 sm:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation",
                   hasError && "bg-puzzle-cell-error",
                   !hasError && isActive && "bg-puzzle-cell-active",
-                  !hasError && !isActive && "bg-puzzle-cell"
+                  !hasError && !isActive && isInActiveEntry && "bg-puzzle-cell-highlight",
+                  !hasError && !isActive && !isInActiveEntry && "bg-puzzle-cell"
                 )}
-                onClick={() => {
-                  setActiveCell([r, c]);
-                  if (!isMobile) containerRef.current?.focus();
-                }}
+                onClick={() => handleCellClick(r, c)}
               >
                 <span className="text-lg sm:text-xl font-semibold text-foreground">{grid[r][c]}</span>
               </div>
