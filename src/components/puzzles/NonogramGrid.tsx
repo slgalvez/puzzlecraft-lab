@@ -54,6 +54,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const handleCellTap = (r: number, c: number) => {
     if (timer.isSolved) return;
     setCursor([r, c]);
+    if (isMobile) haptic();
     if (isMobile) {
       // Mobile: use touchMode
       const current = grid[r][c];
