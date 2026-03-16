@@ -166,7 +166,7 @@ const UserConversation = () => {
   if (error) {
     return (
       <PrivateLayout title="Conversation">
-        <div className="flex flex-col items-center justify-center h-[calc(100vh-3.5rem)] gap-3">
+        <div className="flex flex-col items-center justify-center h-full gap-3">
           <p className="text-sm text-muted-foreground">{error}</p>
           <Button variant="outline" size="sm" onClick={() => { setLoading(true); setError(null); fetchConversation(); }}>
             Retry
