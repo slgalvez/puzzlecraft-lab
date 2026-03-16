@@ -6,6 +6,7 @@ import PuzzleTimer from "./PuzzleTimer";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { haptic } from "@/lib/haptic";
 import type { Difficulty } from "@/lib/puzzleTypes";
 
 interface Props {
