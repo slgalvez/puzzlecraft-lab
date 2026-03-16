@@ -203,6 +203,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
 
   const handleCellClick = (r: number, c: number) => {
     if (isBlack[r][c]) return;
+    if (isMobile) haptic();
     if (activeCell && activeCell[0] === r && activeCell[1] === c) {
       const hasAcross = cellHasDirection(r, c, "across");
       const hasDown = cellHasDirection(r, c, "down");
