@@ -108,6 +108,7 @@ const ForYou = () => {
     }, 800);
   }, [editingDraftId, token, generatedData, selectedType, revealMessage, selectedRecipientId, handleSessionExpired]);
 
+  const fetchPuzzles = useCallback(async () => {
     if (!token) return;
     try {
       const data = await invokeMessaging("list-puzzles", token);
