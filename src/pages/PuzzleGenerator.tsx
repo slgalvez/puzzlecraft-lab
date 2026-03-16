@@ -56,10 +56,27 @@ const PuzzleGenerator = () => {
   };
 
   const handleLoadSeed = () => {
-    if (seedInput.trim()) {
-      setSeed(seedFromString(seedInput.trim()));
+    const code = seedInput.trim();
+    if (!code) return;
+
+    // Accept known puzzle IDs
+    if (getPuzzleById(code)) {
+      setSeed(seedFromString(code));
       setPuzzleKey((k) => k + 1);
+      return;
     }
+
+    // Accept pure numeric seeds
+    if (/^\d+$/.test(code)) {
+      setSeed(parseInt(code));
+      setPuzzleKey((k) => k + 1);
+      return;
+    }
+
+    toast({
+      title: "Code not found",
+      description: "We couldn't find a puzzle matching that code. Check the code and try again.",
+    });
   };
 
   const handleDifficultyChange = (d: Difficulty) => {
