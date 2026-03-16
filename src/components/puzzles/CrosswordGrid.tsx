@@ -291,10 +291,10 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
         )}
 
         <MobileLetterInput
+          ref={mobileInputRef}
           active={isMobile && !!activeCell && !timer.isSolved}
           onLetter={enterLetter}
           onDelete={deleteLetter}
-          focusTrigger={focusTrigger}
         />
 
         <div className="max-w-full overflow-x-auto">
