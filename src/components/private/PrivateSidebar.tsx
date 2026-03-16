@@ -116,6 +116,11 @@ export function PrivateSidebar() {
                       {unreadCount}
                     </SidebarMenuBadge>
                   )}
+                  {"badgeKey" in item && item.badgeKey === "puzzles" && unsolvedPuzzles > 0 && (
+                    <SidebarMenuBadge className="bg-primary text-primary-foreground text-[10px] min-w-[18px] h-[18px] flex items-center justify-center rounded-full">
+                      {unsolvedPuzzles}
+                    </SidebarMenuBadge>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
