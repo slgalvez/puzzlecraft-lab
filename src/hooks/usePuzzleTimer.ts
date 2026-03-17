@@ -58,7 +58,9 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
   const [state, setState] = useState<TimerState>({ elapsed: 0, isRunning: true, isSolved: false });
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const bestTime = getBestTimes()[puzzleKey]?.time ?? null;
+  // Look up best time by category+difficulty (persistent across seeds)
+  const catKey = categoryKey(options?.category, options?.difficulty);
+  const bestTime = getBestTimes()[catKey || puzzleKey]?.time ?? null;
 
   useEffect(() => {
     setState({ elapsed: 0, isRunning: true, isSolved: false });
@@ -80,10 +82,9 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
 
   const solve = useCallback(() => {
     setState((s) => ({ ...s, isRunning: false, isSolved: true }));
-    const isNew = saveBestTime(puzzleKey, state.elapsed);
+    const isNew = saveBestTime(puzzleKey, state.elapsed, options?.category, options?.difficulty);
     if (options?.category && options?.difficulty) {
       recordCompletion(puzzleKey, options.category, options.difficulty, state.elapsed);
-      // Auto-record daily completion if this is today's daily puzzle
       if (puzzleKey.startsWith("daily-")) {
         const challenge = getTodaysChallenge();
         if (puzzleKey === `daily-${challenge.dateStr}-${challenge.category}-${challenge.difficulty}`) {

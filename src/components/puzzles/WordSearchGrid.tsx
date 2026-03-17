@@ -27,6 +27,8 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const [cursor, setCursor] = useState<[number, number]>([0, 0]);
   const [isDragging, setIsDragging] = useState(false);
   const [isMouseDragging, setIsMouseDragging] = useState(false);
+  // Mobile tap-to-select: first tap sets start, second tap sets end
+  const [tapStart, setTapStart] = useState<[number, number] | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -36,6 +38,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   useEffect(() => {
     setCursor([0, 0]);
     setStartCell(null);
+    setTapStart(null);
     containerRef.current?.focus();
   }, [seed, difficulty]);
 
@@ -51,7 +54,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   };
 
   const getPreviewCells = (): Set<string> => {
-    const start = startCell;
+    const start = startCell || tapStart;
     const end = hoverCell || (startCell ? cursor : null);
     if (!start || !end) return new Set();
     const [sr, sc] = start;
@@ -66,6 +69,8 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     return cells;
   };
 
+  // Show tap-start highlight
+  const tapStartKey = tapStart ? `${tapStart[0]}-${tapStart[1]}` : null;
   const previewCells = getPreviewCells();
 
   const trySelectWord = useCallback((sr: number, sc: number, er: number, ec: number) => {
@@ -91,14 +96,19 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
       setFoundCells((prev) => { const next = new Set(prev); cells.forEach((c) => next.add(c)); return next; });
       if (newFound.size === puzzle.words.length) {
         const { isNewBest } = timer.solve();
-        toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "All words found!" });
+        toast({
+          title: "🎉 Congratulations!",
+          description: isNewBest ? "New best time! 🏆" : "All words found!",
+        });
       }
       return true;
     }
     return false;
   }, [puzzle, foundWords, timer, toast]);
 
-  // Touch drag handlers
+  // --- Touch handling: detect drag vs tap ---
+  const touchMoved = useRef(false);
+
   const handleTouchStart = (e: React.TouchEvent) => {
     if (timer.isSolved) return;
     const touch = e.touches[0];
@@ -106,6 +116,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     if (cell) {
       e.preventDefault();
       haptic();
+      touchMoved.current = false;
       setStartCell(cell);
       setHoverCell(cell);
       setIsDragging(true);
@@ -115,18 +126,42 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging || !startCell) return;
     e.preventDefault();
+    touchMoved.current = true;
     const touch = e.touches[0];
     const cell = getCellFromPoint(touch.clientX, touch.clientY);
     if (cell) setHoverCell(cell);
   };
 
   const handleTouchEnd = () => {
-    if (isDragging && startCell && hoverCell) {
+    if (!isDragging || !startCell) return;
+    // If finger didn't move, treat as a tap for tap-to-select mode
+    if (!touchMoved.current) {
+      const tappedCell = startCell;
+      setStartCell(null);
+      setHoverCell(null);
+      setIsDragging(false);
+      // Tap-to-select logic
+      if (!tapStart) {
+        setTapStart(tappedCell);
+      } else {
+        // Second tap → try to select the word
+        const result = trySelectWord(tapStart[0], tapStart[1], tappedCell[0], tappedCell[1]);
+        setTapStart(null);
+        if (!result) {
+          // If invalid selection, start fresh from this tap
+          setTapStart(tappedCell);
+        }
+      }
+      return;
+    }
+    // Drag completed
+    if (startCell && hoverCell) {
       trySelectWord(startCell[0], startCell[1], hoverCell[0], hoverCell[1]);
     }
     setStartCell(null);
     setHoverCell(null);
     setIsDragging(false);
+    setTapStart(null);
   };
 
   // Mouse drag handlers (desktop)
@@ -151,7 +186,6 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     setIsMouseDragging(false);
   };
 
-  // Add global mouseup listener to handle releases outside the grid
   useEffect(() => {
     const onGlobalMouseUp = () => {
       if (isMouseDragging) {
@@ -182,12 +216,12 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
         if (!startCell) { setStartCell([r, c]); }
         else { trySelectWord(startCell[0], startCell[1], r, c); setStartCell(null); }
         break;
-      case "Escape": e.preventDefault(); setStartCell(null); break;
+      case "Escape": e.preventDefault(); setStartCell(null); setTapStart(null); break;
     }
   }, [cursor, startCell, timer.isSolved, puzzle, trySelectWord]);
 
   const handleReset = () => {
-    setFoundWords(new Set()); setFoundCells(new Set()); setStartCell(null); setCursor([0, 0]);
+    setFoundWords(new Set()); setFoundCells(new Set()); setStartCell(null); setTapStart(null); setCursor([0, 0]);
     timer.reset(); containerRef.current?.focus();
   };
 
@@ -199,15 +233,12 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     }
   };
 
-  // Compute responsive cell size based on grid size — always fit on screen
   const cellSizeStyle = useMemo(() => {
     if (!isMobile) {
       return puzzle.size > 12
         ? { width: 32, height: 32, fontSize: 14 }
         : { width: 36, height: 36, fontSize: 16 };
     }
-    // Mobile: fit exactly within viewport. Account for page padding (16px*2),
-    // grid outer border (2px*2), and per-cell borders (1px per cell + 1px).
     const pagePadding = 32;
     const gridBorder = 4;
     const cellBorders = puzzle.size + 1;
@@ -224,7 +255,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
 
         {isMobile ? (
           <p className="mb-2 text-xs text-muted-foreground">
-            Drag across letters to select words
+            Tap two letters to select a word, or drag across letters
           </p>
         ) : (
           <p className="mb-2 text-xs text-muted-foreground">
@@ -249,6 +280,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
               const isStart = startCell?.[0] === r && startCell?.[1] === c;
               const isPreview = previewCells.has(key);
               const isCursor = cursor[0] === r && cursor[1] === c;
+              const isTapStart = tapStartKey === key;
 
               return (
                 <div
@@ -256,10 +288,10 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
                   className={cn(
                     "border border-puzzle-border flex items-center justify-center cursor-pointer font-semibold transition-colors touch-manipulation active:animate-cell-pop",
                     isFound && "bg-puzzle-cell-highlight text-primary",
-                    isStart && "bg-puzzle-cell-active",
-                    isPreview && !isFound && !isStart && "bg-secondary",
-                    isCursor && !isFound && !isStart && !isPreview && !isMobile && "ring-2 ring-inset ring-primary bg-puzzle-cell-active",
-                    !isFound && !isStart && !isPreview && !(isCursor && !isMobile) && "bg-puzzle-cell hover:bg-secondary"
+                    (isStart || isTapStart) && "bg-puzzle-cell-active ring-2 ring-inset ring-primary",
+                    isPreview && !isFound && !isStart && !isTapStart && "bg-secondary",
+                    isCursor && !isFound && !isStart && !isTapStart && !isPreview && !isMobile && "ring-2 ring-inset ring-primary bg-puzzle-cell-active",
+                    !isFound && !isStart && !isTapStart && !isPreview && !(isCursor && !isMobile) && "bg-puzzle-cell hover:bg-secondary"
                   )}
                   style={{ width: cellSizeStyle.width, height: cellSizeStyle.height, fontSize: cellSizeStyle.fontSize }}
                   onMouseDown={() => handleMouseDown(r, c)}
@@ -272,6 +304,11 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
           )}
         </div>
         </div>
+        {tapStart && (
+          <p className="mt-1 text-xs text-primary animate-pulse">
+            Tap the end letter to complete selection
+          </p>
+        )}
         <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} />
       </div>
 
