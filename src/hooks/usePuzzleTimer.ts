@@ -24,11 +24,19 @@ function getBestTimes(): Record<string, BestTime> {
   }
 }
 
-function saveBestTime(puzzleKey: string, time: number) {
+/** Build a category-level key (e.g. "word-search-medium") for best-time tracking */
+function categoryKey(category?: string, difficulty?: string): string | null {
+  if (!category || !difficulty) return null;
+  return `${category}-${difficulty}`;
+}
+
+function saveBestTime(puzzleKey: string, time: number, category?: string, difficulty?: string) {
   const times = getBestTimes();
-  const existing = times[puzzleKey];
+  // Track against the category+difficulty key so best times persist across seeds
+  const key = categoryKey(category, difficulty) || puzzleKey;
+  const existing = times[key];
   if (!existing || time < existing.time) {
-    times[puzzleKey] = { time, date: new Date().toISOString() };
+    times[key] = { time, date: new Date().toISOString() };
     localStorage.setItem(BEST_TIMES_KEY, JSON.stringify(times));
     return true;
   }
