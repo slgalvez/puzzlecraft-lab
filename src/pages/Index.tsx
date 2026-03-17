@@ -42,10 +42,17 @@ const Index = () => {
 
       supabase.functions
         .invoke("messaging", { body: { action: "check-status", token } })
-        .then(({ data }) => {
+        .then(({ data, error }) => {
+          if (error || data?.error) {
+            // Session ended or invalid — clear stale token to stop future checks
+            localStorage.removeItem("private_session");
+            return;
+          }
           if (data?.updated) setHasUpdate(true);
         })
-        .catch(() => {});
+        .catch(() => {
+          localStorage.removeItem("private_session");
+        });
     } catch {
       // silent
     }
