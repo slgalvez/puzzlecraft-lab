@@ -582,7 +582,6 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress 
     return new Set();
   });
   const [foundCells, setFoundCells] = useState<Set<string>>(() => {
-    // Reconstruct found cells from saved words
     if (savedState?.foundWords) {
       const cells = new Set<string>();
       for (const word of savedState.foundWords) {
@@ -599,10 +598,11 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress 
   });
   const [selStart, setSelStart] = useState<[number, number] | null>(null);
   const [selEnd, setSelEnd] = useState<[number, number] | null>(null);
+  const [tapStart, setTapStart] = useState<[number, number] | null>(null);
+  const touchMoved = useRef(false);
   const gridRef = useRef<HTMLDivElement>(null);
   const completed = foundWords.size === data.words.length;
 
-  // Listen for save-progress event
   useEffect(() => {
     const handler = () => {
       onSaveProgress?.({ foundWords: [...foundWords], foundCells: [...foundCells] });
@@ -623,9 +623,11 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress 
   }, [data.size]);
 
   const getPreviewCells = (): Set<string> => {
-    if (!selStart || !selEnd) return new Set();
-    const [sr, sc] = selStart;
-    const [er, ec] = selEnd;
+    const start = selStart || tapStart;
+    const end = selEnd;
+    if (!start || !end) return new Set();
+    const [sr, sc] = start;
+    const [er, ec] = end;
     const dr = Math.sign(er - sr);
     const dc = Math.sign(ec - sc);
     const len = Math.max(Math.abs(er - sr), Math.abs(ec - sc));
@@ -654,27 +656,45 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress 
           newCells.add(`${wp.row + wp.dr * i}-${wp.col + wp.dc * i}`);
         setFoundCells(newCells);
         if (newFound.size === data.words.length) onComplete();
-        return;
+        return true;
       }
     }
+    return false;
   }, [data, foundWords, foundCells, onComplete]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     e.preventDefault();
+    touchMoved.current = false;
     const touch = e.touches[0];
     const cell = getCellFromPoint(touch.clientX, touch.clientY);
     if (cell) { setSelStart(cell); setSelEnd(cell); }
   };
   const handleTouchMove = (e: React.TouchEvent) => {
     e.preventDefault();
+    touchMoved.current = true;
     const touch = e.touches[0];
     const cell = getCellFromPoint(touch.clientX, touch.clientY);
     if (cell) setSelEnd(cell);
   };
   const handleTouchEnd = () => {
+    if (!touchMoved.current && selStart) {
+      // Tap — use tap-to-select mode
+      const tappedCell = selStart;
+      setSelStart(null);
+      setSelEnd(null);
+      if (!tapStart) {
+        setTapStart(tappedCell);
+      } else {
+        const result = trySelectWord(tapStart[0], tapStart[1], tappedCell[0], tappedCell[1]);
+        setTapStart(null);
+        if (!result) setTapStart(tappedCell);
+      }
+      return;
+    }
     if (selStart && selEnd) trySelectWord(selStart[0], selStart[1], selEnd[0], selEnd[1]);
     setSelStart(null);
     setSelEnd(null);
+    setTapStart(null);
   };
 
   const handleMouseDown = (r: number, c: number) => {
@@ -690,7 +710,6 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress 
     setSelEnd(null);
   };
 
-  // Global mouseup to catch releases outside grid
   useEffect(() => {
     const onGlobalMouseUp = () => {
       if (selStart && selEnd) trySelectWord(selStart[0], selStart[1], selEnd[0], selEnd[1]);
@@ -702,9 +721,13 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress 
   }, [selStart, selEnd, trySelectWord]);
 
   const previewCells = getPreviewCells();
+  const tapStartKey = tapStart ? `${tapStart[0]}-${tapStart[1]}` : null;
 
   return (
     <div className="space-y-4">
+      <p className="text-xs text-muted-foreground sm:hidden">
+        Tap two letters to select a word, or drag across letters
+      </p>
       <div
         ref={gridRef}
         className="inline-grid gap-0 select-none"
@@ -716,16 +739,19 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress 
       >
         {data.grid.map((row, r) =>
           row.map((cell, c) => {
-            const isFound = foundCells.has(`${r}-${c}`);
-            const isPreview = previewCells.has(`${r}-${c}`);
+            const key = `${r}-${c}`;
+            const isFound = foundCells.has(key);
+            const isPreview = previewCells.has(key);
+            const isTapStart = tapStartKey === key;
             return (
               <div
-                key={`${r}-${c}`}
+                key={key}
                 className={cn(
                   "w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-xs font-mono select-none border border-puzzle-border touch-manipulation transition-colors cursor-pointer",
                   isFound && "bg-primary/20 text-primary font-bold",
-                  !isFound && isPreview && "bg-puzzle-cell-active",
-                  !isFound && !isPreview && "bg-puzzle-cell hover:bg-puzzle-cell-highlight"
+                  isTapStart && "bg-puzzle-cell-active ring-2 ring-inset ring-primary",
+                  !isFound && !isTapStart && isPreview && "bg-puzzle-cell-active",
+                  !isFound && !isTapStart && !isPreview && "bg-puzzle-cell hover:bg-puzzle-cell-highlight"
                 )}
                 onMouseDown={() => handleMouseDown(r, c)}
                 onMouseEnter={() => handleMouseEnter(r, c)}
@@ -736,6 +762,11 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress 
           })
         )}
       </div>
+      {tapStart && (
+        <p className="text-xs text-primary animate-pulse">
+          Tap the end letter to complete selection
+        </p>
+      )}
       <div className="flex flex-wrap gap-2">
         {data.words.map(w => (
           <Badge key={w} variant={foundWords.has(w) ? "default" : "outline"} className="text-xs">
