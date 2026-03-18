@@ -255,22 +255,22 @@ const Index = () => {
               </div>
 
               {/* Right: streak stats */}
-              <div className="border-t md:border-t-0 md:border-l bg-secondary/30 p-6 sm:p-8 md:w-64 flex flex-row md:flex-col gap-6 md:gap-4 justify-center">
+              <div className="border-t md:border-t-0 md:border-l bg-secondary/30 p-6 sm:p-8 md:w-56 flex flex-row md:flex-col gap-6 md:gap-5 justify-center">
                 <div className="text-center md:text-left">
                   <div className="flex items-center justify-center md:justify-start gap-1.5 mb-1">
-                    <Flame size={16} className="text-primary" />
-                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Streak</span>
+                    <Flame size={14} className="text-primary" />
+                    <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/70">Streak</span>
                   </div>
-                  <p className="font-mono text-2xl font-bold text-foreground">{dailyStreak.current}</p>
-                  <p className="text-xs text-muted-foreground">day{dailyStreak.current !== 1 ? "s" : ""}</p>
+                  <p className="font-mono text-3xl font-extrabold text-foreground leading-none">{dailyStreak.current}</p>
+                  <p className="text-[11px] text-muted-foreground/60 mt-0.5">day{dailyStreak.current !== 1 ? "s" : ""}</p>
                 </div>
                 <div className="text-center md:text-left">
                   <div className="flex items-center justify-center md:justify-start gap-1.5 mb-1">
-                    <Trophy size={16} className="text-primary" />
-                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Best</span>
+                    <Trophy size={14} className="text-primary" />
+                    <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/70">Best</span>
                   </div>
-                  <p className="font-mono text-2xl font-bold text-foreground">{dailyStreak.longest}</p>
-                  <p className="text-xs text-muted-foreground">day{dailyStreak.longest !== 1 ? "s" : ""}</p>
+                  <p className="font-mono text-3xl font-extrabold text-foreground leading-none">{dailyStreak.longest}</p>
+                  <p className="text-[11px] text-muted-foreground/60 mt-0.5">day{dailyStreak.longest !== 1 ? "s" : ""}</p>
                 </div>
                 {stats.totalSolved > 0 && (
                   <div className="text-center md:text-left">
