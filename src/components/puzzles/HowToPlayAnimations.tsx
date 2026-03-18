@@ -103,6 +103,7 @@ function CrosswordAnim() {
 }
 
 function WordFillAnim() {
+  // Valid slot: row 1, cols 1–3 (none are black)
   return (
     <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S} className="block">
       <MiniGrid rows={5} cols={5} blacks={[[0, 2], [1, 0], [2, 4], [3, 2], [4, 0], [4, 4]]} id="wf" />
@@ -114,15 +115,16 @@ function WordFillAnim() {
         SUN
         <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.25;0.35;1" dur={DUR} repeatCount="indefinite" />
       </text>
-      <AnimLetter ch="S" col={0} row={0} delay="0.4s" />
-      <AnimLetter ch="U" col={1} row={0} delay="0.7s" />
-      <AnimLetter ch="N" col={2} row={0} delay="1.0s" />
-      <SuccessFlash col={0} row={0} cols={2} rows={1} delay="0s" />
+      <AnimLetter ch="S" col={1} row={1} delay="0.4s" />
+      <AnimLetter ch="U" col={2} row={1} delay="0.7s" />
+      <AnimLetter ch="N" col={3} row={1} delay="1.0s" />
+      <SuccessFlash col={1} row={1} cols={3} rows={1} delay="0s" />
     </svg>
   );
 }
 
 function NumberFillAnim() {
+  // Valid slot: row 0, cols 0–2 (col 3 is black)
   return (
     <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S} className="block">
       <MiniGrid rows={5} cols={5} blacks={[[0, 3], [1, 1], [2, 0], [3, 3], [4, 1], [4, 4]]} id="nf" />
@@ -133,25 +135,26 @@ function NumberFillAnim() {
         382
         <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.25;0.35;1" dur={DUR} repeatCount="indefinite" />
       </text>
-      <AnimLetter ch="3" col={0} row={2} delay="0.4s" />
-      <AnimLetter ch="8" col={1} row={2} delay="0.7s" />
-      <AnimLetter ch="2" col={2} row={2} delay="1.0s" />
-      <SuccessFlash col={0} row={2} cols={3} rows={1} delay="0s" />
+      <AnimLetter ch="3" col={0} row={0} delay="0.4s" />
+      <AnimLetter ch="8" col={1} row={0} delay="0.7s" />
+      <AnimLetter ch="2" col={2} row={0} delay="1.0s" />
+      <SuccessFlash col={0} row={0} cols={3} rows={1} delay="0s" />
     </svg>
   );
 }
 
 function SudokuAnim() {
-  // 3x3 sub-grid feel
+  // Valid 4×4 sudoku (2×2 boxes): 1 2 3 4 / 3 4 1 2 / 2 1 4 3 / 4 3 2 1
+  // Pre-filled givens, animate correct value "1" into cell (1,2)
+  const givens: [number,number,string][] = [[0,0,"1"],[0,2,"3"],[1,1,"4"],[2,0,"2"],[2,3,"3"],[3,2,"2"]];
   return (
     <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S} className="block">
       <MiniGrid rows={4} cols={4} blacks={[]} id="su" />
-      {/* pre-filled numbers */}
-      {[[0,0,"1"],[0,2,"3"],[1,1,"4"],[2,0,"2"],[2,3,"1"],[3,2,"2"]] .map(([r,c,n]) => {
-        const {x,y,w,h} = cell(c as number, r as number);
+      {givens.map(([r,c,n]) => {
+        const {x,y,w,h} = cell(c, r);
         return <text key={`p-${r}-${c}`} x={x+w/2} y={y+h/2+4.5} textAnchor="middle" fontSize="11" fontWeight="600" fill={COL.textMuted}>{n}</text>;
       })}
-      {/* animated: highlight cell (1,2), then show "7" */}
+      {/* animate correct value 1 into cell (1,2) — row 1 is 3,4,1,2 */}
       {(() => {
         const {x,y,w,h} = cell(2, 1);
         return (
@@ -160,7 +163,7 @@ function SudokuAnim() {
               <animate attributeName="opacity" values="0;0.6;0.6;0.6;0" keyTimes="0;0.1;0.6;0.85;1" dur={DUR} repeatCount="indefinite" />
             </rect>
             <text x={x+w/2} y={y+h/2+4.5} textAnchor="middle" fontSize="11" fontWeight="700" fill={COL.active} opacity={0}>
-              7
+              1
               <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.25;0.35;0.8;1" dur={DUR} repeatCount="indefinite" />
             </text>
           </g>
@@ -201,10 +204,11 @@ function WordSearchAnim() {
 }
 
 function KakuroAnim() {
+  // Valid kakuro: clue cell (0,0) with across sum 6 → cells (0,1),(0,2),(0,3) = 1+2+3 = 6 ✓
   return (
     <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S} className="block">
-      <MiniGrid rows={4} cols={4} blacks={[[0,0],[0,1],[1,0],[3,3]]} id="ka" />
-      {/* clue in (0,0) */}
+      <MiniGrid rows={4} cols={4} blacks={[[0,0],[1,0],[2,0],[3,0]]} id="ka" />
+      {/* clue cell (0,0): diagonal + across sum */}
       {(() => {
         const {x,y,w,h} = cell(0,0);
         return <>
@@ -212,17 +216,17 @@ function KakuroAnim() {
           <text x={x+w-3} y={y+h/2+1} textAnchor="end" fontSize="7" fill={COL.textMuted}>6</text>
         </>;
       })()}
-      {/* highlight clue then fill 1,2,3 */}
+      {/* highlight clue then fill 1,2,3 into (0,1),(0,2),(0,3) */}
       {(() => {
         const {x,y,w,h} = cell(0,0);
         return <rect x={x} y={y} width={w} height={h} rx={1.5} fill={COL.activeFaint} opacity={0}>
           <animate attributeName="opacity" values="0;0.5;0.5;0;0" keyTimes="0;0.05;0.2;0.3;1" dur={DUR} repeatCount="indefinite" />
         </rect>;
       })()}
-      <AnimLetter ch="1" col={2} row={0} delay="0.3s" />
-      <AnimLetter ch="2" col={3} row={0} delay="0.6s" />
-      <AnimLetter ch="3" col={1} row={1} delay="0.9s" />
-      <SuccessFlash col={2} row={0} cols={2} rows={1} delay="0s" />
+      <AnimLetter ch="1" col={1} row={0} delay="0.3s" />
+      <AnimLetter ch="2" col={2} row={0} delay="0.6s" />
+      <AnimLetter ch="3" col={3} row={0} delay="0.9s" />
+      <SuccessFlash col={1} row={0} cols={3} rows={1} delay="0s" />
     </svg>
   );
 }
