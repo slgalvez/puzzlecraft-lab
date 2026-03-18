@@ -27,12 +27,17 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy }: Props) => 
   return (
     <div
       className={cn(
-        "rounded-xl border bg-card p-4 sm:p-5 transition-all duration-300 ease-out",
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+        "rounded-xl border bg-card p-4 sm:p-5 transition-all duration-500 ease-out",
+        visible
+          ? "opacity-100 translate-y-0 scale-100"
+          : "opacity-0 translate-y-2 scale-[0.97]"
       )}
     >
       <div className="flex items-center gap-2.5 mb-3">
-        <div className="h-7 w-7 rounded-full bg-primary/15 flex items-center justify-center">
+        <div className={cn(
+          "h-7 w-7 rounded-full bg-primary/15 flex items-center justify-center transition-all duration-700 ease-out",
+          visible ? "scale-100 opacity-100" : "scale-50 opacity-0"
+        )}>
           <Check size={14} className="text-primary" strokeWidth={3} />
         </div>
         <span className="font-display text-base font-semibold text-foreground">Solved</span>

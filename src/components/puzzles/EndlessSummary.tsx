@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import Layout from "@/components/layout/Layout";
@@ -23,6 +24,12 @@ interface Props {
 
 const EndlessSummary = ({ solves, diffMap, onPlayAgain }: Props) => {
   const savedRef = useRef(false);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   // Save session to localStorage on first render
   useEffect(() => {
@@ -72,7 +79,10 @@ const EndlessSummary = ({ solves, diffMap, onPlayAgain }: Props) => {
 
   return (
     <Layout>
-      <div className="container py-10 md:py-16 max-w-2xl">
+      <div className={cn(
+        "container py-10 md:py-16 max-w-2xl transition-all duration-500 ease-out",
+        visible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-[0.97]"
+      )}>
         {/* Header */}
         <div className="text-center mb-10">
           <div className="flex items-center justify-center gap-2 mb-3">
