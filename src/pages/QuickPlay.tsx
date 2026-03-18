@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { computeNextDifficulty, createDifficultyMap, type PuzzlePerformance } from "@/lib/endlessDifficulty";
 import EndlessSummary, { type EndlessSolveRecord } from "@/components/puzzles/EndlessSummary";
+import EndlessFlash from "@/components/puzzles/EndlessFlash";
+import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
@@ -43,6 +45,11 @@ const QuickPlay = () => {
   const initialDifficulty = (searchParams.get("d") as Difficulty) || "medium";
   const initialSeed = searchParams.get("seed");
 
+  // Set origin context
+  useEffect(() => {
+    setPuzzleOrigin("play");
+  }, []);
+
   const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
   const [seed, setSeed] = useState(() => initialSeed ? parseInt(initialSeed) || randomSeed() : randomSeed());
   const [puzzleKey, setPuzzleKey] = useState(0);
@@ -55,6 +62,7 @@ const QuickPlay = () => {
   const [lastDiffChange, setLastDiffChange] = useState<"up" | "down" | "stay" | null>(null);
   const [endlessSolves, setEndlessSolves] = useState<EndlessSolveRecord[]>([]);
   const [showSummary, setShowSummary] = useState(false);
+  const [showFlash, setShowFlash] = useState(false);
 
   const activeDifficulty = mode === "endless" ? endlessDiffMap[currentType] : difficulty;
 
@@ -100,6 +108,7 @@ const QuickPlay = () => {
       setEndlessDiffMap((prev) => ({ ...prev, [currentType]: next }));
     }
     setLastDiffChange(direction);
+    setShowFlash(true);
 
     if (direction === "up") {
       toast({
@@ -143,6 +152,11 @@ const QuickPlay = () => {
     setPuzzleKey((k) => k + 1);
   };
 
+  const handleFlashDone = useCallback(() => {
+    setShowFlash(false);
+    handleNewPuzzle();
+  }, [handleNewPuzzle]);
+
   // Show summary screen
   if (mode === "endless" && showSummary) {
     return (
@@ -170,15 +184,16 @@ const QuickPlay = () => {
   const activeType = currentType;
   const activeInfo = currentInfo;
   const onSolveHandler = mode === "endless" ? handleEndlessSolve : undefined;
+  const isEndless = mode === "endless";
 
   const renderPuzzle = () => {
     const key = `${seed}-${activeDifficulty}-${puzzleKey}`;
     switch (activeType) {
-      case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
-      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
-      case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
-      case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
-      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
+      case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
+      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
+      case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
+      case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
+      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
       case "crossword": {
         const gen = generateCrossword(seed, activeDifficulty);
         const puzzle: CrosswordPuzzle = {
@@ -186,7 +201,7 @@ const QuickPlay = () => {
           difficulty: activeDifficulty as CrosswordPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, clues: gen.clues,
         };
-        return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
+        return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
       }
       case "word-fill": {
         const gen = generateWordFillIn(seed, activeDifficulty);
@@ -195,7 +210,7 @@ const QuickPlay = () => {
           difficulty: activeDifficulty as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
-        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
+        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
       }
       case "number-fill": {
         const gen = generateNumberFillIn(seed, activeDifficulty);
@@ -204,7 +219,7 @@ const QuickPlay = () => {
           difficulty: activeDifficulty as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
-        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
+        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
       }
       default: return null;
     }
@@ -298,6 +313,7 @@ const QuickPlay = () => {
         <div className="min-h-[300px]">
           {renderPuzzle()}
         </div>
+        {showFlash && <EndlessFlash onDone={handleFlashDone} />}
       </div>
     </Layout>
   );

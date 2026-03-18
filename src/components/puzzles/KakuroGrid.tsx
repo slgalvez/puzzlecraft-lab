@@ -18,6 +18,7 @@ interface Props {
   onNewPuzzle: () => void;
   onSolve?: (perf: PuzzlePerformance) => void;
   timeLimit?: number;
+  isEndless?: boolean;
 }
 
 type Direction = "across" | "down";
@@ -31,7 +32,7 @@ interface KakuroState {
   grid: string[][];
 }
 
-const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit }: Props) => {
+const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateKakuro(seed, difficulty), [seed, difficulty]);
@@ -340,7 +341,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit }: Props
         onNumber={enterNumber}
         onDelete={deleteCell}
       />
-      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`kakuro-${seed}`} />
+      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`kakuro-${seed}`} solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless }} />
     </div>
   );
 };

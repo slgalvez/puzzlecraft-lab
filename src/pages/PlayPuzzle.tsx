@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import CrosswordGrid from "@/components/puzzles/CrosswordGrid";
 import FillInGrid from "@/components/puzzles/FillInGrid";
 import { getPuzzleById } from "@/data/puzzles";
 import type { CrosswordPuzzle, FillInPuzzle } from "@/data/puzzles";
+import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
 
 const typeLabels = {
   crossword: "Crossword",
@@ -14,6 +16,8 @@ const typeLabels = {
 const PlayPuzzle = () => {
   const { id } = useParams<{ id: string }>();
   const puzzle = getPuzzleById(id || "");
+
+  useEffect(() => { setPuzzleOrigin("library"); }, []);
 
   if (!puzzle) {
     return (

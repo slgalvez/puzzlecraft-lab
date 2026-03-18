@@ -18,13 +18,14 @@ interface Props {
   onNewPuzzle: () => void;
   onSolve?: (perf: PuzzlePerformance) => void;
   timeLimit?: number;
+  isEndless?: boolean;
 }
 
 interface SudokuState {
   grid: (number | null)[][];
 }
 
-const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit }: Props) => {
+const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateSudoku(seed, difficulty), [seed, difficulty]);
@@ -228,7 +229,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit }: Props
         onNumber={enterNumber}
         onDelete={deleteCell}
       />
-      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`sudoku-${seed}`} />
+      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`sudoku-${seed}`} solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless }} />
     </div>
   );
 };

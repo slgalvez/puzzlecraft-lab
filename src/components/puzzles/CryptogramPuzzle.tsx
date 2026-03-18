@@ -16,13 +16,14 @@ interface Props {
   onNewPuzzle: () => void;
   onSolve?: (perf: PuzzlePerformance) => void;
   timeLimit?: number;
+  isEndless?: boolean;
 }
 
 interface CryptogramState {
   guesses: Record<string, string>;
 }
 
-const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit }: Props) => {
+const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateCryptogram(seed, difficulty), [seed, difficulty]);
@@ -247,7 +248,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit }:
         </div>
       </details>
 
-      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`cryptogram-${seed}`} />
+      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`cryptogram-${seed}`} solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless }} />
     </div>
   );
 };

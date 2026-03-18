@@ -20,6 +20,7 @@ interface Props {
   onNewPuzzle?: () => void;
   onSolve?: (perf: PuzzlePerformance) => void;
   timeLimit?: number;
+  isEndless?: boolean;
 }
 
 type Direction = "across" | "down";
@@ -34,7 +35,7 @@ interface FillInState {
   usedEntries: string[];
 }
 
-const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit }: Props) => {
+const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isEndless }: Props) => {
   const { gridSize, blackCells, entries, type, solution } = puzzle;
   const isNumbers = type === "number-fill";
   const { toast } = useToast();
@@ -419,7 +420,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit }: P
         </div>
         </div>
         {showControls && onNewPuzzle && (
-          <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={puzzle.id} />
+          <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={puzzle.id} solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty: puzzle.difficulty as any, isEndless }} />
         )}
       </div>
 

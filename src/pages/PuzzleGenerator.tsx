@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useParams, useSearchParams, Link, useNavigate, useLocation } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { RefreshCw, Dices, ChevronDown, ChevronRight, ArrowLeft, Sparkles, Clock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
+import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
@@ -55,6 +56,9 @@ const PuzzleGenerator = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+
+  useEffect(() => { setPuzzleOrigin("lab"); }, []);
 
   const initialSeed = searchParams.get("seed");
   const routeState = location.state as { randomPool?: PuzzleCategory[]; randomDifficulty?: Difficulty } | null;

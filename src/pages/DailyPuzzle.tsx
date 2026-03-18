@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
 } from "@/lib/dailyChallenge";
 import { Calendar, CheckCircle2, Clock, Flame, Trophy, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
@@ -33,6 +34,8 @@ const DailyPuzzle = () => {
   const [completion, setCompletion] = useState(() => getDailyCompletion(challenge.dateStr));
   const streak = useMemo(() => getDailyStreak(), []);
   const info = CATEGORY_INFO[challenge.category];
+
+  useEffect(() => { setPuzzleOrigin("daily"); }, []);
 
   // Track completion from puzzle timer callback
   const handleNewPuzzle = useCallback(() => {

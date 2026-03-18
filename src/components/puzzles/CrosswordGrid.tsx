@@ -18,13 +18,14 @@ interface Props {
   onNewPuzzle?: () => void;
   onSolve?: (perf: PuzzlePerformance) => void;
   timeLimit?: number;
+  isEndless?: boolean;
 }
 
 interface CrosswordState {
   grid: string[][];
 }
 
-const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit }: Props) => {
+const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isEndless }: Props) => {
   const { gridSize, blackCells, clues } = puzzle;
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -365,7 +366,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit }
         </div>
         </div>
         {showControls && onNewPuzzle && (
-          <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={puzzle.id} />
+          <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={puzzle.id} solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty: puzzle.difficulty as any, isEndless }} />
         )}
       </div>
 

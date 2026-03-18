@@ -18,6 +18,7 @@ interface Props {
   onNewPuzzle: () => void;
   onSolve?: (perf: PuzzlePerformance) => void;
   timeLimit?: number;
+  isEndless?: boolean;
 }
 
 interface WordSearchState {
@@ -25,7 +26,7 @@ interface WordSearchState {
   foundCells: string[];
 }
 
-const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit }: Props) => {
+const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateWordSearch(seed, difficulty, WORDS), [seed, difficulty]);
@@ -331,7 +332,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit }: P
             Tap the end letter to complete selection
           </p>
         )}
-        <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`word-search-${seed}`} />
+        <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`word-search-${seed}`} solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless }} />
       </div>
 
       <div className="lg:max-w-xs min-w-0">
