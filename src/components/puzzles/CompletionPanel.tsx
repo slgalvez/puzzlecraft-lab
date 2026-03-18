@@ -27,7 +27,7 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy }: Props) => 
   return (
     <div
       className={cn(
-        "mt-6 rounded-xl border bg-card p-4 sm:p-5 transition-all duration-300 ease-out",
+        "rounded-xl border bg-card p-4 sm:p-5 transition-all duration-300 ease-out",
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       )}
     >
