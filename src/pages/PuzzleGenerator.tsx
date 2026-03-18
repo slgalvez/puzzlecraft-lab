@@ -461,21 +461,27 @@ const PuzzleGenerator = () => {
 
       {/* Primary Action */}
       <div className="flex items-center gap-4">
-        <Button onClick={handleGenerate} size="lg" className="gap-2 text-base px-8">
+        <Button onClick={handleGenerate} size="lg" className="gap-2 text-base px-8" disabled={!canGenerate}>
           <Sparkles size={18} />
           Generate Puzzle
         </Button>
+        {!canGenerate && (
+          <p className="text-xs text-muted-foreground">
+            Select a puzzle type and difficulty to generate
+          </p>
+        )}
         {puzzleGenerated && (
           <p className="text-xs text-muted-foreground">
             Seed: <span className="font-mono text-foreground">{seed}</span>
           </p>
         )}
-        {randomPool && randomPool.length > 1 && (
-          <p className="text-[10px] text-primary/70 flex items-center gap-1">
-            <Dices size={10} />
-            Random mode
-            <button onClick={() => setRandomPool(null)} className="ml-1 text-muted-foreground hover:text-foreground">✕</button>
-          </p>
+        {(puzzleGenerated || category || difficulty) && (
+          <button
+            onClick={handleClear}
+            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Clear
+          </button>
         )}
       </div>
 
