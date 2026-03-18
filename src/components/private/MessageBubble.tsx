@@ -159,7 +159,8 @@ export function MessageBubble({
               )
             )}
           </div>
-        </div>
+          </div>
+        )}
 
         {/* Reaction display (iPhone-style below bubble) */}
         {hasReactions && (
