@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { computeNextDifficulty, createDifficultyMap, type PuzzlePerformance } from "@/lib/endlessDifficulty";
 import EndlessSummary, { type EndlessSolveRecord } from "@/components/puzzles/EndlessSummary";
+import EndlessFlash from "@/components/puzzles/EndlessFlash";
+import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
