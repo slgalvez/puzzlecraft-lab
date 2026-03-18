@@ -180,13 +180,22 @@ const PuzzleGenerator = () => {
   const toggleRandomType = (type: PuzzleCategory) => {
     setRandomTypes((prev) => {
       const next = new Set(prev);
-      if (next.has(type)) { if (next.size > 1) next.delete(type); }
+      if (next.has(type)) next.delete(type);
       else next.add(type);
       return next;
     });
   };
 
+  const canRandomGenerate = randomTypes.size > 0 && randomDifficulty !== null;
+
   const handleRandomGenerate = () => {
+    if (!canRandomGenerate) {
+      toast({
+        title: "Missing selections",
+        description: "Select at least one puzzle type and a difficulty to generate",
+      });
+      return;
+    }
     const types = Array.from(randomTypes);
     const chosenType = types[Math.floor(Math.random() * types.length)];
     const newSeed = randomSeed();
