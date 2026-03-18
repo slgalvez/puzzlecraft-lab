@@ -205,10 +205,17 @@ const PrivateSettings = () => {
             </div>
             <Switch
               checked={focusLossOn}
-              onCheckedChange={(val) => {
+              onCheckedChange={async (val) => {
                 setFocusLossOn(val);
-                if (token) setFocusLossEnabled(val, token);
                 if (updateUser) updateUser({ focus_loss_protection: val } as any);
+                if (!token) return;
+                try {
+                  await setFocusLossEnabled(val, token);
+                } catch (e) {
+                  if (e instanceof SessionExpiredError) return handleSessionExpired();
+                  setFocusLossOn(!val);
+                  if (updateUser) updateUser({ focus_loss_protection: !val } as any);
+                }
               }}
             />
           </div>
