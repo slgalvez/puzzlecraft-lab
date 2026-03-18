@@ -126,7 +126,7 @@ const Index = () => {
                 <Link to="/daily">Play Today's Puzzle <ArrowRight size={16} /></Link>
               </Button>
               <Button asChild variant="outline" size="lg">
-                <Link to="/generate/sudoku">
+                <Link to="/quick-play/sudoku?mode=endless">
                   <Infinity size={16} />
                   Endless Mode
                 </Link>
@@ -135,15 +135,12 @@ const Index = () => {
                 variant="outline"
                 size="lg"
                 className="gap-1.5"
-                onClick={() => {
-                  const types = Object.keys(CATEGORY_INFO) as PuzzleCategory[];
-                  const type = types[Math.floor(Math.random() * types.length)];
-                  const seed = randomSeed();
-                  navigate(`/generate/${type}?seed=${seed}`);
-                }}
+                asChild
               >
-                <Dices size={16} />
-                Surprise Me
+                <Link to="/surprise">
+                  <Dices size={16} />
+                  Surprise Me
+                </Link>
               </Button>
             </div>
 
