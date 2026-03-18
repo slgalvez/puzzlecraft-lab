@@ -548,7 +548,7 @@ const PuzzleGenerator = () => {
           <div className="flex gap-2">
             <button onClick={() => setRandomTypes(new Set(allTypes.map(([t]) => t)))} className="text-xs font-medium text-primary hover:underline">All</button>
             <span className="text-xs text-muted-foreground">·</span>
-            <button onClick={() => setRandomTypes(new Set([allTypes[0][0]]))} className="text-xs font-medium text-primary hover:underline">Clear</button>
+            <button onClick={() => { setRandomTypes(new Set()); setRandomDifficulty(null); }} className="text-xs font-medium text-primary hover:underline">Clear</button>
           </div>
         </div>
         <div className="grid grid-cols-4 gap-2">
