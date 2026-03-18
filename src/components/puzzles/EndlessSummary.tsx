@@ -79,7 +79,10 @@ const EndlessSummary = ({ solves, diffMap, onPlayAgain }: Props) => {
 
   return (
     <Layout>
-      <div className="container py-10 md:py-16 max-w-2xl">
+      <div className={cn(
+        "container py-10 md:py-16 max-w-2xl transition-all duration-500 ease-out",
+        visible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-[0.97]"
+      )}>
         {/* Header */}
         <div className="text-center mb-10">
           <div className="flex items-center justify-center gap-2 mb-3">

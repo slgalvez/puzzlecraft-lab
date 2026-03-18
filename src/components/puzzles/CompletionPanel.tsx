@@ -34,7 +34,10 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy }: Props) => 
       )}
     >
       <div className="flex items-center gap-2.5 mb-3">
-        <div className="h-7 w-7 rounded-full bg-primary/15 flex items-center justify-center">
+        <div className={cn(
+          "h-7 w-7 rounded-full bg-primary/15 flex items-center justify-center transition-all duration-700 ease-out",
+          visible ? "scale-100 opacity-100" : "scale-50 opacity-0"
+        )}>
           <Check size={14} className="text-primary" strokeWidth={3} />
         </div>
         <span className="font-display text-base font-semibold text-foreground">Solved</span>
