@@ -19,7 +19,7 @@ interface Props {
 
 type CellState = "empty" | "filled" | "marked";
 
-const NonogramGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
+const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateNonogram(seed, difficulty), [seed, difficulty]);
