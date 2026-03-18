@@ -441,6 +441,7 @@ const ForYou = () => {
             emptyMessage="No puzzles sent yet"
             showRecipient
             onDelete={handleDelete}
+            onView={(p) => setViewingPuzzle(p)}
           />
         )}
 
@@ -510,7 +511,7 @@ const ForYou = () => {
 // ─── Puzzle List ───
 
 function PuzzleList({
-  puzzles, loading, emptyMessage, showCreator, showRecipient, onSolve, onDelete,
+  puzzles, loading, emptyMessage, showCreator, showRecipient, onSolve, onDelete, onView,
 }: {
   puzzles: PrivatePuzzle[];
   loading: boolean;
@@ -519,6 +520,7 @@ function PuzzleList({
   showRecipient?: boolean;
   onSolve?: (p: PrivatePuzzle) => void;
   onDelete?: (id: string) => void;
+  onView?: (p: PrivatePuzzle) => void;
 }) {
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
   if (puzzles.length === 0) {
@@ -565,6 +567,11 @@ function PuzzleList({
             {onSolve && p.solved_by && p.reveal_message && (
               <Button size="sm" variant="outline" onClick={() => onSolve(p)}>
                 View
+              </Button>
+            )}
+            {onView && (
+              <Button size="sm" variant="outline" onClick={() => onView(p)}>
+                <Eye className="h-3.5 w-3.5 mr-1" /> Preview
               </Button>
             )}
             {onDelete && (
@@ -708,6 +715,7 @@ function CompletedPuzzleView({
   userId: string;
 }) {
   const isMine = puzzle.created_by === userId;
+  const isCompleted = !!puzzle.solved_by;
   const data = puzzle.puzzle_data;
 
   return (
@@ -719,33 +727,45 @@ function CompletedPuzzleView({
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium">{PUZZLE_LABELS[puzzle.puzzle_type]}</h3>
-          <Badge variant="secondary" className="text-[10px]">
-            <Check className="h-3 w-3 mr-0.5" /> Completed
-          </Badge>
+          {isCompleted ? (
+            <Badge variant="secondary" className="text-[10px]">
+              <Check className="h-3 w-3 mr-0.5" /> Completed
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-[10px]">
+              <Eye className="h-3 w-3 mr-0.5" /> Preview
+            </Badge>
+          )}
         </div>
         <p className="text-xs text-muted-foreground">
           {isMine ? (puzzle.recipient_name && `To ${puzzle.recipient_name}`) : (puzzle.creator_name && `From ${puzzle.creator_name}`)}
           {" · "}
           {new Date(puzzle.solved_at || puzzle.created_at).toLocaleDateString()}
-          {puzzle.solve_time != null && ` · Solved in ${formatTime(puzzle.solve_time)}`}
+          {isCompleted && puzzle.solve_time != null && ` · Solved in ${formatTime(puzzle.solve_time)}`}
         </p>
       </div>
 
-      {puzzle.reveal_message && (
+      {isCompleted && puzzle.reveal_message && (
         <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
           <p className="text-sm italic text-foreground">{puzzle.reveal_message}</p>
         </div>
       )}
 
       <div className="p-4 rounded-lg border border-border bg-card">
-        {(puzzle.puzzle_type === "word-fill" || puzzle.puzzle_type === "crossword") && (
-          <CompletedGridView data={data} puzzleType={puzzle.puzzle_type} />
-        )}
-        {puzzle.puzzle_type === "cryptogram" && (
-          <CompletedCryptogramView data={data} />
-        )}
-        {puzzle.puzzle_type === "word-search" && (
-          <CompletedWordSearchView data={data} />
+        {isCompleted ? (
+          <>
+            {(puzzle.puzzle_type === "word-fill" || puzzle.puzzle_type === "crossword") && (
+              <CompletedGridView data={data} puzzleType={puzzle.puzzle_type} />
+            )}
+            {puzzle.puzzle_type === "cryptogram" && (
+              <CompletedCryptogramView data={data} />
+            )}
+            {puzzle.puzzle_type === "word-search" && (
+              <CompletedWordSearchView data={data} />
+            )}
+          </>
+        ) : (
+          <PuzzlePreview data={data} puzzleType={puzzle.puzzle_type} />
         )}
       </div>
     </div>
