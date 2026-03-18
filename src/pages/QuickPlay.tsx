@@ -1,13 +1,15 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
 import { cn } from "@/lib/utils";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
-import { ArrowLeft, Dices, Infinity, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { ArrowLeft, Dices, Infinity, TrendingUp, TrendingDown, Minus, Square } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { computeNextDifficulty, createDifficultyMap, type PuzzlePerformance } from "@/lib/endlessDifficulty";
+import EndlessSummary, { type EndlessSolveRecord } from "@/components/puzzles/EndlessSummary";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
@@ -47,12 +49,13 @@ const QuickPlay = () => {
   const [currentType, setCurrentType] = useState<PuzzleCategory>(category);
   const currentInfo = CATEGORY_INFO[currentType] || info;
 
-  // Endless mode: per-type adaptive difficulty + puzzle count
+  // Endless mode state
   const [endlessDiffMap, setEndlessDiffMap] = useState(() => createDifficultyMap());
   const [endlessCount, setEndlessCount] = useState(1);
   const [lastDiffChange, setLastDiffChange] = useState<"up" | "down" | "stay" | null>(null);
+  const [endlessSolves, setEndlessSolves] = useState<EndlessSolveRecord[]>([]);
+  const [showSummary, setShowSummary] = useState(false);
 
-  // For endless mode, the active difficulty comes from the adaptive map
   const activeDifficulty = mode === "endless" ? endlessDiffMap[currentType] : difficulty;
 
   const handleNewPuzzle = useCallback(() => {
@@ -66,7 +69,6 @@ const QuickPlay = () => {
       setPuzzleKey((k) => k + 1);
       window.history.replaceState(null, "", `/quick-play/${newType}?d=${newDiff}&seed=${newSeed}&mode=surprise`);
     } else if (mode === "endless") {
-      // Pick a random type for the next puzzle
       const newType = allTypes[Math.floor(Math.random() * allTypes.length)];
       const newSeed = randomSeed();
       setCurrentType(newType);
@@ -85,13 +87,20 @@ const QuickPlay = () => {
     if (mode !== "endless") return;
     const current = endlessDiffMap[currentType];
     const { next, direction } = computeNextDifficulty(current, perf);
-    
+
+    // Record solve
+    setEndlessSolves((prev) => [...prev, {
+      type: currentType,
+      difficulty: current,
+      elapsed: perf.elapsed,
+      diffChange: direction,
+    }]);
+
     if (direction !== "stay") {
       setEndlessDiffMap((prev) => ({ ...prev, [currentType]: next }));
     }
     setLastDiffChange(direction);
 
-    // Show subtle toast about difficulty change
     if (direction === "up") {
       toast({
         title: "⬆️ Difficulty increased",
@@ -105,6 +114,24 @@ const QuickPlay = () => {
     }
   }, [mode, currentType, endlessDiffMap, toast]);
 
+  const handleEndSession = useCallback(() => {
+    setShowSummary(true);
+  }, []);
+
+  const handlePlayAgain = useCallback(() => {
+    setShowSummary(false);
+    setEndlessSolves([]);
+    setEndlessDiffMap(createDifficultyMap());
+    setEndlessCount(1);
+    setLastDiffChange(null);
+    const newType = allTypes[Math.floor(Math.random() * allTypes.length)];
+    const newSeed = randomSeed();
+    setCurrentType(newType);
+    setSeed(newSeed);
+    setPuzzleKey((k) => k + 1);
+    window.history.replaceState(null, "", `/quick-play/${newType}?mode=endless`);
+  }, []);
+
   const handleDifficultyChange = (d: Difficulty) => {
     setDifficulty(d);
     try {
@@ -115,6 +142,17 @@ const QuickPlay = () => {
     setSeed(randomSeed());
     setPuzzleKey((k) => k + 1);
   };
+
+  // Show summary screen
+  if (mode === "endless" && showSummary) {
+    return (
+      <EndlessSummary
+        solves={endlessSolves}
+        diffMap={endlessDiffMap}
+        onPlayAgain={handlePlayAgain}
+      />
+    );
+  }
 
   if (!info && !currentInfo) {
     return (
@@ -179,7 +217,7 @@ const QuickPlay = () => {
     <Layout>
       <div className="container py-6 md:py-10">
         {/* Minimal header */}
-        <div className="mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <button
             onClick={() => navigate("/")}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -187,6 +225,17 @@ const QuickPlay = () => {
             <ArrowLeft size={14} />
             <span className="hidden sm:inline">Home</span>
           </button>
+          {mode === "endless" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleEndSession}
+              className="text-muted-foreground hover:text-foreground gap-1.5"
+            >
+              <Square size={12} />
+              End Session
+            </Button>
+          )}
         </div>
 
         {/* Mode badge + puzzle identity */}
@@ -205,7 +254,6 @@ const QuickPlay = () => {
             <h1 className="font-display text-xl font-bold text-foreground sm:text-2xl">{activeInfo.name}</h1>
           </div>
 
-          {/* Default mode: manual difficulty selector */}
           {mode === "default" && (
             <div className="flex flex-wrap gap-1.5">
               {difficulties.map(([val, label]) => (
@@ -225,12 +273,10 @@ const QuickPlay = () => {
             </div>
           )}
 
-          {/* Surprise mode: show current difficulty */}
           {mode === "surprise" && (
             <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[activeDifficulty]}</p>
           )}
 
-          {/* Endless mode: show adaptive difficulty with directional indicator */}
           {mode === "endless" && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">
@@ -239,6 +285,11 @@ const QuickPlay = () => {
               {lastDiffChange === "up" && <TrendingUp size={12} className="text-primary" />}
               {lastDiffChange === "down" && <TrendingDown size={12} className="text-destructive" />}
               {lastDiffChange === "stay" && <Minus size={12} className="text-muted-foreground" />}
+              {endlessSolves.length > 0 && (
+                <span className="text-xs text-muted-foreground ml-2">
+                  · {endlessSolves.length} solved
+                </span>
+              )}
             </div>
           )}
         </div>
