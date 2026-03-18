@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 const navLinks = [
   { to: "/", label: "Home" },
   { to: "/daily", label: "Daily Challenge" },
-  { to: "/puzzles", label: "Puzzle Types" },
+  { to: "/puzzles", label: "Play" },
   { to: "/generate/sudoku", label: "Puzzle Lab" },
   { to: "/stats", label: "Stats" },
 ];
