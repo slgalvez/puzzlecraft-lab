@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import type { CrosswordPuzzle, CrosswordClue } from "@/data/puzzles";
 import { cn } from "@/lib/utils";
 import PuzzleControls from "./PuzzleControls";
@@ -9,6 +9,7 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
+import { saveProgress, loadProgress, clearProgress } from "@/lib/puzzleProgress";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
 interface Props {
@@ -18,12 +19,20 @@ interface Props {
   onSolve?: (perf: PuzzlePerformance) => void;
 }
 
+interface CrosswordState {
+  grid: string[][];
+}
+
 const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
   const { gridSize, blackCells, clues } = puzzle;
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const timerKey = `crossword-${puzzle.id}`;
+
+  const saved = useMemo(() => loadProgress<CrosswordState>(timerKey), [timerKey]);
+
   const [grid, setGrid] = useState<string[][]>(
-    Array.from({ length: gridSize }, () => Array(gridSize).fill(""))
+    () => saved?.state.grid ?? Array.from({ length: gridSize }, () => Array(gridSize).fill(""))
   );
   const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
   const [direction, setDirection] = useState<"across" | "down">("across");
@@ -34,8 +43,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) =>
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
 
-  const timerKey = `crossword-${puzzle.id}`;
-  const timer = usePuzzleTimer(timerKey, { category: "crossword", difficulty: puzzle.difficulty });
+  const timer = usePuzzleTimer(timerKey, { category: "crossword", difficulty: puzzle.difficulty, initialElapsed: saved?.elapsed ?? 0 });
 
   const blackSet = useCallback(() => {
     const set = new Set<string>();
@@ -50,6 +58,13 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) =>
     const clue = clues.find((cl) => cl.row === r && cl.col === c);
     return clue?.number;
   };
+
+  // Auto-save
+  useEffect(() => {
+    if (!timer.isSolved) {
+      saveProgress<CrosswordState>(timerKey, { grid }, timer.elapsed);
+    }
+  }, [grid, timer.elapsed, timer.isSolved, timerKey]);
 
   useEffect(() => {
     for (let r = 0; r < gridSize; r++)
@@ -225,6 +240,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) =>
     setErrors(new Set());
     resetCount.current++;
     timer.reset();
+    clearProgress(timerKey);
     if (!isMobile) containerRef.current?.focus();
   };
 
@@ -251,6 +267,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) =>
     if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0 && filled) {
       const { isNewBest } = timer.solve();
+      clearProgress(timerKey);
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Crossword solved correctly!" });
       onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
     } else if (errs.size > 0)
@@ -267,7 +284,6 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) =>
       <div className="flex-shrink-0">
         <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
 
-        {/* Direction toggle for mobile */}
         {isMobile && activeCell && !timer.isSolved && (
           <div className="flex items-center gap-2 mb-2">
             <button

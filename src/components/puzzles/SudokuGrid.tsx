@@ -8,6 +8,7 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
+import { saveProgress, loadProgress, clearProgress } from "@/lib/puzzleProgress";
 import type { Difficulty } from "@/lib/puzzleTypes";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
@@ -18,11 +19,21 @@ interface Props {
   onSolve?: (perf: PuzzlePerformance) => void;
 }
 
+interface SudokuState {
+  grid: (number | null)[][];
+}
+
 const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateSudoku(seed, difficulty), [seed, difficulty]);
-  const [grid, setGrid] = useState(() => puzzle.grid.map((r) => [...r]));
+  const timerKey = `sudoku-${seed}-${difficulty}`;
+
+  const saved = useMemo(() => loadProgress<SudokuState>(timerKey), [timerKey]);
+
+  const [grid, setGrid] = useState(() =>
+    saved?.state.grid ?? puzzle.grid.map((r) => [...r])
+  );
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const [activeCell, setActiveCell] = useState<[number, number] | null>([0, 0]);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -30,10 +41,16 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
 
-  const timerKey = `sudoku-${seed}-${difficulty}`;
-  const timer = usePuzzleTimer(timerKey, { category: "sudoku", difficulty });
+  const timer = usePuzzleTimer(timerKey, { category: "sudoku", difficulty, initialElapsed: saved?.elapsed ?? 0 });
 
   const isGiven = (r: number, c: number) => puzzle.grid[r][c] !== null;
+
+  // Auto-save on grid changes
+  useEffect(() => {
+    if (!timer.isSolved) {
+      saveProgress<SudokuState>(timerKey, { grid }, timer.elapsed);
+    }
+  }, [grid, timer.elapsed, timer.isSolved, timerKey]);
 
   useEffect(() => {
     containerRef.current?.focus();
@@ -53,7 +70,6 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
       return next;
     });
     setErrors(new Set());
-    // Auto-advance
     for (let i = r * 9 + c + 1; i < 81; i++) {
       const nr = Math.floor(i / 9), nc = i % 9;
       if (!isGiven(nr, nc) && grid[nr][nc] === null) {
@@ -73,7 +89,6 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
       return next;
     });
     setErrors(new Set());
-    // Move backward to previous non-given cell
     for (let i = r * 9 + c - 1; i >= 0; i--) {
       const nr = Math.floor(i / 9), nc = i % 9;
       if (!isGiven(nr, nc)) { setActiveCell([nr, nc]); return; }
@@ -119,6 +134,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
     setErrors(new Set());
     resetCount.current++;
     timer.reset();
+    clearProgress(timerKey);
     containerRef.current?.focus();
   };
 
@@ -135,6 +151,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
     if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0 && filled) {
       const { isNewBest } = timer.solve();
+      clearProgress(timerKey);
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Puzzle solved correctly!" });
       onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
     } else if (errs.size > 0)
