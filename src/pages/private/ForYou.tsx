@@ -441,6 +441,7 @@ const ForYou = () => {
             emptyMessage="No puzzles sent yet"
             showRecipient
             onDelete={handleDelete}
+            onView={(p) => setViewingPuzzle(p)}
           />
         )}
 
