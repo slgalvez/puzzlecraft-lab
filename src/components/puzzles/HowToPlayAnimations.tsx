@@ -103,6 +103,7 @@ function CrosswordAnim() {
 }
 
 function WordFillAnim() {
+  // Valid slot: row 1, cols 1–3 (none are black)
   return (
     <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S} className="block">
       <MiniGrid rows={5} cols={5} blacks={[[0, 2], [1, 0], [2, 4], [3, 2], [4, 0], [4, 4]]} id="wf" />
@@ -114,15 +115,16 @@ function WordFillAnim() {
         SUN
         <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.25;0.35;1" dur={DUR} repeatCount="indefinite" />
       </text>
-      <AnimLetter ch="S" col={0} row={0} delay="0.4s" />
-      <AnimLetter ch="U" col={1} row={0} delay="0.7s" />
-      <AnimLetter ch="N" col={2} row={0} delay="1.0s" />
-      <SuccessFlash col={0} row={0} cols={2} rows={1} delay="0s" />
+      <AnimLetter ch="S" col={1} row={1} delay="0.4s" />
+      <AnimLetter ch="U" col={2} row={1} delay="0.7s" />
+      <AnimLetter ch="N" col={3} row={1} delay="1.0s" />
+      <SuccessFlash col={1} row={1} cols={3} rows={1} delay="0s" />
     </svg>
   );
 }
 
 function NumberFillAnim() {
+  // Valid slot: row 0, cols 0–2 (col 3 is black)
   return (
     <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S} className="block">
       <MiniGrid rows={5} cols={5} blacks={[[0, 3], [1, 1], [2, 0], [3, 3], [4, 1], [4, 4]]} id="nf" />
@@ -133,10 +135,10 @@ function NumberFillAnim() {
         382
         <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.25;0.35;1" dur={DUR} repeatCount="indefinite" />
       </text>
-      <AnimLetter ch="3" col={0} row={2} delay="0.4s" />
-      <AnimLetter ch="8" col={1} row={2} delay="0.7s" />
-      <AnimLetter ch="2" col={2} row={2} delay="1.0s" />
-      <SuccessFlash col={0} row={2} cols={3} rows={1} delay="0s" />
+      <AnimLetter ch="3" col={0} row={0} delay="0.4s" />
+      <AnimLetter ch="8" col={1} row={0} delay="0.7s" />
+      <AnimLetter ch="2" col={2} row={0} delay="1.0s" />
+      <SuccessFlash col={0} row={0} cols={3} rows={1} delay="0s" />
     </svg>
   );
 }
