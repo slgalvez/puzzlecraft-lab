@@ -15,5 +15,5 @@ verify_jwt = false
 [functions.messaging]
 verify_jwt = false
 
-[functions.gif-search]
+[functions.upload-media]
 verify_jwt = false
