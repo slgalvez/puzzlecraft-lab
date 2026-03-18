@@ -4,9 +4,8 @@ import { ArrowRight, Grid3X3, Hash, Type, Search, Plus, Palette, Lock, Calculato
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { allPuzzles, getPuzzleById } from "@/data/puzzles";
-import PuzzleCard from "@/components/puzzles/PuzzleCard";
 import { useToast } from "@/hooks/use-toast";
+import { getPuzzleById } from "@/data/puzzles";
 import { supabase } from "@/integrations/supabase/client";
 import { getTodaysChallenge, getDailyCompletion, getDailyStreak } from "@/lib/dailyChallenge";
 import { getProgressStats } from "@/lib/progressTracker";
@@ -15,7 +14,6 @@ import { formatTime } from "@/hooks/usePuzzleTimer";
 
 
 const Index = () => {
-  const featured = allPuzzles.slice(0, 3);
   const [puzzleCode, setPuzzleCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasUpdate, setHasUpdate] = useState(false);
@@ -323,22 +321,6 @@ const Index = () => {
         </section>
       )}
 
-      {/* Featured puzzles */}
-      <section className="border-t bg-surface-warm">
-        <div className="container py-16">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-2xl font-semibold text-foreground sm:text-3xl">Featured Puzzles</h2>
-            <Link to="/puzzles" className="text-sm font-medium text-primary hover:underline">
-              View all →
-            </Link>
-          </div>
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.map((p) => (
-              <PuzzleCard key={p.id} puzzle={p} />
-            ))}
-          </div>
-        </div>
-      </section>
     </Layout>
   );
 };
