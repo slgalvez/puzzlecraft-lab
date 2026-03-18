@@ -258,7 +258,7 @@ const Index = () => {
       <section className="container py-16">
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-display text-2xl font-semibold text-foreground sm:text-3xl">Eight ways to play</h2>
-          <Link to="/generate/sudoku" className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
+          <Link to="/quick-play/sudoku?mode=endless" className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
             <Infinity size={14} /> Endless Mode
           </Link>
         </div>
