@@ -581,7 +581,7 @@ const PuzzleGenerator = () => {
         )}
         {puzzleGenerated && (
           <p className="text-xs text-muted-foreground">
-            Seed: <span className="font-mono text-foreground">{seed}</span>
+            Puzzle Code: <span className="font-mono text-foreground">{seed}</span>
           </p>
         )}
         {(puzzleGenerated || category || difficulty) && (
