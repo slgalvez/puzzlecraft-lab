@@ -156,7 +156,7 @@ const DailyPuzzle = () => {
                 </Link>
               </Button>
               <Button asChild size="sm">
-                <Link to="/generate/sudoku">
+                <Link to="/quick-play/sudoku?mode=endless">
                   Endless Mode <ArrowRight size={14} />
                 </Link>
               </Button>

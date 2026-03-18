@@ -12,7 +12,7 @@ import { getTodaysChallenge, getDailyCompletion, getDailyStreak } from "@/lib/da
 import { getProgressStats } from "@/lib/progressTracker";
 import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
-import { randomSeed } from "@/lib/seededRandom";
+
 
 const Index = () => {
   const featured = allPuzzles.slice(0, 3);
@@ -126,7 +126,7 @@ const Index = () => {
                 <Link to="/daily">Play Today's Puzzle <ArrowRight size={16} /></Link>
               </Button>
               <Button asChild variant="outline" size="lg">
-                <Link to="/generate/sudoku">
+                <Link to="/quick-play/sudoku?mode=endless">
                   <Infinity size={16} />
                   Endless Mode
                 </Link>
@@ -135,15 +135,12 @@ const Index = () => {
                 variant="outline"
                 size="lg"
                 className="gap-1.5"
-                onClick={() => {
-                  const types = Object.keys(CATEGORY_INFO) as PuzzleCategory[];
-                  const type = types[Math.floor(Math.random() * types.length)];
-                  const seed = randomSeed();
-                  navigate(`/generate/${type}?seed=${seed}`);
-                }}
+                asChild
               >
-                <Dices size={16} />
-                Surprise Me
+                <Link to="/surprise">
+                  <Dices size={16} />
+                  Surprise Me
+                </Link>
               </Button>
             </div>
 
@@ -261,21 +258,21 @@ const Index = () => {
       <section className="container py-16">
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-display text-2xl font-semibold text-foreground sm:text-3xl">Eight ways to play</h2>
-          <Link to="/generate/sudoku" className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
+          <Link to="/quick-play/sudoku?mode=endless" className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
             <Infinity size={14} /> Endless Mode
           </Link>
         </div>
         <p className="text-muted-foreground">Unlimited puzzles with adjustable difficulty — generated fresh every time.</p>
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { icon: Grid3X3, title: "Crossword", desc: "Classic clue-based word puzzles.", link: "/generate/crossword" },
-            { icon: Calculator, title: "Sudoku", desc: "Fill the 9×9 grid with digits 1–9.", link: "/generate/sudoku" },
-            { icon: Search, title: "Word Search", desc: "Find hidden words in a letter grid.", link: "/generate/word-search" },
-            { icon: Plus, title: "Kakuro", desc: "Cross-sums — a number crossword.", link: "/generate/kakuro" },
-            { icon: Palette, title: "Nonogram", desc: "Reveal a picture using number clues.", link: "/generate/nonogram" },
-            { icon: Lock, title: "Cryptogram", desc: "Decode the secret message.", link: "/generate/cryptogram" },
-            { icon: Hash, title: "Number Fill-In", desc: "Place numbers into the grid pattern.", link: "/generate/number-fill" },
-            { icon: Type, title: "Word Fill-In", desc: "Fit words into a crossword-style grid.", link: "/generate/word-fill" },
+            { icon: Grid3X3, title: "Crossword", desc: "Classic clue-based word puzzles.", link: "/quick-play/crossword?mode=endless" },
+            { icon: Calculator, title: "Sudoku", desc: "Fill the 9×9 grid with digits 1–9.", link: "/quick-play/sudoku?mode=endless" },
+            { icon: Search, title: "Word Search", desc: "Find hidden words in a letter grid.", link: "/quick-play/word-search?mode=endless" },
+            { icon: Plus, title: "Kakuro", desc: "Cross-sums — a number crossword.", link: "/quick-play/kakuro?mode=endless" },
+            { icon: Palette, title: "Nonogram", desc: "Reveal a picture using number clues.", link: "/quick-play/nonogram?mode=endless" },
+            { icon: Lock, title: "Cryptogram", desc: "Decode the secret message.", link: "/quick-play/cryptogram?mode=endless" },
+            { icon: Hash, title: "Number Fill-In", desc: "Place numbers into the grid pattern.", link: "/quick-play/number-fill?mode=endless" },
+            { icon: Type, title: "Word Fill-In", desc: "Fit words into a crossword-style grid.", link: "/quick-play/word-fill?mode=endless" },
           ].map(({ icon: Icon, title, desc, link }) => (
             <Link key={title} to={link} className="group rounded-xl border bg-card p-5 transition-colors hover:border-primary/40">
               <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
