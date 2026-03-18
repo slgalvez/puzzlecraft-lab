@@ -59,7 +59,7 @@ function buildMessageQuery(
 ) {
   let query = sb
     .from("messages")
-    .select("id, sender_profile_id, body, created_at, read_at, is_disappearing, expires_at")
+    .select("id, sender_profile_id, body, created_at, read_at, is_disappearing, expires_at, reactions")
     .eq("conversation_id", conversationId)
     .or(`expires_at.is.null,expires_at.gt.${now}`);
 
