@@ -155,7 +155,6 @@ html {
   --sidebar-border: 220 12% 16%;
   --sidebar-ring: 172 50% 45%;
 
-  /* Puzzle tokens — match the dark-mode site aesthetic */
   --puzzle-cell: 220 14% 18%;
   --puzzle-cell-active: 172 40% 22%;
   --puzzle-cell-highlight: 172 25% 18%;
@@ -169,14 +168,23 @@ html {
   background: hsl(220 14% 10%);
   color: hsl(220 10% 90%);
   height: 100dvh;
-  height: 100vh; /* fallback for older browsers */
+  height: 100vh;
   height: 100dvh;
   overflow: hidden;
 }
 
-/* Match overscroll / bounce background to private app */
-body:has(.private-app) {
+/* Match overscroll / bounce / root background to private app */
+body:has(.private-app),
+html:has(.private-app) {
+  background: hsl(220 14% 10%) !important;
+  overflow: hidden;
+}
+
+body:has(.private-app) #root {
   background: hsl(220 14% 10%);
+  max-width: none;
+  padding: 0;
+  text-align: left;
 }
 
 .private-app h1,
@@ -187,4 +195,27 @@ body:has(.private-app) {
 .private-app h6 {
   font-family: 'DM Sans', sans-serif;
   letter-spacing: -0.02em;
+}
+
+/* iPhone-like message bubbles */
+.private-app .msg-bubble-mine {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: 1.125rem 1.125rem 0.25rem 1.125rem;
+}
+
+.private-app .msg-bubble-theirs {
+  background: hsl(var(--secondary));
+  color: hsl(var(--foreground));
+  border-radius: 1.125rem 1.125rem 1.125rem 0.25rem;
+}
+
+/* Composer pill style */
+.private-app .msg-composer-input {
+  border-radius: 1.25rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  min-height: 2.25rem;
+  background: hsl(var(--secondary));
+  border-color: hsl(var(--border));
 }
