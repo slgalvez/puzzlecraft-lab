@@ -39,7 +39,8 @@ const App = () => (
             {/* Public puzzle site */}
             <Route path="/" element={<Index />} />
             <Route path="/puzzles" element={<PuzzleLibrary />} />
-            <Route path="/generate/:type" element={<PuzzleGenerator />} />
+             <Route path="/generate" element={<PuzzleGenerator />} />
+             <Route path="/generate/:type" element={<PuzzleGenerator />} />
             <Route path="/daily" element={<DailyPuzzle />} />
             <Route path="/play/:id" element={<PlayPuzzle />} />
             <Route path="/quick-play/:type" element={<QuickPlay />} />

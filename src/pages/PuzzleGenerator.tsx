@@ -49,8 +49,8 @@ const PuzzleGenerator = () => {
   const { type } = useParams<{ type: string }>();
   const [searchParams] = useSearchParams();
   const location = useLocation();
-  const category = type as PuzzleCategory;
-  const info = CATEGORY_INFO[category];
+  const category = type as PuzzleCategory | undefined;
+  const info = category ? CATEGORY_INFO[category] : undefined;
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -61,14 +61,14 @@ const PuzzleGenerator = () => {
   const [randomPool, setRandomPool] = useState<PuzzleCategory[] | null>(
     () => routeState?.randomPool && routeState.randomPool.length > 1 ? routeState.randomPool : null
   );
-  const [difficulty, setDifficulty] = useState<Difficulty>(
-    () => routeState?.randomDifficulty || "medium"
+  const [difficulty, setDifficulty] = useState<Difficulty | null>(
+    () => routeState?.randomDifficulty || null
   );
   const [seed, setSeed] = useState(() => initialSeed ? parseInt(initialSeed) || randomSeed() : randomSeed());
   const [seedInput, setSeedInput] = useState(initialSeed || "");
   const [puzzleKey, setPuzzleKey] = useState(0);
   const [loadingSeed, setLoadingSeed] = useState(false);
-  const [puzzleGenerated, setPuzzleGenerated] = useState(!!info);
+  const [puzzleGenerated, setPuzzleGenerated] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
   // Mode & mobile stepper
@@ -100,14 +100,15 @@ const PuzzleGenerator = () => {
     }
   }, [randomPool, category, difficulty, navigate]);
 
-  if (!info) {
+  // Show error for truly invalid types (not just missing)
+  if (type && !info) {
     return (
       <Layout>
         <div className="container py-20 text-center">
           <h1 className="font-display text-2xl font-bold text-foreground">Unknown puzzle type</h1>
           <p className="mt-2 text-sm text-muted-foreground">The puzzle type you requested doesn't exist.</p>
-          <Link to="/puzzles" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
-            ← Browse puzzle types
+          <Link to="/generate" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
+            ← Back to Puzzle Lab
           </Link>
         </div>
       </Layout>
@@ -140,23 +141,41 @@ const PuzzleGenerator = () => {
 
   const handleDifficultyChange = (d: Difficulty) => {
     setDifficulty(d);
-    setSeed(randomSeed());
-    setPuzzleKey((k) => k + 1);
-    setPuzzleGenerated(true);
-    if (isMobile) setMobileStep(3);
   };
 
   const handleTypeChange = (newType: PuzzleCategory) => {
     setRandomPool(null);
+    setPuzzleGenerated(false);
     if (isMobile) setMobileStep(2);
     navigate(`/generate/${newType}`, { replace: true });
   };
 
+  const canGenerate = !!info && !!difficulty;
+
   const handleGenerate = () => {
+    if (!canGenerate) {
+      toast({
+        title: "Missing selections",
+        description: "Select a puzzle type and difficulty to generate",
+      });
+      return;
+    }
     setSeed(randomSeed());
     setPuzzleKey((k) => k + 1);
     setPuzzleGenerated(true);
     if (isMobile) setMobileStep(3);
+  };
+
+  const handleClear = () => {
+    setDifficulty(null);
+    setPuzzleGenerated(false);
+    setSeed(randomSeed());
+    setPuzzleKey(0);
+    setRandomPool(null);
+    setSeedInput("");
+    setAdvancedOpen(false);
+    if (isMobile) setMobileStep(1);
+    navigate("/generate", { replace: true });
   };
 
   // Random tab
@@ -183,36 +202,38 @@ const PuzzleGenerator = () => {
   };
 
   const renderPuzzle = () => {
-    const key = `${seed}-${difficulty}-${puzzleKey}`;
+    if (!category || !difficulty) return null;
+    const d = difficulty as Difficulty;
+    const key = `${seed}-${d}-${puzzleKey}`;
     switch (category) {
-      case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
-      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
-      case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
-      case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
-      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
+      case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
+      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
+      case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
+      case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
+      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
       case "crossword": {
-        const gen = generateCrossword(seed, difficulty);
+        const gen = generateCrossword(seed, d);
         const puzzle: CrosswordPuzzle = {
           id: `gen-${seed}`, title: "Generated Crossword", type: "crossword",
-          difficulty: difficulty as CrosswordPuzzle["difficulty"],
+          difficulty: d as CrosswordPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, clues: gen.clues,
         };
         return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} />;
       }
       case "word-fill": {
-        const gen = generateWordFillIn(seed, difficulty);
+        const gen = generateWordFillIn(seed, d);
         const puzzle: FillInPuzzle = {
           id: `gen-${seed}`, title: "Generated Word Fill-In", type: "word-fill",
-          difficulty: difficulty as FillInPuzzle["difficulty"],
+          difficulty: d as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
         return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} />;
       }
       case "number-fill": {
-        const gen = generateNumberFillIn(seed, difficulty);
+        const gen = generateNumberFillIn(seed, d);
         const puzzle: FillInPuzzle = {
           id: `gen-${seed}`, title: "Generated Number Fill-In", type: "number-fill",
-          difficulty: difficulty as FillInPuzzle["difficulty"],
+          difficulty: d as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
         return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} />;
@@ -223,21 +244,21 @@ const PuzzleGenerator = () => {
 
   // ─── Mobile Generate Stepper ───
   const renderMobileGenerate = () => {
-    if (mobileStep === 3 && puzzleGenerated) {
+    if (mobileStep === 3 && puzzleGenerated && info && difficulty) {
       return (
         <div>
           <button
-            onClick={() => setMobileStep(1)}
+            onClick={handleClear}
             className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft size={14} /> New puzzle
           </button>
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <PuzzleIcon type={category} size={24} className="text-foreground" />
+              <PuzzleIcon type={category!} size={24} className="text-foreground" />
               <div>
                 <h2 className="font-display text-lg font-bold text-foreground">{info.name}</h2>
-                <p className="text-xs text-muted-foreground capitalize">{difficulty}</p>
+                <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[difficulty]}</p>
               </div>
             </div>
             <Button onClick={handleGenerate} size="sm" variant="outline" className="gap-1.5">
@@ -275,7 +296,7 @@ const PuzzleGenerator = () => {
           </div>
         )}
 
-        {mobileStep === 2 && (
+        {mobileStep === 2 && info && (
           <div className="animate-in fade-in slide-in-from-right-4 duration-300">
             <button
               onClick={() => setMobileStep(1)}
@@ -286,7 +307,7 @@ const PuzzleGenerator = () => {
             <p className="mb-1 text-xs font-medium uppercase tracking-widest text-muted-foreground">Step 2 of 2</p>
             <h2 className="font-display text-2xl font-bold text-foreground mb-2">Choose Difficulty</h2>
             <p className="text-sm text-muted-foreground mb-6">
-              <PuzzleIcon type={category} size={20} className="text-foreground mr-1 inline-block align-text-bottom" /> {info.name}
+              <PuzzleIcon type={category!} size={20} className="text-foreground mr-1 inline-block align-text-bottom" /> {info.name}
             </p>
             <div className="flex flex-col gap-3">
               {difficulties.map(([val, label]) => (
@@ -305,6 +326,12 @@ const PuzzleGenerator = () => {
                 </button>
               ))}
             </div>
+            {difficulty && (
+              <Button onClick={handleGenerate} size="lg" className="w-full gap-2 text-base mt-6">
+                <Sparkles size={18} />
+                Generate Puzzle
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -436,21 +463,27 @@ const PuzzleGenerator = () => {
 
       {/* Primary Action */}
       <div className="flex items-center gap-4">
-        <Button onClick={handleGenerate} size="lg" className="gap-2 text-base px-8">
+        <Button onClick={handleGenerate} size="lg" className="gap-2 text-base px-8" disabled={!canGenerate}>
           <Sparkles size={18} />
           Generate Puzzle
         </Button>
+        {!canGenerate && (
+          <p className="text-xs text-muted-foreground">
+            Select a puzzle type and difficulty to generate
+          </p>
+        )}
         {puzzleGenerated && (
           <p className="text-xs text-muted-foreground">
             Seed: <span className="font-mono text-foreground">{seed}</span>
           </p>
         )}
-        {randomPool && randomPool.length > 1 && (
-          <p className="text-[10px] text-primary/70 flex items-center gap-1">
-            <Dices size={10} />
-            Random mode
-            <button onClick={() => setRandomPool(null)} className="ml-1 text-muted-foreground hover:text-foreground">✕</button>
-          </p>
+        {(puzzleGenerated || category || difficulty) && (
+          <button
+            onClick={handleClear}
+            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Clear
+          </button>
         )}
       </div>
 
