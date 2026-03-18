@@ -214,9 +214,11 @@ const Index = () => {
                   <Calendar size={14} />
                   Daily Challenge
                 </div>
-                <h2 className="font-display text-2xl font-bold text-foreground sm:text-3xl">
-                  {challengeInfo.icon} Today's {challengeInfo.name}
+                {(() => { const DailyIcon = CATEGORY_ICONS[challenge.category]; return (
+                <h2 className="font-display text-2xl font-bold text-foreground sm:text-3xl flex items-center gap-2">
+                  <DailyIcon size={28} className="text-primary" /> Today's {challengeInfo.name}
                 </h2>
+                ); })()}
                 <p className="mt-2 text-muted-foreground">
                   {challengeInfo.description}. Everyone gets the same puzzle — how fast can you solve it?
                 </p>
