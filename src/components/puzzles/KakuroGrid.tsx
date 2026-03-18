@@ -51,7 +51,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit }: Props
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
 
-  const timer = usePuzzleTimer(timerKey, { category: "kakuro", difficulty, initialElapsed: saved?.elapsed ?? 0 });
+  const timer = usePuzzleTimer(timerKey, { category: "kakuro", difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
   // Auto-save
   useEffect(() => {
