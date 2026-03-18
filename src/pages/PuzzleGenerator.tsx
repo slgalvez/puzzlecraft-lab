@@ -598,14 +598,21 @@ const PuzzleGenerator = () => {
         </div>
       </div>
 
-      <div>
-        <Button onClick={handleRandomGenerate} size="lg" className="gap-2 text-base px-8">
+      <div className="flex items-center gap-4">
+        <Button onClick={handleRandomGenerate} size="lg" className="gap-2 text-base px-8" disabled={!canRandomGenerate}>
           <Dices size={18} />
           Generate Random Puzzle
         </Button>
-        <p className="mt-2 text-xs text-muted-foreground">
-          {randomTypes.size === allTypes.length ? "From all puzzle types" : `From ${randomTypes.size} selected type${randomTypes.size > 1 ? "s" : ""}`}
-        </p>
+        {!canRandomGenerate && (
+          <p className="text-xs text-muted-foreground">
+            Select at least one puzzle type and a difficulty
+          </p>
+        )}
+        {canRandomGenerate && (
+          <p className="text-xs text-muted-foreground">
+            {randomTypes.size === allTypes.length ? "From all puzzle types" : `From ${randomTypes.size} selected type${randomTypes.size > 1 ? "s" : ""}`}
+          </p>
+        )}
       </div>
     </div>
   );
