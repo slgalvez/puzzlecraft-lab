@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
-import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface PrivateUser {
@@ -80,14 +79,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           sessionGone = true;
         }
 
-        if (error instanceof FunctionsHttpError) {
-          try {
-            const errBody = await error.context.json();
-            if (errBody?.error === "Session ended" || errBody?.error === "Access unavailable") {
-              sessionGone = true;
+        if (error && typeof error === "object") {
+          const maybeError = error as {
+            context?: { status?: number; json?: () => Promise<unknown>; clone?: () => { json?: () => Promise<unknown> } };
+          };
+
+          if (maybeError.context?.status === 401) {
+            sessionGone = true;
+          }
+
+          if (!sessionGone && maybeError.context) {
+            try {
+              const errBody = typeof maybeError.context.clone === "function"
+                ? await maybeError.context.clone().json?.()
+                : await maybeError.context.json?.();
+
+              if ((errBody as { error?: string } | null)?.error === "Session ended" || (errBody as { error?: string } | null)?.error === "Access unavailable") {
+                sessionGone = true;
+              }
+            } catch {
+              // ignore malformed error bodies
             }
-          } catch {
-            // ignore malformed error bodies
           }
         }
 

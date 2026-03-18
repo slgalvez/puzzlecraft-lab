@@ -1,4 +1,3 @@
-import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 export class SessionExpiredError extends Error {
@@ -6,6 +5,39 @@ export class SessionExpiredError extends Error {
     super("Session expired");
     this.name = "SessionExpiredError";
   }
+}
+
+async function getFunctionErrorBody(error: unknown): Promise<{ error?: string } | null> {
+  if (!error || typeof error !== "object") return null;
+
+  const maybeError = error as {
+    message?: string;
+    context?: { status?: number; json?: () => Promise<unknown>; clone?: () => { json?: () => Promise<unknown> } };
+  };
+
+  const response = maybeError.context;
+  if (response) {
+    try {
+      if (typeof response.clone === "function") {
+        return await response.clone().json?.() as { error?: string } | null;
+      }
+      if (typeof response.json === "function") {
+        return await response.json() as { error?: string } | null;
+      }
+    } catch {
+      // ignore parse failures and fall back
+    }
+  }
+
+  if (typeof maybeError.message === "string") {
+    try {
+      return JSON.parse(maybeError.message) as { error?: string };
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
 }
 
 export async function invokeMessaging(action: string, token: string, extra: Record<string, unknown> = {}) {
@@ -28,18 +60,14 @@ export async function invokeMessaging(action: string, token: string, extra: Reco
   });
 
   if (error) {
-    if (error instanceof FunctionsHttpError) {
-      try {
-        const errBody = await error.context.json();
-        if (errBody?.error === "Access unavailable" || errBody?.error === "Token expired" || errBody?.error === "Session ended") {
-          throw new SessionExpiredError();
-        }
-        throw new Error(errBody?.error || "Request failed");
-      } catch (e) {
-        if (e instanceof SessionExpiredError) throw e;
-      }
+    const errBody = await getFunctionErrorBody(error);
+    const errMsg = errBody?.error;
+
+    if (errMsg === "Access unavailable" || errMsg === "Token expired" || errMsg === "Session ended") {
+      throw new SessionExpiredError();
     }
-    throw new Error("Request failed");
+
+    throw new Error(errMsg || "Request failed");
   }
 
   if (data?.error) {
