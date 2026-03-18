@@ -245,9 +245,9 @@ const Index = () => {
                       </Button>
                     </>
                   ) : (
-                    <Button asChild size="lg">
+                    <Button asChild size="lg" className="px-8 py-3 text-base font-semibold">
                       <Link to="/daily">
-                        Play Now <ArrowRight size={16} />
+                        Play Now <ArrowRight size={18} />
                       </Link>
                     </Button>
                   )}
