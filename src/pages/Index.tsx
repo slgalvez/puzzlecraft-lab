@@ -14,7 +14,6 @@ import { formatTime } from "@/hooks/usePuzzleTimer";
 
 
 const Index = () => {
-  const featured = allPuzzles.slice(0, 3);
   const [puzzleCode, setPuzzleCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasUpdate, setHasUpdate] = useState(false);
