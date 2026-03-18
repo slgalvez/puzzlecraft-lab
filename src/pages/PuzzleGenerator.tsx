@@ -71,6 +71,9 @@ const PuzzleGenerator = () => {
   const [loadingSeed, setLoadingSeed] = useState(false);
   const [puzzleGenerated, setPuzzleGenerated] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [timeLimitEnabled, setTimeLimitEnabled] = useState(false);
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState(5);
+  const [timeLimitSeconds, setTimeLimitSeconds] = useState(0);
 
   // Mode & mobile stepper
   const [mode, setMode] = useState<Mode>("generate");
