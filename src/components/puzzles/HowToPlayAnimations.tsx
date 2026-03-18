@@ -83,27 +83,28 @@ function SuccessFlash({ col, row, delay, cols = 1, rows = 1 }: { col: number; ro
 /* ─── per-puzzle animations ─── */
 
 function CrosswordAnim() {
-  const word = "CAT";
+  // Row 1 white cells: cols 0,1,2,3 (col 4 is black) → 4 cells, use "CAST"
   return (
     <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S} className="block">
       <MiniGrid rows={5} cols={5} blacks={[[0, 0], [0, 3], [0, 4], [1, 4], [2, 0], [3, 0], [3, 1], [4, 0], [4, 1], [4, 4]]} id="cw" />
-      {/* highlight row 1, cols 0-2 */}
-      {[0, 1, 2].map((c) => {
+      {/* highlight row 1, cols 0-3 */}
+      {[0, 1, 2, 3].map((c) => {
         const { x, y, w, h } = cell(c, 1);
         return <rect key={c} x={x} y={y} width={w} height={h} rx={1.5} fill={COL.activeFaint} opacity={0}>
           <animate attributeName="opacity" values="0;0.4;0.4;0.4;0" keyTimes="0;0.05;0.6;0.85;1" dur={DUR} begin="0s" repeatCount="indefinite" />
         </rect>;
       })}
       <AnimLetter ch="C" col={0} row={1} delay="0.2s" />
-      <AnimLetter ch="A" col={1} row={1} delay="0.6s" />
-      <AnimLetter ch="T" col={2} row={1} delay="1.0s" />
-      <SuccessFlash col={0} row={1} cols={3} rows={1} delay="0s" />
+      <AnimLetter ch="A" col={1} row={1} delay="0.5s" />
+      <AnimLetter ch="S" col={2} row={1} delay="0.8s" />
+      <AnimLetter ch="T" col={3} row={1} delay="1.1s" />
+      <SuccessFlash col={0} row={1} cols={4} rows={1} delay="0s" />
     </svg>
   );
 }
 
 function WordFillAnim() {
-  // Valid slot: row 1, cols 1–3 (none are black)
+  // Row 1 white cells: cols 1,2,3,4 (col 0 is black) → 4 cells, use "DUSK"
   return (
     <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S} className="block">
       <MiniGrid rows={5} cols={5} blacks={[[0, 2], [1, 0], [2, 4], [3, 2], [4, 0], [4, 4]]} id="wf" />
@@ -112,13 +113,14 @@ function WordFillAnim() {
         <animate attributeName="opacity" values="0;0.8;0.8;0;0" keyTimes="0;0.05;0.25;0.35;1" dur={DUR} repeatCount="indefinite" />
       </rect>
       <text x={PAD + 25} y={PAD + 5 * CS + 16} textAnchor="middle" fontSize="8" fill={COL.active} opacity={0}>
-        SUN
+        DUSK
         <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.25;0.35;1" dur={DUR} repeatCount="indefinite" />
       </text>
-      <AnimLetter ch="S" col={1} row={1} delay="0.4s" />
-      <AnimLetter ch="U" col={2} row={1} delay="0.7s" />
-      <AnimLetter ch="N" col={3} row={1} delay="1.0s" />
-      <SuccessFlash col={1} row={1} cols={3} rows={1} delay="0s" />
+      <AnimLetter ch="D" col={1} row={1} delay="0.3s" />
+      <AnimLetter ch="U" col={2} row={1} delay="0.55s" />
+      <AnimLetter ch="S" col={3} row={1} delay="0.8s" />
+      <AnimLetter ch="K" col={4} row={1} delay="1.05s" />
+      <SuccessFlash col={1} row={1} cols={4} rows={1} delay="0s" />
     </svg>
   );
 }
