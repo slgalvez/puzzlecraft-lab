@@ -33,14 +33,19 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
   }, [navigate]);
 
   // Focus-loss privacy protection
-  // Only triggers on visibilitychange (tab/app switch), NOT window blur,
-  // so banner notifications and overlays don't kick the user out.
+  // Only triggers on visibilitychange (document.hidden), NOT window blur.
+  // This correctly handles: tab switch, app switch, phone lock, device sleep.
+  // Does NOT trigger on: notification banners, quick-reply overlays, small system UI.
   useEffect(() => {
+    // Arm delay: don't trigger focus loss during the first 30s after mount.
+    // This prevents accidental exits during login / initial page load.
     let armed = false;
     const armTimer = setTimeout(() => { armed = true; }, 30_000);
 
     const handleVisibilityChange = () => {
-      if (armed && getFocusLossEnabled() && document.visibilityState === "hidden") {
+      if (!armed) return;
+      if (!getFocusLossEnabled()) return;
+      if (document.visibilityState === "hidden") {
         quickExit();
       }
     };
