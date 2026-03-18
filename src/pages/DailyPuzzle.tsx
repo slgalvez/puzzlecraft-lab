@@ -35,6 +35,9 @@ const DailyPuzzle = () => {
   const streak = useMemo(() => getDailyStreak(), []);
   const info = CATEGORY_INFO[challenge.category];
 
+  useEffect(() => { setPuzzleOrigin("daily"); }, []);
+  const info = CATEGORY_INFO[challenge.category];
+
   // Track completion from puzzle timer callback
   const handleNewPuzzle = useCallback(() => {
     // Daily puzzle doesn't regenerate - just refresh completion state

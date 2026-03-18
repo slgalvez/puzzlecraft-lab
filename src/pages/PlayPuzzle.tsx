@@ -17,6 +17,8 @@ const PlayPuzzle = () => {
   const { id } = useParams<{ id: string }>();
   const puzzle = getPuzzleById(id || "");
 
+  useEffect(() => { setPuzzleOrigin("library"); }, []);
+
   if (!puzzle) {
     return (
       <Layout>
