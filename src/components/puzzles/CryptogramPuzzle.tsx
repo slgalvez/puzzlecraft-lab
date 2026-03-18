@@ -15,6 +15,7 @@ interface Props {
   difficulty: Difficulty;
   onNewPuzzle: () => void;
   onSolve?: (perf: PuzzlePerformance) => void;
+  timeLimit?: number;
 }
 
 interface CryptogramState {
