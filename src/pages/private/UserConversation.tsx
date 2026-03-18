@@ -89,7 +89,7 @@ const UserConversation = () => {
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
       toast({ title: "Could not send message", description: "Please try again." });
-      throw e; // re-throw so composer restores text
+      throw e;
     } finally {
       setSending(false);
     }
@@ -97,7 +97,6 @@ const UserConversation = () => {
 
   const handleReact = async (messageId: string, reaction: string) => {
     if (!token) return;
-    // Optimistic update
     setMessages((prev) =>
       prev.map((m) => {
         if (m.id !== messageId) return m;
@@ -116,6 +115,19 @@ const UserConversation = () => {
       await invokeMessaging("react-to-message", token, { message_id: messageId, reaction });
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
+    }
+  };
+
+  const handleEdit = async (messageId: string, newBody: string) => {
+    if (!token) return;
+    // Optimistic update
+    setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, body: newBody } : m));
+    try {
+      await invokeMessaging("edit-message", token, { message_id: messageId, body: newBody });
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Could not edit message", description: "Please try again." });
+      fetchConversation(); // revert
     }
   };
 
@@ -185,7 +197,7 @@ const UserConversation = () => {
   }
 
   return (
-    <PrivateLayout title="Conversation">
+    <PrivateLayout title="Conversation" fullHeight>
       <div className="flex flex-col h-full">
         <ConversationToolbar
           disappearingEnabled={disappearingEnabled}
@@ -220,7 +232,6 @@ const UserConversation = () => {
                 );
               }
 
-              // Show tail on last message in a group from the same sender
               const nextMsg = messages[i + 1];
               const showTail = !nextMsg || nextMsg.sender_profile_id !== msg.sender_profile_id || isPuzzleMessage(nextMsg.body);
 
@@ -239,6 +250,7 @@ const UserConversation = () => {
                   formatTime={formatTime}
                   showTail={showTail}
                   onReact={handleReact}
+                  onEdit={handleEdit}
                 />
               );
             })

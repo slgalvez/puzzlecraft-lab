@@ -125,6 +125,18 @@ const AdminConversationView = () => {
     }
   };
 
+  const handleEdit = async (messageId: string, newBody: string) => {
+    if (!token) return;
+    setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, body: newBody } : m));
+    try {
+      await invokeMessaging("edit-message", token, { message_id: messageId, body: newBody });
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Could not edit message", description: "Please try again." });
+      fetchConversation();
+    }
+  };
+
   const handleToggleDisappearing = async (enabled: boolean, duration?: string) => {
     if (!conversationId || !token) return;
     setTogglingDisappearing(true);
@@ -192,7 +204,7 @@ const AdminConversationView = () => {
   }
 
   return (
-    <PrivateLayout title={conversation?.user_name || "Conversation"}>
+    <PrivateLayout title={conversation?.user_name || "Conversation"} fullHeight>
       <div className="flex flex-col h-full">
         {/* Back + name bar */}
         <div className="flex items-center gap-3 border-b border-border px-3 sm:px-4 py-2.5 shrink-0">
@@ -251,6 +263,7 @@ const AdminConversationView = () => {
                   formatTime={formatTime}
                   showTail={showTail}
                   onReact={handleReact}
+                  onEdit={handleEdit}
                 />
               );
             })
