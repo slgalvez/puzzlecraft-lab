@@ -27,7 +27,7 @@ interface EntrySlot {
   direction: Direction;
 }
 
-const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
+const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
   const { gridSize, blackCells, entries, type, solution } = puzzle;
   const isNumbers = type === "number-fill";
   const { toast } = useToast();
