@@ -234,7 +234,7 @@ const PuzzleGenerator = () => {
           </button>
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-xl">{info.icon}</span>
+              <PuzzleIcon type={category} size={24} className="text-foreground" />
               <div>
                 <h2 className="font-display text-lg font-bold text-foreground">{info.name}</h2>
                 <p className="text-xs text-muted-foreground capitalize">{difficulty}</p>
