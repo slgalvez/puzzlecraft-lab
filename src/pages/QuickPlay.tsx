@@ -179,15 +179,21 @@ const QuickPlay = () => {
   const activeType = currentType;
   const activeInfo = currentInfo;
   const onSolveHandler = mode === "endless" ? handleEndlessSolve : undefined;
+  const isEndless = mode === "endless";
+
+  const handleFlashDone = useCallback(() => {
+    setShowFlash(false);
+    handleNewPuzzle();
+  }, [handleNewPuzzle]);
 
   const renderPuzzle = () => {
     const key = `${seed}-${activeDifficulty}-${puzzleKey}`;
     switch (activeType) {
-      case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
-      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
-      case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
-      case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
-      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
+      case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
+      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
+      case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
+      case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
+      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
       case "crossword": {
         const gen = generateCrossword(seed, activeDifficulty);
         const puzzle: CrosswordPuzzle = {
@@ -195,7 +201,7 @@ const QuickPlay = () => {
           difficulty: activeDifficulty as CrosswordPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, clues: gen.clues,
         };
-        return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
+        return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
       }
       case "word-fill": {
         const gen = generateWordFillIn(seed, activeDifficulty);
@@ -204,7 +210,7 @@ const QuickPlay = () => {
           difficulty: activeDifficulty as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
-        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
+        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
       }
       case "number-fill": {
         const gen = generateNumberFillIn(seed, activeDifficulty);
@@ -213,7 +219,7 @@ const QuickPlay = () => {
           difficulty: activeDifficulty as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
-        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
+        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
       }
       default: return null;
     }
