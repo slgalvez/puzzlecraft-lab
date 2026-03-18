@@ -1,6 +1,18 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Grid3X3, Hash, Type, Search, Plus, Palette, Lock, Calculator, Flame, CheckCircle2, Calendar, Trophy, Clock, Target, Infinity, Dices } from "lucide-react";
+import { ArrowRight, Grid3X3, Hash, Type, Search, Plus, Palette, Lock, Calculator, Flame, CheckCircle2, Trophy, Clock, Target, Infinity, Dices } from "lucide-react";
+import type { PuzzleCategory } from "@/lib/puzzleTypes";
+
+const CATEGORY_ICONS: Record<PuzzleCategory, React.ElementType> = {
+  crossword: Grid3X3,
+  sudoku: Calculator,
+  "word-search": Search,
+  kakuro: Plus,
+  nonogram: Palette,
+  cryptogram: Lock,
+  "number-fill": Hash,
+  "word-fill": Type,
+};
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
