@@ -313,6 +313,7 @@ const QuickPlay = () => {
         <div className="min-h-[300px]">
           {renderPuzzle()}
         </div>
+        {showFlash && <EndlessFlash onDone={handleFlashDone} />}
       </div>
     </Layout>
   );
