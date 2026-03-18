@@ -42,7 +42,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit }: Props
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
 
-  const timer = usePuzzleTimer(timerKey, { category: "sudoku", difficulty, initialElapsed: saved?.elapsed ?? 0 });
+  const timer = usePuzzleTimer(timerKey, { category: "sudoku", difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
   const isGiven = (r: number, c: number) => puzzle.grid[r][c] !== null;
 
