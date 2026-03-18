@@ -350,10 +350,45 @@ const PuzzleGenerator = () => {
               ))}
             </div>
             {difficulty && (
-              <Button onClick={handleGenerate} size="lg" className="w-full gap-2 text-base mt-6">
-                <Sparkles size={18} />
-                Generate Puzzle
-              </Button>
+              <div className="mt-6 space-y-4">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={timeLimitEnabled}
+                    onCheckedChange={setTimeLimitEnabled}
+                    id="time-limit-toggle-mobile"
+                  />
+                  <label htmlFor="time-limit-toggle-mobile" className="text-sm font-medium text-foreground cursor-pointer">
+                    {timeLimitEnabled ? "Timed" : "No time limit"}
+                  </label>
+                </div>
+                {timeLimitEnabled && (
+                  <div className="flex items-center gap-1.5">
+                    <Clock size={14} className="text-muted-foreground" />
+                    <Input
+                      type="number"
+                      min={0}
+                      max={120}
+                      value={timeLimitMinutes}
+                      onChange={(e) => setTimeLimitMinutes(Math.max(0, Math.min(120, parseInt(e.target.value) || 0)))}
+                      className="w-16 h-8 text-center text-sm"
+                    />
+                    <span className="text-xs text-muted-foreground">min</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={59}
+                      value={timeLimitSeconds}
+                      onChange={(e) => setTimeLimitSeconds(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+                      className="w-16 h-8 text-center text-sm"
+                    />
+                    <span className="text-xs text-muted-foreground">sec</span>
+                  </div>
+                )}
+                <Button onClick={handleGenerate} size="lg" className="w-full gap-2 text-base">
+                  <Sparkles size={18} />
+                  Generate Puzzle
+                </Button>
+              </div>
             )}
           </div>
         )}
