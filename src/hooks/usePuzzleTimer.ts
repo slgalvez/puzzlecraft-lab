@@ -7,7 +7,8 @@ interface TimerState {
   elapsed: number;
   isRunning: boolean;
   isSolved: boolean;
-  countdown: number; // >0 means countdown phase active
+  countdown: number; // pre-start countdown (5,4,3,2,1)
+  expired: boolean; // true if time limit reached
 }
 
 interface BestTime {
@@ -26,7 +27,6 @@ function getBestTimes(): Record<string, BestTime> {
   }
 }
 
-/** Build a category-level key (e.g. "word-search-medium") for best-time tracking */
 function categoryKey(category?: string, difficulty?: string): string | null {
   if (!category || !difficulty) return null;
   return `${category}-${difficulty}`;
@@ -54,11 +54,13 @@ interface TimerOptions {
   category?: PuzzleCategory;
   difficulty?: string;
   initialElapsed?: number;
+  /** Time limit in seconds. When set, timer counts down from this value. */
+  timeLimit?: number;
 }
 
 export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
   const initialElapsed = options?.initialElapsed ?? 0;
-  // Skip countdown when resuming a saved puzzle
+  const timeLimit = options?.timeLimit;
   const skipCountdown = initialElapsed > 0;
 
   const [state, setState] = useState<TimerState>({
@@ -66,6 +68,7 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
     isRunning: false,
     isSolved: false,
     countdown: skipCountdown ? 0 : COUNTDOWN_SECONDS,
+    expired: false,
   });
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -80,6 +83,7 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
       isRunning: resume,
       isSolved: false,
       countdown: resume ? 0 : COUNTDOWN_SECONDS,
+      expired: false,
     });
   }, [puzzleKey]);
 
@@ -99,18 +103,25 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
 
   // Main timer tick
   useEffect(() => {
-    if (state.isRunning && !state.isSolved && state.countdown === 0) {
+    if (state.isRunning && !state.isSolved && state.countdown === 0 && !state.expired) {
       intervalRef.current = setInterval(() => {
-        setState((s) => ({ ...s, elapsed: s.elapsed + 1 }));
+        setState((s) => {
+          const next = s.elapsed + 1;
+          // Check time limit expiry
+          if (timeLimit && next >= timeLimit) {
+            return { ...s, elapsed: timeLimit, isRunning: false, expired: true };
+          }
+          return { ...s, elapsed: next };
+        });
       }, 1000);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [state.isRunning, state.isSolved, state.countdown, puzzleKey]);
+  }, [state.isRunning, state.isSolved, state.countdown, state.expired, puzzleKey, timeLimit]);
 
   const pause = useCallback(() => setState((s) => ({ ...s, isRunning: false })), []);
-  const resume = useCallback(() => setState((s) => (s.isSolved || s.countdown > 0 ? s : { ...s, isRunning: true })), []);
+  const resume = useCallback(() => setState((s) => (s.isSolved || s.countdown > 0 || s.expired ? s : { ...s, isRunning: true })), []);
 
   const solve = useCallback(() => {
     setState((s) => ({ ...s, isRunning: false, isSolved: true, countdown: 0 }));
@@ -128,14 +139,20 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
   }, [puzzleKey, state.elapsed, options?.category, options?.difficulty]);
 
   const reset = useCallback(() => {
-    setState({ elapsed: 0, isRunning: false, isSolved: false, countdown: COUNTDOWN_SECONDS });
+    setState({ elapsed: 0, isRunning: false, isSolved: false, countdown: COUNTDOWN_SECONDS, expired: false });
   }, []);
+
+  // Remaining time for countdown display
+  const remaining = timeLimit ? Math.max(0, timeLimit - state.elapsed) : null;
 
   return {
     elapsed: state.elapsed,
     isRunning: state.isRunning,
     isSolved: state.isSolved,
     countdown: state.countdown,
+    expired: state.expired,
+    remaining,
+    timeLimit: timeLimit ?? null,
     bestTime,
     pause,
     resume,
