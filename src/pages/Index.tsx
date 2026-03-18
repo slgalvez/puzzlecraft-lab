@@ -1,7 +1,16 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Grid3X3, Hash, Type, Search, Plus, Palette, Lock, Calculator, Flame, CheckCircle2, Trophy, Clock, Target, Infinity, Dices } from "lucide-react";
-import type { PuzzleCategory } from "@/lib/puzzleTypes";
+import { ArrowRight, Grid3X3, Hash, Type, Search, Plus, Palette, Lock, Calculator, Flame, CheckCircle2, Calendar, Trophy, Clock, Target, Infinity, Dices } from "lucide-react";
+import Layout from "@/components/layout/Layout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { getPuzzleById } from "@/data/puzzles";
+import { supabase } from "@/integrations/supabase/client";
+import { getTodaysChallenge, getDailyCompletion, getDailyStreak } from "@/lib/dailyChallenge";
+import { getProgressStats } from "@/lib/progressTracker";
+import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
+import { formatTime } from "@/hooks/usePuzzleTimer";
 
 const CATEGORY_ICONS: Record<PuzzleCategory, React.ElementType> = {
   crossword: Grid3X3,
@@ -13,16 +22,6 @@ const CATEGORY_ICONS: Record<PuzzleCategory, React.ElementType> = {
   "number-fill": Hash,
   "word-fill": Type,
 };
-import Layout from "@/components/layout/Layout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { getPuzzleById } from "@/data/puzzles";
-import { supabase } from "@/integrations/supabase/client";
-import { getTodaysChallenge, getDailyCompletion, getDailyStreak } from "@/lib/dailyChallenge";
-import { getProgressStats } from "@/lib/progressTracker";
-import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
-import { formatTime } from "@/hooks/usePuzzleTimer";
 
 const ACCESS_GRANT_KEY = "private_access_grant";
 
