@@ -274,23 +274,70 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
     checkCount.current++;
     const errs = new Set<string>();
     let filled = true;
+
+    // Check all white cells are filled
     for (let r = 0; r < gridSize; r++) {
       for (let c = 0; c < gridSize; c++) {
         if (isBlack(r, c) || solution[r][c] === null) continue;
-        if (!grid[r][c]) { filled = false; continue; }
-        if (grid[r][c] !== solution[r][c]) errs.add(`${r}-${c}`);
+        if (!grid[r][c]) { filled = false; }
       }
     }
-    setErrors(errs);
-    if (errs.size > 0) errorCheckCount.current++;
-    if (errs.size === 0 && filled) {
-      const { isNewBest } = timer.solve();
-      toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Puzzle solved correctly!" });
-      onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
-    } else if (errs.size > 0)
-      toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
-    else
-      toast({ title: "Keep going!", description: "No errors so far." });
+
+    if (filled) {
+      // Validate by checking that each slot contains a valid entry and
+      // all entries are used exactly once (accepts any valid arrangement)
+      const slotWords = entrySlots.map((slot) =>
+        slot.cells.map(([r, c]) => grid[r][c]).join("")
+      );
+      const entryCounts = new Map<string, number>();
+      for (const e of entries) entryCounts.set(e, (entryCounts.get(e) || 0) + 1);
+
+      const usedCounts = new Map<string, number>();
+      const badSlots: EntrySlot[] = [];
+
+      for (let i = 0; i < entrySlots.length; i++) {
+        const word = slotWords[i];
+        const available = entryCounts.get(word) || 0;
+        const used = usedCounts.get(word) || 0;
+        if (available > 0 && used < available) {
+          usedCounts.set(word, used + 1);
+        } else {
+          badSlots.push(entrySlots[i]);
+        }
+      }
+
+      if (badSlots.length === 0) {
+        // All entries matched — puzzle solved
+        const { isNewBest } = timer.solve();
+        toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Puzzle solved correctly!" });
+        onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
+      } else {
+        // Mark cells of bad slots as errors
+        for (const slot of badSlots) {
+          for (const [r, c] of slot.cells) errs.add(`${r}-${c}`);
+        }
+        setErrors(errs);
+        errorCheckCount.current++;
+        toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
+      }
+    } else {
+      // Not fully filled — check what we can against the slot approach
+      // For partially filled grids, highlight cells in completed-but-wrong slots
+      for (const slot of entrySlots) {
+        const word = slot.cells.map(([r, c]) => grid[r][c]).join("");
+        const allFilled = slot.cells.every(([r, c]) => grid[r][c]);
+        if (allFilled && !entries.includes(word)) {
+          for (const [r, c] of slot.cells) errs.add(`${r}-${c}`);
+        }
+      }
+      setErrors(errs);
+      if (errs.size > 0) {
+        errorCheckCount.current++;
+        toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
+      } else {
+        toast({ title: "Keep going!", description: "No errors so far." });
+      }
+    }
   };
 
   return (
