@@ -259,7 +259,7 @@ const PuzzleGenerator = () => {
           difficulty: d as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
-        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} />;
+        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
       }
       default: return null;
     }
