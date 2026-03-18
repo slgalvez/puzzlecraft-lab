@@ -7,6 +7,7 @@ interface TimerState {
   elapsed: number;
   isRunning: boolean;
   isSolved: boolean;
+  countdown: number; // >0 means countdown phase active
 }
 
 interface BestTime {
@@ -15,6 +16,7 @@ interface BestTime {
 }
 
 const BEST_TIMES_KEY = "puzzlecraft-best-times";
+const COUNTDOWN_SECONDS = 5;
 
 function getBestTimes(): Record<string, BestTime> {
   try {
@@ -32,7 +34,6 @@ function categoryKey(category?: string, difficulty?: string): string | null {
 
 function saveBestTime(puzzleKey: string, time: number, category?: string, difficulty?: string) {
   const times = getBestTimes();
-  // Track against the category+difficulty key so best times persist across seeds
   const key = categoryKey(category, difficulty) || puzzleKey;
   const existing = times[key];
   if (!existing || time < existing.time) {
@@ -57,19 +58,48 @@ interface TimerOptions {
 
 export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
   const initialElapsed = options?.initialElapsed ?? 0;
-  const [state, setState] = useState<TimerState>({ elapsed: initialElapsed, isRunning: true, isSolved: false });
+  // Skip countdown when resuming a saved puzzle
+  const skipCountdown = initialElapsed > 0;
+
+  const [state, setState] = useState<TimerState>({
+    elapsed: initialElapsed,
+    isRunning: false,
+    isSolved: false,
+    countdown: skipCountdown ? 0 : COUNTDOWN_SECONDS,
+  });
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Look up best time by category+difficulty (persistent across seeds)
   const catKey = categoryKey(options?.category, options?.difficulty);
   const bestTime = getBestTimes()[catKey || puzzleKey]?.time ?? null;
 
+  // Reset on puzzle change
   useEffect(() => {
-    setState({ elapsed: options?.initialElapsed ?? 0, isRunning: true, isSolved: false });
+    const resume = (options?.initialElapsed ?? 0) > 0;
+    setState({
+      elapsed: options?.initialElapsed ?? 0,
+      isRunning: resume,
+      isSolved: false,
+      countdown: resume ? 0 : COUNTDOWN_SECONDS,
+    });
   }, [puzzleKey]);
 
+  // Countdown tick
   useEffect(() => {
-    if (state.isRunning && !state.isSolved) {
+    if (state.countdown <= 0 || state.isSolved) return;
+    const id = setInterval(() => {
+      setState((s) => {
+        if (s.countdown <= 1) {
+          return { ...s, countdown: 0, isRunning: true };
+        }
+        return { ...s, countdown: s.countdown - 1 };
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [state.countdown > 0, state.isSolved, puzzleKey]);
+
+  // Main timer tick
+  useEffect(() => {
+    if (state.isRunning && !state.isSolved && state.countdown === 0) {
       intervalRef.current = setInterval(() => {
         setState((s) => ({ ...s, elapsed: s.elapsed + 1 }));
       }, 1000);
@@ -77,13 +107,13 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [state.isRunning, state.isSolved, puzzleKey]);
+  }, [state.isRunning, state.isSolved, state.countdown, puzzleKey]);
 
   const pause = useCallback(() => setState((s) => ({ ...s, isRunning: false })), []);
-  const resume = useCallback(() => setState((s) => (s.isSolved ? s : { ...s, isRunning: true })), []);
+  const resume = useCallback(() => setState((s) => (s.isSolved || s.countdown > 0 ? s : { ...s, isRunning: true })), []);
 
   const solve = useCallback(() => {
-    setState((s) => ({ ...s, isRunning: false, isSolved: true }));
+    setState((s) => ({ ...s, isRunning: false, isSolved: true, countdown: 0 }));
     const isNew = saveBestTime(puzzleKey, state.elapsed, options?.category, options?.difficulty);
     if (options?.category && options?.difficulty) {
       recordCompletion(puzzleKey, options.category, options.difficulty, state.elapsed);
@@ -98,13 +128,14 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
   }, [puzzleKey, state.elapsed, options?.category, options?.difficulty]);
 
   const reset = useCallback(() => {
-    setState({ elapsed: 0, isRunning: true, isSolved: false });
+    setState({ elapsed: 0, isRunning: false, isSolved: false, countdown: COUNTDOWN_SECONDS });
   }, []);
 
   return {
     elapsed: state.elapsed,
     isRunning: state.isRunning,
     isSolved: state.isSolved,
+    countdown: state.countdown,
     bestTime,
     pause,
     resume,
