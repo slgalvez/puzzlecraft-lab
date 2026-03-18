@@ -30,6 +30,9 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) =>
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
   const mobileInputRef = useRef<MobileLetterInputHandle>(null);
+  const resetCount = useRef(0);
+  const checkCount = useRef(0);
+  const errorCheckCount = useRef(0);
 
   const timerKey = `crossword-${puzzle.id}`;
   const timer = usePuzzleTimer(timerKey, { category: "crossword", difficulty: puzzle.difficulty });
