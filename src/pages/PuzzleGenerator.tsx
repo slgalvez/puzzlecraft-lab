@@ -404,7 +404,7 @@ const PuzzleGenerator = () => {
                   : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
               )}
             >
-              <span className="text-xl">{pt.icon}</span>
+              <PuzzleIcon type={pt.value} size={22} className="text-foreground" />
               <span className="text-sm font-medium text-foreground">{pt.label}</span>
             </button>
           ))}
