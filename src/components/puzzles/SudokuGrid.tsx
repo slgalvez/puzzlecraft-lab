@@ -18,7 +18,7 @@ interface Props {
   onSolve?: (perf: PuzzlePerformance) => void;
 }
 
-const SudokuGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
+const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateSudoku(seed, difficulty), [seed, difficulty]);
