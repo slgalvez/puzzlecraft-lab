@@ -108,6 +108,7 @@ const QuickPlay = () => {
       setEndlessDiffMap((prev) => ({ ...prev, [currentType]: next }));
     }
     setLastDiffChange(direction);
+    setShowFlash(true);
 
     if (direction === "up") {
       toast({
