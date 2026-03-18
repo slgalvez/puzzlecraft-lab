@@ -16,7 +16,7 @@ interface Props {
   onSolve?: (perf: PuzzlePerformance) => void;
 }
 
-const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
+const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateCryptogram(seed, difficulty), [seed, difficulty]);
