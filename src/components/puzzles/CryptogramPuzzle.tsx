@@ -246,7 +246,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => 
         </div>
       </details>
 
-      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} />
+      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`cryptogram-${seed}`} />
     </div>
   );
 };

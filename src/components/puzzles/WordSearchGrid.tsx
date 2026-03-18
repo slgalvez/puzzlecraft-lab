@@ -330,7 +330,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
             Tap the end letter to complete selection
           </p>
         )}
-        <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} />
+        <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`word-search-${seed}`} />
       </div>
 
       <div className="lg:max-w-xs min-w-0">

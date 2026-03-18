@@ -418,7 +418,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
         </div>
         </div>
         {showControls && onNewPuzzle && (
-          <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} />
+          <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={puzzle.id} />
         )}
       </div>
 
