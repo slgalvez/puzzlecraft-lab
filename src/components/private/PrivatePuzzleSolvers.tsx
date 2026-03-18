@@ -780,6 +780,146 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress 
   );
 }
 
+// ─── Completed (Read-Only) Views ───
+
+export function CompletedGridView({ data, puzzleType }: { data: Record<string, unknown>; puzzleType: "word-fill" | "crossword" }) {
+  const gridSize = (data.gridSize as number) || 9;
+  const blackCells = (data.blackCells as [number, number][]) || [];
+  const solution = (data.solution as (string | null)[][]) || [];
+  const clues = (data.clues as { number: number; clue: string; answer: string; row: number; col: number; direction: string }[]) || [];
+  const entries = (data.entries as string[]) || [];
+  const blackSet = new Set(blackCells.map(([r, c]) => `${r}-${c}`));
+
+  const cellNums = new Map<string, number>();
+  if (puzzleType === "crossword") {
+    let num = 1;
+    for (let r = 0; r < gridSize; r++)
+      for (let c = 0; c < gridSize; c++) {
+        if (blackSet.has(`${r}-${c}`)) continue;
+        const startsAcross = (c === 0 || blackSet.has(`${r}-${c - 1}`)) && c + 1 < gridSize && !blackSet.has(`${r}-${c + 1}`);
+        const startsDown = (r === 0 || blackSet.has(`${r - 1}-${c}`)) && r + 1 < gridSize && !blackSet.has(`${r + 1}-${c}`);
+        if (startsAcross || startsDown) cellNums.set(`${r}-${c}`, num++);
+      }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="inline-grid border-2 border-puzzle-border" style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}>
+        {Array.from({ length: gridSize }, (_, r) =>
+          Array.from({ length: gridSize }, (_, c) => {
+            const black = blackSet.has(`${r}-${c}`);
+            const num = cellNums.get(`${r}-${c}`);
+            const letter = solution?.[r]?.[c] || "";
+            return (
+              <div
+                key={`${r}-${c}`}
+                className={cn(
+                  "relative w-6 h-6 sm:w-7 sm:h-7 border border-puzzle-border flex items-center justify-center",
+                  black ? "bg-puzzle-cell-black" : "bg-puzzle-cell"
+                )}
+              >
+                {num && !black && (
+                  <span className="absolute left-px top-0 text-[6px] font-medium text-puzzle-number leading-tight">{num}</span>
+                )}
+                {!black && letter && (
+                  <span className="text-[10px] sm:text-xs font-semibold text-primary">{letter}</span>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+      {puzzleType === "crossword" && clues.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-2 text-xs">
+          <div>
+            <h4 className="font-semibold mb-1 text-muted-foreground uppercase tracking-wider text-[10px]">Across</h4>
+            {clues.filter(c => c.direction === "across").map(c => (
+              <p key={`a-${c.number}`} className="text-foreground"><span className="font-semibold mr-1">{c.number}.</span>{c.clue}</p>
+            ))}
+          </div>
+          <div>
+            <h4 className="font-semibold mb-1 text-muted-foreground uppercase tracking-wider text-[10px]">Down</h4>
+            {clues.filter(c => c.direction === "down").map(c => (
+              <p key={`d-${c.number}`} className="text-foreground"><span className="font-semibold mr-1">{c.number}.</span>{c.clue}</p>
+            ))}
+          </div>
+        </div>
+      )}
+      {puzzleType === "word-fill" && entries.length > 0 && (
+        <GroupedEntryList entries={entries} isNumbers={false} badgeMode />
+      )}
+    </div>
+  );
+}
+
+export function CompletedCryptogramView({ data }: { data: Record<string, unknown> }) {
+  const encoded = (data.encoded as string) || "";
+  const decoded = (data.decoded as string) || "";
+  const reverseCipher = (data.reverseCipher as Record<string, string>) || {};
+
+  return (
+    <div className="space-y-3">
+      <div className="font-mono text-sm leading-loose flex flex-wrap gap-x-0.5 gap-y-3">
+        {encoded.split("").map((ch, i) => {
+          if (ch === " ") return <span key={i} className="w-3" />;
+          if (!/[A-Z]/.test(ch)) return <span key={i} className="px-0.5 text-muted-foreground">{ch}</span>;
+          const answer = reverseCipher[ch] || decoded[i] || "?";
+          return (
+            <span key={i} className="inline-flex flex-col items-center">
+              <span className="w-7 h-8 flex items-center justify-center text-sm font-semibold text-primary border-b-2 border-primary/30">
+                {answer}
+              </span>
+              <span className="text-[9px] text-muted-foreground mt-0.5">{ch}</span>
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export function CompletedWordSearchView({ data }: { data: Record<string, unknown> }) {
+  const grid = (data.grid as string[][]) || [];
+  const words = (data.words as string[]) || [];
+  const size = (data.size as number) || 10;
+  const wordPositions = (data.wordPositions as { word: string; row: number; col: number; dr: number; dc: number }[]) || [];
+
+  const foundCells = new Set<string>();
+  wordPositions.forEach(wp => {
+    for (let i = 0; i < wp.word.length; i++) {
+      foundCells.add(`${wp.row + wp.dr * i}-${wp.col + wp.dc * i}`);
+    }
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="inline-grid gap-0" style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}>
+        {grid.map((row, r) =>
+          row.map((cell, c) => (
+            <div
+              key={`${r}-${c}`}
+              className={cn(
+                "w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-[9px] sm:text-[10px] font-mono border border-puzzle-border",
+                foundCells.has(`${r}-${c}`) ? "bg-primary/15 text-primary font-bold" : "bg-puzzle-cell text-muted-foreground"
+              )}
+            >
+              {cell}
+            </div>
+          ))
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {words.map(w => (
+          <Badge key={w} variant="default" className="text-xs">
+            <Check className="h-3 w-3 mr-0.5" />
+            {w}
+          </Badge>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Read-Only Puzzle Preview ───
 
 interface PuzzlePreviewProps {
