@@ -23,7 +23,7 @@ import {
 } from "@/components/private/PrivatePuzzleSolvers";
 
 type PuzzleType = "word-fill" | "cryptogram" | "crossword" | "word-search";
-type Tab = "received" | "sent" | "drafts" | "create";
+type Tab = "received" | "sent" | "drafts" | "completed" | "create";
 
 interface PrivatePuzzle {
   id: string;
