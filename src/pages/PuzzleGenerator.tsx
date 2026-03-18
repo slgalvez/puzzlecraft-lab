@@ -340,7 +340,7 @@ const PuzzleGenerator = () => {
                   : "border-border text-muted-foreground hover:border-primary/40"
               )}
             >
-              <span>{info.icon}</span>
+               <PuzzleIcon type={type} size={18} className="shrink-0" />
               <span>{info.name}</span>
             </button>
           ))}
