@@ -239,14 +239,18 @@ const AdminConversationView = () => {
               return (
                 <MessageBubble
                   key={msg.id}
+                  id={msg.id}
                   body={msg.body}
                   isMine={isMine}
                   createdAt={msg.created_at}
                   readAt={msg.read_at}
                   isDisappearing={msg.is_disappearing}
                   expiresAt={msg.expires_at}
+                  reactions={msg.reactions || {}}
+                  currentUserId={user?.id || ""}
                   formatTime={formatTime}
                   showTail={showTail}
+                  onReact={handleReact}
                 />
               );
             })
