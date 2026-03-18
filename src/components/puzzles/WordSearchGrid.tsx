@@ -25,7 +25,7 @@ interface WordSearchState {
   foundCells: string[];
 }
 
-const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
+const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateWordSearch(seed, difficulty, WORDS), [seed, difficulty]);
