@@ -242,21 +242,21 @@ const PuzzleGenerator = () => {
 
   // ─── Mobile Generate Stepper ───
   const renderMobileGenerate = () => {
-    if (mobileStep === 3 && puzzleGenerated) {
+    if (mobileStep === 3 && puzzleGenerated && info && difficulty) {
       return (
         <div>
           <button
-            onClick={() => setMobileStep(1)}
+            onClick={handleClear}
             className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft size={14} /> New puzzle
           </button>
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <PuzzleIcon type={category} size={24} className="text-foreground" />
+              <PuzzleIcon type={category!} size={24} className="text-foreground" />
               <div>
                 <h2 className="font-display text-lg font-bold text-foreground">{info.name}</h2>
-                <p className="text-xs text-muted-foreground capitalize">{difficulty}</p>
+                <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[difficulty]}</p>
               </div>
             </div>
             <Button onClick={handleGenerate} size="sm" variant="outline" className="gap-1.5">
@@ -294,7 +294,7 @@ const PuzzleGenerator = () => {
           </div>
         )}
 
-        {mobileStep === 2 && (
+        {mobileStep === 2 && info && (
           <div className="animate-in fade-in slide-in-from-right-4 duration-300">
             <button
               onClick={() => setMobileStep(1)}
@@ -305,7 +305,7 @@ const PuzzleGenerator = () => {
             <p className="mb-1 text-xs font-medium uppercase tracking-widest text-muted-foreground">Step 2 of 2</p>
             <h2 className="font-display text-2xl font-bold text-foreground mb-2">Choose Difficulty</h2>
             <p className="text-sm text-muted-foreground mb-6">
-              <PuzzleIcon type={category} size={20} className="text-foreground mr-1 inline-block align-text-bottom" /> {info.name}
+              <PuzzleIcon type={category!} size={20} className="text-foreground mr-1 inline-block align-text-bottom" /> {info.name}
             </p>
             <div className="flex flex-col gap-3">
               {difficulties.map(([val, label]) => (
@@ -324,6 +324,12 @@ const PuzzleGenerator = () => {
                 </button>
               ))}
             </div>
+            {difficulty && (
+              <Button onClick={handleGenerate} size="lg" className="w-full gap-2 text-base mt-6">
+                <Sparkles size={18} />
+                Generate Puzzle
+              </Button>
+            )}
           </div>
         )}
       </div>
