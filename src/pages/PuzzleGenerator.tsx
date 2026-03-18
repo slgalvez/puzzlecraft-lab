@@ -49,8 +49,8 @@ const PuzzleGenerator = () => {
   const { type } = useParams<{ type: string }>();
   const [searchParams] = useSearchParams();
   const location = useLocation();
-  const category = type as PuzzleCategory;
-  const info = CATEGORY_INFO[category];
+  const category = type as PuzzleCategory | undefined;
+  const info = category ? CATEGORY_INFO[category] : undefined;
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -61,14 +61,14 @@ const PuzzleGenerator = () => {
   const [randomPool, setRandomPool] = useState<PuzzleCategory[] | null>(
     () => routeState?.randomPool && routeState.randomPool.length > 1 ? routeState.randomPool : null
   );
-  const [difficulty, setDifficulty] = useState<Difficulty>(
-    () => routeState?.randomDifficulty || "medium"
+  const [difficulty, setDifficulty] = useState<Difficulty | null>(
+    () => routeState?.randomDifficulty || null
   );
   const [seed, setSeed] = useState(() => initialSeed ? parseInt(initialSeed) || randomSeed() : randomSeed());
   const [seedInput, setSeedInput] = useState(initialSeed || "");
   const [puzzleKey, setPuzzleKey] = useState(0);
   const [loadingSeed, setLoadingSeed] = useState(false);
-  const [puzzleGenerated, setPuzzleGenerated] = useState(!!info);
+  const [puzzleGenerated, setPuzzleGenerated] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
   // Mode & mobile stepper
