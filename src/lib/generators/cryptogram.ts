@@ -17,15 +17,13 @@ const HINT_COUNTS: Record<Difficulty, number> = {
 export function generateCryptogram(seed: number, difficulty: Difficulty): CryptogramPuzzle {
   const rng = new SeededRandom(seed);
 
-  // Pick quote based on difficulty (longer for harder)
+  // Pick quote based on difficulty (longer quotes for harder levels)
   const sorted = [...QUOTES].sort((a, b) => a.length - b.length);
-  const idx = Math.min(
-    rng.nextInt(
-      Math.floor(sorted.length * ({ easy: 0, medium: 0.2, hard: 0.4, extreme: 0.6, insane: 0.7 }[difficulty])),
-      sorted.length - 1
-    ),
-    sorted.length - 1
-  );
+  const rangeStart: Record<Difficulty, number> = { easy: 0, medium: 0.15, hard: 0.35, extreme: 0.6, insane: 0.8 };
+  const rangeEnd: Record<Difficulty, number> = { easy: 0.3, medium: 0.5, hard: 0.7, extreme: 0.9, insane: 1 };
+  const lo = Math.floor(sorted.length * rangeStart[difficulty]);
+  const hi = Math.min(Math.floor(sorted.length * rangeEnd[difficulty]), sorted.length - 1);
+  const idx = rng.nextInt(lo, hi);
   const decoded = sorted[idx];
 
   // Create substitution cipher

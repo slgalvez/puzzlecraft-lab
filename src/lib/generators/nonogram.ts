@@ -9,8 +9,8 @@ export interface NonogramPuzzle {
   colClues: number[][];
 }
 
-const SIZES: Record<Difficulty, number> = { easy: 5, medium: 8, hard: 10, extreme: 15, insane: 20 };
-const DENSITY: Record<Difficulty, number> = { easy: 0.55, medium: 0.5, hard: 0.5, extreme: 0.45, insane: 0.45 };
+const SIZES: Record<Difficulty, number> = { easy: 5, medium: 10, hard: 15, extreme: 20, insane: 25 };
+const DENSITY: Record<Difficulty, number> = { easy: 0.6, medium: 0.5, hard: 0.48, extreme: 0.45, insane: 0.42 };
 
 export function generateNonogram(seed: number, difficulty: Difficulty): NonogramPuzzle {
   const rng = new SeededRandom(seed);

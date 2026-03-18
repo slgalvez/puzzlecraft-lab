@@ -15,8 +15,8 @@ export interface KakuroPuzzle {
   clues: KakuroClue[];
 }
 
-const SIZES: Record<Difficulty, number> = { easy: 6, medium: 7, hard: 8, extreme: 9, insane: 10 };
-const BLACK_PROB: Record<Difficulty, number> = { easy: 0.22, medium: 0.2, hard: 0.18, extreme: 0.15, insane: 0.12 };
+const SIZES: Record<Difficulty, number> = { easy: 5, medium: 7, hard: 9, extreme: 11, insane: 13 };
+const BLACK_PROB: Record<Difficulty, number> = { easy: 0.28, medium: 0.22, hard: 0.18, extreme: 0.14, insane: 0.10 };
 
 interface Run {
   cells: [number, number][];

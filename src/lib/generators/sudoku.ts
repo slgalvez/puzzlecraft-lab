@@ -7,7 +7,7 @@ export interface SudokuPuzzle {
 }
 
 const GIVENS: Record<Difficulty, number> = {
-  easy: 42, medium: 34, hard: 28, extreme: 24, insane: 20,
+  easy: 45, medium: 36, hard: 28, extreme: 22, insane: 17,
 };
 
 export function generateSudoku(seed: number, difficulty: Difficulty): SudokuPuzzle {

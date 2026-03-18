@@ -9,8 +9,8 @@ export interface GeneratedCrossword {
   clues: CrosswordClue[];
 }
 
-const SIZES: Record<Difficulty, number> = { easy: 9, medium: 11, hard: 13, extreme: 15, insane: 17 };
-const TARGETS: Record<Difficulty, number> = { easy: 8, medium: 14, hard: 20, extreme: 28, insane: 36 };
+const SIZES: Record<Difficulty, number> = { easy: 9, medium: 13, hard: 15, extreme: 19, insane: 21 };
+const TARGETS: Record<Difficulty, number> = { easy: 6, medium: 14, hard: 22, extreme: 34, insane: 46 };
 
 export function generateCrossword(seed: number, difficulty: Difficulty): GeneratedCrossword {
   const rng = new SeededRandom(seed);

@@ -26,10 +26,11 @@ export function generateWordSearch(
   const size = SIZES[difficulty];
   const wordCount = WORD_COUNTS[difficulty];
   const dirCount = DIR_COUNTS[difficulty];
+  const minLen = MIN_WORD_LEN[difficulty];
   const dirs = DIRECTIONS.slice(0, dirCount);
 
   const grid: string[][] = Array.from({ length: size }, () => Array(size).fill(""));
-  const available = rng.shuffle(wordList.filter((w) => w.length >= 3 && w.length <= size));
+  const available = rng.shuffle(wordList.filter((w) => w.length >= minLen && w.length <= size));
   const placed: WordSearchPuzzle["wordPositions"] = [];
 
   for (const word of available) {
