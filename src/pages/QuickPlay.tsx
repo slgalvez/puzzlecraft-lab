@@ -152,6 +152,11 @@ const QuickPlay = () => {
     setPuzzleKey((k) => k + 1);
   };
 
+  const handleFlashDone = useCallback(() => {
+    setShowFlash(false);
+    handleNewPuzzle();
+  }, [handleNewPuzzle]);
+
   // Show summary screen
   if (mode === "endless" && showSummary) {
     return (
@@ -180,11 +185,6 @@ const QuickPlay = () => {
   const activeInfo = currentInfo;
   const onSolveHandler = mode === "endless" ? handleEndlessSolve : undefined;
   const isEndless = mode === "endless";
-
-  const handleFlashDone = useCallback(() => {
-    setShowFlash(false);
-    handleNewPuzzle();
-  }, [handleNewPuzzle]);
 
   const renderPuzzle = () => {
     const key = `${seed}-${activeDifficulty}-${puzzleKey}`;
