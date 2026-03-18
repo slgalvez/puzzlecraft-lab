@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { RefreshCw, Dices, ChevronDown, ChevronRight, ArrowLeft, Sparkles, Clock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
+import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
