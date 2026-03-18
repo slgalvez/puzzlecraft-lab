@@ -76,10 +76,8 @@ const PuzzleGenerator = () => {
   const [mobileStep, setMobileStep] = useState<MobileStep>(1);
 
   // Random tab state
-  const [randomTypes, setRandomTypes] = useState<Set<PuzzleCategory>>(
-    new Set(allTypes.map(([t]) => t))
-  );
-  const [randomDifficulty, setRandomDifficulty] = useState<Difficulty | "any">("any");
+  const [randomTypes, setRandomTypes] = useState<Set<PuzzleCategory>>(new Set());
+  const [randomDifficulty, setRandomDifficulty] = useState<Difficulty | "any" | null>(null);
 
   const handleNewPuzzle = useCallback(() => {
     if (randomPool && randomPool.length > 1) {
