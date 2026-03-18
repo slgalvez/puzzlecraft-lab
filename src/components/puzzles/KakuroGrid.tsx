@@ -17,6 +17,7 @@ interface Props {
   difficulty: Difficulty;
   onNewPuzzle: () => void;
   onSolve?: (perf: PuzzlePerformance) => void;
+  timeLimit?: number;
 }
 
 type Direction = "across" | "down";
@@ -30,7 +31,7 @@ interface KakuroState {
   grid: string[][];
 }
 
-const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
+const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateKakuro(seed, difficulty), [seed, difficulty]);
@@ -50,7 +51,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
 
-  const timer = usePuzzleTimer(timerKey, { category: "kakuro", difficulty, initialElapsed: saved?.elapsed ?? 0 });
+  const timer = usePuzzleTimer(timerKey, { category: "kakuro", difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
   // Auto-save
   useEffect(() => {
@@ -275,7 +276,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
 
   return (
     <div>
-      <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} onPause={timer.pause} onResume={timer.resume} />
+      <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} remaining={timer.remaining} timeLimit={timer.timeLimit} expired={timer.expired} onPause={timer.pause} onResume={timer.resume} />
       {!isMobile && (
         <p className="mb-2 text-xs text-muted-foreground">
           Arrow keys to move • 1–9 to enter • Delete to clear • Tap same cell to toggle direction

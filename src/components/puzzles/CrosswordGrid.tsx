@@ -17,13 +17,14 @@ interface Props {
   showControls?: boolean;
   onNewPuzzle?: () => void;
   onSolve?: (perf: PuzzlePerformance) => void;
+  timeLimit?: number;
 }
 
 interface CrosswordState {
   grid: string[][];
 }
 
-const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
+const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit }: Props) => {
   const { gridSize, blackCells, clues } = puzzle;
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -43,7 +44,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) =>
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
 
-  const timer = usePuzzleTimer(timerKey, { category: "crossword", difficulty: puzzle.difficulty, initialElapsed: saved?.elapsed ?? 0 });
+  const timer = usePuzzleTimer(timerKey, { category: "crossword", difficulty: puzzle.difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
   const blackSet = useCallback(() => {
     const set = new Set<string>();
@@ -282,7 +283,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) =>
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
       <div className="flex-shrink-0">
-        <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} onPause={timer.pause} onResume={timer.resume} />
+        <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} remaining={timer.remaining} timeLimit={timer.timeLimit} expired={timer.expired} onPause={timer.pause} onResume={timer.resume} />
 
         {isMobile && activeCell && !timer.isSolved && (
           <div className="flex items-center gap-2 mb-2">

@@ -17,6 +17,7 @@ interface Props {
   difficulty: Difficulty;
   onNewPuzzle: () => void;
   onSolve?: (perf: PuzzlePerformance) => void;
+  timeLimit?: number;
 }
 
 interface WordSearchState {
@@ -24,7 +25,7 @@ interface WordSearchState {
   foundCells: string[];
 }
 
-const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
+const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateWordSearch(seed, difficulty, WORDS), [seed, difficulty]);
@@ -50,7 +51,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
 
-  const timer = usePuzzleTimer(timerKey, { category: "word-search", difficulty, initialElapsed: saved?.elapsed ?? 0 });
+  const timer = usePuzzleTimer(timerKey, { category: "word-search", difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
   // Auto-save
   useEffect(() => {
@@ -272,7 +273,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
       <div className="flex-shrink-0 outline-none min-w-0" ref={containerRef} tabIndex={0} onKeyDown={handleKeyDown}>
-        <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} onPause={timer.pause} onResume={timer.resume} />
+        <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} remaining={timer.remaining} timeLimit={timer.timeLimit} expired={timer.expired} onPause={timer.pause} onResume={timer.resume} />
 
         {isMobile ? (
           <p className="mb-2 text-xs text-muted-foreground">

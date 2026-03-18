@@ -16,6 +16,7 @@ interface Props {
   difficulty: Difficulty;
   onNewPuzzle: () => void;
   onSolve?: (perf: PuzzlePerformance) => void;
+  timeLimit?: number;
 }
 
 type CellState = "empty" | "filled" | "marked";
@@ -24,7 +25,7 @@ interface NonogramState {
   grid: CellState[][];
 }
 
-const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
+const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateNonogram(seed, difficulty), [seed, difficulty]);
@@ -44,7 +45,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
 
-  const timer = usePuzzleTimer(timerKey, { category: "nonogram", difficulty, initialElapsed: saved?.elapsed ?? 0 });
+  const timer = usePuzzleTimer(timerKey, { category: "nonogram", difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
   const maxRowClueLen = Math.max(...rowClues.map((c) => c.length));
 
@@ -143,7 +144,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
       className="outline-none"
       onKeyDown={handleKeyDown}
     >
-      <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} onPause={timer.pause} onResume={timer.resume} />
+      <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} remaining={timer.remaining} timeLimit={timer.timeLimit} expired={timer.expired} onPause={timer.pause} onResume={timer.resume} />
 
       {isMobile && !timer.isSolved && (
         <div className="flex items-center gap-2 mb-3">

@@ -11,7 +11,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { getPuzzleById } from "@/data/puzzles";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { RefreshCw, Dices, ChevronDown, ChevronRight, ArrowLeft, Sparkles } from "lucide-react";
+import { RefreshCw, Dices, ChevronDown, ChevronRight, ArrowLeft, Sparkles, Clock } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 
 // Puzzle components
@@ -70,6 +71,9 @@ const PuzzleGenerator = () => {
   const [loadingSeed, setLoadingSeed] = useState(false);
   const [puzzleGenerated, setPuzzleGenerated] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [timeLimitEnabled, setTimeLimitEnabled] = useState(false);
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState(5);
+  const [timeLimitSeconds, setTimeLimitSeconds] = useState(0);
 
   // Mode & mobile stepper
   const [mode, setMode] = useState<Mode>("generate");
@@ -218,16 +222,18 @@ const PuzzleGenerator = () => {
     });
   };
 
+  const activeTimeLimit = timeLimitEnabled ? (timeLimitMinutes * 60 + timeLimitSeconds) : undefined;
+
   const renderPuzzle = () => {
     if (!category || !difficulty) return null;
     const d = difficulty as Difficulty;
     const key = `${seed}-${d}-${puzzleKey}`;
     switch (category) {
-      case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
-      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
-      case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
-      case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
-      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
+      case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
+      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
+      case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
+      case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
+      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
       case "crossword": {
         const gen = generateCrossword(seed, d);
         const puzzle: CrosswordPuzzle = {
@@ -235,7 +241,7 @@ const PuzzleGenerator = () => {
           difficulty: d as CrosswordPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, clues: gen.clues,
         };
-        return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} />;
+        return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
       }
       case "word-fill": {
         const gen = generateWordFillIn(seed, d);
@@ -244,7 +250,7 @@ const PuzzleGenerator = () => {
           difficulty: d as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
-        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} />;
+        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
       }
       case "number-fill": {
         const gen = generateNumberFillIn(seed, d);
@@ -253,7 +259,7 @@ const PuzzleGenerator = () => {
           difficulty: d as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
-        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} />;
+        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
       }
       default: return null;
     }
@@ -344,10 +350,45 @@ const PuzzleGenerator = () => {
               ))}
             </div>
             {difficulty && (
-              <Button onClick={handleGenerate} size="lg" className="w-full gap-2 text-base mt-6">
-                <Sparkles size={18} />
-                Generate Puzzle
-              </Button>
+              <div className="mt-6 space-y-4">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={timeLimitEnabled}
+                    onCheckedChange={setTimeLimitEnabled}
+                    id="time-limit-toggle-mobile"
+                  />
+                  <label htmlFor="time-limit-toggle-mobile" className="text-sm font-medium text-foreground cursor-pointer">
+                    {timeLimitEnabled ? "Timed" : "No time limit"}
+                  </label>
+                </div>
+                {timeLimitEnabled && (
+                  <div className="flex items-center gap-1.5">
+                    <Clock size={14} className="text-muted-foreground" />
+                    <Input
+                      type="number"
+                      min={0}
+                      max={120}
+                      value={timeLimitMinutes}
+                      onChange={(e) => setTimeLimitMinutes(Math.max(0, Math.min(120, parseInt(e.target.value) || 0)))}
+                      className="w-16 h-8 text-center text-sm"
+                    />
+                    <span className="text-xs text-muted-foreground">min</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={59}
+                      value={timeLimitSeconds}
+                      onChange={(e) => setTimeLimitSeconds(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+                      className="w-16 h-8 text-center text-sm"
+                    />
+                    <span className="text-xs text-muted-foreground">sec</span>
+                  </div>
+                )}
+                <Button onClick={handleGenerate} size="lg" className="w-full gap-2 text-base">
+                  <Sparkles size={18} />
+                  Generate Puzzle
+                </Button>
+              </div>
             )}
           </div>
         )}
@@ -482,6 +523,48 @@ const PuzzleGenerator = () => {
               {label}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Time Limit */}
+      <div>
+        <label className="mb-3 block text-xs font-medium uppercase tracking-widest text-muted-foreground">
+          Time Limit
+        </label>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={timeLimitEnabled}
+              onCheckedChange={setTimeLimitEnabled}
+              id="time-limit-toggle"
+            />
+            <label htmlFor="time-limit-toggle" className="text-sm font-medium text-foreground cursor-pointer">
+              {timeLimitEnabled ? "Timed" : "No limit"}
+            </label>
+          </div>
+          {timeLimitEnabled && (
+            <div className="flex items-center gap-1.5 ml-2">
+              <Clock size={14} className="text-muted-foreground" />
+              <Input
+                type="number"
+                min={0}
+                max={120}
+                value={timeLimitMinutes}
+                onChange={(e) => setTimeLimitMinutes(Math.max(0, Math.min(120, parseInt(e.target.value) || 0)))}
+                className="w-16 h-8 text-center text-sm"
+              />
+              <span className="text-xs text-muted-foreground">min</span>
+              <Input
+                type="number"
+                min={0}
+                max={59}
+                value={timeLimitSeconds}
+                onChange={(e) => setTimeLimitSeconds(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+                className="w-16 h-8 text-center text-sm"
+              />
+              <span className="text-xs text-muted-foreground">sec</span>
+            </div>
+          )}
         </div>
       </div>
 

@@ -19,6 +19,7 @@ interface Props {
   showControls?: boolean;
   onNewPuzzle?: () => void;
   onSolve?: (perf: PuzzlePerformance) => void;
+  timeLimit?: number;
 }
 
 type Direction = "across" | "down";
@@ -33,7 +34,7 @@ interface FillInState {
   usedEntries: string[];
 }
 
-const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
+const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit }: Props) => {
   const { gridSize, blackCells, entries, type, solution } = puzzle;
   const isNumbers = type === "number-fill";
   const { toast } = useToast();
@@ -57,7 +58,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
 
-  const timer = usePuzzleTimer(timerKey, { category: puzzle.type as "word-fill" | "number-fill", difficulty: puzzle.difficulty, initialElapsed: saved?.elapsed ?? 0 });
+  const timer = usePuzzleTimer(timerKey, { category: puzzle.type as "word-fill" | "number-fill", difficulty: puzzle.difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
   // Auto-save
   useEffect(() => {
@@ -358,7 +359,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
       <div className="flex-shrink-0">
-        <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} onPause={timer.pause} onResume={timer.resume} />
+        <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} remaining={timer.remaining} timeLimit={timer.timeLimit} expired={timer.expired} onPause={timer.pause} onResume={timer.resume} />
         {!isMobile && (
           <p className="mb-2 text-xs text-muted-foreground">
             Arrow keys to move • Type to fill • Delete to clear • Tap same cell to toggle direction

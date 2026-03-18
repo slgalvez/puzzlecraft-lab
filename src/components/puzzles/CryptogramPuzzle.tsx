@@ -15,13 +15,14 @@ interface Props {
   difficulty: Difficulty;
   onNewPuzzle: () => void;
   onSolve?: (perf: PuzzlePerformance) => void;
+  timeLimit?: number;
 }
 
 interface CryptogramState {
   guesses: Record<string, string>;
 }
 
-const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
+const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateCryptogram(seed, difficulty), [seed, difficulty]);
@@ -41,7 +42,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => 
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
 
-  const timer = usePuzzleTimer(timerKey, { category: "cryptogram", difficulty, initialElapsed: saved?.elapsed ?? 0 });
+  const timer = usePuzzleTimer(timerKey, { category: "cryptogram", difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
   const encodedLetters = useMemo(() => {
     return [...new Set(encoded.split("").filter((ch) => /[A-Z]/.test(ch)))];
@@ -168,7 +169,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => 
 
   return (
     <div ref={containerRef}>
-      <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} onPause={timer.pause} onResume={timer.resume} />
+      <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} remaining={timer.remaining} timeLimit={timer.timeLimit} expired={timer.expired} onPause={timer.pause} onResume={timer.resume} />
       {!isMobile && (
         <p className="mb-3 text-xs text-muted-foreground">
           Type letters to guess • Arrow keys to move • All matching letters update together
