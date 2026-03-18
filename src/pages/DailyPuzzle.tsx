@@ -36,7 +36,6 @@ const DailyPuzzle = () => {
   const info = CATEGORY_INFO[challenge.category];
 
   useEffect(() => { setPuzzleOrigin("daily"); }, []);
-  const info = CATEGORY_INFO[challenge.category];
 
   // Track completion from puzzle timer callback
   const handleNewPuzzle = useCallback(() => {
