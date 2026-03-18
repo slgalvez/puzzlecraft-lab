@@ -199,11 +199,43 @@ Deno.serve(async (req) => {
       const { data: msg, error: msgErr } = await sb
         .from("messages")
         .insert({ conversation_id, sender_profile_id: profileId, body: message.trim(), is_disappearing, expires_at })
-        .select("id, sender_profile_id, body, created_at, read_at, is_disappearing, expires_at")
+        .select("id, sender_profile_id, body, created_at, read_at, is_disappearing, expires_at, reactions")
         .single();
 
       if (msgErr) return err("Could not send message");
       return json({ message: msg });
+    }
+
+    // ─── REACT TO MESSAGE ───
+    if (action === "react-to-message") {
+      const { message_id, reaction } = body;
+      if (!message_id || typeof reaction !== "string") return err("Invalid reaction", 400);
+
+      const VALID_REACTIONS = ["❤️", "👍", "😂", "‼️", "❓", "😢"];
+      if (!VALID_REACTIONS.includes(reaction)) return err("Unsupported reaction", 400);
+
+      // Fetch message and verify access
+      const { data: msg } = await sb.from("messages").select("id, conversation_id, reactions").eq("id", message_id).single();
+      if (!msg) return err("Message not found");
+
+      const { data: conv } = await sb.from("conversations").select("id, user_profile_id, admin_profile_id").eq("id", msg.conversation_id).single();
+      if (!conv) return err("Conversation not found");
+      if (!isAdmin && conv.user_profile_id !== profileId) return err("Access denied");
+
+      // Toggle reaction: add if not present, remove if already there
+      const reactions: Record<string, string[]> = (msg.reactions as Record<string, string[]>) || {};
+      const existing = reactions[reaction] || [];
+      if (existing.includes(profileId)) {
+        reactions[reaction] = existing.filter((id: string) => id !== profileId);
+        if (reactions[reaction].length === 0) delete reactions[reaction];
+      } else {
+        reactions[reaction] = [...existing, profileId];
+      }
+
+      const { error: updateErr } = await sb.from("messages").update({ reactions }).eq("id", message_id);
+      if (updateErr) return err("Could not update reaction");
+
+      return json({ reactions });
     }
 
     // ─── MARK READ ───
