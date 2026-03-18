@@ -38,6 +38,9 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
   const [direction, setDirection] = useState<Direction>("across");
   const containerRef = useRef<HTMLDivElement>(null);
+  const resetCount = useRef(0);
+  const checkCount = useRef(0);
+  const errorCheckCount = useRef(0);
 
   const timerKey = `kakuro-${seed}-${difficulty}`;
   const timer = usePuzzleTimer(timerKey, { category: "kakuro", difficulty });

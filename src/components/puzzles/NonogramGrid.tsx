@@ -32,6 +32,9 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const [cursor, setCursor] = useState<[number, number]>([0, 0]);
   const [touchMode, setTouchMode] = useState<"fill" | "mark">("fill");
   const containerRef = useRef<HTMLDivElement>(null);
+  const resetCount = useRef(0);
+  const checkCount = useRef(0);
+  const errorCheckCount = useRef(0);
 
   const timerKey = `nonogram-${seed}-${difficulty}`;
   const timer = usePuzzleTimer(timerKey, { category: "nonogram", difficulty });
