@@ -33,6 +33,9 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const [tapStart, setTapStart] = useState<[number, number] | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const resetCount = useRef(0);
+  const checkCount = useRef(0);
+  const errorCheckCount = useRef(0);
 
   const timerKey = `word-search-${seed}-${difficulty}`;
   const timer = usePuzzleTimer(timerKey, { category: "word-search", difficulty });
