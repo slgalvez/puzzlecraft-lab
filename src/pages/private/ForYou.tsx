@@ -397,7 +397,7 @@ const ForYou = () => {
       <div className="p-4 sm:p-6 pb-6 max-w-2xl mx-auto space-y-6">
         {/* Tabs */}
         <div className="flex gap-1 border-b border-border pb-2 overflow-x-auto">
-          {(["received", "sent", "drafts", "create"] as Tab[]).map(t => (
+          {(["received", "sent", "drafts", "completed", "create"] as Tab[]).map(t => (
             <button
               key={t}
               onClick={() => { setTab(t); if (t === "create") resetCreate(); }}
@@ -407,10 +407,10 @@ const ForYou = () => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t === "received" ? "Received" : t === "sent" ? "Sent" : t === "drafts" ? "Drafts" : "Create"}
-              {t === "received" && receivedPuzzles.filter(p => !p.solved_by).length > 0 && (
+              {t === "received" ? "Received" : t === "sent" ? "Sent" : t === "drafts" ? "Drafts" : t === "completed" ? "Completed" : "Create"}
+              {t === "received" && receivedPuzzles.length > 0 && (
                 <span className="ml-1.5 bg-primary-foreground text-primary text-[10px] px-1.5 py-0.5 rounded-full">
-                  {receivedPuzzles.filter(p => !p.solved_by).length}
+                  {receivedPuzzles.length}
                 </span>
               )}
               {t === "drafts" && drafts.length > 0 && (
