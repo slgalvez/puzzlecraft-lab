@@ -57,6 +57,9 @@ const PuzzleGenerator = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
+
+  useEffect(() => { setPuzzleOrigin("lab"); }, []);
+
   const initialSeed = searchParams.get("seed");
   const routeState = location.state as { randomPool?: PuzzleCategory[]; randomDifficulty?: Difficulty } | null;
 
