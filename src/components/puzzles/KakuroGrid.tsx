@@ -231,11 +231,13 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
     setGrid(Array.from({ length: size }, () => Array(size).fill("")));
     setErrors(new Set());
     setDirection("across");
+    resetCount.current++;
     timer.reset();
     containerRef.current?.focus();
   };
 
   const handleCheck = () => {
+    checkCount.current++;
     const errs = new Set<string>();
     let filled = true;
     for (let r = 0; r < size; r++) {
@@ -246,9 +248,11 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
       }
     }
     setErrors(errs);
+    if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0 && filled) {
       const { isNewBest } = timer.solve();
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Puzzle solved correctly!" });
+      onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
     } else if (errs.size > 0)
       toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
     else

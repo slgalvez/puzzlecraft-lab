@@ -223,11 +223,13 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) =>
   const handleReset = () => {
     setGrid(Array.from({ length: gridSize }, () => Array(gridSize).fill("")));
     setErrors(new Set());
+    resetCount.current++;
     timer.reset();
     if (!isMobile) containerRef.current?.focus();
   };
 
   const handleCheck = () => {
+    checkCount.current++;
     const solutionGrid: string[][] = Array.from({ length: gridSize }, () => Array(gridSize).fill(""));
     for (const clue of clues) {
       const dr = clue.direction === "down" ? 1 : 0;
@@ -246,9 +248,11 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) =>
       }
     }
     setErrors(errs);
+    if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0 && filled) {
       const { isNewBest } = timer.solve();
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Crossword solved correctly!" });
+      onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
     } else if (errs.size > 0)
       toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
     else

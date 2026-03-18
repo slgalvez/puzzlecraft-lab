@@ -228,7 +228,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
 
   const handleReset = () => {
     setFoundWords(new Set()); setFoundCells(new Set()); setStartCell(null); setTapStart(null); setCursor([0, 0]);
-    timer.reset(); containerRef.current?.focus();
+    resetCount.current++; timer.reset(); containerRef.current?.focus();
   };
 
   const handleCheck = () => {

@@ -92,11 +92,13 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
     setGrid(Array.from({ length: rows }, () => Array(cols).fill("empty")));
     setErrors(new Set());
     setCursor([0, 0]);
+    resetCount.current++;
     timer.reset();
     containerRef.current?.focus();
   };
 
   const handleCheck = () => {
+    checkCount.current++;
     const errs = new Set<string>();
     for (let r = 0; r < rows; r++)
       for (let c = 0; c < cols; c++) {
@@ -105,9 +107,11 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
         if (shouldBeFilled !== isFilled) errs.add(`${r}-${c}`);
       }
     setErrors(errs);
+    if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0) {
       const { isNewBest } = timer.solve();
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Nonogram solved correctly!" });
+      onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
     } else
       toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
   };
