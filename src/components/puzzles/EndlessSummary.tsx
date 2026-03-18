@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import Layout from "@/components/layout/Layout";
@@ -5,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { ArrowLeft, Infinity, Trophy, Clock, Target, TrendingUp, TrendingDown, Minus, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
+import { saveEndlessSession } from "@/lib/endlessHistory";
 
 export interface EndlessSolveRecord {
   type: PuzzleCategory;
