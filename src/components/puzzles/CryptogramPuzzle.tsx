@@ -248,7 +248,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
         </div>
       </details>
 
-      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`cryptogram-${seed}`} />
+      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`cryptogram-${seed}`} solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless }} />
     </div>
   );
 };

@@ -341,7 +341,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
         onNumber={enterNumber}
         onDelete={deleteCell}
       />
-      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`kakuro-${seed}`} />
+      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`kakuro-${seed}`} solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless }} />
     </div>
   );
 };

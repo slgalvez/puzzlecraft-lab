@@ -227,7 +227,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
           </div>
         ))}
       </div>
-      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`nonogram-${seed}`} />
+      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`nonogram-${seed}`} solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless }} />
     </div>
   );
 };
