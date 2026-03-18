@@ -8,6 +8,7 @@ import PuzzleLibrary from "./pages/PuzzleLibrary";
 import PuzzleGenerator from "./pages/PuzzleGenerator";
 import DailyPuzzle from "./pages/DailyPuzzle";
 import PlayPuzzle from "./pages/PlayPuzzle";
+import QuickPlay from "./pages/QuickPlay";
 import About from "./pages/About";
 import Help from "./pages/Help";
 import Stats from "./pages/Stats";
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/generate/:type" element={<PuzzleGenerator />} />
             <Route path="/daily" element={<DailyPuzzle />} />
             <Route path="/play/:id" element={<PlayPuzzle />} />
+            <Route path="/quick-play/:type" element={<QuickPlay />} />
             <Route path="/about" element={<About />} />
             <Route path="/help" element={<Help />} />
             <Route path="/stats" element={<Stats />} />
