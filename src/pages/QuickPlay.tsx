@@ -5,6 +5,7 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory 
 import { randomSeed } from "@/lib/seededRandom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 
 // Puzzle components
