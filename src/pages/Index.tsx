@@ -265,14 +265,14 @@ const Index = () => {
         <p className="text-muted-foreground">Unlimited puzzles with adjustable difficulty — generated fresh every time.</p>
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { icon: Grid3X3, title: "Crossword", desc: "Classic clue-based word puzzles.", link: "/generate/crossword" },
-            { icon: Calculator, title: "Sudoku", desc: "Fill the 9×9 grid with digits 1–9.", link: "/generate/sudoku" },
-            { icon: Search, title: "Word Search", desc: "Find hidden words in a letter grid.", link: "/generate/word-search" },
-            { icon: Plus, title: "Kakuro", desc: "Cross-sums — a number crossword.", link: "/generate/kakuro" },
-            { icon: Palette, title: "Nonogram", desc: "Reveal a picture using number clues.", link: "/generate/nonogram" },
-            { icon: Lock, title: "Cryptogram", desc: "Decode the secret message.", link: "/generate/cryptogram" },
-            { icon: Hash, title: "Number Fill-In", desc: "Place numbers into the grid pattern.", link: "/generate/number-fill" },
-            { icon: Type, title: "Word Fill-In", desc: "Fit words into a crossword-style grid.", link: "/generate/word-fill" },
+            { icon: Grid3X3, title: "Crossword", desc: "Classic clue-based word puzzles.", link: "/quick-play/crossword?mode=endless" },
+            { icon: Calculator, title: "Sudoku", desc: "Fill the 9×9 grid with digits 1–9.", link: "/quick-play/sudoku?mode=endless" },
+            { icon: Search, title: "Word Search", desc: "Find hidden words in a letter grid.", link: "/quick-play/word-search?mode=endless" },
+            { icon: Plus, title: "Kakuro", desc: "Cross-sums — a number crossword.", link: "/quick-play/kakuro?mode=endless" },
+            { icon: Palette, title: "Nonogram", desc: "Reveal a picture using number clues.", link: "/quick-play/nonogram?mode=endless" },
+            { icon: Lock, title: "Cryptogram", desc: "Decode the secret message.", link: "/quick-play/cryptogram?mode=endless" },
+            { icon: Hash, title: "Number Fill-In", desc: "Place numbers into the grid pattern.", link: "/quick-play/number-fill?mode=endless" },
+            { icon: Type, title: "Word Fill-In", desc: "Fit words into a crossword-style grid.", link: "/quick-play/word-fill?mode=endless" },
           ].map(({ icon: Icon, title, desc, link }) => (
             <Link key={title} to={link} className="group rounded-xl border bg-card p-5 transition-colors hover:border-primary/40">
               <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
