@@ -7,11 +7,13 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Difficulty } from "@/lib/puzzleTypes";
+import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
 interface Props {
   seed: number;
   difficulty: Difficulty;
   onNewPuzzle: () => void;
+  onSolve?: (perf: PuzzlePerformance) => void;
 }
 
 const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
