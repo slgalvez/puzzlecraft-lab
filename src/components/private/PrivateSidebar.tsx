@@ -132,12 +132,10 @@ export function PrivateSidebar() {
         setHasOverviewActivity(false);
       }
     } catch (e) {
-      // On session expiry, sign out and redirect home
-      if (e instanceof (await import("@/lib/privateApi")).SessionExpiredError) {
+      if (e instanceof SessionExpiredError) {
         signOut();
         navigate("/");
       }
-      // Other errors: silent
     }
   }, [token, isAdmin, user, location.pathname, signOut, navigate]);
 
