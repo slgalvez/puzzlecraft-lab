@@ -37,7 +37,7 @@ const Stats = () => {
               </Link>
             </Button>
             <Button asChild size="sm">
-              <Link to="/generate/sudoku">
+              <Link to="/quick-play/sudoku?mode=endless">
                 <Infinity size={14} /> Endless
               </Link>
             </Button>
