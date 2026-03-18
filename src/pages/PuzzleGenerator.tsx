@@ -581,7 +581,7 @@ const PuzzleGenerator = () => {
         )}
         {puzzleGenerated && (
           <p className="text-xs text-muted-foreground">
-            Seed: <span className="font-mono text-foreground">{seed}</span>
+            Puzzle Code: <span className="font-mono text-foreground">{seed}</span>
           </p>
         )}
         {(puzzleGenerated || category || difficulty) && (
@@ -603,13 +603,13 @@ const PuzzleGenerator = () => {
         <CollapsibleContent className="mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="rounded-lg border bg-card p-4">
             <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-muted-foreground">
-              Puzzle Seed / Code
+              Puzzle Code
             </label>
             <div className="flex items-center gap-3">
               <Input
                 value={seedInput}
                 onChange={(e) => setSeedInput(e.target.value)}
-                placeholder="Enter a seed or puzzle code..."
+                placeholder="Enter a puzzle code..."
                 onKeyDown={(e) => e.key === "Enter" && handleLoadSeed()}
                 disabled={loadingSeed}
                 className="max-w-sm"

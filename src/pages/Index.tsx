@@ -214,7 +214,7 @@ const Index = () => {
                     {challenge.difficulty}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    Seed: <span className="font-mono">{challenge.seed}</span>
+                    Puzzle Code: <span className="font-mono">{challenge.seed}</span>
                   </span>
                 </div>
 
