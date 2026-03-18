@@ -144,16 +144,17 @@ function NumberFillAnim() {
 }
 
 function SudokuAnim() {
-  // 3x3 sub-grid feel
+  // Valid 4×4 sudoku (2×2 boxes): 1 2 3 4 / 3 4 1 2 / 2 1 4 3 / 4 3 2 1
+  // Pre-filled givens, animate correct value "1" into cell (1,2)
+  const givens: [number,number,string][] = [[0,0,"1"],[0,2,"3"],[1,1,"4"],[2,0,"2"],[2,3,"3"],[3,2,"2"]];
   return (
     <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S} className="block">
       <MiniGrid rows={4} cols={4} blacks={[]} id="su" />
-      {/* pre-filled numbers */}
-      {[[0,0,"1"],[0,2,"3"],[1,1,"4"],[2,0,"2"],[2,3,"1"],[3,2,"2"]] .map(([r,c,n]) => {
-        const {x,y,w,h} = cell(c as number, r as number);
+      {givens.map(([r,c,n]) => {
+        const {x,y,w,h} = cell(c, r);
         return <text key={`p-${r}-${c}`} x={x+w/2} y={y+h/2+4.5} textAnchor="middle" fontSize="11" fontWeight="600" fill={COL.textMuted}>{n}</text>;
       })}
-      {/* animated: highlight cell (1,2), then show "7" */}
+      {/* animate correct value 1 into cell (1,2) — row 1 is 3,4,1,2 */}
       {(() => {
         const {x,y,w,h} = cell(2, 1);
         return (
@@ -162,7 +163,7 @@ function SudokuAnim() {
               <animate attributeName="opacity" values="0;0.6;0.6;0.6;0" keyTimes="0;0.1;0.6;0.85;1" dur={DUR} repeatCount="indefinite" />
             </rect>
             <text x={x+w/2} y={y+h/2+4.5} textAnchor="middle" fontSize="11" fontWeight="700" fill={COL.active} opacity={0}>
-              7
+              1
               <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.25;0.35;0.8;1" dur={DUR} repeatCount="indefinite" />
             </text>
           </g>
