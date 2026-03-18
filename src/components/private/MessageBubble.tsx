@@ -161,7 +161,8 @@ export function MessageBubble({
               </button>
             )}
           </div>
-        )
+        )}
+
 
         {/* Edit mode */}
         {editing ? (
