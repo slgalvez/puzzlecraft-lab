@@ -117,11 +117,13 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const handleReset = () => {
     setGrid(puzzle.grid.map((r) => [...r]));
     setErrors(new Set());
+    resetCount.current++;
     timer.reset();
     containerRef.current?.focus();
   };
 
   const handleCheck = () => {
+    checkCount.current++;
     const errs = new Set<string>();
     let filled = true;
     for (let r = 0; r < 9; r++)
@@ -130,9 +132,11 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
         else if (grid[r][c] !== puzzle.solution[r][c]) errs.add(`${r}-${c}`);
       }
     setErrors(errs);
+    if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0 && filled) {
       const { isNewBest } = timer.solve();
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Puzzle solved correctly!" });
+      onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
     } else if (errs.size > 0)
       toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
     else

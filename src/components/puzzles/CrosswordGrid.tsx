@@ -9,14 +9,16 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
+import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
 interface Props {
   puzzle: CrosswordPuzzle;
   showControls?: boolean;
   onNewPuzzle?: () => void;
+  onSolve?: (perf: PuzzlePerformance) => void;
 }
 
-const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
+const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
   const { gridSize, blackCells, clues } = puzzle;
   const { toast } = useToast();
   const isMobile = useIsMobile();

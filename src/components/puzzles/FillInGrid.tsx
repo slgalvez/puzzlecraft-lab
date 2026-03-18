@@ -11,11 +11,13 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
+import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
 interface Props {
   puzzle: FillInPuzzle;
   showControls?: boolean;
   onNewPuzzle?: () => void;
+  onSolve?: (perf: PuzzlePerformance) => void;
 }
 
 type Direction = "across" | "down";
