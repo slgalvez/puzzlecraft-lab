@@ -158,7 +158,10 @@ const PuzzleGenerator = () => {
       });
       return;
     }
-    setSeed(randomSeed());
+    // If we already have a seed from the URL (first generate), keep it; otherwise pick a new one
+    if (puzzleGenerated || !initialSeed) {
+      setSeed(randomSeed());
+    }
     setPuzzleKey((k) => k + 1);
     setPuzzleGenerated(true);
     if (isMobile) setMobileStep(3);
