@@ -66,16 +66,16 @@ const PuzzleLibrary = () => {
             const isExpanded = expandedType === type;
 
             return (
-              <div key={type} className="flex flex-col rounded-xl border-2 border-border bg-card transition-all hover:border-primary/50 hover:shadow-md">
+              <div key={type} className="relative flex flex-col rounded-xl border-2 border-border bg-card transition-all hover:border-primary/50 hover:shadow-md">
+                {/* How to play info icon — outside the button to avoid click conflicts */}
+                <div className="absolute top-3 right-3 z-10">
+                  <HowToPlay type={type} />
+                </div>
                 {/* Main card area — click to play */}
                 <button
                   onClick={() => handlePlay(type)}
-                  className="group flex flex-1 flex-col items-start p-5 pb-4 text-left active:scale-[0.98] transition-transform relative"
+                  className="group flex flex-1 flex-col items-start p-5 pb-4 text-left active:scale-[0.98] transition-transform"
                 >
-                  {/* How to play info icon */}
-                  <div className="absolute top-3 right-3 z-10">
-                    <HowToPlay type={type} />
-                  </div>
                   <div className="flex h-9 items-center">
                     <PuzzleIcon type={type} size={36} className="text-foreground opacity-80 group-hover:opacity-100 transition-opacity" />
                   </div>
