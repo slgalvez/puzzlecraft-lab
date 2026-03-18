@@ -137,8 +137,15 @@ const PuzzleGenerator = () => {
     finally { setLoadingSeed(false); }
   };
 
+  // Auto-generate when arriving with a seed from URL and user picks difficulty
   const handleDifficultyChange = (d: Difficulty) => {
     setDifficulty(d);
+    // If we have a seed from URL and haven't generated yet, auto-generate
+    if (initialSeed && !puzzleGenerated) {
+      setPuzzleKey((k) => k + 1);
+      setPuzzleGenerated(true);
+      if (isMobile) setMobileStep(3);
+    }
   };
 
   const handleTypeChange = (newType: PuzzleCategory) => {
@@ -158,7 +165,10 @@ const PuzzleGenerator = () => {
       });
       return;
     }
-    setSeed(randomSeed());
+    // If we already have a seed from the URL (first generate), keep it; otherwise pick a new one
+    if (puzzleGenerated || !initialSeed) {
+      setSeed(randomSeed());
+    }
     setPuzzleKey((k) => k + 1);
     setPuzzleGenerated(true);
     if (isMobile) setMobileStep(3);
