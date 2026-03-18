@@ -100,14 +100,15 @@ const PuzzleGenerator = () => {
     }
   }, [randomPool, category, difficulty, navigate]);
 
-  if (!info) {
+  // Show error for truly invalid types (not just missing)
+  if (type && !info) {
     return (
       <Layout>
         <div className="container py-20 text-center">
           <h1 className="font-display text-2xl font-bold text-foreground">Unknown puzzle type</h1>
           <p className="mt-2 text-sm text-muted-foreground">The puzzle type you requested doesn't exist.</p>
-          <Link to="/puzzles" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
-            ← Browse puzzle types
+          <Link to="/generate" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
+            ← Back to Puzzle Lab
           </Link>
         </div>
       </Layout>
@@ -140,23 +141,41 @@ const PuzzleGenerator = () => {
 
   const handleDifficultyChange = (d: Difficulty) => {
     setDifficulty(d);
-    setSeed(randomSeed());
-    setPuzzleKey((k) => k + 1);
-    setPuzzleGenerated(true);
-    if (isMobile) setMobileStep(3);
   };
 
   const handleTypeChange = (newType: PuzzleCategory) => {
     setRandomPool(null);
+    setPuzzleGenerated(false);
     if (isMobile) setMobileStep(2);
     navigate(`/generate/${newType}`, { replace: true });
   };
 
+  const canGenerate = !!info && !!difficulty;
+
   const handleGenerate = () => {
+    if (!canGenerate) {
+      toast({
+        title: "Missing selections",
+        description: "Select a puzzle type and difficulty to generate",
+      });
+      return;
+    }
     setSeed(randomSeed());
     setPuzzleKey((k) => k + 1);
     setPuzzleGenerated(true);
     if (isMobile) setMobileStep(3);
+  };
+
+  const handleClear = () => {
+    setDifficulty(null);
+    setPuzzleGenerated(false);
+    setSeed(randomSeed());
+    setPuzzleKey(0);
+    setRandomPool(null);
+    setSeedInput("");
+    setAdvancedOpen(false);
+    if (isMobile) setMobileStep(1);
+    navigate("/generate", { replace: true });
   };
 
   // Random tab
