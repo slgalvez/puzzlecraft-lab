@@ -6,6 +6,11 @@ interface Props {
   className?: string;
 }
 
+/**
+ * Standardised mini puzzle preview icons.
+ * All use a 32×32 viewBox with 3px internal padding (content area 3–29).
+ * Monochrome via currentColor. Hover contrast handled by parent className.
+ */
 const PuzzleIcon = ({ type, size = 32, className = "" }: Props) => {
   const props = {
     width: size,
@@ -13,230 +18,253 @@ const PuzzleIcon = ({ type, size = 32, className = "" }: Props) => {
     viewBox: "0 0 32 32",
     fill: "none",
     xmlns: "http://www.w3.org/2000/svg",
-    className,
+    className: `transition-opacity ${className}`,
     "aria-hidden": true as const,
   };
 
+  // Shared constants for 5×5 grids (crossword, number-fill, word-fill)
+  const G5 = { o: 3, cell: 5.2, lines: [8.2, 13.4, 18.6, 23.8] };
+
   switch (type) {
-    // Crossword: 5×5 grid with black/white cells
+    // ── Crossword: 5×5 grid, black cells, clue numbers ──
     case "crossword":
       return (
         <svg {...props}>
-          <rect x="2" y="2" width="28" height="28" rx="2" stroke="currentColor" strokeWidth="1.5" opacity="0.25" />
-          {/* Grid lines */}
-          {[7.6, 13.2, 18.8, 24.4].map((v) => (
-            <line key={`h${v}`} x1="2" y1={v} x2="30" y2={v} stroke="currentColor" strokeWidth="0.5" opacity="0.15" />
+          <rect x={G5.o} y={G5.o} width="26" height="26" rx="1.5" stroke="currentColor" strokeWidth="1.5" opacity="0.35" />
+          {G5.lines.map((v) => (
+            <line key={`h${v}`} x1={G5.o} y1={v} x2="29" y2={v} stroke="currentColor" strokeWidth="0.6" opacity="0.2" />
           ))}
-          {[7.6, 13.2, 18.8, 24.4].map((v) => (
-            <line key={`v${v}`} x1={v} y1="2" x2={v} y2="30" stroke="currentColor" strokeWidth="0.5" opacity="0.15" />
+          {G5.lines.map((v) => (
+            <line key={`v${v}`} x1={v} y1={G5.o} x2={v} y2="29" stroke="currentColor" strokeWidth="0.6" opacity="0.2" />
           ))}
           {/* Black cells */}
-          <rect x="2" y="24.4" width="5.6" height="5.6" fill="currentColor" opacity="0.7" />
-          <rect x="13.2" y="13.2" width="5.6" height="5.6" fill="currentColor" opacity="0.7" />
-          <rect x="24.4" y="2" width="5.6" height="5.6" rx="0 2 0 0" fill="currentColor" opacity="0.7" />
-          <rect x="24.4" y="7.6" width="5.6" height="5.6" fill="currentColor" opacity="0.7" />
-          <rect x="2" y="18.8" width="5.6" height="5.6" fill="currentColor" opacity="0.7" />
-          {/* Cell numbers */}
-          <text x="3.5" y="5.8" fontSize="3" fill="currentColor" opacity="0.5" fontFamily="system-ui">1</text>
-          <text x="9.1" y="5.8" fontSize="3" fill="currentColor" opacity="0.5" fontFamily="system-ui">2</text>
-          <text x="14.7" y="5.8" fontSize="3" fill="currentColor" opacity="0.5" fontFamily="system-ui">3</text>
+          <rect x="23.8" y="3" width="5.2" height="5.2" fill="currentColor" opacity="0.82" />
+          <rect x="23.8" y="8.2" width="5.2" height="5.2" fill="currentColor" opacity="0.82" />
+          <rect x="13.4" y="13.4" width="5.2" height="5.2" fill="currentColor" opacity="0.82" />
+          <rect x="3" y="18.6" width="5.2" height="5.2" fill="currentColor" opacity="0.82" />
+          <rect x="3" y="23.8" width="5.2" height="5.2" fill="currentColor" opacity="0.82" />
+          {/* Clue numbers */}
+          <text x="4" y="6.2" fontSize="3" fill="currentColor" opacity="0.6" fontFamily="system-ui" fontWeight="500">1</text>
+          <text x="9.2" y="6.2" fontSize="3" fill="currentColor" opacity="0.6" fontFamily="system-ui" fontWeight="500">2</text>
+          <text x="14.4" y="6.2" fontSize="3" fill="currentColor" opacity="0.6" fontFamily="system-ui" fontWeight="500">3</text>
+          <text x="19.6" y="6.2" fontSize="3" fill="currentColor" opacity="0.6" fontFamily="system-ui" fontWeight="500">4</text>
         </svg>
       );
 
-    // Sudoku: 3×3 blocks with partial numbers
-    case "sudoku":
+    // ── Sudoku: 9×9 with 3×3 blocks and sparse digits ──
+    case "sudoku": {
+      const S = { o: 3, blk: 8.67, cell: 2.89 };
+      const blkLines = [S.o + S.blk, S.o + S.blk * 2];
+      const cellOffsets = [1, 2, 4, 5, 7, 8].map((i) => S.o + i * S.cell);
       return (
         <svg {...props}>
-          <rect x="2" y="2" width="28" height="28" rx="2" stroke="currentColor" strokeWidth="1.5" opacity="0.25" />
-          {/* 3×3 block dividers */}
-          <line x1="11.33" y1="2" x2="11.33" y2="30" stroke="currentColor" strokeWidth="1.2" opacity="0.35" />
-          <line x1="20.67" y1="2" x2="20.67" y2="30" stroke="currentColor" strokeWidth="1.2" opacity="0.35" />
-          <line x1="2" y1="11.33" x2="30" y2="11.33" stroke="currentColor" strokeWidth="1.2" opacity="0.35" />
-          <line x1="2" y1="20.67" x2="30" y2="20.67" stroke="currentColor" strokeWidth="1.2" opacity="0.35" />
-          {/* Thin cell lines */}
-          {[5.11, 8.22, 14.44, 17.55, 23.78, 26.89].map((v) => (
-            <line key={`sh${v}`} x1="2" y1={v} x2="30" y2={v} stroke="currentColor" strokeWidth="0.4" opacity="0.12" />
+          <rect x={S.o} y={S.o} width="26" height="26" rx="1.5" stroke="currentColor" strokeWidth="1.5" opacity="0.35" />
+          {/* Block dividers */}
+          {blkLines.map((v) => (
+            <g key={v}>
+              <line x1={S.o} y1={v} x2="29" y2={v} stroke="currentColor" strokeWidth="1" opacity="0.4" />
+              <line x1={v} y1={S.o} x2={v} y2="29" stroke="currentColor" strokeWidth="1" opacity="0.4" />
+            </g>
           ))}
-          {[5.11, 8.22, 14.44, 17.55, 23.78, 26.89].map((v) => (
-            <line key={`sv${v}`} x1={v} y1="2" x2={v} y2="30" stroke="currentColor" strokeWidth="0.4" opacity="0.12" />
+          {/* Cell lines */}
+          {cellOffsets.map((v) => (
+            <g key={v}>
+              <line x1={S.o} y1={v} x2="29" y2={v} stroke="currentColor" strokeWidth="0.35" opacity="0.15" />
+              <line x1={v} y1={S.o} x2={v} y2="29" stroke="currentColor" strokeWidth="0.35" opacity="0.15" />
+            </g>
           ))}
-          {/* A few numbers */}
-          <text x="5.5" y="8.5" fontSize="4.5" fill="currentColor" opacity="0.65" fontFamily="system-ui" textAnchor="middle">5</text>
-          <text x="15" y="18" fontSize="4.5" fill="currentColor" opacity="0.65" fontFamily="system-ui" textAnchor="middle">3</text>
-          <text x="24.5" y="8.5" fontSize="4.5" fill="currentColor" opacity="0.65" fontFamily="system-ui" textAnchor="middle">8</text>
-          <text x="8.5" y="24.5" fontSize="4.5" fill="currentColor" opacity="0.4" fontFamily="system-ui" textAnchor="middle">1</text>
-          <text x="21.5" y="27.5" fontSize="4.5" fill="currentColor" opacity="0.65" fontFamily="system-ui" textAnchor="middle">7</text>
+          {/* Digits — placed at cell centres */}
+          <text x="5.95" y="8.8" fontSize="4" fill="currentColor" opacity="0.7" fontFamily="system-ui" textAnchor="middle" fontWeight="600">5</text>
+          <text x="14.6" y="8.8" fontSize="4" fill="currentColor" opacity="0.7" fontFamily="system-ui" textAnchor="middle" fontWeight="600">8</text>
+          <text x="23.3" y="8.8" fontSize="4" fill="currentColor" opacity="0.7" fontFamily="system-ui" textAnchor="middle" fontWeight="600">2</text>
+          <text x="8.85" y="17.5" fontSize="4" fill="currentColor" opacity="0.7" fontFamily="system-ui" textAnchor="middle" fontWeight="600">3</text>
+          <text x="20.4" y="17.5" fontSize="4" fill="currentColor" opacity="0.7" fontFamily="system-ui" textAnchor="middle" fontWeight="600">6</text>
+          <text x="5.95" y="26.2" fontSize="4" fill="currentColor" opacity="0.7" fontFamily="system-ui" textAnchor="middle" fontWeight="600">1</text>
+          <text x="17.5" y="26.2" fontSize="4" fill="currentColor" opacity="0.7" fontFamily="system-ui" textAnchor="middle" fontWeight="600">7</text>
         </svg>
       );
+    }
 
-    // Word Search: letter grid with highlighted diagonal
-    case "word-search":
+    // ── Word Search: 5×4 letter grid with highlighted diagonal ──
+    case "word-search": {
+      const letters: [string, number, number, boolean][] = [
+        ["F", 6, 8.5, true], ["R", 11, 8.5, false], ["T", 16, 8.5, false], ["X", 21, 8.5, false], ["M", 26, 8.5, false],
+        ["K", 6, 13.5, false], ["I", 11, 13.5, true], ["N", 16, 13.5, false], ["D", 21, 13.5, false], ["E", 26, 13.5, false],
+        ["P", 6, 18.5, false], ["L", 11, 18.5, false], ["A", 16, 18.5, true], ["Y", 21, 18.5, false], ["S", 26, 18.5, false],
+        ["G", 6, 23.5, false], ["O", 11, 23.5, false], ["B", 16, 23.5, false], ["N", 21, 23.5, true], ["Z", 26, 23.5, false],
+      ];
       return (
         <svg {...props}>
-          <rect x="2" y="2" width="28" height="28" rx="2" stroke="currentColor" strokeWidth="1.5" opacity="0.25" />
-          {/* Highlight path — diagonal */}
-          <line x1="5" y1="7" x2="21" y2="23" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" opacity="0.12" />
-          {/* Letters */}
-          {[
-            ["A", 6, 9], ["R", 11, 9], ["T", 16, 9], ["X", 21, 9], ["M", 26, 9],
-            ["K", 6, 14], ["I", 11, 14], ["N", 16, 14], ["D", 21, 14], ["E", 26, 14],
-            ["P", 6, 19], ["L", 11, 19], ["A", 16, 19], ["Y", 21, 19], ["S", 26, 19],
-            ["G", 6, 24], ["O", 11, 24], ["B", 16, 24], ["W", 21, 24], ["Z", 26, 24],
-          ].map(([letter, x, y], i) => (
-            <text key={i} x={x as number} y={y as number} fontSize="3.8" fill="currentColor"
-              opacity={[0, 5, 10, 15].includes(i) ? 0.6 : 0.25}
-              fontFamily="system-ui" textAnchor="middle"
-              fontWeight={[0, 5, 10, 15].includes(i) ? 600 : 400}>
-              {letter as string}
+          <rect x="3" y="3" width="26" height="26" rx="1.5" stroke="currentColor" strokeWidth="1.5" opacity="0.35" />
+          {/* Highlight band */}
+          <line x1="6" y1="8.5" x2="21" y2="23.5" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round" opacity="0.1" />
+          {letters.map(([c, x, y, hl], i) => (
+            <text key={i} x={x} y={y} fontSize="3.8" fill="currentColor"
+              opacity={hl ? 0.75 : 0.3}
+              fontFamily="system-ui" textAnchor="middle" dominantBaseline="central"
+              fontWeight={hl ? 700 : 400}>
+              {c}
             </text>
           ))}
         </svg>
       );
+    }
 
-    // Kakuro: grid with diagonal clue cells
-    case "kakuro":
+    // ── Kakuro: 3×3 grid with diagonal clue cells ──
+    case "kakuro": {
+      const K = { o: 3, cell: 8.67 };
+      const kLines = [K.o + K.cell, K.o + K.cell * 2];
       return (
         <svg {...props}>
-          <rect x="2" y="2" width="28" height="28" rx="2" stroke="currentColor" strokeWidth="1.5" opacity="0.25" />
-          {/* Black/clue cells */}
-          <rect x="2" y="2" width="9.33" height="9.33" fill="currentColor" opacity="0.08" />
-          <rect x="2" y="11.33" width="9.33" height="9.33" fill="currentColor" opacity="0.08" />
-          <rect x="2" y="20.67" width="9.33" height="9.33" fill="currentColor" opacity="0.08" />
-          {/* Diagonal lines in clue cells */}
-          <line x1="2" y1="2" x2="11.33" y2="11.33" stroke="currentColor" strokeWidth="0.7" opacity="0.3" />
-          <line x1="2" y1="11.33" x2="11.33" y2="20.67" stroke="currentColor" strokeWidth="0.7" opacity="0.3" />
+          <rect x={K.o} y={K.o} width="26" height="26" rx="1.5" stroke="currentColor" strokeWidth="1.5" opacity="0.35" />
+          {/* Grid lines */}
+          {kLines.map((v) => (
+            <g key={v}>
+              <line x1={K.o} y1={v} x2="29" y2={v} stroke="currentColor" strokeWidth="0.7" opacity="0.25" />
+              <line x1={v} y1={K.o} x2={v} y2="29" stroke="currentColor" strokeWidth="0.7" opacity="0.25" />
+            </g>
+          ))}
+          {/* Clue cells — filled + diagonal */}
+          <rect x="3" y="3" width="8.67" height="8.67" fill="currentColor" opacity="0.1" />
+          <line x1="3" y1="3" x2="11.67" y2="11.67" stroke="currentColor" strokeWidth="0.7" opacity="0.4" />
+          <rect x="3" y="11.67" width="8.67" height="8.67" fill="currentColor" opacity="0.1" />
+          <line x1="3" y1="11.67" x2="11.67" y2="20.33" stroke="currentColor" strokeWidth="0.7" opacity="0.4" />
+          <rect x="3" y="20.33" width="8.67" height="8.67" fill="currentColor" opacity="0.1" />
+          <line x1="3" y1="20.33" x2="11.67" y2="29" stroke="currentColor" strokeWidth="0.7" opacity="0.4" />
           {/* Clue numbers */}
-          <text x="8" y="6.5" fontSize="3.2" fill="currentColor" opacity="0.5" fontFamily="system-ui" textAnchor="middle">16</text>
-          <text x="5" y="9.8" fontSize="3.2" fill="currentColor" opacity="0.5" fontFamily="system-ui" textAnchor="middle">9</text>
-          <text x="8" y="15.8" fontSize="3.2" fill="currentColor" opacity="0.5" fontFamily="system-ui" textAnchor="middle">7</text>
-          <text x="5" y="19" fontSize="3.2" fill="currentColor" opacity="0.5" fontFamily="system-ui" textAnchor="middle">3</text>
-          {/* Grid lines */}
-          <line x1="11.33" y1="2" x2="11.33" y2="30" stroke="currentColor" strokeWidth="0.7" opacity="0.2" />
-          <line x1="20.67" y1="2" x2="20.67" y2="30" stroke="currentColor" strokeWidth="0.7" opacity="0.2" />
-          <line x1="2" y1="11.33" x2="30" y2="11.33" stroke="currentColor" strokeWidth="0.7" opacity="0.2" />
-          <line x1="2" y1="20.67" x2="30" y2="20.67" stroke="currentColor" strokeWidth="0.7" opacity="0.2" />
-          {/* White cell numbers */}
-          <text x="16" y="8.5" fontSize="4" fill="currentColor" opacity="0.45" fontFamily="system-ui" textAnchor="middle">9</text>
-          <text x="25.3" y="18" fontSize="4" fill="currentColor" opacity="0.45" fontFamily="system-ui" textAnchor="middle">2</text>
+          <text x="9" y="7" fontSize="3.2" fill="currentColor" opacity="0.6" fontFamily="system-ui" textAnchor="middle" fontWeight="500">16</text>
+          <text x="5.5" y="10.2" fontSize="3.2" fill="currentColor" opacity="0.6" fontFamily="system-ui" textAnchor="middle" fontWeight="500">9</text>
+          <text x="9" y="15.7" fontSize="3.2" fill="currentColor" opacity="0.6" fontFamily="system-ui" textAnchor="middle" fontWeight="500">7</text>
+          <text x="5.5" y="18.9" fontSize="3.2" fill="currentColor" opacity="0.6" fontFamily="system-ui" textAnchor="middle" fontWeight="500">3</text>
+          {/* Answer digits */}
+          <text x="16" y="8.5" fontSize="4" fill="currentColor" opacity="0.65" fontFamily="system-ui" textAnchor="middle" fontWeight="600">9</text>
+          <text x="24.7" y="17.2" fontSize="4" fill="currentColor" opacity="0.65" fontFamily="system-ui" textAnchor="middle" fontWeight="600">2</text>
+          <text x="16" y="26" fontSize="4" fill="currentColor" opacity="0.65" fontFamily="system-ui" textAnchor="middle" fontWeight="600">4</text>
         </svg>
       );
+    }
 
-    // Nonogram: grid with row/column clue indicators
-    case "nonogram":
+    // ── Nonogram: offset grid with clue margins ──
+    case "nonogram": {
+      const N = { cw: 7, gh: 20, go: 10 }; // clue width, grid size, grid origin
+      const nCellSize = N.gh / 5;
+      const nLines = Array.from({ length: 4 }, (_, i) => N.go + (i + 1) * nCellSize);
       return (
         <svg {...props}>
-          {/* Clue area - top */}
-          <rect x="10" y="2" width="20" height="8" rx="1" fill="currentColor" opacity="0.04" />
-          {/* Clue area - left */}
-          <rect x="2" y="10" width="8" height="20" rx="1" fill="currentColor" opacity="0.04" />
+          {/* Clue backgrounds */}
+          <rect x={N.go} y="3" width={N.gh} height={N.cw - 1} rx="1" fill="currentColor" opacity="0.05" />
+          <rect x="3" y={N.go} width={N.cw - 1} height={N.gh} rx="1" fill="currentColor" opacity="0.05" />
           {/* Grid border */}
-          <rect x="10" y="10" width="20" height="20" rx="1" stroke="currentColor" strokeWidth="1.2" opacity="0.25" />
+          <rect x={N.go} y={N.go} width={N.gh} height={N.gh} rx="1" stroke="currentColor" strokeWidth="1.2" opacity="0.35" />
           {/* Grid lines */}
-          <line x1="14" y1="10" x2="14" y2="30" stroke="currentColor" strokeWidth="0.4" opacity="0.15" />
-          <line x1="18" y1="10" x2="18" y2="30" stroke="currentColor" strokeWidth="0.4" opacity="0.15" />
-          <line x1="22" y1="10" x2="22" y2="30" stroke="currentColor" strokeWidth="0.4" opacity="0.15" />
-          <line x1="26" y1="10" x2="26" y2="30" stroke="currentColor" strokeWidth="0.4" opacity="0.15" />
-          <line x1="10" y1="14" x2="30" y2="14" stroke="currentColor" strokeWidth="0.4" opacity="0.15" />
-          <line x1="10" y1="18" x2="30" y2="18" stroke="currentColor" strokeWidth="0.4" opacity="0.15" />
-          <line x1="10" y1="22" x2="30" y2="22" stroke="currentColor" strokeWidth="0.4" opacity="0.15" />
-          <line x1="10" y1="26" x2="30" y2="26" stroke="currentColor" strokeWidth="0.4" opacity="0.15" />
+          {nLines.map((v) => (
+            <g key={v}>
+              <line x1={N.go} y1={v} x2={N.go + N.gh} y2={v} stroke="currentColor" strokeWidth="0.5" opacity="0.2" />
+              <line x1={v} y1={N.go} x2={v} y2={N.go + N.gh} stroke="currentColor" strokeWidth="0.5" opacity="0.2" />
+            </g>
+          ))}
           {/* Row clues */}
-          <text x="7" y="13.5" fontSize="3" fill="currentColor" opacity="0.4" fontFamily="system-ui" textAnchor="middle">2 1</text>
-          <text x="7" y="17.5" fontSize="3" fill="currentColor" opacity="0.4" fontFamily="system-ui" textAnchor="middle">3</text>
-          <text x="7" y="21.5" fontSize="3" fill="currentColor" opacity="0.4" fontFamily="system-ui" textAnchor="middle">1 1</text>
-          <text x="7" y="25.5" fontSize="3" fill="currentColor" opacity="0.4" fontFamily="system-ui" textAnchor="middle">4</text>
-          <text x="7" y="29.5" fontSize="3" fill="currentColor" opacity="0.4" fontFamily="system-ui" textAnchor="middle">2</text>
-          {/* Column clues */}
-          <text x="12" y="8" fontSize="3" fill="currentColor" opacity="0.4" fontFamily="system-ui" textAnchor="middle">3</text>
-          <text x="16" y="8" fontSize="3" fill="currentColor" opacity="0.4" fontFamily="system-ui" textAnchor="middle">1</text>
-          <text x="20" y="8" fontSize="3" fill="currentColor" opacity="0.4" fontFamily="system-ui" textAnchor="middle">4</text>
-          <text x="24" y="8" fontSize="3" fill="currentColor" opacity="0.4" fontFamily="system-ui" textAnchor="middle">2</text>
-          <text x="28" y="8" fontSize="3" fill="currentColor" opacity="0.4" fontFamily="system-ui" textAnchor="middle">1</text>
+          {["2 1", "3", "1 1", "4", "2"].map((clue, i) => (
+            <text key={`r${i}`} x="7" y={N.go + i * nCellSize + nCellSize / 2 + 1} fontSize="2.8" fill="currentColor" opacity="0.55" fontFamily="system-ui" textAnchor="middle" fontWeight="500">{clue}</text>
+          ))}
+          {/* Col clues */}
+          {["3", "1", "4", "2", "1"].map((clue, i) => (
+            <text key={`c${i}`} x={N.go + i * nCellSize + nCellSize / 2} y="8.5" fontSize="2.8" fill="currentColor" opacity="0.55" fontFamily="system-ui" textAnchor="middle" fontWeight="500">{clue}</text>
+          ))}
           {/* Filled cells */}
-          <rect x="10" y="10" width="4" height="4" fill="currentColor" opacity="0.55" />
-          <rect x="14" y="10" width="4" height="4" fill="currentColor" opacity="0.55" />
-          <rect x="22" y="10" width="4" height="4" fill="currentColor" opacity="0.55" />
-          <rect x="10" y="14" width="4" height="4" fill="currentColor" opacity="0.55" />
-          <rect x="14" y="14" width="4" height="4" fill="currentColor" opacity="0.55" />
-          <rect x="18" y="14" width="4" height="4" fill="currentColor" opacity="0.55" />
-          <rect x="18" y="18" width="4" height="4" fill="currentColor" opacity="0.55" />
-          <rect x="26" y="18" width="4" height="4" fill="currentColor" opacity="0.55" />
+          {[
+            [0, 0], [1, 0], [3, 0],
+            [0, 1], [1, 1], [2, 1],
+            [2, 2], [4, 2],
+            [0, 3], [1, 3], [2, 3], [3, 3],
+            [1, 4], [2, 4],
+          ].map(([c, r]) => (
+            <rect key={`f${c}${r}`} x={N.go + c * nCellSize + 0.3} y={N.go + r * nCellSize + 0.3} width={nCellSize - 0.6} height={nCellSize - 0.6} rx="0.3" fill="currentColor" opacity="0.65" />
+          ))}
         </svg>
       );
+    }
 
-    // Cryptogram: encoded text with underlines
-    case "cryptogram":
+    // ── Cryptogram: cipher text with underlines + decoded hints ──
+    case "cryptogram": {
+      const spacing = 4.4;
+      const row1 = ["X", "K", "Q", "P", "Z"];
+      const row2 = ["M", "B", "R", "W", "J"];
+      const xStart = 5.5;
       return (
         <svg {...props}>
-          <rect x="2" y="2" width="28" height="28" rx="2" stroke="currentColor" strokeWidth="1.5" opacity="0.25" />
-          {/* Encoded letters - top row */}
-          {["X", "K", "Q", "P", "Z"].map((c, i) => (
-            <g key={i}>
-              <text x={6 + i * 4.8} y="11" fontSize="4.5" fill="currentColor" opacity="0.55" fontFamily="monospace" textAnchor="middle" fontWeight="600">{c}</text>
-              <line x1={4 + i * 4.8} y1="12.5" x2={8 + i * 4.8} y2="12.5" stroke="currentColor" strokeWidth="0.8" opacity="0.3" />
+          <rect x="3" y="3" width="26" height="26" rx="1.5" stroke="currentColor" strokeWidth="1.5" opacity="0.35" />
+          {/* Row 1 — encoded */}
+          {row1.map((c, i) => (
+            <g key={`r1${i}`}>
+              <text x={xStart + i * spacing} y="11.5" fontSize="4.2" fill="currentColor" opacity="0.7" fontFamily="monospace" textAnchor="middle" fontWeight="600">{c}</text>
+              <line x1={xStart + i * spacing - 2} y1="13" x2={xStart + i * spacing + 2} y2="13" stroke="currentColor" strokeWidth="0.7" opacity="0.35" />
             </g>
           ))}
-          {/* Decoded hints - smaller below */}
-          <text x="6" y="16" fontSize="3" fill="currentColor" opacity="0.3" fontFamily="monospace" textAnchor="middle">h</text>
-          <text x="15.6" y="16" fontSize="3" fill="currentColor" opacity="0.3" fontFamily="monospace" textAnchor="middle">l</text>
-          {/* Second row of encoded */}
-          {["M", "B", "R", "W"].map((c, i) => (
-            <g key={i}>
-              <text x={6 + i * 5.5} y="22" fontSize="4.5" fill="currentColor" opacity="0.55" fontFamily="monospace" textAnchor="middle" fontWeight="600">{c}</text>
-              <line x1={4 + i * 5.5} y1="23.5" x2={8 + i * 5.5} y2="23.5" stroke="currentColor" strokeWidth="0.8" opacity="0.3" />
+          {/* Decoded hints under row 1 */}
+          <text x={xStart} y="16.5" fontSize="2.8" fill="currentColor" opacity="0.4" fontFamily="monospace" textAnchor="middle">h</text>
+          <text x={xStart + 2 * spacing} y="16.5" fontSize="2.8" fill="currentColor" opacity="0.4" fontFamily="monospace" textAnchor="middle">l</text>
+          {/* Row 2 — encoded */}
+          {row2.map((c, i) => (
+            <g key={`r2${i}`}>
+              <text x={xStart + i * spacing} y="22.5" fontSize="4.2" fill="currentColor" opacity="0.7" fontFamily="monospace" textAnchor="middle" fontWeight="600">{c}</text>
+              <line x1={xStart + i * spacing - 2} y1="24" x2={xStart + i * spacing + 2} y2="24" stroke="currentColor" strokeWidth="0.7" opacity="0.35" />
             </g>
           ))}
-          {/* Arrow hint */}
-          <text x="26" y="27" fontSize="3.5" fill="currentColor" opacity="0.2" fontFamily="system-ui">?</text>
+          {/* Subtle ? */}
+          <text x={xStart + 4 * spacing} y="27.5" fontSize="3" fill="currentColor" opacity="0.25" fontFamily="system-ui" textAnchor="middle">?</text>
         </svg>
       );
+    }
 
-    // Word Fill-In: empty slots with one word filled
+    // ── Word Fill-In: 5×5 grid with black cells + filled word ──
     case "word-fill":
       return (
         <svg {...props}>
-          <rect x="2" y="2" width="28" height="28" rx="2" stroke="currentColor" strokeWidth="1.5" opacity="0.25" />
-          {/* Horizontal word slots */}
-          {[0, 1, 2, 3, 4].map((i) => (
-            <rect key={`h${i}`} x={4 + i * 5} y="6" width="4" height="5" rx="0.5" stroke="currentColor" strokeWidth="0.6" opacity="0.2" fill="none" />
+          <rect x={G5.o} y={G5.o} width="26" height="26" rx="1.5" stroke="currentColor" strokeWidth="1.5" opacity="0.35" />
+          {G5.lines.map((v) => (
+            <line key={`h${v}`} x1={G5.o} y1={v} x2="29" y2={v} stroke="currentColor" strokeWidth="0.6" opacity="0.2" />
           ))}
-          {/* Filled word */}
-          {["P", "L", "A", "Y"].map((c, i) => (
-            <g key={i}>
-              <rect x={6.5 + i * 5} y="13" width="4" height="5" rx="0.5" fill="currentColor" opacity="0.08" stroke="currentColor" strokeWidth="0.6" strokeOpacity="0.3" />
-              <text x={8.5 + i * 5} y="17" fontSize="3.5" fill="currentColor" opacity="0.6" fontFamily="system-ui" textAnchor="middle" fontWeight="600">{c}</text>
-            </g>
+          {G5.lines.map((v) => (
+            <line key={`v${v}`} x1={v} y1={G5.o} x2={v} y2="29" stroke="currentColor" strokeWidth="0.6" opacity="0.2" />
           ))}
-          {/* Another empty row */}
-          {[0, 1, 2, 3].map((i) => (
-            <rect key={`h2${i}`} x={5 + i * 5} y="21" width="4" height="5" rx="0.5" stroke="currentColor" strokeWidth="0.6" opacity="0.2" fill="none" />
+          {/* Black cells */}
+          <rect x="23.8" y="3" width="5.2" height="5.2" fill="currentColor" opacity="0.82" />
+          <rect x="23.8" y="8.2" width="5.2" height="5.2" fill="currentColor" opacity="0.82" />
+          <rect x="13.4" y="13.4" width="5.2" height="5.2" fill="currentColor" opacity="0.82" />
+          <rect x="3" y="18.6" width="5.2" height="5.2" fill="currentColor" opacity="0.82" />
+          <rect x="3" y="23.8" width="5.2" height="5.2" fill="currentColor" opacity="0.82" />
+          {/* Filled word across row 2 */}
+          {["O", "P", "E", "N"].map((c, i) => (
+            <text key={c + i} x={G5.o + i * 5.2 + 2.6} y="12.2" fontSize="3.6" fill="currentColor" opacity="0.7" fontFamily="system-ui" textAnchor="middle" fontWeight="600">{c}</text>
           ))}
+          {/* One vertical letter */}
+          <text x={G5.o + 2.6} y="7" fontSize="3.6" fill="currentColor" opacity="0.45" fontFamily="system-ui" textAnchor="middle">C</text>
         </svg>
       );
 
-    // Number Fill-In: grid with number slots
+    // ── Number Fill-In: 5×5 grid with black cells + numbers ──
     case "number-fill":
       return (
         <svg {...props}>
-          <rect x="2" y="2" width="28" height="28" rx="2" stroke="currentColor" strokeWidth="1.5" opacity="0.25" />
-          {/* Grid lines */}
-          {[7.6, 13.2, 18.8, 24.4].map((v) => (
-            <line key={`h${v}`} x1="2" y1={v} x2="30" y2={v} stroke="currentColor" strokeWidth="0.5" opacity="0.15" />
+          <rect x={G5.o} y={G5.o} width="26" height="26" rx="1.5" stroke="currentColor" strokeWidth="1.5" opacity="0.35" />
+          {G5.lines.map((v) => (
+            <line key={`h${v}`} x1={G5.o} y1={v} x2="29" y2={v} stroke="currentColor" strokeWidth="0.6" opacity="0.2" />
           ))}
-          {[7.6, 13.2, 18.8, 24.4].map((v) => (
-            <line key={`v${v}`} x1={v} y1="2" x2={v} y2="30" stroke="currentColor" strokeWidth="0.5" opacity="0.15" />
+          {G5.lines.map((v) => (
+            <line key={`v${v}`} x1={v} y1={G5.o} x2={v} y2="29" stroke="currentColor" strokeWidth="0.6" opacity="0.2" />
           ))}
-          {/* Black cells */}
-          <rect x="13.2" y="2" width="5.6" height="5.6" fill="currentColor" opacity="0.7" />
-          <rect x="2" y="13.2" width="5.6" height="5.6" fill="currentColor" opacity="0.7" />
-          <rect x="24.4" y="13.2" width="5.6" height="5.6" fill="currentColor" opacity="0.7" />
-          <rect x="13.2" y="24.4" width="5.6" height="5.6" fill="currentColor" opacity="0.7" />
-          {/* Numbers in cells */}
-          <text x="5" y="7" fontSize="4" fill="currentColor" opacity="0.45" fontFamily="system-ui" textAnchor="middle">4</text>
-          <text x="10.5" y="7" fontSize="4" fill="currentColor" opacity="0.45" fontFamily="system-ui" textAnchor="middle">7</text>
-          <text x="21.5" y="12.5" fontSize="4" fill="currentColor" opacity="0.45" fontFamily="system-ui" textAnchor="middle">3</text>
-          <text x="16" y="18" fontSize="4" fill="currentColor" opacity="0.45" fontFamily="system-ui" textAnchor="middle">1</text>
-          <text x="10.5" y="28" fontSize="4" fill="currentColor" opacity="0.45" fontFamily="system-ui" textAnchor="middle">8</text>
+          {/* Black cells — symmetric */}
+          <rect x="13.4" y="3" width="5.2" height="5.2" fill="currentColor" opacity="0.82" />
+          <rect x="3" y="13.4" width="5.2" height="5.2" fill="currentColor" opacity="0.82" />
+          <rect x="23.8" y="13.4" width="5.2" height="5.2" fill="currentColor" opacity="0.82" />
+          <rect x="13.4" y="23.8" width="5.2" height="5.2" fill="currentColor" opacity="0.82" />
+          {/* Digits */}
+          <text x={G5.o + 2.6} y="7" fontSize="3.6" fill="currentColor" opacity="0.65" fontFamily="system-ui" textAnchor="middle" fontWeight="600">4</text>
+          <text x={G5.o + 5.2 + 2.6} y="7" fontSize="3.6" fill="currentColor" opacity="0.65" fontFamily="system-ui" textAnchor="middle" fontWeight="600">7</text>
+          <text x={G5.o + 2 * 5.2 + 2.6} y="17.4" fontSize="3.6" fill="currentColor" opacity="0.65" fontFamily="system-ui" textAnchor="middle" fontWeight="600">1</text>
+          <text x={G5.o + 3 * 5.2 + 2.6} y="12.2" fontSize="3.6" fill="currentColor" opacity="0.65" fontFamily="system-ui" textAnchor="middle" fontWeight="600">3</text>
+          <text x={G5.o + 5.2 + 2.6} y="27.6" fontSize="3.6" fill="currentColor" opacity="0.65" fontFamily="system-ui" textAnchor="middle" fontWeight="600">8</text>
         </svg>
       );
 
