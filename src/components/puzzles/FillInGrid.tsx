@@ -358,7 +358,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
       <div className="flex-shrink-0">
-        <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
+        <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} onPause={timer.pause} onResume={timer.resume} />
         {!isMobile && (
           <p className="mb-2 text-xs text-muted-foreground">
             Arrow keys to move • Type to fill • Delete to clear • Tap same cell to toggle direction
