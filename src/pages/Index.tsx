@@ -214,24 +214,24 @@ const Index = () => {
                   <Calendar size={14} />
                   Daily Challenge
                 </div>
-                {(() => { const DailyIcon = CATEGORY_ICONS[challenge.category]; return (
-                <h2 className="font-display text-2xl font-bold text-foreground sm:text-3xl flex items-center gap-2">
-                  <DailyIcon size={28} className="text-primary" /> Today's {challengeInfo.name}
+              {(() => { const DailyIcon = CATEGORY_ICONS[challenge.category]; return (
+                <h2 className="font-display text-3xl font-bold text-foreground sm:text-4xl flex items-center gap-2.5">
+                  <DailyIcon size={30} className="text-primary" /> Today's {challengeInfo.name}
                 </h2>
                 ); })()}
-                <p className="mt-2 text-muted-foreground">
+                <p className="mt-1.5 text-sm text-muted-foreground/80">
                   {challengeInfo.description}. Everyone gets the same puzzle — how fast can you solve it?
                 </p>
-                <div className="mt-2 flex items-center gap-2">
+                <div className="mt-1.5 flex items-center gap-2">
                   <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground capitalize">
                     {challenge.difficulty}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-[11px] text-muted-foreground/60">
                     Puzzle Code: <span className="font-mono">{challenge.seed}</span>
                   </span>
                 </div>
 
-                <div className="mt-6 flex flex-wrap items-center gap-3">
+                <div className="mt-8 flex flex-wrap items-center gap-3">
                   {dailyCompletion ? (
                     <>
                        <div className="flex items-center gap-1.5 rounded-lg border bg-primary/10 border-primary/30 px-3 py-2">
