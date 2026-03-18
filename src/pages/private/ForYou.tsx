@@ -511,7 +511,7 @@ const ForYou = () => {
 // ─── Puzzle List ───
 
 function PuzzleList({
-  puzzles, loading, emptyMessage, showCreator, showRecipient, onSolve, onDelete,
+  puzzles, loading, emptyMessage, showCreator, showRecipient, onSolve, onDelete, onView,
 }: {
   puzzles: PrivatePuzzle[];
   loading: boolean;
@@ -520,6 +520,7 @@ function PuzzleList({
   showRecipient?: boolean;
   onSolve?: (p: PrivatePuzzle) => void;
   onDelete?: (id: string) => void;
+  onView?: (p: PrivatePuzzle) => void;
 }) {
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
   if (puzzles.length === 0) {
