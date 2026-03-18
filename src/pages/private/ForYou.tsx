@@ -154,8 +154,11 @@ const ForYou = () => {
     }
   }, [generatedData]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const receivedPuzzles = puzzles.filter(p => p.sent_to === user?.id);
-  const sentPuzzles = puzzles.filter(p => p.created_by === user?.id);
+  const receivedPuzzles = puzzles.filter(p => p.sent_to === user?.id && !p.solved_by);
+  const sentPuzzles = puzzles.filter(p => p.created_by === user?.id && !p.solved_by);
+  const completedPuzzles = puzzles.filter(p => !!p.solved_by).sort((a, b) =>
+    new Date(b.solved_at || b.created_at).getTime() - new Date(a.solved_at || a.created_at).getTime()
+  );
 
   const selectedRecipient = recipients.find(r => r.id === selectedRecipientId);
   const activeRecipientName = selectedRecipient
