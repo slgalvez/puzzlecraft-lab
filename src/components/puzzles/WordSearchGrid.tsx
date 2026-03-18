@@ -9,14 +9,16 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
 import type { Difficulty } from "@/lib/puzzleTypes";
+import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
 interface Props {
   seed: number;
   difficulty: Difficulty;
   onNewPuzzle: () => void;
+  onSolve?: (perf: PuzzlePerformance) => void;
 }
 
-const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
+const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateWordSearch(seed, difficulty, WORDS), [seed, difficulty]);
@@ -31,6 +33,9 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const [tapStart, setTapStart] = useState<[number, number] | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const resetCount = useRef(0);
+  const checkCount = useRef(0);
+  const errorCheckCount = useRef(0);
 
   const timerKey = `word-search-${seed}-${difficulty}`;
   const timer = usePuzzleTimer(timerKey, { category: "word-search", difficulty });
@@ -100,6 +105,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
           title: "🎉 Congratulations!",
           description: isNewBest ? "New best time! 🏆" : "All words found!",
         });
+        onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
       }
       return true;
     }
@@ -222,7 +228,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
 
   const handleReset = () => {
     setFoundWords(new Set()); setFoundCells(new Set()); setStartCell(null); setTapStart(null); setCursor([0, 0]);
-    timer.reset(); containerRef.current?.focus();
+    resetCount.current++; timer.reset(); containerRef.current?.focus();
   };
 
   const handleCheck = () => {

@@ -9,14 +9,16 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
+import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
 interface Props {
   puzzle: CrosswordPuzzle;
   showControls?: boolean;
   onNewPuzzle?: () => void;
+  onSolve?: (perf: PuzzlePerformance) => void;
 }
 
-const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
+const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
   const { gridSize, blackCells, clues } = puzzle;
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -28,6 +30,9 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
   const mobileInputRef = useRef<MobileLetterInputHandle>(null);
+  const resetCount = useRef(0);
+  const checkCount = useRef(0);
+  const errorCheckCount = useRef(0);
 
   const timerKey = `crossword-${puzzle.id}`;
   const timer = usePuzzleTimer(timerKey, { category: "crossword", difficulty: puzzle.difficulty });
@@ -218,11 +223,13 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   const handleReset = () => {
     setGrid(Array.from({ length: gridSize }, () => Array(gridSize).fill("")));
     setErrors(new Set());
+    resetCount.current++;
     timer.reset();
     if (!isMobile) containerRef.current?.focus();
   };
 
   const handleCheck = () => {
+    checkCount.current++;
     const solutionGrid: string[][] = Array.from({ length: gridSize }, () => Array(gridSize).fill(""));
     for (const clue of clues) {
       const dr = clue.direction === "down" ? 1 : 0;
@@ -241,9 +248,11 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
       }
     }
     setErrors(errs);
+    if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0 && filled) {
       const { isNewBest } = timer.solve();
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Crossword solved correctly!" });
+      onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
     } else if (errs.size > 0)
       toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
     else

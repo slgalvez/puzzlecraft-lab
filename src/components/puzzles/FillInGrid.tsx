@@ -11,11 +11,13 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
+import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
 interface Props {
   puzzle: FillInPuzzle;
   showControls?: boolean;
   onNewPuzzle?: () => void;
+  onSolve?: (perf: PuzzlePerformance) => void;
 }
 
 type Direction = "across" | "down";
@@ -25,7 +27,7 @@ interface EntrySlot {
   direction: Direction;
 }
 
-const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
+const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
   const { gridSize, blackCells, entries, type, solution } = puzzle;
   const isNumbers = type === "number-fill";
   const { toast } = useToast();
@@ -40,6 +42,9 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
   const mobileInputRef = useRef<MobileLetterInputHandle>(null);
+  const resetCount = useRef(0);
+  const checkCount = useRef(0);
+  const errorCheckCount = useRef(0);
 
   const timerKey = `fillin-${puzzle.id}`;
   const timer = usePuzzleTimer(timerKey, { category: puzzle.type as "word-fill" | "number-fill", difficulty: puzzle.difficulty });
@@ -260,11 +265,13 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
     setUsedEntries(new Set());
     setErrors(new Set());
     setDirection("across");
+    resetCount.current++;
     timer.reset();
     if (!isMobile) containerRef.current?.focus();
   };
 
   const handleCheck = () => {
+    checkCount.current++;
     const errs = new Set<string>();
     let filled = true;
     for (let r = 0; r < gridSize; r++) {
@@ -275,9 +282,11 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle }: Props) => {
       }
     }
     setErrors(errs);
+    if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0 && filled) {
       const { isNewBest } = timer.solve();
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Puzzle solved correctly!" });
+      onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
     } else if (errs.size > 0)
       toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
     else

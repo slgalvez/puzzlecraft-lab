@@ -9,11 +9,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
 import type { Difficulty } from "@/lib/puzzleTypes";
+import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
 interface Props {
   seed: number;
   difficulty: Difficulty;
   onNewPuzzle: () => void;
+  onSolve?: (perf: PuzzlePerformance) => void;
 }
 
 type Direction = "across" | "down";
@@ -23,7 +25,7 @@ interface EntrySlot {
   direction: Direction;
 }
 
-const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
+const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateKakuro(seed, difficulty), [seed, difficulty]);
@@ -36,6 +38,9 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
   const [direction, setDirection] = useState<Direction>("across");
   const containerRef = useRef<HTMLDivElement>(null);
+  const resetCount = useRef(0);
+  const checkCount = useRef(0);
+  const errorCheckCount = useRef(0);
 
   const timerKey = `kakuro-${seed}-${difficulty}`;
   const timer = usePuzzleTimer(timerKey, { category: "kakuro", difficulty });
@@ -229,11 +234,13 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
     setGrid(Array.from({ length: size }, () => Array(size).fill("")));
     setErrors(new Set());
     setDirection("across");
+    resetCount.current++;
     timer.reset();
     containerRef.current?.focus();
   };
 
   const handleCheck = () => {
+    checkCount.current++;
     const errs = new Set<string>();
     let filled = true;
     for (let r = 0; r < size; r++) {
@@ -244,9 +251,11 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
       }
     }
     setErrors(errs);
+    if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0 && filled) {
       const { isNewBest } = timer.solve();
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Puzzle solved correctly!" });
+      onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
     } else if (errs.size > 0)
       toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
     else

@@ -7,14 +7,16 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Difficulty } from "@/lib/puzzleTypes";
+import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
 interface Props {
   seed: number;
   difficulty: Difficulty;
   onNewPuzzle: () => void;
+  onSolve?: (perf: PuzzlePerformance) => void;
 }
 
-const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
+const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateCryptogram(seed, difficulty), [seed, difficulty]);
@@ -25,6 +27,9 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
   const [activeIdx, setActiveIdx] = useState<number>(-1);
   const inputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
+  const resetCount = useRef(0);
+  const checkCount = useRef(0);
+  const errorCheckCount = useRef(0);
 
   const timerKey = `cryptogram-${seed}-${difficulty}`;
   const timer = usePuzzleTimer(timerKey, { category: "cryptogram", difficulty });
@@ -116,11 +121,12 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
   }, [timer.isSolved, hints, editableIndices]);
 
   const handleReset = () => {
-    setGuesses({ ...hints }); setErrors(new Set()); timer.reset();
+    setGuesses({ ...hints }); setErrors(new Set()); resetCount.current++; timer.reset();
     if (editableIndices.length > 0) focusIdx(editableIndices[0]);
   };
 
   const handleCheck = () => {
+    checkCount.current++;
     const errs = new Set<string>();
     let allFilled = true;
     for (const el of encodedLetters) {
@@ -129,9 +135,11 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle }: Props) => {
       if (guess !== reverseCipher[el]) errs.add(el);
     }
     setErrors(errs);
+    if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0 && allFilled) {
       const { isNewBest } = timer.solve();
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Message decoded correctly!" });
+      onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
     } else if (errs.size > 0)
       toast({ title: "Not quite right", description: `${errs.size} letter(s) are incorrect.`, variant: "destructive" });
     else

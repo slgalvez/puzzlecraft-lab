@@ -1,12 +1,13 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
-import { ArrowLeft, RefreshCw, Dices, Infinity } from "lucide-react";
+import { ArrowLeft, Dices, Infinity, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { computeNextDifficulty, createDifficultyMap, type PuzzlePerformance } from "@/lib/endlessDifficulty";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
@@ -32,6 +33,7 @@ const QuickPlay = () => {
   const { type } = useParams<{ type: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const category = type as PuzzleCategory;
   const info = CATEGORY_INFO[category];
 
@@ -42,13 +44,19 @@ const QuickPlay = () => {
   const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
   const [seed, setSeed] = useState(() => initialSeed ? parseInt(initialSeed) || randomSeed() : randomSeed());
   const [puzzleKey, setPuzzleKey] = useState(0);
-  // Track current type for surprise re-rolls
   const [currentType, setCurrentType] = useState<PuzzleCategory>(category);
   const currentInfo = CATEGORY_INFO[currentType] || info;
 
+  // Endless mode: per-type adaptive difficulty + puzzle count
+  const [endlessDiffMap, setEndlessDiffMap] = useState(() => createDifficultyMap());
+  const [endlessCount, setEndlessCount] = useState(1);
+  const [lastDiffChange, setLastDiffChange] = useState<"up" | "down" | "stay" | null>(null);
+
+  // For endless mode, the active difficulty comes from the adaptive map
+  const activeDifficulty = mode === "endless" ? endlessDiffMap[currentType] : difficulty;
+
   const handleNewPuzzle = useCallback(() => {
     if (mode === "surprise") {
-      // Pick a new random type and difficulty
       const newType = allTypes[Math.floor(Math.random() * allTypes.length)];
       const newDiff = allDifficulties[Math.floor(Math.random() * allDifficulties.length)];
       const newSeed = randomSeed();
@@ -56,13 +64,46 @@ const QuickPlay = () => {
       setDifficulty(newDiff);
       setSeed(newSeed);
       setPuzzleKey((k) => k + 1);
-      // Update URL without full navigation
       window.history.replaceState(null, "", `/quick-play/${newType}?d=${newDiff}&seed=${newSeed}&mode=surprise`);
+    } else if (mode === "endless") {
+      // Pick a random type for the next puzzle
+      const newType = allTypes[Math.floor(Math.random() * allTypes.length)];
+      const newSeed = randomSeed();
+      setCurrentType(newType);
+      setSeed(newSeed);
+      setPuzzleKey((k) => k + 1);
+      setEndlessCount((c) => c + 1);
+      setLastDiffChange(null);
+      window.history.replaceState(null, "", `/quick-play/${newType}?mode=endless`);
     } else {
       setSeed(randomSeed());
       setPuzzleKey((k) => k + 1);
     }
   }, [mode]);
+
+  const handleEndlessSolve = useCallback((perf: PuzzlePerformance) => {
+    if (mode !== "endless") return;
+    const current = endlessDiffMap[currentType];
+    const { next, direction } = computeNextDifficulty(current, perf);
+    
+    if (direction !== "stay") {
+      setEndlessDiffMap((prev) => ({ ...prev, [currentType]: next }));
+    }
+    setLastDiffChange(direction);
+
+    // Show subtle toast about difficulty change
+    if (direction === "up") {
+      toast({
+        title: "⬆️ Difficulty increased",
+        description: `${CATEGORY_INFO[currentType].name} → ${DIFFICULTY_LABELS[next]}`,
+      });
+    } else if (direction === "down") {
+      toast({
+        title: "⬇️ Difficulty eased",
+        description: `${CATEGORY_INFO[currentType].name} → ${DIFFICULTY_LABELS[next]}`,
+      });
+    }
+  }, [mode, currentType, endlessDiffMap, toast]);
 
   const handleDifficultyChange = (d: Difficulty) => {
     setDifficulty(d);
@@ -90,41 +131,42 @@ const QuickPlay = () => {
 
   const activeType = currentType;
   const activeInfo = currentInfo;
+  const onSolveHandler = mode === "endless" ? handleEndlessSolve : undefined;
 
   const renderPuzzle = () => {
-    const key = `${seed}-${difficulty}-${puzzleKey}`;
+    const key = `${seed}-${activeDifficulty}-${puzzleKey}`;
     switch (activeType) {
-      case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
-      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
-      case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
-      case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
-      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
+      case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
+      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
+      case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
+      case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
+      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
       case "crossword": {
-        const gen = generateCrossword(seed, difficulty);
+        const gen = generateCrossword(seed, activeDifficulty);
         const puzzle: CrosswordPuzzle = {
           id: `gen-${seed}`, title: "Generated Crossword", type: "crossword",
-          difficulty: difficulty as CrosswordPuzzle["difficulty"],
+          difficulty: activeDifficulty as CrosswordPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, clues: gen.clues,
         };
-        return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} />;
+        return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
       }
       case "word-fill": {
-        const gen = generateWordFillIn(seed, difficulty);
+        const gen = generateWordFillIn(seed, activeDifficulty);
         const puzzle: FillInPuzzle = {
           id: `gen-${seed}`, title: "Generated Word Fill-In", type: "word-fill",
-          difficulty: difficulty as FillInPuzzle["difficulty"],
+          difficulty: activeDifficulty as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
-        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} />;
+        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
       }
       case "number-fill": {
-        const gen = generateNumberFillIn(seed, difficulty);
+        const gen = generateNumberFillIn(seed, activeDifficulty);
         const puzzle: FillInPuzzle = {
           id: `gen-${seed}`, title: "Generated Number Fill-In", type: "number-fill",
-          difficulty: difficulty as FillInPuzzle["difficulty"],
+          difficulty: activeDifficulty as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
-        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} />;
+        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} />;
       }
       default: return null;
     }
@@ -153,14 +195,18 @@ const QuickPlay = () => {
             <div className="flex items-center gap-1.5 mb-2">
               <ModeIcon size={14} className="text-primary" />
               <span className="text-xs font-medium uppercase tracking-widest text-primary">{modeLabel}</span>
+              {mode === "endless" && (
+                <span className="text-xs text-muted-foreground ml-2">#{endlessCount}</span>
+              )}
             </div>
           )}
           <div className="flex items-center gap-2.5 mb-3">
             <PuzzleIcon type={activeType} size={28} className="text-foreground" />
             <h1 className="font-display text-xl font-bold text-foreground sm:text-2xl">{activeInfo.name}</h1>
           </div>
-          {/* Hide difficulty selector in surprise mode (randomized automatically) */}
-          {mode !== "surprise" && (
+
+          {/* Default mode: manual difficulty selector */}
+          {mode === "default" && (
             <div className="flex flex-wrap gap-1.5">
               {difficulties.map(([val, label]) => (
                 <button
@@ -168,7 +214,7 @@ const QuickPlay = () => {
                   onClick={() => handleDifficultyChange(val)}
                   className={cn(
                     "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                    difficulty === val
+                    activeDifficulty === val
                       ? "border-primary bg-primary text-primary-foreground"
                       : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
                   )}
@@ -178,8 +224,22 @@ const QuickPlay = () => {
               ))}
             </div>
           )}
+
+          {/* Surprise mode: show current difficulty */}
           {mode === "surprise" && (
-            <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[difficulty]}</p>
+            <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[activeDifficulty]}</p>
+          )}
+
+          {/* Endless mode: show adaptive difficulty with directional indicator */}
+          {mode === "endless" && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                Difficulty: <span className="font-medium text-foreground capitalize">{DIFFICULTY_LABELS[activeDifficulty]}</span>
+              </span>
+              {lastDiffChange === "up" && <TrendingUp size={12} className="text-primary" />}
+              {lastDiffChange === "down" && <TrendingDown size={12} className="text-destructive" />}
+              {lastDiffChange === "stay" && <Minus size={12} className="text-muted-foreground" />}
+            </div>
           )}
         </div>
 
