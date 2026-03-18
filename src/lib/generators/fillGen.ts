@@ -9,8 +9,8 @@ export interface GeneratedFillIn {
   solution: (string | null)[][];
 }
 
-const SIZES: Record<Difficulty, number> = { easy: 7, medium: 9, hard: 11, extreme: 13, insane: 15 };
-const TARGETS: Record<Difficulty, number> = { easy: 6, medium: 10, hard: 16, extreme: 22, insane: 30 };
+const SIZES: Record<Difficulty, number> = { easy: 7, medium: 9, hard: 13, extreme: 15, insane: 19 };
+const TARGETS: Record<Difficulty, number> = { easy: 5, medium: 10, hard: 18, extreme: 28, insane: 40 };
 
 export function generateWordFillIn(seed: number, difficulty: Difficulty): GeneratedFillIn {
   const rng = new SeededRandom(seed);

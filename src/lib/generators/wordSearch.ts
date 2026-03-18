@@ -12,9 +12,10 @@ const DIRECTIONS: [number, number][] = [
   [0, 1], [1, 0], [1, 1], [-1, 1], [0, -1], [-1, 0], [-1, -1], [1, -1],
 ];
 
-const SIZES: Record<Difficulty, number> = { easy: 10, medium: 12, hard: 14, extreme: 17, insane: 20 };
-const WORD_COUNTS: Record<Difficulty, number> = { easy: 6, medium: 10, hard: 14, extreme: 18, insane: 22 };
+const SIZES: Record<Difficulty, number> = { easy: 8, medium: 12, hard: 16, extreme: 20, insane: 24 };
+const WORD_COUNTS: Record<Difficulty, number> = { easy: 5, medium: 10, hard: 16, extreme: 22, insane: 30 };
 const DIR_COUNTS: Record<Difficulty, number> = { easy: 2, medium: 4, hard: 6, extreme: 8, insane: 8 };
+const MIN_WORD_LEN: Record<Difficulty, number> = { easy: 3, medium: 4, hard: 5, extreme: 5, insane: 6 };
 
 export function generateWordSearch(
   seed: number,
@@ -25,10 +26,11 @@ export function generateWordSearch(
   const size = SIZES[difficulty];
   const wordCount = WORD_COUNTS[difficulty];
   const dirCount = DIR_COUNTS[difficulty];
+  const minLen = MIN_WORD_LEN[difficulty];
   const dirs = DIRECTIONS.slice(0, dirCount);
 
   const grid: string[][] = Array.from({ length: size }, () => Array(size).fill(""));
-  const available = rng.shuffle(wordList.filter((w) => w.length >= 3 && w.length <= size));
+  const available = rng.shuffle(wordList.filter((w) => w.length >= minLen && w.length <= size));
   const placed: WordSearchPuzzle["wordPositions"] = [];
 
   for (const word of available) {
