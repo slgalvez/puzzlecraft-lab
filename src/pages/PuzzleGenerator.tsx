@@ -76,10 +76,8 @@ const PuzzleGenerator = () => {
   const [mobileStep, setMobileStep] = useState<MobileStep>(1);
 
   // Random tab state
-  const [randomTypes, setRandomTypes] = useState<Set<PuzzleCategory>>(
-    new Set(allTypes.map(([t]) => t))
-  );
-  const [randomDifficulty, setRandomDifficulty] = useState<Difficulty | "any">("any");
+  const [randomTypes, setRandomTypes] = useState<Set<PuzzleCategory>>(new Set());
+  const [randomDifficulty, setRandomDifficulty] = useState<Difficulty | "any" | null>(null);
 
   const handleNewPuzzle = useCallback(() => {
     if (randomPool && randomPool.length > 1) {
@@ -182,13 +180,22 @@ const PuzzleGenerator = () => {
   const toggleRandomType = (type: PuzzleCategory) => {
     setRandomTypes((prev) => {
       const next = new Set(prev);
-      if (next.has(type)) { if (next.size > 1) next.delete(type); }
+      if (next.has(type)) next.delete(type);
       else next.add(type);
       return next;
     });
   };
 
+  const canRandomGenerate = randomTypes.size > 0 && randomDifficulty !== null;
+
   const handleRandomGenerate = () => {
+    if (!canRandomGenerate) {
+      toast({
+        title: "Missing selections",
+        description: "Select at least one puzzle type and a difficulty to generate",
+      });
+      return;
+    }
     const types = Array.from(randomTypes);
     const chosenType = types[Math.floor(Math.random() * types.length)];
     const newSeed = randomSeed();
@@ -352,7 +359,7 @@ const PuzzleGenerator = () => {
           <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Puzzle Types</label>
           <div className="flex gap-2">
             <button onClick={() => setRandomTypes(new Set(allTypes.map(([t]) => t)))} className="text-[10px] font-medium text-primary hover:underline">All</button>
-            <button onClick={() => setRandomTypes(new Set([allTypes[0][0]]))} className="text-[10px] font-medium text-primary hover:underline">Clear</button>
+            <button onClick={() => { setRandomTypes(new Set()); setRandomDifficulty(null); }} className="text-[10px] font-medium text-primary hover:underline">Clear</button>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -401,13 +408,20 @@ const PuzzleGenerator = () => {
         </div>
       </div>
 
-      <Button onClick={handleRandomGenerate} size="lg" className="w-full gap-2 text-base">
+      <Button onClick={handleRandomGenerate} size="lg" className="w-full gap-2 text-base" disabled={!canRandomGenerate}>
         <Dices size={18} />
         Generate Random Puzzle
       </Button>
-      <p className="text-center text-[10px] text-muted-foreground">
-        {randomTypes.size === allTypes.length ? "From all puzzle types" : `From ${randomTypes.size} selected type${randomTypes.size > 1 ? "s" : ""}`}
-      </p>
+      {!canRandomGenerate && (
+        <p className="text-center text-xs text-muted-foreground">
+          Select at least one puzzle type and a difficulty
+        </p>
+      )}
+      {canRandomGenerate && (
+        <p className="text-center text-[10px] text-muted-foreground">
+          {randomTypes.size === allTypes.length ? "From all puzzle types" : `From ${randomTypes.size} selected type${randomTypes.size > 1 ? "s" : ""}`}
+        </p>
+      )}
     </div>
   );
 
@@ -534,7 +548,7 @@ const PuzzleGenerator = () => {
           <div className="flex gap-2">
             <button onClick={() => setRandomTypes(new Set(allTypes.map(([t]) => t)))} className="text-xs font-medium text-primary hover:underline">All</button>
             <span className="text-xs text-muted-foreground">·</span>
-            <button onClick={() => setRandomTypes(new Set([allTypes[0][0]]))} className="text-xs font-medium text-primary hover:underline">Clear</button>
+            <button onClick={() => { setRandomTypes(new Set()); setRandomDifficulty(null); }} className="text-xs font-medium text-primary hover:underline">Clear</button>
           </div>
         </div>
         <div className="grid grid-cols-4 gap-2">
@@ -584,14 +598,21 @@ const PuzzleGenerator = () => {
         </div>
       </div>
 
-      <div>
-        <Button onClick={handleRandomGenerate} size="lg" className="gap-2 text-base px-8">
+      <div className="flex items-center gap-4">
+        <Button onClick={handleRandomGenerate} size="lg" className="gap-2 text-base px-8" disabled={!canRandomGenerate}>
           <Dices size={18} />
           Generate Random Puzzle
         </Button>
-        <p className="mt-2 text-xs text-muted-foreground">
-          {randomTypes.size === allTypes.length ? "From all puzzle types" : `From ${randomTypes.size} selected type${randomTypes.size > 1 ? "s" : ""}`}
-        </p>
+        {!canRandomGenerate && (
+          <p className="text-xs text-muted-foreground">
+            Select at least one puzzle type and a difficulty
+          </p>
+        )}
+        {canRandomGenerate && (
+          <p className="text-xs text-muted-foreground">
+            {randomTypes.size === allTypes.length ? "From all puzzle types" : `From ${randomTypes.size} selected type${randomTypes.size > 1 ? "s" : ""}`}
+          </p>
+        )}
       </div>
     </div>
   );
