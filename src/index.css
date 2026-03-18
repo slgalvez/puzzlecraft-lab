@@ -215,6 +215,30 @@ body:has(.private-app) #root {
   border-radius: 1.125rem 1.125rem 1.125rem 0.25rem;
 }
 
+/* Mobile sidebar portal inherits private-app dark theme */
+body:has(.private-app) [data-sidebar="sidebar"][data-mobile="true"] {
+  --sidebar-background: 220 14% 8%;
+  --sidebar-foreground: 220 10% 85%;
+  --sidebar-primary: 172 50% 45%;
+  --sidebar-primary-foreground: 220 14% 10%;
+  --sidebar-accent: 220 12% 15%;
+  --sidebar-accent-foreground: 220 10% 85%;
+  --sidebar-border: 220 12% 16%;
+  --sidebar-ring: 172 50% 45%;
+  --primary: 172 50% 45%;
+  --primary-foreground: 220 14% 10%;
+  --secondary: 220 12% 18%;
+  --secondary-foreground: 220 10% 85%;
+  --muted: 220 12% 18%;
+  --muted-foreground: 220 8% 55%;
+  --border: 220 12% 20%;
+  --foreground: 220 10% 90%;
+  --destructive: 0 62% 45%;
+  --destructive-foreground: 0 0% 100%;
+  background: hsl(220 14% 8%) !important;
+  color: hsl(220 10% 85%);
+}
+
 /* Composer pill style */
 .private-app .msg-composer-input {
   border-radius: 1.25rem;
