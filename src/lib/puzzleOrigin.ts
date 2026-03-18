@@ -26,7 +26,7 @@ export function getBackPath(origin: PuzzleOrigin): string {
     case "daily": return "/daily";
     case "library": return "/puzzles";
     case "play":
-    default: return "/";
+    default: return "/puzzles";
   }
 }
 
