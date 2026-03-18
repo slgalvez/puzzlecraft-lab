@@ -15,6 +15,7 @@ const Stats = () => {
   const stats = useMemo(() => getProgressStats(), []);
   const dailyStreak = useMemo(() => getDailyStreak(), []);
   const dailyCompleted = useMemo(() => getTotalDailyCompleted(), []);
+  const endlessStats = useMemo(() => getEndlessStats(), []);
 
   const statCards = [
     { icon: Target, label: "Puzzles Solved", value: stats.totalSolved.toString() },
