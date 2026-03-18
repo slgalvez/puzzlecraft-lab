@@ -18,6 +18,7 @@ interface Message {
   read_at: string | null;
   is_disappearing: boolean;
   expires_at: string | null;
+  reactions: Record<string, string[]>;
 }
 
 const UserConversation = () => {
