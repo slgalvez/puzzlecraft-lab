@@ -4,8 +4,7 @@ import { ArrowRight, Grid3X3, Hash, Type, Search, Plus, Palette, Lock, Calculato
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { allPuzzles, getPuzzleById } from "@/data/puzzles";
-import PuzzleCard from "@/components/puzzles/PuzzleCard";
+import { useToast } from "@/hooks/use-toast";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getTodaysChallenge, getDailyCompletion, getDailyStreak } from "@/lib/dailyChallenge";
