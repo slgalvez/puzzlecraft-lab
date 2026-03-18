@@ -109,13 +109,13 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
                   </h1>
                 )}
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <button
                   onClick={quickExit}
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1.5 -mr-1 rounded-md hover:bg-secondary/60 active:bg-secondary"
                   title="Back to Puzzles"
                 >
-                  <Puzzle size={14} />
+                  <Puzzle size={16} />
                   <span className="hidden sm:inline">Puzzles</span>
                 </button>
                 <span className="text-xs text-muted-foreground hidden sm:inline">
@@ -123,7 +123,7 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
                 </span>
                 <button
                   onClick={() => { signOut(); navigate("/"); }}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-secondary/60 active:bg-secondary"
                   title="Sign out"
                 >
                   <LogOut size={16} />
