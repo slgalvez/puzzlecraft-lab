@@ -43,12 +43,10 @@ export function MessageBubble({
     createdAt &&
     new Date(expiresAt).getTime() - new Date(createdAt).getTime() > 8 * 24 * 60 * 60 * 1000;
 
-  // Collect reactions into a displayable array
   const reactionEntries = Object.entries(reactions || {}).filter(([, users]) => users.length > 0);
   const hasReactions = reactionEntries.length > 0;
 
   const handleDoubleTap = () => {
-    // Quick heart reaction on double-tap
     onReact?.(id, "❤️");
   };
 
@@ -68,6 +66,9 @@ export function MessageBubble({
     onReact?.(id, reaction);
     setShowPicker(false);
   };
+
+  const isMedia = isGifMessage(body);
+  const mediaUrl = isMedia ? getGifUrl(body) : "";
 
   return (
     <div
@@ -106,15 +107,15 @@ export function MessageBubble({
         )}
 
         {/* Bubble */}
-        {isGifMessage(body) ? (
+        {isMedia ? (
           <div className={`overflow-hidden ${
             isMine
               ? showTail ? "msg-bubble-mine p-1" : "msg-bubble-mine rounded-br-[1.125rem] p-1"
               : showTail ? "msg-bubble-theirs p-1" : "msg-bubble-theirs rounded-bl-[1.125rem] p-1"
           }`}>
             <img
-              src={getGifUrl(body)}
-              alt="GIF"
+              src={mediaUrl}
+              alt="Image"
               className="rounded-xl max-w-[220px] sm:max-w-[260px] w-full"
               loading="lazy"
             />
@@ -162,7 +163,7 @@ export function MessageBubble({
           </div>
         )}
 
-        {/* Reaction display (iPhone-style below bubble) */}
+        {/* Reaction display */}
         {hasReactions && (
           <div className={`flex items-center gap-0.5 mt-0.5 ${isMine ? "justify-end pr-1" : "justify-start pl-1"}`}>
             {reactionEntries.map(([emoji, users]) => {

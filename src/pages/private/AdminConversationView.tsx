@@ -258,7 +258,7 @@ const AdminConversationView = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        <MessageComposer onSend={handleSend} sending={sending} placeholder="Reply" token={token || ""} />
+        <MessageComposer onSend={handleSend} sending={sending} placeholder="Reply" token={token || ""} conversationId={conversationId || null} />
       </div>
     </PrivateLayout>
   );

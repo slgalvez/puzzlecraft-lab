@@ -246,7 +246,7 @@ const UserConversation = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        <MessageComposer onSend={handleSend} sending={sending} placeholder="Message" token={token || ""} />
+        <MessageComposer onSend={handleSend} sending={sending} placeholder="Message" token={token || ""} conversationId={conversationId} />
       </div>
     </PrivateLayout>
   );
