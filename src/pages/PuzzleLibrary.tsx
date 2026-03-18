@@ -70,8 +70,12 @@ const PuzzleLibrary = () => {
                 {/* Main card area — click to play */}
                 <button
                   onClick={() => handlePlay(type)}
-                  className="group flex flex-1 flex-col items-start p-5 pb-4 text-left active:scale-[0.98] transition-transform"
+                  className="group flex flex-1 flex-col items-start p-5 pb-4 text-left active:scale-[0.98] transition-transform relative"
                 >
+                  {/* How to play info icon */}
+                  <div className="absolute top-3 right-3 z-10">
+                    <HowToPlay type={type} />
+                  </div>
                   <div className="flex h-9 items-center">
                     <PuzzleIcon type={type} size={36} className="text-foreground opacity-80 group-hover:opacity-100 transition-opacity" />
                   </div>
