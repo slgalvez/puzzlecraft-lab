@@ -102,6 +102,29 @@ const AdminConversationView = () => {
     }
   };
 
+  const handleReact = async (messageId: string, reaction: string) => {
+    if (!token) return;
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== messageId) return m;
+        const reactions = { ...(m.reactions || {}) };
+        const existing = reactions[reaction] || [];
+        if (existing.includes(user?.id || "")) {
+          reactions[reaction] = existing.filter((id) => id !== user?.id);
+          if (reactions[reaction].length === 0) delete reactions[reaction];
+        } else {
+          reactions[reaction] = [...existing, user?.id || ""];
+        }
+        return { ...m, reactions };
+      })
+    );
+    try {
+      await invokeMessaging("react-to-message", token, { message_id: messageId, reaction });
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+    }
+  };
+
   const handleToggleDisappearing = async (enabled: boolean, duration?: string) => {
     if (!conversationId || !token) return;
     setTogglingDisappearing(true);
