@@ -229,11 +229,11 @@ const PuzzleGenerator = () => {
     const d = difficulty as Difficulty;
     const key = `${seed}-${d}-${puzzleKey}`;
     switch (category) {
-      case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
-      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
-      case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
-      case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
-      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
+      case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
+      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
+      case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
+      case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
+      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
       case "crossword": {
         const gen = generateCrossword(seed, d);
         const puzzle: CrosswordPuzzle = {
