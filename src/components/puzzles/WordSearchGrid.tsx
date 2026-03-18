@@ -18,7 +18,7 @@ interface Props {
   onSolve?: (perf: PuzzlePerformance) => void;
 }
 
-const WordSearchGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
+const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateWordSearch(seed, difficulty, WORDS), [seed, difficulty]);
