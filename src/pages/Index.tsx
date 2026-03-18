@@ -275,11 +275,11 @@ const Index = () => {
                 {stats.totalSolved > 0 && (
                   <div className="text-center md:text-left">
                     <div className="flex items-center justify-center md:justify-start gap-1.5 mb-1">
-                      <Target size={16} className="text-primary" />
-                      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Total</span>
+                      <Target size={14} className="text-primary" />
+                      <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/70">Total</span>
                     </div>
-                    <p className="font-mono text-2xl font-bold text-foreground">{stats.totalSolved}</p>
-                    <p className="text-xs text-muted-foreground">solved</p>
+                    <p className="font-mono text-3xl font-extrabold text-foreground leading-none">{stats.totalSolved}</p>
+                    <p className="text-[11px] text-muted-foreground/60 mt-0.5">solved</p>
                   </div>
                 )}
               </div>
