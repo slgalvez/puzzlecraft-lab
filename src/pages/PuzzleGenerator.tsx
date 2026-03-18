@@ -12,6 +12,7 @@ import { getPuzzleById } from "@/data/puzzles";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { RefreshCw, Dices, ChevronDown, ChevronRight, ArrowLeft, Sparkles } from "lucide-react";
+import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
