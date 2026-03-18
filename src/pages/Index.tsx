@@ -12,6 +12,17 @@ import { getProgressStats } from "@/lib/progressTracker";
 import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 
+const CATEGORY_ICONS: Record<PuzzleCategory, React.ElementType> = {
+  crossword: Grid3X3,
+  sudoku: Calculator,
+  "word-search": Search,
+  kakuro: Plus,
+  nonogram: Palette,
+  cryptogram: Lock,
+  "number-fill": Hash,
+  "word-fill": Type,
+};
+
 const ACCESS_GRANT_KEY = "private_access_grant";
 
 const Index = () => {
@@ -203,9 +214,11 @@ const Index = () => {
                   <Calendar size={14} />
                   Daily Challenge
                 </div>
-                <h2 className="font-display text-2xl font-bold text-foreground sm:text-3xl">
-                  {challengeInfo.icon} Today's {challengeInfo.name}
+                {(() => { const DailyIcon = CATEGORY_ICONS[challenge.category]; return (
+                <h2 className="font-display text-2xl font-bold text-foreground sm:text-3xl flex items-center gap-2">
+                  <DailyIcon size={28} className="text-primary" /> Today's {challengeInfo.name}
                 </h2>
+                ); })()}
                 <p className="mt-2 text-muted-foreground">
                   {challengeInfo.description}. Everyone gets the same puzzle — how fast can you solve it?
                 </p>
