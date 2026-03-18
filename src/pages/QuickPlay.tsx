@@ -110,7 +110,7 @@ const QuickPlay = () => {
     <Layout>
       <div className="container py-6 md:py-10">
         {/* Minimal header */}
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4">
           <button
             onClick={() => navigate("/puzzles")}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -118,9 +118,6 @@ const QuickPlay = () => {
             <ArrowLeft size={14} />
             <span className="hidden sm:inline">Back to Play</span>
           </button>
-          <Button onClick={handleNewPuzzle} size="sm" variant="outline" className="gap-1.5">
-            <RefreshCw size={13} /> New Puzzle
-          </Button>
         </div>
 
         {/* Puzzle identity + difficulty strip */}
