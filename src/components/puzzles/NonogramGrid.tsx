@@ -225,7 +225,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
           </div>
         ))}
       </div>
-      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} />
+      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`nonogram-${seed}`} />
     </div>
   );
 };

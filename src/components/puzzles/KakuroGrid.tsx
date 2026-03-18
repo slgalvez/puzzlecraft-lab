@@ -339,7 +339,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
         onNumber={enterNumber}
         onDelete={deleteCell}
       />
-      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} />
+      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`kakuro-${seed}`} />
     </div>
   );
 };
