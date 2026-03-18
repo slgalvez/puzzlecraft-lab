@@ -123,8 +123,8 @@ const QuickPlay = () => {
 
         {/* Puzzle identity + difficulty strip */}
         <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-2xl">{info.icon}</span>
+          <div className="flex items-center gap-2.5 mb-3">
+            <PuzzleIcon type={category} size={28} className="text-foreground" />
             <h1 className="font-display text-xl font-bold text-foreground sm:text-2xl">{info.name}</h1>
           </div>
           <div className="flex flex-wrap gap-1.5">

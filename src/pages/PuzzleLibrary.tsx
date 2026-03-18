@@ -71,7 +71,7 @@ const PuzzleLibrary = () => {
                   onClick={() => handlePlay(type)}
                   className="group flex flex-col items-start p-5 text-left active:scale-[0.98] transition-transform"
                 >
-                  <span className="text-3xl">{info.icon}</span>
+                  <PuzzleIcon type={type} size={36} className="text-foreground" />
                   <h3 className="mt-3 font-display text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
                     {info.name}
                   </h3>
