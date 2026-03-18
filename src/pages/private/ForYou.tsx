@@ -569,6 +569,11 @@ function PuzzleList({
                 View
               </Button>
             )}
+            {onView && (
+              <Button size="sm" variant="outline" onClick={() => onView(p)}>
+                <Eye className="h-3.5 w-3.5 mr-1" /> Preview
+              </Button>
+            )}
             {onDelete && (
               <Button
                 size="sm"
