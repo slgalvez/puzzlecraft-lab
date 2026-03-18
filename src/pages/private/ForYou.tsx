@@ -444,6 +444,15 @@ const ForYou = () => {
           />
         )}
 
+        {tab === "completed" && (
+          <CompletedList
+            puzzles={completedPuzzles}
+            loading={loading}
+            userId={user?.id || ""}
+            onView={(p) => setViewingPuzzle(p)}
+          />
+        )}
+
         {tab === "drafts" && !editingDraftId && (
           <DraftList
             drafts={drafts}
