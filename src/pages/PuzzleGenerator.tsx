@@ -603,7 +603,7 @@ const PuzzleGenerator = () => {
         <CollapsibleContent className="mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="rounded-lg border bg-card p-4">
             <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-muted-foreground">
-              Puzzle Seed / Code
+              Puzzle Code
             </label>
             <div className="flex items-center gap-3">
               <Input
