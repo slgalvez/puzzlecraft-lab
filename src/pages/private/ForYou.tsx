@@ -366,6 +366,18 @@ const ForYou = () => {
 
   // ─── Render ───
 
+  if (viewingPuzzle) {
+    return (
+      <PrivateLayout title="Puzzles for You">
+        <CompletedPuzzleView
+          puzzle={viewingPuzzle}
+          onBack={() => setViewingPuzzle(null)}
+          userId={user?.id || ""}
+        />
+      </PrivateLayout>
+    );
+  }
+
   if (solvingPuzzle) {
     return (
       <PrivateLayout title="Puzzles for You">
