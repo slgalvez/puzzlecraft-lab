@@ -106,14 +106,40 @@ export function MessageBubble({
         )}
 
         {/* Bubble */}
-        <div
-          className={`px-3.5 py-2 ${
+        {isGifMessage(body) ? (
+          <div className={`overflow-hidden ${
             isMine
-              ? showTail ? "msg-bubble-mine" : "msg-bubble-mine rounded-br-[1.125rem]"
-              : showTail ? "msg-bubble-theirs" : "msg-bubble-theirs rounded-bl-[1.125rem]"
-          }`}
-        >
-          <p className="text-[15px] whitespace-pre-wrap break-words leading-[1.35]">{body}</p>
+              ? showTail ? "msg-bubble-mine p-1" : "msg-bubble-mine rounded-br-[1.125rem] p-1"
+              : showTail ? "msg-bubble-theirs p-1" : "msg-bubble-theirs rounded-bl-[1.125rem] p-1"
+          }`}>
+            <img
+              src={getGifUrl(body)}
+              alt="GIF"
+              className="rounded-xl max-w-[220px] sm:max-w-[260px] w-full"
+              loading="lazy"
+            />
+            <div className={`flex items-center gap-1 mt-0.5 px-2 pb-0.5 ${isMine ? "justify-end" : ""}`}>
+              <span className={`text-[10px] leading-none ${isMine ? "text-primary-foreground/55" : "text-muted-foreground/70"}`}>
+                {formatTime(createdAt)}
+              </span>
+              {isMine && (
+                readAt ? (
+                  <CheckCheck size={10} className="text-primary-foreground/55" />
+                ) : (
+                  <Check size={10} className="text-primary-foreground/35" />
+                )
+              )}
+            </div>
+          </div>
+        ) : (
+          <div
+            className={`px-3.5 py-2 ${
+              isMine
+                ? showTail ? "msg-bubble-mine" : "msg-bubble-mine rounded-br-[1.125rem]"
+                : showTail ? "msg-bubble-theirs" : "msg-bubble-theirs rounded-bl-[1.125rem]"
+            }`}
+          >
+            <p className="text-[15px] whitespace-pre-wrap break-words leading-[1.35]">{body}</p>
           <div className={`flex items-center gap-1 mt-0.5 ${isMine ? "justify-end" : ""}`}>
             {isDisappearing && (
               isViewOnce ? (
