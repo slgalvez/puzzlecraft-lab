@@ -33,14 +33,16 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
   }, [navigate]);
 
   // Focus-loss privacy protection
-  // Only triggers on visibilitychange (document.hidden), NOT window blur.
-  // This correctly handles: tab switch, app switch, phone lock, device sleep.
-  // Does NOT trigger on: notification banners, quick-reply overlays, small system UI.
+  // Triggers on: visibilitychange (document.hidden) AND pagehide
+  // visibilitychange fires on: tab switch, app switch, phone lock, device sleep, PWA background
+  // pagehide fires on: page unload, navigation away, some mobile app-switch scenarios
+  // Does NOT trigger on: notification banners, quick-reply overlays, small system UI
+  // (these do not set document.visibilityState to "hidden")
   useEffect(() => {
-    // Arm delay: don't trigger focus loss during the first 30s after mount.
-    // This prevents accidental exits during login / initial page load.
+    // Short stabilization window (1.5s) to prevent exit during initial render/hydration.
+    // This is NOT a login guard — login is on a separate page that doesn't use PrivateLayout.
     let armed = false;
-    const armTimer = setTimeout(() => { armed = true; }, 30_000);
+    const armTimer = setTimeout(() => { armed = true; }, 1500);
 
     const handleVisibilityChange = () => {
       if (!armed) return;
@@ -50,7 +52,14 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
       }
     };
 
+    const handlePageHide = () => {
+      if (!armed) return;
+      if (!getFocusLossEnabled()) return;
+      quickExit();
+    };
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", handlePageHide);
 
     stampActive();
     const interval = setInterval(stampActive, 10_000);
@@ -58,6 +67,7 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
     return () => {
       clearTimeout(armTimer);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", handlePageHide);
       clearInterval(interval);
     };
   }, [quickExit]);
