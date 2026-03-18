@@ -29,7 +29,25 @@ export async function invokeMessaging(action: string, token: string, extra: Reco
   });
 
   if (error) {
-    // Network or server error
+    // supabase-js wraps non-2xx responses in FunctionsHttpError
+    // Try to parse the error message as JSON to check for session errors
+    try {
+      const errBody = typeof error.message === "string" ? JSON.parse(error.message) : null;
+      if (errBody?.error === "Access unavailable" || errBody?.error === "Token expired" || errBody?.error === "Session ended") {
+        throw new SessionExpiredError();
+      }
+    } catch (parseErr) {
+      if (parseErr instanceof SessionExpiredError) throw parseErr;
+    }
+    // Also check error.context for the response body (newer supabase-js)
+    try {
+      if (error.context?.body) {
+        const reader = error.context.body.getReader?.();
+        if (!reader) {
+          // Try treating context as parsed JSON
+        }
+      }
+    } catch { /* ignore */ }
     throw new Error("Request failed");
   }
 

@@ -69,10 +69,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const checkSession = async () => {
       try {
-        const { data } = await supabase.functions.invoke("messaging", {
+        const { data, error } = await supabase.functions.invoke("messaging", {
           body: { action: "verify-session", token },
         });
+
+        // Handle session-end from either data or error
+        let sessionGone = false;
         if (data?.error === "Session ended" || data?.error === "Access unavailable") {
+          sessionGone = true;
+        }
+        if (error) {
+          try {
+            const errBody = typeof error.message === "string" ? JSON.parse(error.message) : null;
+            if (errBody?.error === "Session ended" || errBody?.error === "Access unavailable") {
+              sessionGone = true;
+            }
+          } catch { /* not JSON */ }
+        }
+
+        if (sessionGone) {
+          if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
           localStorage.removeItem(SESSION_KEY);
           setUser(null);
           setToken(null);
