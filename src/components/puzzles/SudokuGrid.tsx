@@ -24,7 +24,7 @@ interface SudokuState {
   grid: (number | null)[][];
 }
 
-const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
+const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateSudoku(seed, difficulty), [seed, difficulty]);
