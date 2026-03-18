@@ -2,11 +2,13 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { getProgressStats } from "@/lib/progressTracker";
-import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { getDailyStreak, getTotalDailyCompleted } from "@/lib/dailyChallenge";
-import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight } from "lucide-react";
+import { getEndlessStats } from "@/lib/endlessHistory";
+import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
 
 const Stats = () => {
