@@ -5,10 +5,15 @@ html {
   padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
 
-/* Standalone PWA: ensure headers clear the notch/Dynamic Island */
+/* Standalone PWA: ensure headers & sidebar clear the notch/Dynamic Island */
 @media all and (display-mode: standalone) {
   .pwa-safe-top {
     padding-top: env(safe-area-inset-top, 0px) !important;
+  }
+
+  /* Push sidebar content below the status bar / notch */
+  .private-app [data-sidebar="sidebar"] {
+    padding-top: env(safe-area-inset-top, 0px);
   }
 }
 
