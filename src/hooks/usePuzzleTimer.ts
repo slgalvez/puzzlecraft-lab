@@ -52,10 +52,12 @@ export function formatTime(seconds: number): string {
 interface TimerOptions {
   category?: PuzzleCategory;
   difficulty?: string;
+  initialElapsed?: number;
 }
 
 export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
-  const [state, setState] = useState<TimerState>({ elapsed: 0, isRunning: true, isSolved: false });
+  const initialElapsed = options?.initialElapsed ?? 0;
+  const [state, setState] = useState<TimerState>({ elapsed: initialElapsed, isRunning: true, isSolved: false });
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Look up best time by category+difficulty (persistent across seeds)
@@ -63,7 +65,7 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
   const bestTime = getBestTimes()[catKey || puzzleKey]?.time ?? null;
 
   useEffect(() => {
-    setState({ elapsed: 0, isRunning: true, isSolved: false });
+    setState({ elapsed: options?.initialElapsed ?? 0, isRunning: true, isSolved: false });
   }, [puzzleKey]);
 
   useEffect(() => {
