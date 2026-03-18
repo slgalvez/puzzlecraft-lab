@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 const ACCESS_GRANT_KEY = "private_access_grant";
@@ -30,6 +30,10 @@ function isGracePeriodExpired(): boolean {
 
 export default function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, signOut, sessionEnded } = useAuth();
+  const location = useLocation();
+
+  // The login page handles its own gating — let it through without access grant checks
+  const isLoginPage = location.pathname === "/p/login";
 
   // If session was ended by a newer login elsewhere, redirect out
   if (sessionEnded) {
@@ -60,6 +64,11 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
         <div className="text-sm text-muted-foreground">Loading...</div>
       </div>
     );
+  }
+
+  // Login page manages its own access grant check — don't redirect it away
+  if (isLoginPage) {
+    return <>{children}</>;
   }
 
   // Must have a valid access grant to enter the private area

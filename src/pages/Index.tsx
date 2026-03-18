@@ -12,6 +12,7 @@ import { getProgressStats } from "@/lib/progressTracker";
 import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 
+const ACCESS_GRANT_KEY = "private_access_grant";
 
 const Index = () => {
   const [puzzleCode, setPuzzleCode] = useState("");
@@ -42,7 +43,6 @@ const Index = () => {
         .invoke("messaging", { body: { action: "check-status", token } })
         .then(({ data, error }) => {
           if (error || data?.error) {
-            // Session ended or invalid — clear stale token to stop future checks
             localStorage.removeItem("private_session");
             return;
           }
@@ -75,9 +75,17 @@ const Index = () => {
       if (error) throw error;
 
       switch (data?.type) {
-        case 'unlock':
-          navigate(`/p/login?t=${encodeURIComponent(data.ticket)}`);
+        case 'unlock': {
+          // Set the access grant BEFORE navigating so PrivateRoute/Login see it immediately
+          sessionStorage.setItem(
+            ACCESS_GRANT_KEY,
+            JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 1800 })
+          );
+          // Also stamp last active so grace period doesn't immediately expire
+          localStorage.setItem("private_last_active", String(Date.now()));
+          navigate("/p/login");
           break;
+        }
         case 'seed':
           navigate(`/generate/sudoku?seed=${data.seed}`);
           break;
