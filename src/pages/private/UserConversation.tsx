@@ -18,6 +18,7 @@ interface Message {
   read_at: string | null;
   is_disappearing: boolean;
   expires_at: string | null;
+  reactions: Record<string, string[]>;
 }
 
 const UserConversation = () => {
@@ -91,6 +92,30 @@ const UserConversation = () => {
       throw e; // re-throw so composer restores text
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleReact = async (messageId: string, reaction: string) => {
+    if (!token) return;
+    // Optimistic update
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== messageId) return m;
+        const reactions = { ...(m.reactions || {}) };
+        const existing = reactions[reaction] || [];
+        if (existing.includes(user?.id || "")) {
+          reactions[reaction] = existing.filter((id) => id !== user?.id);
+          if (reactions[reaction].length === 0) delete reactions[reaction];
+        } else {
+          reactions[reaction] = [...existing, user?.id || ""];
+        }
+        return { ...m, reactions };
+      })
+    );
+    try {
+      await invokeMessaging("react-to-message", token, { message_id: messageId, reaction });
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
     }
   };
 
@@ -202,14 +227,18 @@ const UserConversation = () => {
               return (
                 <MessageBubble
                   key={msg.id}
+                  id={msg.id}
                   body={msg.body}
                   isMine={isMine}
                   createdAt={msg.created_at}
                   readAt={msg.read_at}
                   isDisappearing={msg.is_disappearing}
                   expiresAt={msg.expires_at}
+                  reactions={msg.reactions || {}}
+                  currentUserId={user?.id || ""}
                   formatTime={formatTime}
                   showTail={showTail}
+                  onReact={handleReact}
                 />
               );
             })

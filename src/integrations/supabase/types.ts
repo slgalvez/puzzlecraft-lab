@@ -142,6 +142,7 @@ export type Database = {
           expires_at: string | null
           id: string
           is_disappearing: boolean
+          reactions: Json
           read_at: string | null
           sender_profile_id: string
         }
@@ -152,6 +153,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_disappearing?: boolean
+          reactions?: Json
           read_at?: string | null
           sender_profile_id: string
         }
@@ -162,6 +164,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_disappearing?: boolean
+          reactions?: Json
           read_at?: string | null
           sender_profile_id?: string
         }

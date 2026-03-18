@@ -1,0 +1,1 @@
+ALTER TABLE public.messages ADD COLUMN reactions jsonb DEFAULT '{}' NOT NULL;
