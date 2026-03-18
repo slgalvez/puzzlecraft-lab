@@ -1,60 +1,54 @@
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
-import PuzzleCard from "@/components/puzzles/PuzzleCard";
-import RandomPuzzleGenerator from "@/components/puzzles/RandomPuzzleGenerator";
-import { allPuzzles } from "@/data/puzzles";
+import { randomSeed } from "@/lib/seededRandom";
+import { Play } from "lucide-react";
 
 const categories = Object.entries(CATEGORY_INFO) as [PuzzleCategory, typeof CATEGORY_INFO[PuzzleCategory]][];
 
 const PuzzleLibrary = () => {
+  const navigate = useNavigate();
+
+  const handlePlay = (type: PuzzleCategory) => {
+    const seed = randomSeed();
+    navigate(`/generate/${type}?seed=${seed}`, {
+      state: { instantPlay: true },
+    });
+  };
+
   return (
     <Layout>
-      <div className="container py-12">
-        <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Puzzle Types</h1>
-        <p className="mt-2 text-muted-foreground">
-          Choose a puzzle type to start playing — unlimited puzzles with adjustable difficulty.
-        </p>
-
-        {/* Random Puzzle Generator */}
-        <div className="mt-8">
-          <RandomPuzzleGenerator />
+      <div className="container py-10 md:py-14">
+        <div className="max-w-xl">
+          <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
+            Play
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            Pick a puzzle and start solving instantly.
+          </p>
         </div>
 
-        {/* Puzzle type cards */}
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {categories.map(([type, info]) => (
-            <Link
+            <button
               key={type}
-              to={`/generate/${type}`}
-              className="group rounded-lg border bg-card p-5 transition-all hover:border-primary/50 hover:shadow-md"
+              onClick={() => handlePlay(type)}
+              className="group flex flex-col items-start rounded-xl border-2 border-border bg-card p-5 text-left transition-all hover:border-primary/50 hover:shadow-md active:scale-[0.98]"
             >
               <span className="text-3xl">{info.icon}</span>
               <h3 className="mt-3 font-display text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
                 {info.name}
               </h3>
-              <p className="mt-1 text-sm text-muted-foreground">{info.description}</p>
-              <span className="mt-3 inline-block text-xs font-medium text-primary">
-                Play now →
+              <p className="mt-1 text-sm text-muted-foreground leading-snug">
+                {info.description}
+              </p>
+              <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
+                <Play size={12} className="fill-primary" />
+                Play
               </span>
-            </Link>
+            </button>
           ))}
         </div>
-
-        {/* Sample puzzles section */}
-        {allPuzzles.length > 0 && (
-          <div className="mt-16">
-            <h2 className="font-display text-2xl font-bold text-foreground">Sample Puzzles</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Hand-crafted puzzles to get started.
-            </p>
-            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {allPuzzles.map((p) => (
-                <PuzzleCard key={p.id} puzzle={p} />
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </Layout>
   );

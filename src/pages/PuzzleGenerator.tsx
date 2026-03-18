@@ -567,11 +567,8 @@ const PuzzleGenerator = () => {
       <div className="container py-8 md:py-12">
         {/* Header */}
         <div className="mb-8">
-          <Link to="/puzzles" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← Puzzle Types
-          </Link>
-          <h1 className="font-display text-3xl font-bold text-foreground mt-3">Puzzle Lab</h1>
-          <p className="text-sm text-muted-foreground mt-1">Generate a puzzle and start solving</p>
+          <h1 className="font-display text-3xl font-bold text-foreground">Puzzle Lab</h1>
+          <p className="text-sm text-muted-foreground mt-1">Customize and generate puzzles your way</p>
         </div>
 
         {/* Mode Tabs */}
