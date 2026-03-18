@@ -42,7 +42,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit }:
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
 
-  const timer = usePuzzleTimer(timerKey, { category: "cryptogram", difficulty, initialElapsed: saved?.elapsed ?? 0 });
+  const timer = usePuzzleTimer(timerKey, { category: "cryptogram", difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
   const encodedLetters = useMemo(() => {
     return [...new Set(encoded.split("").filter((ch) => /[A-Z]/.test(ch)))];
