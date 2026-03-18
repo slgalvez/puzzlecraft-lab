@@ -5,6 +5,7 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory 
 import { randomSeed } from "@/lib/seededRandom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 
 // Puzzle components
@@ -122,8 +123,8 @@ const QuickPlay = () => {
 
         {/* Puzzle identity + difficulty strip */}
         <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-2xl">{info.icon}</span>
+          <div className="flex items-center gap-2.5 mb-3">
+            <PuzzleIcon type={category} size={28} className="text-foreground" />
             <h1 className="font-display text-xl font-bold text-foreground sm:text-2xl">{info.name}</h1>
           </div>
           <div className="flex flex-wrap gap-1.5">

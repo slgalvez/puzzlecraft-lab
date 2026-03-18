@@ -12,6 +12,7 @@ import { getPuzzleById } from "@/data/puzzles";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { RefreshCw, Dices, ChevronDown, ChevronRight, ArrowLeft, Sparkles } from "lucide-react";
+import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
@@ -233,7 +234,7 @@ const PuzzleGenerator = () => {
           </button>
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-xl">{info.icon}</span>
+              <PuzzleIcon type={category} size={24} className="text-foreground" />
               <div>
                 <h2 className="font-display text-lg font-bold text-foreground">{info.name}</h2>
                 <p className="text-xs text-muted-foreground capitalize">{difficulty}</p>
@@ -266,7 +267,7 @@ const PuzzleGenerator = () => {
                       : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
                   )}
                 >
-                  <span className="text-2xl">{pt.icon}</span>
+                  <PuzzleIcon type={pt.value} size={28} className="text-foreground" />
                   <span className="text-sm font-medium text-foreground">{pt.label}</span>
                 </button>
               ))}
@@ -285,7 +286,7 @@ const PuzzleGenerator = () => {
             <p className="mb-1 text-xs font-medium uppercase tracking-widest text-muted-foreground">Step 2 of 2</p>
             <h2 className="font-display text-2xl font-bold text-foreground mb-2">Choose Difficulty</h2>
             <p className="text-sm text-muted-foreground mb-6">
-              <span className="text-lg mr-1">{info.icon}</span> {info.name}
+              <PuzzleIcon type={category} size={20} className="text-foreground mr-1 inline-block align-text-bottom" /> {info.name}
             </p>
             <div className="flex flex-col gap-3">
               {difficulties.map(([val, label]) => (
@@ -339,7 +340,7 @@ const PuzzleGenerator = () => {
                   : "border-border text-muted-foreground hover:border-primary/40"
               )}
             >
-              <span>{info.icon}</span>
+               <PuzzleIcon type={type} size={18} className="shrink-0" />
               <span>{info.name}</span>
             </button>
           ))}
@@ -403,7 +404,7 @@ const PuzzleGenerator = () => {
                   : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
               )}
             >
-              <span className="text-xl">{pt.icon}</span>
+              <PuzzleIcon type={pt.value} size={22} className="text-foreground" />
               <span className="text-sm font-medium text-foreground">{pt.label}</span>
             </button>
           ))}
@@ -515,7 +516,7 @@ const PuzzleGenerator = () => {
                   : "border-border bg-card text-muted-foreground hover:border-primary/40"
               )}
             >
-              <span>{info.icon}</span>
+              <PuzzleIcon type={type} size={18} className="shrink-0" />
               <span>{info.name}</span>
             </button>
           ))}
