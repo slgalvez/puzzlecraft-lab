@@ -27,8 +27,10 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy }: Props) => 
   return (
     <div
       className={cn(
-        "rounded-xl border bg-card p-4 sm:p-5 transition-all duration-300 ease-out",
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+        "rounded-xl border bg-card p-4 sm:p-5 transition-all duration-500 ease-out",
+        visible
+          ? "opacity-100 translate-y-0 scale-100"
+          : "opacity-0 translate-y-2 scale-[0.97]"
       )}
     >
       <div className="flex items-center gap-2.5 mb-3">
