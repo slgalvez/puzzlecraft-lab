@@ -120,47 +120,49 @@ export function MessageBubble({
 
   return (
     <div className={`flex ${isMine ? "justify-end" : "justify-start"} px-1 relative`}>
-      <div className="relative max-w-[82%] sm:max-w-[70%]">
+      {/* Invisible click-away layer — no visual overlay */}
+      {showMenu && (
+        <div className="fixed inset-0 z-40" onClick={closeMenu} style={{ background: "transparent" }} />
+      )}
+      <div className={`relative max-w-[82%] sm:max-w-[70%] transition-shadow duration-150 ${showMenu ? "z-50 ring-2 ring-primary/30 rounded-2xl" : ""}`}>
         {/* Press-and-hold context menu */}
         {showMenu && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={closeMenu} />
-            <div
-              className={`absolute z-50 bottom-full mb-2 flex flex-col bg-card border border-border rounded-2xl shadow-xl overflow-hidden ${
-                isMine ? "right-0" : "left-0"
-              }`}
-              style={{ minWidth: "180px" }}
-            >
-              {/* Reaction row */}
-              <div className="flex items-center gap-0.5 px-2 py-2 border-b border-border">
-                {REACTION_OPTIONS.map((r) => {
-                  const isActive = (reactions[r] || []).includes(currentUserId);
-                  return (
-                    <button
-                      key={r}
-                      onClick={() => handleReact(r)}
-                      className={`text-lg w-9 h-9 flex items-center justify-center rounded-full transition-transform hover:scale-125 active:scale-90 ${
-                        isActive ? "bg-primary/20" : "hover:bg-secondary"
-                      }`}
-                    >
-                      {r}
-                    </button>
-                  );
-                })}
-              </div>
-              {/* Actions */}
-              {isMine && !isMedia && onEdit && (
-                <button
-                  onClick={handleStartEdit}
-                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-foreground hover:bg-secondary/60 transition-colors"
-                >
-                  <Pencil size={14} className="text-muted-foreground" />
-                  Edit
-                </button>
-              )}
+          <div
+            className={`absolute z-50 bottom-full mb-2 flex flex-col bg-card border border-border rounded-2xl shadow-xl overflow-hidden ${
+              isMine ? "right-0" : "left-0"
+            }`}
+            style={{ minWidth: "180px" }}
+          >
+            {/* Reaction row */}
+            <div className="flex items-center gap-0.5 px-2 py-2 border-b border-border">
+              {REACTION_OPTIONS.map((r) => {
+                const isActive = (reactions[r] || []).includes(currentUserId);
+                return (
+                  <button
+                    key={r}
+                    onClick={() => handleReact(r)}
+                    className={`text-lg w-9 h-9 flex items-center justify-center rounded-full transition-transform hover:scale-125 active:scale-90 ${
+                      isActive ? "bg-primary/20" : "hover:bg-secondary"
+                    }`}
+                  >
+                    {r}
+                  </button>
+                );
+              })}
             </div>
-          </>
+            {/* Actions */}
+            {isMine && !isMedia && onEdit && (
+              <button
+                onClick={handleStartEdit}
+                className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-foreground hover:bg-secondary/60 transition-colors"
+              >
+                <Pencil size={14} className="text-muted-foreground" />
+                Edit
+              </button>
+            )}
+          </div>
         )}
+
 
         {/* Edit mode */}
         {editing ? (
