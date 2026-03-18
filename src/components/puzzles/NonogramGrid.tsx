@@ -7,6 +7,7 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
+import { saveProgress, loadProgress, clearProgress } from "@/lib/puzzleProgress";
 import type { Difficulty } from "@/lib/puzzleTypes";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
@@ -19,14 +20,21 @@ interface Props {
 
 type CellState = "empty" | "filled" | "marked";
 
+interface NonogramState {
+  grid: CellState[][];
+}
+
 const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateNonogram(seed, difficulty), [seed, difficulty]);
   const { rows, cols, solution, rowClues, colClues } = puzzle;
+  const timerKey = `nonogram-${seed}-${difficulty}`;
+
+  const saved = useMemo(() => loadProgress<NonogramState>(timerKey), [timerKey]);
 
   const [grid, setGrid] = useState<CellState[][]>(() =>
-    Array.from({ length: rows }, () => Array(cols).fill("empty"))
+    saved?.state.grid ?? Array.from({ length: rows }, () => Array(cols).fill("empty"))
   );
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const [cursor, setCursor] = useState<[number, number]>([0, 0]);
@@ -36,10 +44,16 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
 
-  const timerKey = `nonogram-${seed}-${difficulty}`;
-  const timer = usePuzzleTimer(timerKey, { category: "nonogram", difficulty });
+  const timer = usePuzzleTimer(timerKey, { category: "nonogram", difficulty, initialElapsed: saved?.elapsed ?? 0 });
 
   const maxRowClueLen = Math.max(...rowClues.map((c) => c.length));
+
+  // Auto-save
+  useEffect(() => {
+    if (!timer.isSolved) {
+      saveProgress<NonogramState>(timerKey, { grid }, timer.elapsed);
+    }
+  }, [grid, timer.elapsed, timer.isSolved, timerKey]);
 
   useEffect(() => {
     setCursor([0, 0]);
@@ -61,7 +75,6 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
     setCursor([r, c]);
     if (isMobile) haptic();
     if (isMobile) {
-      // Mobile: use touchMode
       const current = grid[r][c];
       if (touchMode === "fill") {
         setCellState(r, c, current === "filled" ? "empty" : "filled");
@@ -69,7 +82,6 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
         setCellState(r, c, current === "marked" ? "empty" : "marked");
       }
     } else {
-      // Desktop: cycle through states
       const current = grid[r][c];
       setCellState(r, c, current === "empty" ? "filled" : current === "filled" ? "marked" : "empty");
     }
@@ -97,6 +109,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
     setCursor([0, 0]);
     resetCount.current++;
     timer.reset();
+    clearProgress(timerKey);
     containerRef.current?.focus();
   };
 
@@ -113,6 +126,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
     if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0) {
       const { isNewBest } = timer.solve();
+      clearProgress(timerKey);
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Nonogram solved correctly!" });
       onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
     } else
@@ -131,7 +145,6 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
     >
       <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} onPause={timer.pause} onResume={timer.resume} />
 
-      {/* Mobile mode toggle */}
       {isMobile && !timer.isSolved && (
         <div className="flex items-center gap-2 mb-3">
           <button
@@ -164,7 +177,6 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
       )}
 
       <div className="max-w-full overflow-x-auto inline-block">
-        {/* Column clues */}
         <div className="flex">
           <div style={{ width: `${maxRowClueLen * 1.5}rem` }} />
           {colClues.map((clue, c) => (
@@ -176,7 +188,6 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
           ))}
         </div>
 
-        {/* Rows */}
         {Array.from({ length: rows }, (_, r) => (
           <div key={r} className="flex items-center">
             <div className="flex items-center justify-end gap-1 pr-2" style={{ width: `${maxRowClueLen * 1.5}rem` }}>

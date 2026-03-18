@@ -8,6 +8,7 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
+import { saveProgress, loadProgress, clearProgress } from "@/lib/puzzleProgress";
 import type { Difficulty } from "@/lib/puzzleTypes";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
@@ -18,18 +19,30 @@ interface Props {
   onSolve?: (perf: PuzzlePerformance) => void;
 }
 
+interface WordSearchState {
+  foundWords: string[];
+  foundCells: string[];
+}
+
 const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateWordSearch(seed, difficulty, WORDS), [seed, difficulty]);
-  const [foundWords, setFoundWords] = useState<Set<string>>(new Set());
-  const [foundCells, setFoundCells] = useState<Set<string>>(new Set());
+  const timerKey = `word-search-${seed}-${difficulty}`;
+
+  const saved = useMemo(() => loadProgress<WordSearchState>(timerKey), [timerKey]);
+
+  const [foundWords, setFoundWords] = useState<Set<string>>(() =>
+    saved?.state.foundWords ? new Set(saved.state.foundWords) : new Set()
+  );
+  const [foundCells, setFoundCells] = useState<Set<string>>(() =>
+    saved?.state.foundCells ? new Set(saved.state.foundCells) : new Set()
+  );
   const [startCell, setStartCell] = useState<[number, number] | null>(null);
   const [hoverCell, setHoverCell] = useState<[number, number] | null>(null);
   const [cursor, setCursor] = useState<[number, number]>([0, 0]);
   const [isDragging, setIsDragging] = useState(false);
   const [isMouseDragging, setIsMouseDragging] = useState(false);
-  // Mobile tap-to-select: first tap sets start, second tap sets end
   const [tapStart, setTapStart] = useState<[number, number] | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -37,8 +50,17 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
 
-  const timerKey = `word-search-${seed}-${difficulty}`;
-  const timer = usePuzzleTimer(timerKey, { category: "word-search", difficulty });
+  const timer = usePuzzleTimer(timerKey, { category: "word-search", difficulty, initialElapsed: saved?.elapsed ?? 0 });
+
+  // Auto-save
+  useEffect(() => {
+    if (!timer.isSolved) {
+      saveProgress<WordSearchState>(timerKey, {
+        foundWords: Array.from(foundWords),
+        foundCells: Array.from(foundCells),
+      }, timer.elapsed);
+    }
+  }, [foundWords, foundCells, timer.elapsed, timer.isSolved, timerKey]);
 
   useEffect(() => {
     setCursor([0, 0]);
@@ -74,7 +96,6 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
     return cells;
   };
 
-  // Show tap-start highlight
   const tapStartKey = tapStart ? `${tapStart[0]}-${tapStart[1]}` : null;
   const previewCells = getPreviewCells();
 
@@ -101,6 +122,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
       setFoundCells((prev) => { const next = new Set(prev); cells.forEach((c) => next.add(c)); return next; });
       if (newFound.size === puzzle.words.length) {
         const { isNewBest } = timer.solve();
+        clearProgress(timerKey);
         toast({
           title: "🎉 Congratulations!",
           description: isNewBest ? "New best time! 🏆" : "All words found!",
@@ -110,9 +132,8 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
       return true;
     }
     return false;
-  }, [puzzle, foundWords, timer, toast]);
+  }, [puzzle, foundWords, timer, toast, timerKey]);
 
-  // --- Touch handling: detect drag vs tap ---
   const touchMoved = useRef(false);
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -140,27 +161,22 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
 
   const handleTouchEnd = () => {
     if (!isDragging || !startCell) return;
-    // If finger didn't move, treat as a tap for tap-to-select mode
     if (!touchMoved.current) {
       const tappedCell = startCell;
       setStartCell(null);
       setHoverCell(null);
       setIsDragging(false);
-      // Tap-to-select logic
       if (!tapStart) {
         setTapStart(tappedCell);
       } else {
-        // Second tap → try to select the word
         const result = trySelectWord(tapStart[0], tapStart[1], tappedCell[0], tappedCell[1]);
         setTapStart(null);
         if (!result) {
-          // If invalid selection, start fresh from this tap
           setTapStart(tappedCell);
         }
       }
       return;
     }
-    // Drag completed
     if (startCell && hoverCell) {
       trySelectWord(startCell[0], startCell[1], hoverCell[0], hoverCell[1]);
     }
@@ -170,7 +186,6 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
     setTapStart(null);
   };
 
-  // Mouse drag handlers (desktop)
   const handleMouseDown = (r: number, c: number) => {
     if (timer.isSolved || isMobile) return;
     setStartCell([r, c]);
@@ -228,7 +243,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
 
   const handleReset = () => {
     setFoundWords(new Set()); setFoundCells(new Set()); setStartCell(null); setTapStart(null); setCursor([0, 0]);
-    resetCount.current++; timer.reset(); containerRef.current?.focus();
+    resetCount.current++; timer.reset(); clearProgress(timerKey); containerRef.current?.focus();
   };
 
   const handleCheck = () => {

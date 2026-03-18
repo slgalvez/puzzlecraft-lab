@@ -11,6 +11,7 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
+import { saveProgress, loadProgress, clearProgress } from "@/lib/puzzleProgress";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
 interface Props {
@@ -27,18 +28,28 @@ interface EntrySlot {
   direction: Direction;
 }
 
+interface FillInState {
+  grid: string[][];
+  usedEntries: string[];
+}
+
 const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
   const { gridSize, blackCells, entries, type, solution } = puzzle;
   const isNumbers = type === "number-fill";
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const timerKey = `fillin-${puzzle.id}`;
+
+  const saved = useMemo(() => loadProgress<FillInState>(timerKey), [timerKey]);
 
   const [grid, setGrid] = useState<string[][]>(
-    Array.from({ length: gridSize }, () => Array(gridSize).fill(""))
+    () => saved?.state.grid ?? Array.from({ length: gridSize }, () => Array(gridSize).fill(""))
   );
   const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
   const [direction, setDirection] = useState<Direction>("across");
-  const [usedEntries, setUsedEntries] = useState<Set<string>>(new Set());
+  const [usedEntries, setUsedEntries] = useState<Set<string>>(
+    () => saved?.state.usedEntries ? new Set(saved.state.usedEntries) : new Set()
+  );
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
   const mobileInputRef = useRef<MobileLetterInputHandle>(null);
@@ -46,8 +57,17 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
 
-  const timerKey = `fillin-${puzzle.id}`;
-  const timer = usePuzzleTimer(timerKey, { category: puzzle.type as "word-fill" | "number-fill", difficulty: puzzle.difficulty });
+  const timer = usePuzzleTimer(timerKey, { category: puzzle.type as "word-fill" | "number-fill", difficulty: puzzle.difficulty, initialElapsed: saved?.elapsed ?? 0 });
+
+  // Auto-save
+  useEffect(() => {
+    if (!timer.isSolved) {
+      saveProgress<FillInState>(timerKey, {
+        grid,
+        usedEntries: Array.from(usedEntries),
+      }, timer.elapsed);
+    }
+  }, [grid, usedEntries, timer.elapsed, timer.isSolved, timerKey]);
 
   const blacks = useMemo(() => {
     const set = new Set<string>();
@@ -267,6 +287,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
     setDirection("across");
     resetCount.current++;
     timer.reset();
+    clearProgress(timerKey);
     if (!isMobile) containerRef.current?.focus();
   };
 
@@ -275,7 +296,6 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
     const errs = new Set<string>();
     let filled = true;
 
-    // Check all white cells are filled
     for (let r = 0; r < gridSize; r++) {
       for (let c = 0; c < gridSize; c++) {
         if (isBlack(r, c) || solution[r][c] === null) continue;
@@ -284,8 +304,6 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
     }
 
     if (filled) {
-      // Validate by checking that each slot contains a valid entry and
-      // all entries are used exactly once (accepts any valid arrangement)
       const slotWords = entrySlots.map((slot) =>
         slot.cells.map(([r, c]) => grid[r][c]).join("")
       );
@@ -307,12 +325,11 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
       }
 
       if (badSlots.length === 0) {
-        // All entries matched — puzzle solved
         const { isNewBest } = timer.solve();
+        clearProgress(timerKey);
         toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Puzzle solved correctly!" });
         onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
       } else {
-        // Mark cells of bad slots as errors
         for (const slot of badSlots) {
           for (const [r, c] of slot.cells) errs.add(`${r}-${c}`);
         }
@@ -321,8 +338,6 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve }: Props) => {
         toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
       }
     } else {
-      // Not fully filled — check what we can against the slot approach
-      // For partially filled grids, highlight cells in completed-but-wrong slots
       for (const slot of entrySlots) {
         const word = slot.cells.map(([r, c]) => grid[r][c]).join("");
         const allFilled = slot.cells.every(([r, c]) => grid[r][c]);

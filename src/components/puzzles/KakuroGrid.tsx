@@ -8,6 +8,7 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
+import { saveProgress, loadProgress, clearProgress } from "@/lib/puzzleProgress";
 import type { Difficulty } from "@/lib/puzzleTypes";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
@@ -25,14 +26,21 @@ interface EntrySlot {
   direction: Direction;
 }
 
+interface KakuroState {
+  grid: string[][];
+}
+
 const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateKakuro(seed, difficulty), [seed, difficulty]);
   const { size, isBlack, solution, clues } = puzzle;
+  const timerKey = `kakuro-${seed}-${difficulty}`;
+
+  const saved = useMemo(() => loadProgress<KakuroState>(timerKey), [timerKey]);
 
   const [grid, setGrid] = useState(() =>
-    Array.from({ length: size }, () => Array(size).fill(""))
+    saved?.state.grid ?? Array.from({ length: size }, () => Array(size).fill(""))
   );
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
@@ -42,8 +50,14 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
 
-  const timerKey = `kakuro-${seed}-${difficulty}`;
-  const timer = usePuzzleTimer(timerKey, { category: "kakuro", difficulty });
+  const timer = usePuzzleTimer(timerKey, { category: "kakuro", difficulty, initialElapsed: saved?.elapsed ?? 0 });
+
+  // Auto-save
+  useEffect(() => {
+    if (!timer.isSolved) {
+      saveProgress<KakuroState>(timerKey, { grid }, timer.elapsed);
+    }
+  }, [grid, timer.elapsed, timer.isSolved, timerKey]);
 
   const clueMap = useMemo(() => {
     const map = new Map<string, { across?: number; down?: number }>();
@@ -51,10 +65,8 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
     return map;
   }, [clues]);
 
-  // Compute entry slots (contiguous runs of white cells)
   const entrySlots = useMemo(() => {
     const slots: EntrySlot[] = [];
-    // Across
     for (let r = 0; r < size; r++) {
       let start = -1;
       for (let c = 0; c <= size; c++) {
@@ -70,7 +82,6 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
         }
       }
     }
-    // Down
     for (let c = 0; c < size; c++) {
       let start = -1;
       for (let r = 0; r <= size; r++) {
@@ -134,7 +145,6 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
       return next;
     });
     setErrors(new Set());
-    // Auto-advance within entry
     const slot = getActiveSlot(r, c, direction);
     if (slot) {
       const idx = slot.cells.findIndex(([cr, cc]) => cr === r && cc === c);
@@ -155,7 +165,6 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
       });
       setErrors(new Set());
     } else {
-      // Move backward within entry
       const slot = getActiveSlot(r, c, direction);
       if (slot) {
         const idx = slot.cells.findIndex(([cr, cc]) => cr === r && cc === c);
@@ -236,6 +245,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
     setDirection("across");
     resetCount.current++;
     timer.reset();
+    clearProgress(timerKey);
     containerRef.current?.focus();
   };
 
@@ -254,6 +264,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
     if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0 && filled) {
       const { isNewBest } = timer.solve();
+      clearProgress(timerKey);
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Puzzle solved correctly!" });
       onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
     } else if (errs.size > 0)

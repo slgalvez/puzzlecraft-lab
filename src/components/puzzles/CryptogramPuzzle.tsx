@@ -6,6 +6,7 @@ import PuzzleTimer from "./PuzzleTimer";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { saveProgress, loadProgress, clearProgress } from "@/lib/puzzleProgress";
 import type { Difficulty } from "@/lib/puzzleTypes";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
@@ -16,13 +17,22 @@ interface Props {
   onSolve?: (perf: PuzzlePerformance) => void;
 }
 
+interface CryptogramState {
+  guesses: Record<string, string>;
+}
+
 const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateCryptogram(seed, difficulty), [seed, difficulty]);
   const { encoded, decoded, reverseCipher, hints } = puzzle;
+  const timerKey = `cryptogram-${seed}-${difficulty}`;
 
-  const [guesses, setGuesses] = useState<Record<string, string>>(() => ({ ...hints }));
+  const saved = useMemo(() => loadProgress<CryptogramState>(timerKey), [timerKey]);
+
+  const [guesses, setGuesses] = useState<Record<string, string>>(() =>
+    saved?.state.guesses ?? { ...hints }
+  );
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const [activeIdx, setActiveIdx] = useState<number>(-1);
   const inputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
@@ -31,8 +41,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => 
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
 
-  const timerKey = `cryptogram-${seed}-${difficulty}`;
-  const timer = usePuzzleTimer(timerKey, { category: "cryptogram", difficulty });
+  const timer = usePuzzleTimer(timerKey, { category: "cryptogram", difficulty, initialElapsed: saved?.elapsed ?? 0 });
 
   const encodedLetters = useMemo(() => {
     return [...new Set(encoded.split("").filter((ch) => /[A-Z]/.test(ch)))];
@@ -61,6 +70,13 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => 
     }
     return map;
   }, [encoded]);
+
+  // Auto-save
+  useEffect(() => {
+    if (!timer.isSolved) {
+      saveProgress<CryptogramState>(timerKey, { guesses }, timer.elapsed);
+    }
+  }, [guesses, timer.elapsed, timer.isSolved, timerKey]);
 
   useEffect(() => {
     if (editableIndices.length > 0) {
@@ -121,7 +137,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => 
   }, [timer.isSolved, hints, editableIndices]);
 
   const handleReset = () => {
-    setGuesses({ ...hints }); setErrors(new Set()); resetCount.current++; timer.reset();
+    setGuesses({ ...hints }); setErrors(new Set()); resetCount.current++; timer.reset(); clearProgress(timerKey);
     if (editableIndices.length > 0) focusIdx(editableIndices[0]);
   };
 
@@ -138,6 +154,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => 
     if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0 && allFilled) {
       const { isNewBest } = timer.solve();
+      clearProgress(timerKey);
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Message decoded correctly!" });
       onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
     } else if (errs.size > 0)
