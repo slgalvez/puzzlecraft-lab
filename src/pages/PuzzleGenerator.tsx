@@ -241,7 +241,7 @@ const PuzzleGenerator = () => {
           difficulty: d as CrosswordPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, clues: gen.clues,
         };
-        return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} />;
+        return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
       }
       case "word-fill": {
         const gen = generateWordFillIn(seed, d);
