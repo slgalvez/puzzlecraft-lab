@@ -62,6 +62,7 @@ const QuickPlay = () => {
   const [lastDiffChange, setLastDiffChange] = useState<"up" | "down" | "stay" | null>(null);
   const [endlessSolves, setEndlessSolves] = useState<EndlessSolveRecord[]>([]);
   const [showSummary, setShowSummary] = useState(false);
+  const [showFlash, setShowFlash] = useState(false);
 
   const activeDifficulty = mode === "endless" ? endlessDiffMap[currentType] : difficulty;
 
