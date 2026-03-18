@@ -609,7 +609,7 @@ const PuzzleGenerator = () => {
               <Input
                 value={seedInput}
                 onChange={(e) => setSeedInput(e.target.value)}
-                placeholder="Enter a seed or puzzle code..."
+                placeholder="Enter a puzzle code..."
                 onKeyDown={(e) => e.key === "Enter" && handleLoadSeed()}
                 disabled={loadingSeed}
                 className="max-w-sm"
