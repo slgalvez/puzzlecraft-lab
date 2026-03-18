@@ -105,6 +105,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
           title: "🎉 Congratulations!",
           description: isNewBest ? "New best time! 🏆" : "All words found!",
         });
+        onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
       }
       return true;
     }
