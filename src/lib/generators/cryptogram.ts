@@ -11,7 +11,7 @@ export interface CryptogramPuzzle {
 }
 
 const HINT_COUNTS: Record<Difficulty, number> = {
-  easy: 5, medium: 3, hard: 2, extreme: 1, insane: 0,
+  easy: 6, medium: 3, hard: 1, extreme: 0, insane: 0,
 };
 
 export function generateCryptogram(seed: number, difficulty: Difficulty): CryptogramPuzzle {
