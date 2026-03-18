@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
@@ -6,7 +6,7 @@ import { randomSeed } from "@/lib/seededRandom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, RefreshCw, Dices, Infinity } from "lucide-react";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
@@ -23,6 +23,10 @@ import { generateWordFillIn, generateNumberFillIn } from "@/lib/generators/fillG
 import type { CrosswordPuzzle, FillInPuzzle } from "@/data/puzzles";
 
 const difficulties = Object.entries(DIFFICULTY_LABELS) as [Difficulty, string][];
+const allTypes = Object.keys(CATEGORY_INFO) as PuzzleCategory[];
+const allDifficulties = Object.keys(DIFFICULTY_LABELS) as Difficulty[];
+
+type PlayMode = "default" | "surprise" | "endless";
 
 const QuickPlay = () => {
   const { type } = useParams<{ type: string }>();
@@ -31,31 +35,47 @@ const QuickPlay = () => {
   const category = type as PuzzleCategory;
   const info = CATEGORY_INFO[category];
 
+  const mode: PlayMode = (searchParams.get("mode") as PlayMode) || "default";
   const initialDifficulty = (searchParams.get("d") as Difficulty) || "medium";
   const initialSeed = searchParams.get("seed");
 
   const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
   const [seed, setSeed] = useState(() => initialSeed ? parseInt(initialSeed) || randomSeed() : randomSeed());
   const [puzzleKey, setPuzzleKey] = useState(0);
+  // Track current type for surprise re-rolls
+  const [currentType, setCurrentType] = useState<PuzzleCategory>(category);
+  const currentInfo = CATEGORY_INFO[currentType] || info;
 
   const handleNewPuzzle = useCallback(() => {
-    setSeed(randomSeed());
-    setPuzzleKey((k) => k + 1);
-  }, []);
+    if (mode === "surprise") {
+      // Pick a new random type and difficulty
+      const newType = allTypes[Math.floor(Math.random() * allTypes.length)];
+      const newDiff = allDifficulties[Math.floor(Math.random() * allDifficulties.length)];
+      const newSeed = randomSeed();
+      setCurrentType(newType);
+      setDifficulty(newDiff);
+      setSeed(newSeed);
+      setPuzzleKey((k) => k + 1);
+      // Update URL without full navigation
+      window.history.replaceState(null, "", `/quick-play/${newType}?d=${newDiff}&seed=${newSeed}&mode=surprise`);
+    } else {
+      setSeed(randomSeed());
+      setPuzzleKey((k) => k + 1);
+    }
+  }, [mode]);
 
   const handleDifficultyChange = (d: Difficulty) => {
     setDifficulty(d);
-    // Save preference
     try {
       const stored = JSON.parse(localStorage.getItem("play_difficulties") || "{}");
-      stored[category] = d;
+      stored[currentType] = d;
       localStorage.setItem("play_difficulties", JSON.stringify(stored));
     } catch { /* ignore */ }
     setSeed(randomSeed());
     setPuzzleKey((k) => k + 1);
   };
 
-  if (!info) {
+  if (!info && !currentInfo) {
     return (
       <Layout>
         <div className="container py-20 text-center">
@@ -68,9 +88,12 @@ const QuickPlay = () => {
     );
   }
 
+  const activeType = currentType;
+  const activeInfo = currentInfo;
+
   const renderPuzzle = () => {
     const key = `${seed}-${difficulty}-${puzzleKey}`;
-    switch (category) {
+    switch (activeType) {
       case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
       case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
       case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
@@ -107,42 +130,57 @@ const QuickPlay = () => {
     }
   };
 
+  const modeLabel = mode === "surprise" ? "Surprise Puzzle" : mode === "endless" ? "Endless Mode" : null;
+  const ModeIcon = mode === "surprise" ? Dices : mode === "endless" ? Infinity : null;
+
   return (
     <Layout>
       <div className="container py-6 md:py-10">
         {/* Minimal header */}
         <div className="mb-4">
           <button
-            onClick={() => navigate("/puzzles")}
+            onClick={() => navigate("/")}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft size={14} />
-            <span className="hidden sm:inline">Back to Play</span>
+            <span className="hidden sm:inline">Home</span>
           </button>
         </div>
 
-        {/* Puzzle identity + difficulty strip */}
+        {/* Mode badge + puzzle identity */}
         <div className="mb-6">
+          {modeLabel && ModeIcon && (
+            <div className="flex items-center gap-1.5 mb-2">
+              <ModeIcon size={14} className="text-primary" />
+              <span className="text-xs font-medium uppercase tracking-widest text-primary">{modeLabel}</span>
+            </div>
+          )}
           <div className="flex items-center gap-2.5 mb-3">
-            <PuzzleIcon type={category} size={28} className="text-foreground" />
-            <h1 className="font-display text-xl font-bold text-foreground sm:text-2xl">{info.name}</h1>
+            <PuzzleIcon type={activeType} size={28} className="text-foreground" />
+            <h1 className="font-display text-xl font-bold text-foreground sm:text-2xl">{activeInfo.name}</h1>
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {difficulties.map(([val, label]) => (
-              <button
-                key={val}
-                onClick={() => handleDifficultyChange(val)}
-                className={cn(
-                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                  difficulty === val
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          {/* Hide difficulty selector in surprise mode (randomized automatically) */}
+          {mode !== "surprise" && (
+            <div className="flex flex-wrap gap-1.5">
+              {difficulties.map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => handleDifficultyChange(val)}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                    difficulty === val
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+          {mode === "surprise" && (
+            <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[difficulty]}</p>
+          )}
         </div>
 
         {/* Puzzle */}
