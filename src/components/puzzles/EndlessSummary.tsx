@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import Layout from "@/components/layout/Layout";
@@ -5,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { ArrowLeft, Infinity, Trophy, Clock, Target, TrendingUp, TrendingDown, Minus, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
+import { saveEndlessSession } from "@/lib/endlessHistory";
 
 export interface EndlessSolveRecord {
   type: PuzzleCategory;
@@ -20,6 +22,38 @@ interface Props {
 }
 
 const EndlessSummary = ({ solves, diffMap, onPlayAgain }: Props) => {
+  const savedRef = useRef(false);
+
+  // Save session to localStorage on first render
+  useEffect(() => {
+    if (savedRef.current || solves.length === 0) return;
+    savedRef.current = true;
+
+    const totalTime = solves.reduce((sum, s) => sum + s.elapsed, 0);
+    const fastestSolve = Math.min(...solves.map((s) => s.elapsed));
+    const typesPlayed = [...new Set(solves.map((s) => s.type))];
+
+    // Only persist types whose difficulty changed
+    const finalDifficulties: Partial<Record<PuzzleCategory, Difficulty>> = {};
+    for (const t of typesPlayed) {
+      finalDifficulties[t] = diffMap[t];
+    }
+
+    saveEndlessSession({
+      totalSolved: solves.length,
+      totalTime,
+      fastestSolve,
+      typesPlayed,
+      solves: solves.map((s) => ({
+        type: s.type,
+        difficulty: s.difficulty,
+        elapsed: s.elapsed,
+        diffChange: s.diffChange,
+      })),
+      finalDifficulties,
+    });
+  }, [solves, diffMap]);
+
   const totalTime = solves.reduce((sum, s) => sum + s.elapsed, 0);
   const avgTime = solves.length > 0 ? Math.round(totalTime / solves.length) : 0;
   const fastestSolve = solves.length > 0 ? Math.min(...solves.map((s) => s.elapsed)) : 0;

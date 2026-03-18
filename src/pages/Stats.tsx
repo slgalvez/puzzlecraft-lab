@@ -2,17 +2,20 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { getProgressStats } from "@/lib/progressTracker";
-import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { getDailyStreak, getTotalDailyCompleted } from "@/lib/dailyChallenge";
-import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight } from "lucide-react";
+import { getEndlessStats } from "@/lib/endlessHistory";
+import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
 
 const Stats = () => {
   const stats = useMemo(() => getProgressStats(), []);
   const dailyStreak = useMemo(() => getDailyStreak(), []);
   const dailyCompleted = useMemo(() => getTotalDailyCompleted(), []);
+  const endlessStats = useMemo(() => getEndlessStats(), []);
 
   const statCards = [
     { icon: Target, label: "Puzzles Solved", value: stats.totalSolved.toString() },
@@ -80,7 +83,85 @@ const Stats = () => {
           </div>
         )}
 
-        {/* By category */}
+        {/* Endless Mode sessions */}
+        {endlessStats && (
+          <div className="mt-8 rounded-xl border bg-card p-5">
+            <h2 className="font-display text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+              <Infinity size={18} className="text-primary" />
+              Endless Mode
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center mb-5">
+              <div>
+                <p className="font-mono text-2xl font-bold text-foreground">{endlessStats.totalSessions}</p>
+                <p className="text-xs text-muted-foreground">Sessions</p>
+              </div>
+              <div>
+                <p className="font-mono text-2xl font-bold text-foreground">{endlessStats.totalSolved}</p>
+                <p className="text-xs text-muted-foreground">Total Solved</p>
+              </div>
+              <div>
+                <p className="font-mono text-2xl font-bold text-foreground">{endlessStats.bestSessionSolved}</p>
+                <p className="text-xs text-muted-foreground">Best Session</p>
+              </div>
+              <div>
+                <p className="font-mono text-2xl font-bold text-foreground">
+                  {endlessStats.fastestEver !== null ? formatTime(endlessStats.fastestEver) : "—"}
+                </p>
+                <p className="text-xs text-muted-foreground">Fastest Solve</p>
+              </div>
+            </div>
+
+            {/* Recent sessions */}
+            {endlessStats.recentSessions.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-2">Recent Sessions</h3>
+                <div className="space-y-2">
+                  {endlessStats.recentSessions.map((session) => {
+                    const typesUnique = [...new Set(session.typesPlayed)];
+                    const ups = session.solves.filter((s) => s.diffChange === "up").length;
+                    const downs = session.solves.filter((s) => s.diffChange === "down").length;
+                    return (
+                      <div key={session.id} className="rounded-lg border bg-secondary/30 p-3">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(session.date).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {session.totalSolved} solved · {formatTime(session.totalTime)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {typesUnique.map((t) => (
+                            <div key={t} className="flex items-center gap-1">
+                              <PuzzleIcon type={t} size={12} className="text-muted-foreground" />
+                              <span className="text-[10px] text-muted-foreground">{CATEGORY_INFO[t]?.name}</span>
+                              {session.finalDifficulties[t] && session.finalDifficulties[t] !== "medium" && (
+                                <span className="text-[10px] font-medium text-foreground capitalize">
+                                  {DIFFICULTY_LABELS[session.finalDifficulties[t]!]}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                          {ups > 0 && (
+                            <span className="flex items-center gap-0.5 text-[10px] text-primary">
+                              <TrendingUp size={9} /> {ups}
+                            </span>
+                          )}
+                          {downs > 0 && (
+                            <span className="flex items-center gap-0.5 text-[10px] text-destructive">
+                              <TrendingDown size={9} /> {downs}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {categoryKeys.length > 0 && (
           <div className="mt-12">
             <h2 className="font-display text-xl font-semibold text-foreground mb-4">By Puzzle Type</h2>
