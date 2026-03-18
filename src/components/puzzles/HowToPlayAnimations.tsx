@@ -204,10 +204,11 @@ function WordSearchAnim() {
 }
 
 function KakuroAnim() {
+  // Valid kakuro: clue cell (0,0) with across sum 6 → cells (0,1),(0,2),(0,3) = 1+2+3 = 6 ✓
   return (
     <svg viewBox={`0 0 ${S} ${S}`} width={S} height={S} className="block">
-      <MiniGrid rows={4} cols={4} blacks={[[0,0],[0,1],[1,0],[3,3]]} id="ka" />
-      {/* clue in (0,0) */}
+      <MiniGrid rows={4} cols={4} blacks={[[0,0],[1,0],[2,0],[3,0]]} id="ka" />
+      {/* clue cell (0,0): diagonal + across sum */}
       {(() => {
         const {x,y,w,h} = cell(0,0);
         return <>
@@ -215,17 +216,17 @@ function KakuroAnim() {
           <text x={x+w-3} y={y+h/2+1} textAnchor="end" fontSize="7" fill={COL.textMuted}>6</text>
         </>;
       })()}
-      {/* highlight clue then fill 1,2,3 */}
+      {/* highlight clue then fill 1,2,3 into (0,1),(0,2),(0,3) */}
       {(() => {
         const {x,y,w,h} = cell(0,0);
         return <rect x={x} y={y} width={w} height={h} rx={1.5} fill={COL.activeFaint} opacity={0}>
           <animate attributeName="opacity" values="0;0.5;0.5;0;0" keyTimes="0;0.05;0.2;0.3;1" dur={DUR} repeatCount="indefinite" />
         </rect>;
       })()}
-      <AnimLetter ch="1" col={2} row={0} delay="0.3s" />
-      <AnimLetter ch="2" col={3} row={0} delay="0.6s" />
-      <AnimLetter ch="3" col={1} row={1} delay="0.9s" />
-      <SuccessFlash col={2} row={0} cols={2} rows={1} delay="0s" />
+      <AnimLetter ch="1" col={1} row={0} delay="0.3s" />
+      <AnimLetter ch="2" col={2} row={0} delay="0.6s" />
+      <AnimLetter ch="3" col={3} row={0} delay="0.9s" />
+      <SuccessFlash col={1} row={0} cols={3} rows={1} delay="0s" />
     </svg>
   );
 }
