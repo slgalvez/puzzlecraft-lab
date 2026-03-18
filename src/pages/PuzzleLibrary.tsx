@@ -49,7 +49,7 @@ const PuzzleLibrary = () => {
 
   return (
     <Layout>
-      <div className="container py-10 md:py-14">
+      <div className="container py-10 md:py-14 pb-20 md:pb-28">
         <div className="max-w-xl">
           <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
             Play
@@ -59,7 +59,7 @@ const PuzzleLibrary = () => {
           </p>
         </div>
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {categories.map(([type, info]) => {
             const currentDiff = getDifficulty(type);
             const isExpanded = expandedType === type;
@@ -69,23 +69,27 @@ const PuzzleLibrary = () => {
                 {/* Main card area — click to play */}
                 <button
                   onClick={() => handlePlay(type)}
-                  className="group flex flex-col items-start p-5 text-left active:scale-[0.98] transition-transform"
+                  className="group flex flex-1 flex-col items-start p-5 pb-4 text-left active:scale-[0.98] transition-transform"
                 >
-                  <PuzzleIcon type={type} size={36} className="text-foreground opacity-80 group-hover:opacity-100 transition-opacity" />
-                  <h3 className="mt-3 font-display text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+                  <div className="flex h-9 items-center">
+                    <PuzzleIcon type={type} size={36} className="text-foreground opacity-80 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <h3 className="mt-3 font-display text-[1.1rem] font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
                     {info.name}
                   </h3>
-                  <p className="mt-1 text-sm text-muted-foreground leading-snug">
+                  <p className="mt-1.5 text-sm text-muted-foreground/80 leading-snug font-normal">
                     {info.description}
                   </p>
-                  <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
-                    <Play size={12} className="fill-primary" />
-                    Play · {DIFFICULTY_LABELS[currentDiff]}
-                  </span>
+                  <div className="mt-auto pt-4">
+                    <span className="text-sm font-semibold text-primary">Play</span>
+                    <span className="block text-[11px] text-muted-foreground/70 font-medium mt-0.5">
+                      {DIFFICULTY_LABELS[currentDiff]}
+                    </span>
+                  </div>
                 </button>
 
                 {/* Difficulty toggle strip */}
-                <div className="border-t border-border px-4 py-2">
+                <div className="border-t border-border/60 px-4 py-2">
                   <button
                     onClick={(e) => toggleExpanded(type, e)}
                     className="flex w-full items-center justify-between text-xs text-muted-foreground hover:text-foreground transition-colors"
