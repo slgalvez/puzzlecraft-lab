@@ -31,7 +31,7 @@ interface KakuroState {
   grid: string[][];
 }
 
-const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
+const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateKakuro(seed, difficulty), [seed, difficulty]);
