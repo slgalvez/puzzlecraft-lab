@@ -12,7 +12,7 @@ import { getTodaysChallenge, getDailyCompletion, getDailyStreak } from "@/lib/da
 import { getProgressStats } from "@/lib/progressTracker";
 import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
-import { randomSeed } from "@/lib/seededRandom";
+
 
 const Index = () => {
   const featured = allPuzzles.slice(0, 3);
