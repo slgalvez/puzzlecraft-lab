@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
-import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface PrivateUser {
