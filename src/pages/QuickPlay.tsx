@@ -236,8 +236,8 @@ const QuickPlay = () => {
               <span className="text-xs text-muted-foreground">
                 Difficulty: <span className="font-medium text-foreground capitalize">{DIFFICULTY_LABELS[activeDifficulty]}</span>
               </span>
-              {lastDiffChange === "up" && <TrendingUp size={12} className="text-green-500" />}
-              {lastDiffChange === "down" && <TrendingDown size={12} className="text-orange-500" />}
+              {lastDiffChange === "up" && <TrendingUp size={12} className="text-primary" />}
+              {lastDiffChange === "down" && <TrendingDown size={12} className="text-destructive" />}
               {lastDiffChange === "stay" && <Minus size={12} className="text-muted-foreground" />}
             </div>
           )}
