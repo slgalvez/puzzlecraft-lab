@@ -27,6 +27,9 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => 
   const [activeIdx, setActiveIdx] = useState<number>(-1);
   const inputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
+  const resetCount = useRef(0);
+  const checkCount = useRef(0);
+  const errorCheckCount = useRef(0);
 
   const timerKey = `cryptogram-${seed}-${difficulty}`;
   const timer = usePuzzleTimer(timerKey, { category: "cryptogram", difficulty });
