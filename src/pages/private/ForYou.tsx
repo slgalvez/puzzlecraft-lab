@@ -82,6 +82,9 @@ const ForYou = () => {
   // Solve state
   const [solvingPuzzle, setSolvingPuzzle] = useState<PrivatePuzzle | null>(null);
 
+  // View completed puzzle state
+  const [viewingPuzzle, setViewingPuzzle] = useState<PrivatePuzzle | null>(null);
+
   const handleSessionExpired = useCallback(() => {
     signOut();
     navigate("/");
