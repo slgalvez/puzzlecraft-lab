@@ -1078,16 +1078,29 @@ function SolvePuzzleView({
         <button onClick={onBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-3 w-3" /> Back
         </button>
-        <div className="text-center py-8 space-y-4">
-          <Check className="mx-auto h-10 w-10 text-primary" />
-          <h3 className="text-lg font-medium">Puzzle Solved!</h3>
-          {puzzle.solve_time != null && (
-            <p className="text-sm text-muted-foreground">Completed in {formatTime(puzzle.solve_time)}</p>
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-medium">{PUZZLE_LABELS[puzzle.puzzle_type]}</h3>
+          <Badge variant="secondary" className="text-[10px]">
+            <Check className="h-3 w-3 mr-0.5" /> Completed
+          </Badge>
+        </div>
+        {puzzle.solve_time != null && (
+          <p className="text-xs text-muted-foreground">Solved in {formatTime(puzzle.solve_time)}</p>
+        )}
+        {puzzle.reveal_message && (
+          <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <p className="text-sm italic text-foreground">{puzzle.reveal_message}</p>
+          </div>
+        )}
+        <div className="p-4 rounded-lg border border-border bg-card">
+          {(puzzle.puzzle_type === "word-fill" || puzzle.puzzle_type === "crossword") && (
+            <CompletedGridView data={data} puzzleType={puzzle.puzzle_type} />
           )}
-          {puzzle.reveal_message && (
-            <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 mt-4">
-              <p className="text-sm italic text-foreground">{puzzle.reveal_message}</p>
-            </div>
+          {puzzle.puzzle_type === "cryptogram" && (
+            <CompletedCryptogramView data={data} />
+          )}
+          {puzzle.puzzle_type === "word-search" && (
+            <CompletedWordSearchView data={data} />
           )}
         </div>
       </div>
