@@ -25,7 +25,7 @@ interface EntrySlot {
   direction: Direction;
 }
 
-const KakuroGrid = ({ seed, difficulty, onNewPuzzle }: Props) => {
+const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateKakuro(seed, difficulty), [seed, difficulty]);
