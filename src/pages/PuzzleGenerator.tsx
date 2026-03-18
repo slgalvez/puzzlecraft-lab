@@ -491,6 +491,48 @@ const PuzzleGenerator = () => {
         </div>
       </div>
 
+      {/* Time Limit */}
+      <div>
+        <label className="mb-3 block text-xs font-medium uppercase tracking-widest text-muted-foreground">
+          Time Limit
+        </label>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={timeLimitEnabled}
+              onCheckedChange={setTimeLimitEnabled}
+              id="time-limit-toggle"
+            />
+            <label htmlFor="time-limit-toggle" className="text-sm font-medium text-foreground cursor-pointer">
+              {timeLimitEnabled ? "Timed" : "No limit"}
+            </label>
+          </div>
+          {timeLimitEnabled && (
+            <div className="flex items-center gap-1.5 ml-2">
+              <Clock size={14} className="text-muted-foreground" />
+              <Input
+                type="number"
+                min={0}
+                max={120}
+                value={timeLimitMinutes}
+                onChange={(e) => setTimeLimitMinutes(Math.max(0, Math.min(120, parseInt(e.target.value) || 0)))}
+                className="w-16 h-8 text-center text-sm"
+              />
+              <span className="text-xs text-muted-foreground">min</span>
+              <Input
+                type="number"
+                min={0}
+                max={59}
+                value={timeLimitSeconds}
+                onChange={(e) => setTimeLimitSeconds(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+                className="w-16 h-8 text-center text-sm"
+              />
+              <span className="text-xs text-muted-foreground">sec</span>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Primary Action */}
       <div className="flex items-center gap-4">
         <Button onClick={handleGenerate} size="lg" className="gap-2 text-base px-8" disabled={!canGenerate}>
