@@ -36,20 +36,10 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
   const isLoginPage = location.pathname === "/p/login";
 
   // If session was ended by a newer login elsewhere, redirect out
+  // If session was ended by a newer login elsewhere, clean up and redirect home
   if (sessionEnded) {
-    return (
-      <div className="private-app flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-3">
-          <p className="text-sm text-muted-foreground">Session ended</p>
-          <button
-            onClick={() => window.location.href = "/"}
-            className="text-xs text-primary hover:underline"
-          >
-            Return home
-          </button>
-        </div>
-      </div>
-    );
+    signOut();
+    return <Navigate to="/" replace />;
   }
 
   // If grace period expired, force full logout

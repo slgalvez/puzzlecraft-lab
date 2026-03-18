@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, MessageSquare, Users, Settings, LogOut, Puzzle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { invokeMessaging } from "@/lib/privateApi";
+import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -88,7 +88,6 @@ export function PrivateSidebar() {
           (sum: number, c: { unread_count: number }) => sum + c.unread_count,
           0
         );
-        // Find latest message time for overview dot
         for (const c of convs) {
           if (c.last_message_at) {
             const t = new Date(c.last_message_at).getTime();
@@ -105,7 +104,6 @@ export function PrivateSidebar() {
         }
       }
 
-      // Fetch puzzles
       const puzzleData = await invokeMessaging("list-puzzles", token);
       const allPuzzles = puzzleData.puzzles || [];
       const unsolved = allPuzzles.filter(
@@ -115,7 +113,6 @@ export function PrivateSidebar() {
       setUnreadCount(msgUnread);
       setUnsolvedPuzzles(unsolved);
 
-      // Determine overview activity: any puzzle or message event newer than last overview visit
       const overviewSeen = getSeenTimestamp(SEEN_KEY_OVERVIEW);
       const isOnOverview = location.pathname === "/p";
 
@@ -134,10 +131,13 @@ export function PrivateSidebar() {
       } else {
         setHasOverviewActivity(false);
       }
-    } catch {
-      // silent
+    } catch (e) {
+      if (e instanceof SessionExpiredError) {
+        signOut();
+        navigate("/");
+      }
     }
-  }, [token, isAdmin, user, location.pathname]);
+  }, [token, isAdmin, user, location.pathname, signOut, navigate]);
 
   useEffect(() => {
     fetchCounts();
