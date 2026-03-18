@@ -321,22 +321,6 @@ const Index = () => {
         </section>
       )}
 
-      {/* Featured puzzles */}
-      <section className="border-t bg-surface-warm">
-        <div className="container py-16">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-2xl font-semibold text-foreground sm:text-3xl">Featured Puzzles</h2>
-            <Link to="/puzzles" className="text-sm font-medium text-primary hover:underline">
-              View all →
-            </Link>
-          </div>
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.map((p) => (
-              <PuzzleCard key={p.id} puzzle={p} />
-            ))}
-          </div>
-        </div>
-      </section>
     </Layout>
   );
 };
