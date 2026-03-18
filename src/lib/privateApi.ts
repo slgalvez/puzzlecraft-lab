@@ -30,14 +30,53 @@ async function getFunctionErrorBody(error: unknown): Promise<{ error?: string } 
   }
 
   if (typeof maybeError.message === "string") {
+    const directMessage = maybeError.message;
+
     try {
-      return JSON.parse(maybeError.message) as { error?: string };
+      return JSON.parse(directMessage) as { error?: string };
     } catch {
-      return null;
+      const nestedJsonMatch = directMessage.match(/\{.*\}$/);
+      if (nestedJsonMatch) {
+        try {
+          return JSON.parse(nestedJsonMatch[0]) as { error?: string };
+        } catch {
+          // ignore nested parse failure and fall through
+        }
+      }
     }
   }
 
   return null;
+}
+
+function isSessionEndedMessage(message?: string | null): boolean {
+  return message === "Access unavailable" || message === "Token expired" || message === "Session ended";
+}
+
+function isSessionEndedError(error: unknown, errBody: { error?: string } | null): boolean {
+  if (isSessionEndedMessage(errBody?.error)) return true;
+
+  if (!error || typeof error !== "object") return false;
+
+  const maybeError = error as {
+    message?: string;
+    context?: { status?: number };
+    status?: number;
+  };
+
+  const status = maybeError.context?.status ?? maybeError.status;
+  if (status === 401) {
+    if (!maybeError.message) return true;
+    if (
+      maybeError.message.includes("Session ended") ||
+      maybeError.message.includes("Access unavailable") ||
+      maybeError.message.includes("Token expired")
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export async function invokeMessaging(action: string, token: string, extra: Record<string, unknown> = {}) {
@@ -63,7 +102,7 @@ export async function invokeMessaging(action: string, token: string, extra: Reco
     const errBody = await getFunctionErrorBody(error);
     const errMsg = errBody?.error;
 
-    if (errMsg === "Access unavailable" || errMsg === "Token expired" || errMsg === "Session ended") {
+    if (isSessionEndedError(error, errBody)) {
       throw new SessionExpiredError();
     }
 
@@ -71,7 +110,7 @@ export async function invokeMessaging(action: string, token: string, extra: Reco
   }
 
   if (data?.error) {
-    if (data.error === "Access unavailable" || data.error === "Token expired" || data.error === "Session ended") {
+    if (isSessionEndedMessage(data.error)) {
       throw new SessionExpiredError();
     }
     throw new Error(data.error);
