@@ -222,6 +222,8 @@ const PuzzleGenerator = () => {
     });
   };
 
+  const activeTimeLimit = timeLimitEnabled ? (timeLimitMinutes * 60 + timeLimitSeconds) : undefined;
+
   const renderPuzzle = () => {
     if (!category || !difficulty) return null;
     const d = difficulty as Difficulty;
