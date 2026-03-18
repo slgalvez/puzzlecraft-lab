@@ -214,24 +214,24 @@ const Index = () => {
                   <Calendar size={14} />
                   Daily Challenge
                 </div>
-                {(() => { const DailyIcon = CATEGORY_ICONS[challenge.category]; return (
-                <h2 className="font-display text-2xl font-bold text-foreground sm:text-3xl flex items-center gap-2">
-                  <DailyIcon size={28} className="text-primary" /> Today's {challengeInfo.name}
+              {(() => { const DailyIcon = CATEGORY_ICONS[challenge.category]; return (
+                <h2 className="font-display text-3xl font-bold text-foreground sm:text-4xl flex items-center gap-2.5">
+                  <DailyIcon size={30} className="text-primary" /> Today's {challengeInfo.name}
                 </h2>
                 ); })()}
-                <p className="mt-2 text-muted-foreground">
+                <p className="mt-1.5 text-sm text-muted-foreground/80">
                   {challengeInfo.description}. Everyone gets the same puzzle — how fast can you solve it?
                 </p>
-                <div className="mt-2 flex items-center gap-2">
+                <div className="mt-1.5 flex items-center gap-2">
                   <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground capitalize">
                     {challenge.difficulty}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-[11px] text-muted-foreground/60">
                     Puzzle Code: <span className="font-mono">{challenge.seed}</span>
                   </span>
                 </div>
 
-                <div className="mt-6 flex flex-wrap items-center gap-3">
+                <div className="mt-8 flex flex-wrap items-center gap-3">
                   {dailyCompletion ? (
                     <>
                        <div className="flex items-center gap-1.5 rounded-lg border bg-primary/10 border-primary/30 px-3 py-2">
@@ -245,9 +245,9 @@ const Index = () => {
                       </Button>
                     </>
                   ) : (
-                    <Button asChild size="lg">
+                    <Button asChild size="lg" className="px-8 py-3 text-base font-semibold">
                       <Link to="/daily">
-                        Play Now <ArrowRight size={16} />
+                        Play Now <ArrowRight size={18} />
                       </Link>
                     </Button>
                   )}
@@ -255,31 +255,31 @@ const Index = () => {
               </div>
 
               {/* Right: streak stats */}
-              <div className="border-t md:border-t-0 md:border-l bg-secondary/30 p-6 sm:p-8 md:w-64 flex flex-row md:flex-col gap-6 md:gap-4 justify-center">
+              <div className="border-t md:border-t-0 md:border-l bg-secondary/30 p-6 sm:p-8 md:w-56 flex flex-row md:flex-col gap-6 md:gap-5 justify-center">
                 <div className="text-center md:text-left">
                   <div className="flex items-center justify-center md:justify-start gap-1.5 mb-1">
-                    <Flame size={16} className="text-primary" />
-                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Streak</span>
+                    <Flame size={14} className="text-primary" />
+                    <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/70">Streak</span>
                   </div>
-                  <p className="font-mono text-2xl font-bold text-foreground">{dailyStreak.current}</p>
-                  <p className="text-xs text-muted-foreground">day{dailyStreak.current !== 1 ? "s" : ""}</p>
+                  <p className="font-mono text-3xl font-extrabold text-foreground leading-none">{dailyStreak.current}</p>
+                  <p className="text-[11px] text-muted-foreground/60 mt-0.5">day{dailyStreak.current !== 1 ? "s" : ""}</p>
                 </div>
                 <div className="text-center md:text-left">
                   <div className="flex items-center justify-center md:justify-start gap-1.5 mb-1">
-                    <Trophy size={16} className="text-primary" />
-                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Best</span>
+                    <Trophy size={14} className="text-primary" />
+                    <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/70">Best</span>
                   </div>
-                  <p className="font-mono text-2xl font-bold text-foreground">{dailyStreak.longest}</p>
-                  <p className="text-xs text-muted-foreground">day{dailyStreak.longest !== 1 ? "s" : ""}</p>
+                  <p className="font-mono text-3xl font-extrabold text-foreground leading-none">{dailyStreak.longest}</p>
+                  <p className="text-[11px] text-muted-foreground/60 mt-0.5">day{dailyStreak.longest !== 1 ? "s" : ""}</p>
                 </div>
                 {stats.totalSolved > 0 && (
                   <div className="text-center md:text-left">
                     <div className="flex items-center justify-center md:justify-start gap-1.5 mb-1">
-                      <Target size={16} className="text-primary" />
-                      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Total</span>
+                      <Target size={14} className="text-primary" />
+                      <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/70">Total</span>
                     </div>
-                    <p className="font-mono text-2xl font-bold text-foreground">{stats.totalSolved}</p>
-                    <p className="text-xs text-muted-foreground">solved</p>
+                    <p className="font-mono text-3xl font-extrabold text-foreground leading-none">{stats.totalSolved}</p>
+                    <p className="text-[11px] text-muted-foreground/60 mt-0.5">solved</p>
                   </div>
                 )}
               </div>
