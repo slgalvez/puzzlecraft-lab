@@ -20,6 +20,9 @@ import {
   CryptogramSolver,
   WordSearchSolver,
   PuzzlePreview,
+  CompletedGridView,
+  CompletedCryptogramView,
+  CompletedWordSearchView,
 } from "@/components/private/PrivatePuzzleSolvers";
 
 type PuzzleType = "word-fill" | "cryptogram" | "crossword" | "word-search";
