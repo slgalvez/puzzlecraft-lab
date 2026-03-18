@@ -237,6 +237,7 @@ body:has(.private-app) [data-sidebar="sidebar"][data-mobile="true"] {
   --destructive-foreground: 0 0% 100%;
   background: hsl(220 14% 8%) !important;
   color: hsl(220 10% 85%);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 /* Composer pill style */

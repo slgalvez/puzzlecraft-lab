@@ -5,11 +5,11 @@ import { PrivateSidebar } from "@/components/private/PrivateSidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Puzzle } from "lucide-react";
+import { applyChatTheme } from "@/lib/chatTheme";
 
 const LAST_ACTIVE_KEY = "private_last_active";
 const GRACE_PERIOD_MS = 5 * 60 * 1000; // 5 minutes
 
-/** Record that the private app is currently active */
 function stampActive() {
   localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
 }
@@ -17,9 +17,11 @@ function stampActive() {
 interface PrivateLayoutProps {
   children: React.ReactNode;
   title?: string;
+  /** When true, main area uses flex column with no overflow (for chat views) */
+  fullHeight?: boolean;
 }
 
-export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
+export default function PrivateLayout({ children, title, fullHeight }: PrivateLayoutProps) {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const escCountRef = useRef(0);
@@ -28,19 +30,17 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
   const quickExit = useCallback(() => {
     sessionStorage.removeItem("private_view_state");
     sessionStorage.removeItem("private_access_grant");
-    stampActive(); // record when we left
+    stampActive();
     navigate("/");
   }, [navigate]);
 
-  // Focus-loss privacy protection
-  // Triggers on: visibilitychange (document.hidden) AND pagehide
-  // visibilitychange fires on: tab switch, app switch, phone lock, device sleep, PWA background
-  // pagehide fires on: page unload, navigation away, some mobile app-switch scenarios
-  // Does NOT trigger on: notification banners, quick-reply overlays, small system UI
-  // (these do not set document.visibilityState to "hidden")
+  // Apply chat theme on mount
   useEffect(() => {
-    // Short stabilization window (1.5s) to prevent exit during initial render/hydration.
-    // This is NOT a login guard — login is on a separate page that doesn't use PrivateLayout.
+    applyChatTheme();
+  }, []);
+
+  // Focus-loss privacy protection
+  useEffect(() => {
     let armed = false;
     const armTimer = setTimeout(() => { armed = true; }, 1500);
 
@@ -72,7 +72,7 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
     };
   }, [quickExit]);
 
-  // Check grace period on mount — if > 5 min away, force full logout
+  // Grace period check
   useEffect(() => {
     const lastActive = localStorage.getItem(LAST_ACTIVE_KEY);
     if (lastActive) {
@@ -84,7 +84,7 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
     }
   }, [signOut, navigate]);
 
-  // Escape × 2 keyboard shortcut
+  // Escape × 2 shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Escape") {
@@ -145,7 +145,11 @@ export default function PrivateLayout({ children, title }: PrivateLayoutProps) {
                 </button>
               </div>
             </header>
-            <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">{children}</main>
+            {fullHeight ? (
+              <main className="min-h-0 flex-1 flex flex-col overflow-hidden">{children}</main>
+            ) : (
+              <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">{children}</main>
+            )}
           </div>
         </div>
       </SidebarProvider>

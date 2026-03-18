@@ -238,6 +238,26 @@ Deno.serve(async (req) => {
       return json({ reactions });
     }
 
+    // ─── EDIT MESSAGE ───
+    if (action === "edit-message") {
+      const { message_id, body: newBody } = body;
+      if (!message_id || typeof newBody !== "string" || newBody.trim().length === 0) return err("Invalid edit", 400);
+      if (newBody.length > 5000) return err("Message too long", 400);
+
+      const { data: msg } = await sb.from("messages").select("id, sender_profile_id, conversation_id").eq("id", message_id).single();
+      if (!msg) return err("Message not found");
+      if (msg.sender_profile_id !== profileId) return err("Can only edit your own messages");
+
+      const { data: conv } = await sb.from("conversations").select("id, user_profile_id, admin_profile_id").eq("id", msg.conversation_id).single();
+      if (!conv) return err("Conversation not found");
+      if (!isAdmin && conv.user_profile_id !== profileId) return err("Access denied");
+
+      const { error: updateErr } = await sb.from("messages").update({ body: newBody.trim() }).eq("id", message_id);
+      if (updateErr) return err("Could not edit message");
+
+      return json({ ok: true, body: newBody.trim() });
+    }
+
     // ─── MARK READ ───
     if (action === "mark-read") {
       const { conversation_id } = body;

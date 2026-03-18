@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Timer, Check, CheckCheck, Eye } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
+import { Timer, Check, CheckCheck, Eye, Pencil } from "lucide-react";
 import { isGifMessage, getGifUrl } from "@/components/private/MessageComposer";
 
 const REACTION_OPTIONS = ["❤️", "👍", "😂", "‼️", "❓", "😢"];
@@ -17,6 +17,7 @@ interface MessageBubbleProps {
   formatTime: (iso: string) => string;
   showTail?: boolean;
   onReact?: (messageId: string, reaction: string) => void;
+  onEdit?: (messageId: string, newBody: string) => void;
 }
 
 export function MessageBubble({
@@ -32,10 +33,15 @@ export function MessageBubble({
   formatTime,
   showTail = true,
   onReact,
+  onEdit,
 }: MessageBubbleProps) {
-  const [showPicker, setShowPicker] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState("");
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const didLongPress = useRef(false);
+  const lastTapRef = useRef(0);
+  const editInputRef = useRef<HTMLTextAreaElement>(null);
 
   const isViewOnce =
     isDisappearing &&
@@ -46,73 +52,141 @@ export function MessageBubble({
   const reactionEntries = Object.entries(reactions || {}).filter(([, users]) => users.length > 0);
   const hasReactions = reactionEntries.length > 0;
 
-  const handleDoubleTap = () => {
-    onReact?.(id, "❤️");
-  };
+  const closeMenu = useCallback(() => setShowMenu(false), []);
 
-  const handleTouchStart = () => {
+  const handleTap = useCallback(() => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      // Double-tap → heart
+      onReact?.(id, "❤️");
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+    }
+  }, [id, onReact]);
+
+  const handleTouchStart = useCallback(() => {
     didLongPress.current = false;
     longPressTimer.current = setTimeout(() => {
       didLongPress.current = true;
-      setShowPicker(true);
+      setShowMenu(true);
     }, 500);
-  };
+  }, []);
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = useCallback(() => {
     clearTimeout(longPressTimer.current);
-  };
+    if (!didLongPress.current) {
+      handleTap();
+    }
+  }, [handleTap]);
+
+  const handleTouchMove = useCallback(() => {
+    clearTimeout(longPressTimer.current);
+  }, []);
 
   const handleReact = (reaction: string) => {
     onReact?.(id, reaction);
-    setShowPicker(false);
+    setShowMenu(false);
+  };
+
+  const handleStartEdit = () => {
+    setEditText(body);
+    setEditing(true);
+    setShowMenu(false);
+    setTimeout(() => editInputRef.current?.focus(), 50);
+  };
+
+  const handleSaveEdit = () => {
+    const trimmed = editText.trim();
+    if (trimmed && trimmed !== body) {
+      onEdit?.(id, trimmed);
+    }
+    setEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditing(false);
   };
 
   const isMedia = isGifMessage(body);
   const mediaUrl = isMedia ? getGifUrl(body) : "";
 
+  const bubbleClass = isMine
+    ? showTail ? "msg-bubble-mine" : "msg-bubble-mine rounded-br-[1.125rem]"
+    : showTail ? "msg-bubble-theirs" : "msg-bubble-theirs rounded-bl-[1.125rem]";
+
+  const timeColor = isMine ? "text-primary-foreground/55" : "text-muted-foreground/70";
+  const iconColor = isMine ? "text-primary-foreground/40" : "text-muted-foreground/50";
+
   return (
-    <div
-      className={`flex ${isMine ? "justify-end" : "justify-start"} px-1 group relative`}
-      onDoubleClick={handleDoubleTap}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
-    >
+    <div className={`flex ${isMine ? "justify-end" : "justify-start"} px-1 relative`}>
       <div className="relative max-w-[82%] sm:max-w-[70%]">
-        {/* Reaction picker */}
-        {showPicker && (
+        {/* Press-and-hold context menu */}
+        {showMenu && (
           <>
-            <div className="fixed inset-0 z-40" onClick={() => setShowPicker(false)} />
+            <div className="fixed inset-0 z-40" onClick={closeMenu} />
             <div
-              className={`absolute z-50 bottom-full mb-1 flex items-center gap-0.5 bg-card border border-border rounded-full px-1.5 py-1 shadow-lg ${
+              className={`absolute z-50 bottom-full mb-2 flex flex-col bg-card border border-border rounded-2xl shadow-xl overflow-hidden ${
                 isMine ? "right-0" : "left-0"
               }`}
+              style={{ minWidth: "180px" }}
             >
-              {REACTION_OPTIONS.map((r) => {
-                const isActive = (reactions[r] || []).includes(currentUserId);
-                return (
-                  <button
-                    key={r}
-                    onClick={() => handleReact(r)}
-                    className={`text-base w-8 h-8 flex items-center justify-center rounded-full transition-transform hover:scale-125 active:scale-95 ${
-                      isActive ? "bg-primary/20" : "hover:bg-secondary"
-                    }`}
-                  >
-                    {r}
-                  </button>
-                );
-              })}
+              {/* Reaction row */}
+              <div className="flex items-center gap-0.5 px-2 py-2 border-b border-border">
+                {REACTION_OPTIONS.map((r) => {
+                  const isActive = (reactions[r] || []).includes(currentUserId);
+                  return (
+                    <button
+                      key={r}
+                      onClick={() => handleReact(r)}
+                      className={`text-lg w-9 h-9 flex items-center justify-center rounded-full transition-transform hover:scale-125 active:scale-90 ${
+                        isActive ? "bg-primary/20" : "hover:bg-secondary"
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Actions */}
+              {isMine && !isMedia && onEdit && (
+                <button
+                  onClick={handleStartEdit}
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-foreground hover:bg-secondary/60 transition-colors"
+                >
+                  <Pencil size={14} className="text-muted-foreground" />
+                  Edit
+                </button>
+              )}
             </div>
           </>
         )}
 
-        {/* Bubble */}
-        {isMedia ? (
-          <div className={`overflow-hidden ${
-            isMine
-              ? showTail ? "msg-bubble-mine p-1" : "msg-bubble-mine rounded-br-[1.125rem] p-1"
-              : showTail ? "msg-bubble-theirs p-1" : "msg-bubble-theirs rounded-bl-[1.125rem] p-1"
-          }`}>
+        {/* Edit mode */}
+        {editing ? (
+          <div className={`${bubbleClass} px-3 py-2`}>
+            <textarea
+              ref={editInputRef}
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              className="w-full bg-transparent text-[15px] leading-[1.35] resize-none outline-none min-h-[2.5rem]"
+              rows={Math.min(editText.split("\n").length + 1, 6)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSaveEdit(); }
+                if (e.key === "Escape") handleCancelEdit();
+              }}
+            />
+            <div className="flex items-center gap-2 mt-1 justify-end">
+              <button onClick={handleCancelEdit} className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-0.5 rounded">
+                Cancel
+              </button>
+              <button onClick={handleSaveEdit} className="text-[11px] text-primary font-medium px-2 py-0.5 rounded hover:bg-primary/10">
+                Save
+              </button>
+            </div>
+          </div>
+        ) : isMedia ? (
+          <div className={`overflow-hidden ${bubbleClass} p-1`}>
             <img
               src={mediaUrl}
               alt="Image"
@@ -120,12 +194,12 @@ export function MessageBubble({
               loading="lazy"
             />
             <div className={`flex items-center gap-1 mt-0.5 px-2 pb-0.5 ${isMine ? "justify-end" : ""}`}>
-              <span className={`text-[10px] leading-none ${isMine ? "text-primary-foreground/55" : "text-muted-foreground/70"}`}>
+              <span className={`text-[10px] leading-none ${timeColor}`}>
                 {formatTime(createdAt)}
               </span>
               {isMine && (
                 readAt ? (
-                  <CheckCheck size={10} className="text-primary-foreground/55" />
+                  <CheckCheck size={10} className={timeColor} />
                 ) : (
                   <Check size={10} className="text-primary-foreground/35" />
                 )
@@ -134,32 +208,33 @@ export function MessageBubble({
           </div>
         ) : (
           <div
-            className={`px-3.5 py-2 ${
-              isMine
-                ? showTail ? "msg-bubble-mine" : "msg-bubble-mine rounded-br-[1.125rem]"
-                : showTail ? "msg-bubble-theirs" : "msg-bubble-theirs rounded-bl-[1.125rem]"
-            }`}
+            className={`px-3.5 py-2 ${bubbleClass}`}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={() => clearTimeout(longPressTimer.current)}
+            onTouchMove={handleTouchMove}
+            onContextMenu={(e) => { e.preventDefault(); setShowMenu(true); }}
           >
             <p className="text-[15px] whitespace-pre-wrap break-words leading-[1.35]">{body}</p>
-          <div className={`flex items-center gap-1 mt-0.5 ${isMine ? "justify-end" : ""}`}>
-            {isDisappearing && (
-              isViewOnce ? (
-                <Eye size={8} className={isMine ? "text-primary-foreground/40" : "text-muted-foreground/50"} />
-              ) : (
-                <Timer size={8} className={isMine ? "text-primary-foreground/40" : "text-muted-foreground/50"} />
-              )
-            )}
-            <span className={`text-[10px] leading-none ${isMine ? "text-primary-foreground/55" : "text-muted-foreground/70"}`}>
-              {formatTime(createdAt)}
-            </span>
-            {isMine && (
-              readAt ? (
-                <CheckCheck size={10} className="text-primary-foreground/55" />
-              ) : (
-                <Check size={10} className="text-primary-foreground/35" />
-              )
-            )}
-          </div>
+            <div className={`flex items-center gap-1 mt-0.5 ${isMine ? "justify-end" : ""}`}>
+              {isDisappearing && (
+                isViewOnce ? (
+                  <Eye size={8} className={iconColor} />
+                ) : (
+                  <Timer size={8} className={iconColor} />
+                )
+              )}
+              <span className={`text-[10px] leading-none ${timeColor}`}>
+                {formatTime(createdAt)}
+              </span>
+              {isMine && (
+                readAt ? (
+                  <CheckCheck size={10} className={timeColor} />
+                ) : (
+                  <Check size={10} className="text-primary-foreground/35" />
+                )
+              )}
+            </div>
           </div>
         )}
 
@@ -186,19 +261,6 @@ export function MessageBubble({
               );
             })}
           </div>
-        )}
-
-        {/* Desktop hover: show reaction trigger */}
-        {!showPicker && (
-          <button
-            onClick={() => setShowPicker(true)}
-            className={`absolute top-1 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground text-xs w-6 h-6 flex items-center justify-center rounded-full bg-card border border-border shadow-sm ${
-              isMine ? "-left-3" : "-right-3"
-            }`}
-            title="React"
-          >
-            +
-          </button>
         )}
       </div>
     </div>

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { setFocusLossEnabled } from "@/lib/focusLossSettings";
+import { CHAT_THEMES, getChatTheme, setChatTheme, type ChatThemeId } from "@/lib/chatTheme";
 
 const PrivateSettings = () => {
   const { user, token, updateUser, signOut } = useAuth();
@@ -25,6 +26,7 @@ const PrivateSettings = () => {
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMsg, setPwMsg] = useState("");
   const [focusLossOn, setFocusLossOn] = useState(() => user?.focus_loss_protection !== false);
+  const [activeTheme, setActiveTheme] = useState<ChatThemeId>(getChatTheme);
 
   const handleSessionExpired = useCallback(() => {
     signOut();
@@ -190,6 +192,29 @@ const PrivateSettings = () => {
             {pwSaving ? "Saving..." : "Change Password"}
           </Button>
         </form>
+
+        <div className="border-t border-border" />
+
+        {/* Chat Theme */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-semibold text-foreground">Chat Theme</h2>
+          <p className="text-xs text-muted-foreground">Choose an accent color for your message bubbles.</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            {CHAT_THEMES.map((theme) => (
+              <button
+                key={theme.id}
+                onClick={() => { setChatTheme(theme.id); setActiveTheme(theme.id); }}
+                className={`w-9 h-9 rounded-full border-2 transition-all ${
+                  activeTheme === theme.id
+                    ? "border-foreground scale-110"
+                    : "border-transparent hover:border-muted-foreground/40"
+                }`}
+                style={{ background: `hsl(${theme.hue})` }}
+                title={theme.label}
+              />
+            ))}
+          </div>
+        </div>
 
         <div className="border-t border-border" />
 
