@@ -19,6 +19,7 @@ interface Props {
   showControls?: boolean;
   onNewPuzzle?: () => void;
   onSolve?: (perf: PuzzlePerformance) => void;
+  timeLimit?: number;
 }
 
 type Direction = "across" | "down";
