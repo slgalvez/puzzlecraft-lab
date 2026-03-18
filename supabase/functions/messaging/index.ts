@@ -716,6 +716,16 @@ Deno.serve(async (req) => {
           const { count } = await q;
           hasUpdate = (count || 0) > 0;
         }
+        // Also check for unsolved puzzles sent to this user
+        if (!hasUpdate) {
+          const { count: unsolvedCount } = await sb
+            .from("private_puzzles")
+            .select("id", { count: "exact", head: true })
+            .eq("sent_to", profileId)
+            .eq("is_draft", false)
+            .is("solved_by", null);
+          hasUpdate = (unsolvedCount || 0) > 0;
+        }
       }
       return json({ updated: hasUpdate });
     }

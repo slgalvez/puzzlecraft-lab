@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Grid3X3, Hash, Type, Search, Plus, Palette, Lock, Calculator, Flame, CheckCircle2, Calendar, Trophy, Clock, Target, Infinity, Dices } from "lucide-react";
 import Layout from "@/components/layout/Layout";
@@ -27,8 +27,7 @@ const Index = () => {
   const stats = useMemo(() => getProgressStats(), []);
   const challengeInfo = CATEGORY_INFO[challenge.category];
 
-  // Silent status check — only if a private session exists
-  useEffect(() => {
+  const checkPrivateStatus = useCallback(() => {
     try {
       const raw = localStorage.getItem("private_session");
       if (!raw) return;
@@ -46,7 +45,7 @@ const Index = () => {
             localStorage.removeItem("private_session");
             return;
           }
-          if (data?.updated) setHasUpdate(true);
+          setHasUpdate(data?.updated === true);
         })
         .catch(() => {
           localStorage.removeItem("private_session");
@@ -55,6 +54,22 @@ const Index = () => {
       // silent
     }
   }, []);
+
+  // Check on mount
+  useEffect(() => {
+    checkPrivateStatus();
+  }, [checkPrivateStatus]);
+
+  // Re-check when tab becomes visible (instant update for recipient)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        checkPrivateStatus();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [checkPrivateStatus]);
 
   const handleLoadCode = async () => {
     const code = puzzleCode.trim();
