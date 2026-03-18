@@ -45,6 +45,11 @@ const QuickPlay = () => {
   const initialDifficulty = (searchParams.get("d") as Difficulty) || "medium";
   const initialSeed = searchParams.get("seed");
 
+  // Set origin context
+  useEffect(() => {
+    setPuzzleOrigin("play");
+  }, []);
+
   const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
   const [seed, setSeed] = useState(() => initialSeed ? parseInt(initialSeed) || randomSeed() : randomSeed());
   const [puzzleKey, setPuzzleKey] = useState(0);
