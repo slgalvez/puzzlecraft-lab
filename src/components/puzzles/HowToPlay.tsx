@@ -56,17 +56,14 @@ export default function HowToPlay({ type }: Props) {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground/40 transition-all hover:text-muted-foreground hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
-          aria-label={`How to play ${type}`}
-        >
-          <Info size={14} strokeWidth={2.2} />
-        </button>
+      <PopoverTrigger
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground/40 transition-all hover:text-muted-foreground hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+        aria-label={`How to play ${type}`}
+      >
+        <Info size={14} strokeWidth={2.2} />
       </PopoverTrigger>
       <PopoverContent
         side="bottom"
