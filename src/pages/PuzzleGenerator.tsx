@@ -202,36 +202,38 @@ const PuzzleGenerator = () => {
   };
 
   const renderPuzzle = () => {
-    const key = `${seed}-${difficulty}-${puzzleKey}`;
+    if (!category || !difficulty) return null;
+    const d = difficulty as Difficulty;
+    const key = `${seed}-${d}-${puzzleKey}`;
     switch (category) {
-      case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
-      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
-      case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
-      case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
-      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
+      case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
+      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
+      case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
+      case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
+      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} />;
       case "crossword": {
-        const gen = generateCrossword(seed, difficulty);
+        const gen = generateCrossword(seed, d);
         const puzzle: CrosswordPuzzle = {
           id: `gen-${seed}`, title: "Generated Crossword", type: "crossword",
-          difficulty: difficulty as CrosswordPuzzle["difficulty"],
+          difficulty: d as CrosswordPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, clues: gen.clues,
         };
         return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} />;
       }
       case "word-fill": {
-        const gen = generateWordFillIn(seed, difficulty);
+        const gen = generateWordFillIn(seed, d);
         const puzzle: FillInPuzzle = {
           id: `gen-${seed}`, title: "Generated Word Fill-In", type: "word-fill",
-          difficulty: difficulty as FillInPuzzle["difficulty"],
+          difficulty: d as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
         return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} />;
       }
       case "number-fill": {
-        const gen = generateNumberFillIn(seed, difficulty);
+        const gen = generateNumberFillIn(seed, d);
         const puzzle: FillInPuzzle = {
           id: `gen-${seed}`, title: "Generated Number Fill-In", type: "number-fill",
-          difficulty: difficulty as FillInPuzzle["difficulty"],
+          difficulty: d as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
         return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} />;
