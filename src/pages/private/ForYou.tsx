@@ -648,6 +648,110 @@ function formatTime(seconds: number): string {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
+// ─── Completed List ───
+
+function CompletedList({
+  puzzles, loading, userId, onView,
+}: {
+  puzzles: PrivatePuzzle[];
+  loading: boolean;
+  userId: string;
+  onView: (p: PrivatePuzzle) => void;
+}) {
+  if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (puzzles.length === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        <History className="mx-auto h-10 w-10 mb-3 opacity-40" />
+        <p className="text-sm">No completed puzzles yet</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {puzzles.map(p => {
+        const isMine = p.created_by === userId;
+        return (
+          <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">{PUZZLE_LABELS[p.puzzle_type]}</span>
+                <Badge variant="secondary" className="text-[10px]">
+                  <Check className="h-3 w-3 mr-0.5" /> Completed
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {isMine ? (p.recipient_name && `To ${p.recipient_name}`) : (p.creator_name && `From ${p.creator_name}`)}
+                {" · "}
+                {new Date(p.solved_at || p.created_at).toLocaleDateString()}
+                {p.solve_time != null && ` · ${formatTime(p.solve_time)}`}
+              </p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => onView(p)}>
+              <Eye className="h-3.5 w-3.5 mr-1" /> View
+            </Button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Completed Puzzle View ───
+
+function CompletedPuzzleView({
+  puzzle, onBack, userId,
+}: {
+  puzzle: PrivatePuzzle;
+  onBack: () => void;
+  userId: string;
+}) {
+  const isMine = puzzle.created_by === userId;
+  const data = puzzle.puzzle_data;
+
+  return (
+    <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-4">
+      <button onClick={onBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-3 w-3" /> Back
+      </button>
+
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-medium">{PUZZLE_LABELS[puzzle.puzzle_type]}</h3>
+          <Badge variant="secondary" className="text-[10px]">
+            <Check className="h-3 w-3 mr-0.5" /> Completed
+          </Badge>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {isMine ? (puzzle.recipient_name && `To ${puzzle.recipient_name}`) : (puzzle.creator_name && `From ${puzzle.creator_name}`)}
+          {" · "}
+          {new Date(puzzle.solved_at || puzzle.created_at).toLocaleDateString()}
+          {puzzle.solve_time != null && ` · Solved in ${formatTime(puzzle.solve_time)}`}
+        </p>
+      </div>
+
+      {puzzle.reveal_message && (
+        <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+          <p className="text-sm italic text-foreground">{puzzle.reveal_message}</p>
+        </div>
+      )}
+
+      <div className="p-4 rounded-lg border border-border bg-card">
+        {(puzzle.puzzle_type === "word-fill" || puzzle.puzzle_type === "crossword") && (
+          <CompletedGridView data={data} puzzleType={puzzle.puzzle_type} />
+        )}
+        {puzzle.puzzle_type === "cryptogram" && (
+          <CompletedCryptogramView data={data} />
+        )}
+        {puzzle.puzzle_type === "word-search" && (
+          <CompletedWordSearchView data={data} />
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Create Puzzle View ───
 
 function CreatePuzzleView({
