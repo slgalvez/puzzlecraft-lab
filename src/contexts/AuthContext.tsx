@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface PrivateUser {
@@ -73,18 +74,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           body: { action: "verify-session", token },
         });
 
-        // Handle session-end from either data or error
         let sessionGone = false;
+
         if (data?.error === "Session ended" || data?.error === "Access unavailable") {
           sessionGone = true;
         }
-        if (error) {
+
+        if (error instanceof FunctionsHttpError) {
           try {
-            const errBody = typeof error.message === "string" ? JSON.parse(error.message) : null;
+            const errBody = await error.context.json();
             if (errBody?.error === "Session ended" || errBody?.error === "Access unavailable") {
               sessionGone = true;
             }
-          } catch { /* not JSON */ }
+          } catch {
+            // ignore malformed error bodies
+          }
         }
 
         if (sessionGone) {
@@ -98,6 +102,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Network error — ignore, will retry
       }
     };
+
+    checkSession();
 
     checkIntervalRef.current = setInterval(checkSession, SESSION_CHECK_INTERVAL);
     return () => {
