@@ -39,7 +39,8 @@ export function recordCompletion(
   puzzleKey: string,
   category: PuzzleCategory,
   difficulty: string,
-  time: number
+  time: number,
+  assisted?: boolean
 ) {
   const records = getCompletions();
   records.push({
@@ -48,6 +49,7 @@ export function recordCompletion(
     difficulty,
     time,
     date: new Date().toISOString(),
+    assisted: assisted || false,
   });
   saveCompletions(records);
 }
