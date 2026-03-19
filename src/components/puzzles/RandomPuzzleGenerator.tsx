@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory, isDifficultyDisabled } from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
 import { Dices } from "lucide-react";
 import { Button } from "@/components/ui/button";
