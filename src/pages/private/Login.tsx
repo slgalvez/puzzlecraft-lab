@@ -43,23 +43,6 @@ function PuzzlePiece({
     </svg>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
 
 const ACCESS_GRANT_KEY = "private_access_grant";
