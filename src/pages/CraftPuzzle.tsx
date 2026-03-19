@@ -313,8 +313,9 @@ const CraftPuzzle = () => {
               />
             </div>
 
-            <Button onClick={handleGenerate} className="w-full gap-2">
-              <Sparkles className="h-4 w-4" /> Preview Puzzle
+            <Button onClick={handleGenerate} disabled={saving} className="w-full gap-2">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {saving ? "Saving…" : "Preview Puzzle"}
             </Button>
             <p className="text-[10px] text-muted-foreground text-center">
               No account needed • Share instantly with a link
