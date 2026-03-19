@@ -1,9 +1,12 @@
 /**
  * Custom puzzle generators for personalized "For You" puzzles.
  * These accept user-provided words/phrases instead of using the built-in word list.
+ * Difficulty affects structure/complexity only — never adds user content.
  */
 
 import { SeededRandom } from "../seededRandom";
+
+type CraftDifficulty = "easy" | "medium" | "hard";
 
 // ─── Custom Word Fill-In ───
 
@@ -14,12 +17,19 @@ export interface CustomFillInData {
   solution: (string | null)[][];
 }
 
-export function generateCustomFillIn(words: string[]): CustomFillInData {
+/**
+ * Difficulty controls:
+ * - easy: generous grid padding (+6), words placed with many anchors
+ * - medium: moderate padding (+4)
+ * - hard: tight padding (+2), fewer obvious anchors, more ambiguous placement
+ */
+export function generateCustomFillIn(words: string[], difficulty: CraftDifficulty = "medium"): CustomFillInData {
   const cleaned = words.map(w => w.toUpperCase().replace(/[^A-Z]/g, "")).filter(w => w.length >= 2);
   if (cleaned.length === 0) throw new Error("No valid words provided");
 
   const maxLen = Math.max(...cleaned.map(w => w.length));
-  const size = Math.max(9, maxLen + 4);
+  const padding = difficulty === "easy" ? 6 : difficulty === "medium" ? 4 : 2;
+  const size = Math.max(9, maxLen + padding);
   const rng = new SeededRandom(Date.now() % 2147483646 || 1);
   const grid: string[][] = Array.from({ length: size }, () => Array(size).fill(""));
   const placed: { word: string; row: number; col: number; dir: "across" | "down" }[] = [];
@@ -68,7 +78,13 @@ export interface CustomCryptogramData {
   hints: Record<string, string>;
 }
 
-export function generateCustomCryptogram(phrase: string): CustomCryptogramData {
+/**
+ * Difficulty controls (presentation / helper reduction only — never alters the message):
+ * - easy: 3 letter hints revealed
+ * - medium: 2 letter hints
+ * - hard: 0 hints
+ */
+export function generateCustomCryptogram(phrase: string, difficulty: CraftDifficulty = "medium"): CustomCryptogramData {
   const decoded = phrase.toUpperCase().replace(/[^A-Z .,!?;:'"()-]/g, "");
   if (decoded.replace(/[^A-Z]/g, "").length < 3) throw new Error("Phrase too short");
 
@@ -88,9 +104,10 @@ export function generateCustomCryptogram(phrase: string): CustomCryptogramData {
 
   const encoded = decoded.split("").map(ch => cipher[ch] || ch).join("");
 
-  // Give 2 hints
+  // Hint count based on difficulty
+  const hintCount = difficulty === "easy" ? 3 : difficulty === "medium" ? 2 : 0;
   const uniqueLetters = [...new Set(decoded.split("").filter(ch => /[A-Z]/.test(ch)))];
-  const hintLetters = rng.shuffle(uniqueLetters).slice(0, 2);
+  const hintLetters = rng.shuffle(uniqueLetters).slice(0, hintCount);
   const hints: Record<string, string> = {};
   for (const letter of hintLetters) {
     hints[cipher[letter]] = letter;
@@ -107,14 +124,21 @@ export interface CustomCrosswordData {
   clues: { number: number; clue: string; answer: string; row: number; col: number; direction: "across" | "down" }[];
 }
 
-export function generateCustomCrossword(entries: { answer: string; clue: string }[]): CustomCrosswordData {
+/**
+ * Difficulty controls (structure only — never adds entries):
+ * - easy: generous grid (+6 padding), relaxed placement
+ * - medium: moderate grid (+4)
+ * - hard: tight grid (+2), more interlock attempts for denser crossings
+ */
+export function generateCustomCrossword(entries: { answer: string; clue: string }[], difficulty: CraftDifficulty = "medium"): CustomCrosswordData {
   const cleaned = entries
     .map(e => ({ answer: e.answer.toUpperCase().replace(/[^A-Z]/g, ""), clue: e.clue.trim() }))
     .filter(e => e.answer.length >= 2 && e.clue.length > 0);
   if (cleaned.length === 0) throw new Error("No valid entries");
 
   const maxLen = Math.max(...cleaned.map(e => e.answer.length));
-  const size = Math.max(9, maxLen + 4);
+  const padding = difficulty === "easy" ? 6 : difficulty === "medium" ? 4 : 2;
+  const size = Math.max(9, maxLen + padding);
   const rng = new SeededRandom(Date.now() % 2147483646 || 1);
   const grid: string[][] = Array.from({ length: size }, () => Array(size).fill(""));
   const placed: { word: string; clue: string; row: number; col: number; dir: "across" | "down" }[] = [];
@@ -129,13 +153,17 @@ export function generateCustomCrossword(entries: { answer: string; clue: string 
     placed.push({ word: answer, clue, row, col, dir: "across" });
   }
 
-  for (let i = 1; i < sorted.length; i++) {
-    const { answer, clue } = sorted[i];
-    if (placed.some(p => p.word === answer)) continue;
-    const result = findPlacement(grid, answer, placed, size, rng);
-    if (result) {
-      writeWord(grid, answer, result.row, result.col, result.dir);
-      placed.push({ word: answer, clue, row: result.row, col: result.col, dir: result.dir });
+  // Hard difficulty: multiple passes to maximize interlocking
+  const passes = difficulty === "hard" ? 3 : 1;
+  for (let pass = 0; pass < passes; pass++) {
+    for (let i = 1; i < sorted.length; i++) {
+      const { answer, clue } = sorted[i];
+      if (placed.some(p => p.word === answer)) continue;
+      const result = findPlacement(grid, answer, placed, size, rng);
+      if (result) {
+        writeWord(grid, answer, result.row, result.col, result.dir);
+        placed.push({ word: answer, clue, row: result.row, col: result.col, dir: result.dir });
+      }
     }
   }
 
@@ -178,14 +206,27 @@ export interface CustomWordSearchData {
   size: number;
 }
 
-export function generateCustomWordSearch(words: string[]): CustomWordSearchData {
+/**
+ * Difficulty controls (structure only — never adds words):
+ * - easy: horizontal + vertical only, generous grid (+6)
+ * - medium: + diagonal directions, moderate grid (+4)
+ * - hard: + backwards directions (all 8), tight grid (+2), denser filler
+ */
+export function generateCustomWordSearch(words: string[], difficulty: CraftDifficulty = "medium"): CustomWordSearchData {
   const cleaned = words.map(w => w.toUpperCase().replace(/[^A-Z]/g, "")).filter(w => w.length >= 2);
   if (cleaned.length === 0) throw new Error("No valid words provided");
 
   const maxLen = Math.max(...cleaned.map(w => w.length));
-  const size = Math.max(10, maxLen + 4);
+  const padding = difficulty === "easy" ? 6 : difficulty === "medium" ? 4 : 2;
+  const size = Math.max(10, maxLen + padding);
   const rng = new SeededRandom(Date.now() % 2147483646 || 1);
-  const dirs: [number, number][] = [[0, 1], [1, 0], [1, 1], [-1, 1]];
+
+  // Direction sets by difficulty
+  const DIRS_EASY: [number, number][] = [[0, 1], [1, 0]];
+  const DIRS_MEDIUM: [number, number][] = [[0, 1], [1, 0], [1, 1], [-1, 1]];
+  const DIRS_HARD: [number, number][] = [[0, 1], [1, 0], [1, 1], [-1, 1], [0, -1], [-1, 0], [-1, -1], [1, -1]];
+  const dirs = difficulty === "easy" ? DIRS_EASY : difficulty === "medium" ? DIRS_MEDIUM : DIRS_HARD;
+
   const grid: string[][] = Array.from({ length: size }, () => Array(size).fill(""));
   const placed: CustomWordSearchData["wordPositions"] = [];
 
@@ -208,10 +249,14 @@ export function generateCustomWordSearch(words: string[]): CustomWordSearchData 
     }
   }
 
+  // Filler: on hard, use letters from placed words for more distracting fill
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const wordLetters = difficulty === "hard"
+    ? [...new Set(cleaned.join("").split(""))].join("") || letters
+    : letters;
   for (let r = 0; r < size; r++)
     for (let c = 0; c < size; c++)
-      if (!grid[r][c]) grid[r][c] = letters[rng.nextInt(0, 25)];
+      if (!grid[r][c]) grid[r][c] = wordLetters[rng.nextInt(0, wordLetters.length - 1)];
 
   return { grid, words: placed.map(p => p.word), wordPositions: placed, size };
 }

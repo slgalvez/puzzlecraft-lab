@@ -151,7 +151,7 @@ const CraftPuzzle = () => {
             toast({ title: "Enter at least 2 words" });
             return;
           }
-          data = generateCustomWordSearch(words) as unknown as Record<string, unknown>;
+          data = generateCustomWordSearch(words, craftSettings.difficulty) as unknown as Record<string, unknown>;
           break;
         }
         case "cryptogram": {
