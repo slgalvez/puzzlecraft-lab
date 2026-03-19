@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, ArrowLeft, RefreshCw, Share2, Copy, CheckCheck } from "lucide-react";
+import { Check, ArrowLeft, RefreshCw, Share, Copy, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
