@@ -38,10 +38,11 @@ interface Props {
   };
 }
 
-const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintCount = 0, isRevealed, puzzleCode, solveData }: Props) => {
+const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintCount = 0, maxHints, isRevealed, puzzleCode, solveData }: Props) => {
   const [open, setOpen] = useState(false);
   const [showRevealConfirm, setShowRevealConfirm] = useState(false);
   const isMobile = useIsMobile();
+  const hintLimitReached = maxHints != null && hintCount >= maxHints;
 
   const showCompletion = solveData?.isSolved && !solveData?.isEndless;
   const showControls = !solveData?.isSolved && !isRevealed;
