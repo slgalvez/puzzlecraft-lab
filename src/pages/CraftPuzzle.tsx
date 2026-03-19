@@ -175,6 +175,12 @@ const CraftPuzzle = () => {
         type: selectedType,
         puzzleData: data,
         revealMessage,
+        settings: {
+          difficulty: craftSettings.difficulty,
+          hintsEnabled: craftSettings.hintsEnabled,
+          revealEnabled: craftSettings.revealEnabled,
+          checkEnabled: craftSettings.checkEnabled,
+        },
       };
 
       if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
