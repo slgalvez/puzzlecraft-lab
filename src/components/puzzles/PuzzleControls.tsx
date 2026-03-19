@@ -31,6 +31,8 @@ interface Props {
     accuracy?: number | null;
     isEndless?: boolean;
     assisted?: boolean;
+    category?: PuzzleCategory;
+    seed?: number;
   };
 }
 
