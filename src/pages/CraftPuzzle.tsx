@@ -151,17 +151,14 @@ const CraftPuzzle = () => {
         {step === "type" && (
           <div className="space-y-4">
             <h2 className="text-sm font-medium text-foreground">Choose puzzle type</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {TYPE_OPTIONS.map(opt => (
                 <button
                   key={opt.value}
                   onClick={() => handleSelectType(opt.value)}
-                  className="p-4 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/10 transition-colors text-left space-y-1"
+                  className="p-5 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/10 transition-colors text-left space-y-1.5"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{opt.icon}</span>
-                    <span className="text-sm font-medium text-foreground">{opt.label}</span>
-                  </div>
+                  <span className="text-[15px] font-medium text-foreground">{opt.label}</span>
                   <p className="text-xs text-muted-foreground">{opt.description}</p>
                 </button>
               ))}
