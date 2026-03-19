@@ -310,7 +310,7 @@ const QuickPlay = () => {
           {mode === "endless" && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">
-                Difficulty: <span className="font-medium text-foreground capitalize">{DIFFICULTY_LABELS[activeDifficulty]}</span>
+                Difficulty: <span className="font-medium text-foreground capitalize">{DIFFICULTY_LABELS[effectiveDifficulty]}</span>
               </span>
               {lastDiffChange === "up" && <TrendingUp size={12} className="text-primary" />}
               {lastDiffChange === "down" && <TrendingDown size={12} className="text-destructive" />}
