@@ -96,9 +96,10 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
                   variant="outline"
                   className="h-11 text-muted-foreground hover:text-foreground"
                   onClick={onHint}
+                  disabled={hintLimitReached}
                 >
                   <Lightbulb className="mr-1.5 h-4 w-4" />
-                  Hint{hintCount > 0 ? ` (${hintCount})` : ""}
+                  Hint{hintCount > 0 ? ` (${hintCount}${maxHints != null ? `/${maxHints}` : ""})` : maxHints != null ? ` (0/${maxHints})` : ""}
                 </Button>
               )}
               {onReveal && (
