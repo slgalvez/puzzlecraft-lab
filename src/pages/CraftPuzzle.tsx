@@ -74,6 +74,7 @@ const CraftPuzzle = () => {
   const [draftCount, setDraftCount] = useState(() => loadDrafts().length);
   const [draftSaved, setDraftSaved] = useState(false);
   const [enteredFromDraft, setEnteredFromDraft] = useState(false);
+  const sentRecorded = useRef(false);
 
   // Active draft ID for auto-save
   const activeDraftId = useRef<string | null>(null);
@@ -206,22 +207,9 @@ const CraftPuzzle = () => {
       const url = buildCraftShareUrl(shortId);
       setShareUrl(url);
 
-      // Move draft → sent
-      if (activeDraftId.current) {
-        deleteDraft(activeDraftId.current);
-      }
-      addSentItem({
-        id: shortId,
-        shareId: shortId,
-        type: selectedType,
-        title: puzzleTitle.trim(),
-        from: puzzleFrom.trim(),
-        revealMessage,
-        shareUrl: url,
-        sentAt: Date.now(),
-      });
-      activeDraftId.current = null;
-      refreshDraftCount();
+      // Keep draft alive until actual send; just clear the draft ID so
+      // auto-save won't overwrite the generated state, but do NOT record sent yet.
+      sentRecorded.current = false;
 
       toast({ title: "Puzzle sent ✨" });
       setStep("preview");
@@ -238,10 +226,36 @@ const CraftPuzzle = () => {
     handleGenerate();
   };
 
+  /** Record the puzzle as "Sent" exactly once, on actual share/copy */
+  const recordSent = useCallback(() => {
+    if (sentRecorded.current || !shareUrl || !selectedType) return;
+    sentRecorded.current = true;
+
+    // Extract shareId from url
+    const shareId = shareUrl.split("/s/")[1] || shareUrl;
+
+    if (activeDraftId.current) {
+      deleteDraft(activeDraftId.current);
+      activeDraftId.current = null;
+    }
+    addSentItem({
+      id: shareId,
+      shareId,
+      type: selectedType,
+      title: puzzleTitle.trim(),
+      from: puzzleFrom.trim(),
+      revealMessage,
+      shareUrl,
+      sentAt: Date.now(),
+    });
+    refreshDraftCount();
+  }, [shareUrl, selectedType, puzzleTitle, puzzleFrom, revealMessage, refreshDraftCount]);
+
   const handleCopyLink = async () => {
     if (!shareUrl) return;
     try {
       await navigator.clipboard.writeText(shareUrl);
+      recordSent();
       setCopied(true);
       setShareSuccess(true);
       toast({ title: "Puzzle link copied" });
@@ -256,6 +270,7 @@ const CraftPuzzle = () => {
     if (!shareUrl || !generatedData || !selectedType) return;
 
     if (isPrivateSessionAvailable()) {
+      recordSent();
       saveCraftMessageHandoff({
         type: selectedType,
         puzzleData: generatedData,
@@ -273,10 +288,11 @@ const CraftPuzzle = () => {
     if (navigator.share) {
       try {
         await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
+        recordSent();
         setShareSuccess(true);
         setTimeout(() => setShareSuccess(false), 1500);
       } catch {
-        // user cancelled
+        // user cancelled — don't record
       }
       return;
     }
@@ -292,7 +308,8 @@ const CraftPuzzle = () => {
         setView("inbox");
         return;
       }
-      setStep("type");
+    sentRecorded.current = false;
+    setStep("type");
       setSelectedType(null);
     }
   };
