@@ -185,6 +185,12 @@ const SharedCraftPuzzle = () => {
             />
           )}
         </div>
+
+        {from && (
+          <p className="text-[11px] text-muted-foreground/60 text-right italic mt-4">
+            {from}
+          </p>
+        )}
       </div>
     </Layout>
   );
