@@ -159,7 +159,7 @@ const CraftPuzzle = () => {
             toast({ title: "Enter a longer phrase" });
             return;
           }
-          data = generateCustomCryptogram(phraseInput.trim()) as unknown as Record<string, unknown>;
+          data = generateCustomCryptogram(phraseInput.trim(), craftSettings.difficulty) as unknown as Record<string, unknown>;
           break;
         }
         case "crossword": {
@@ -168,7 +168,7 @@ const CraftPuzzle = () => {
             toast({ title: "Enter at least 2 answer/clue pairs" });
             return;
           }
-          data = generateCustomCrossword(valid) as unknown as Record<string, unknown>;
+          data = generateCustomCrossword(valid, craftSettings.difficulty) as unknown as Record<string, unknown>;
           break;
         }
       }

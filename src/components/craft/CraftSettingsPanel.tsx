@@ -31,15 +31,17 @@ export default function CraftSettingsPanel({ value, onChange }: Props) {
     onChange({ ...value, [key]: val });
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4 pt-1">
       <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-medium">
         Puzzle Settings
       </p>
 
-      {/* Difficulty pills */}
-      <div className="space-y-1">
-        <label className="text-[11px] text-muted-foreground">Difficulty</label>
-        <div className="inline-flex rounded-full border border-border bg-muted/30 p-0.5">
+      {/* Difficulty + Toggles in a clean row layout */}
+      <div className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 items-center">
+        {/* Difficulty label */}
+        <span className="text-[11px] text-muted-foreground whitespace-nowrap">Difficulty</span>
+        {/* Difficulty pills */}
+        <div className="inline-flex rounded-full border border-border bg-muted/30 p-0.5 w-fit">
           {DIFFICULTY_OPTIONS.map((opt) => (
             <button
               key={opt.value}
@@ -55,13 +57,15 @@ export default function CraftSettingsPanel({ value, onChange }: Props) {
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Toggle row */}
-      <div className="flex flex-wrap gap-x-5 gap-y-2">
-        <ToggleChip label="Hints" checked={value.hintsEnabled} onToggle={(v) => set("hintsEnabled", v)} />
-        <ToggleChip label="Check" checked={value.checkEnabled} onToggle={(v) => set("checkEnabled", v)} />
-        <ToggleChip label="Reveal" checked={value.revealEnabled} onToggle={(v) => set("revealEnabled", v)} />
+        {/* Solver tools label */}
+        <span className="text-[11px] text-muted-foreground whitespace-nowrap">Solver tools</span>
+        {/* Toggle row */}
+        <div className="flex items-center gap-4">
+          <ToggleChip label="Hints" checked={value.hintsEnabled} onToggle={(v) => set("hintsEnabled", v)} />
+          <ToggleChip label="Check" checked={value.checkEnabled} onToggle={(v) => set("checkEnabled", v)} />
+          <ToggleChip label="Reveal" checked={value.revealEnabled} onToggle={(v) => set("revealEnabled", v)} />
+        </div>
       </div>
     </div>
   );
