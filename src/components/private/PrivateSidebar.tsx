@@ -21,6 +21,7 @@ const adminNav = [
   { title: "Conversations", url: "/p/conversations", icon: MessageSquare, badgeKey: "unread" as const },
   { title: "Puzzles for You", url: "/p/for-you", icon: Puzzle, badgeKey: "puzzles" as const },
   { title: "Users", url: "/p/users", icon: Users },
+  { title: "Failed Logins", url: "/p/failed-logins", icon: ShieldAlert },
   { title: "Settings", url: "/p/settings", icon: Settings },
 ];
 
