@@ -210,15 +210,12 @@ const Index = () => {
             <div className="flex flex-col md:flex-row">
               {/* Left: challenge info */}
               <div className="flex-1 p-6 sm:p-8">
-                <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-primary mb-3">
-                  <Calendar size={14} />
+                <p className="text-xs font-medium uppercase tracking-widest text-primary mb-4">
                   Daily Challenge
-                </div>
-              {(() => { const DailyIcon = CATEGORY_ICONS[challenge.category]; return (
-                <h2 className="font-display text-3xl font-bold text-foreground sm:text-4xl flex items-center gap-2.5">
-                  <DailyIcon size={30} className="text-primary" /> Today's {challengeInfo.name}
+                </p>
+                <h2 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
+                  Today's {challengeInfo.name}
                 </h2>
-                ); })()}
                 <p className="mt-1.5 text-sm text-muted-foreground/80">
                   {challengeInfo.description}. Everyone gets the same puzzle — how fast can you solve it?
                 </p>
