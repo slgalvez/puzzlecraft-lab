@@ -142,7 +142,7 @@ const CraftPuzzle = () => {
             toast({ title: "Enter at least 2 words" });
             return;
           }
-          data = generateCustomFillIn(words) as unknown as Record<string, unknown>;
+          data = generateCustomFillIn(words, craftSettings.difficulty) as unknown as Record<string, unknown>;
           break;
         }
         case "word-search": {
