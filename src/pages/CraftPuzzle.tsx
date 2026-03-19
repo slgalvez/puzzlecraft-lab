@@ -281,7 +281,7 @@ const CraftPuzzle = () => {
             )}
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Reveal message (shown after solving — optional)</label>
+              <label className="text-xs font-medium text-muted-foreground">Message revealed after solving (optional)</label>
               <Input
                 value={revealMessage}
                 onChange={e => setRevealMessage(e.target.value)}
