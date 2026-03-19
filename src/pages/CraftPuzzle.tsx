@@ -458,6 +458,9 @@ const CraftPuzzle = () => {
                   </div>
                 )}
 
+                {/* Creator settings */}
+                <CraftSettingsPanel value={craftSettings} onChange={setCraftSettings} />
+
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Message revealed after solving (optional)</label>
                   <Input
