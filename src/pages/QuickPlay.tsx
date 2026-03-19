@@ -198,28 +198,28 @@ const QuickPlay = () => {
       case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={effectiveDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
       case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={effectiveDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
       case "crossword": {
-        const gen = generateCrossword(seed, activeDifficulty);
+        const gen = generateCrossword(seed, effectiveDifficulty);
         const puzzle: CrosswordPuzzle = {
           id: `gen-${seed}`, title: "Generated Crossword", type: "crossword",
-          difficulty: activeDifficulty as CrosswordPuzzle["difficulty"],
+          difficulty: effectiveDifficulty as CrosswordPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, clues: gen.clues,
         };
         return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
       }
       case "word-fill": {
-        const gen = generateWordFillIn(seed, activeDifficulty);
+        const gen = generateWordFillIn(seed, effectiveDifficulty);
         const puzzle: FillInPuzzle = {
           id: `gen-${seed}`, title: "Generated Word Fill-In", type: "word-fill",
-          difficulty: activeDifficulty as FillInPuzzle["difficulty"],
+          difficulty: effectiveDifficulty as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
         return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
       }
       case "number-fill": {
-        const gen = generateNumberFillIn(seed, activeDifficulty);
+        const gen = generateNumberFillIn(seed, effectiveDifficulty);
         const puzzle: FillInPuzzle = {
           id: `gen-${seed}`, title: "Generated Number Fill-In", type: "number-fill",
-          difficulty: activeDifficulty as FillInPuzzle["difficulty"],
+          difficulty: effectiveDifficulty as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
         return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
