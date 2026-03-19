@@ -232,7 +232,7 @@ const CraftPuzzle = () => {
                 <Textarea
                   value={phraseInput}
                   onChange={e => setPhraseInput(e.target.value)}
-                  placeholder="THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"
+                  placeholder="MEET ME AT MIDNIGHT"
                   rows={4}
                   className="resize-none"
                 />
