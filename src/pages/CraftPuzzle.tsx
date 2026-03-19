@@ -376,7 +376,28 @@ const CraftPuzzle = () => {
         </div>
 
         {/* View Nav */}
-        <CraftNav view={view} onViewChange={setView} draftCount={draftCount} />
+        <CraftNav view={view} onViewChange={(v) => {
+          if (v === "create") {
+            // Reset to fresh type-selection step
+            activeDraftId.current = null;
+            setStep("type");
+            setSelectedType(null);
+            setWordInput("");
+            setPhraseInput("");
+            setClueEntries([{ answer: "", clue: "" }, { answer: "", clue: "" }, { answer: "", clue: "" }]);
+            setRevealMessage("");
+            setPuzzleTitle("");
+            setPuzzleFrom("");
+            setCraftSettings(DEFAULT_CRAFT_SETTINGS);
+            setGeneratedData(null);
+            setShareUrl(null);
+            setCopied(false);
+            setShareSuccess(false);
+            setEnteredFromDraft(false);
+            sentRecorded.current = false;
+          }
+          setView(v);
+        }} draftCount={draftCount} />
 
         {/* ─── Inbox View ─── */}
         {view === "inbox" && (
