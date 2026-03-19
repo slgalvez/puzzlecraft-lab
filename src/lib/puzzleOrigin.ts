@@ -23,7 +23,7 @@ export function getPuzzleOrigin(): PuzzleOrigin {
 export function getBackPath(origin: PuzzleOrigin): string {
   switch (origin) {
     case "lab": return "/generate";
-    case "daily": return "/daily";
+    case "daily": return "/puzzles";
     case "library": return "/puzzles";
     case "play":
     default: return "/puzzles";
