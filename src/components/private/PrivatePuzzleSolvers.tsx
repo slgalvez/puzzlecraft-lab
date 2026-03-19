@@ -29,6 +29,8 @@ interface GridSolverProps {
   showHints?: boolean;
   showReveal?: boolean;
   showCheck?: boolean;
+  /** Hide instructions and force single-column layout (craft recipient view) */
+  compact?: boolean;
 }
 
 export function GridSolver({ data, puzzleType, onComplete, savedState, onSaveProgress, showHints = true, showReveal = false, showCheck = true }: GridSolverProps) {
