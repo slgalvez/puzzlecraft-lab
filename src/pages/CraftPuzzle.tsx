@@ -16,11 +16,11 @@ import {
 type CraftType = "word-fill" | "cryptogram" | "crossword" | "word-search";
 type Step = "type" | "content" | "preview";
 
-const TYPE_OPTIONS: { value: CraftType; label: string; icon: string; description: string }[] = [
-  { value: "word-search", label: "Word Search", icon: "🔍", description: "Hide words in a letter grid" },
-  { value: "word-fill", label: "Word Fill-In", icon: "📖", description: "Place words into a crossword-style grid" },
-  { value: "crossword", label: "Crossword", icon: "📝", description: "Create clued crossword entries" },
-  { value: "cryptogram", label: "Cryptogram", icon: "🔐", description: "Encode a secret message" },
+const TYPE_OPTIONS: { value: CraftType; label: string; description: string }[] = [
+  { value: "word-search", label: "Word Search", description: "Hide words and reveal a message" },
+  { value: "word-fill", label: "Word Fill-In", description: "Create a puzzle from your own words" },
+  { value: "crossword", label: "Crossword", description: "Write clues and challenge someone" },
+  { value: "cryptogram", label: "Cryptogram", description: "Turn your message into a coded puzzle" },
 ];
 
 function encodeShareData(data: {
