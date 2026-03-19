@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share2, Copy, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share, Copy, Check, Loader2 } from "lucide-react";
 import CraftStepper from "@/components/craft/CraftStepper";
 import CraftTypeCards, { TYPE_OPTIONS } from "@/components/craft/CraftTypeCards";
 import CraftPreviewGrid from "@/components/craft/CraftPreviewGrid";
 import CraftNav, { type CraftView } from "@/components/craft/CraftNav";
 import CraftInbox from "@/components/craft/CraftInbox";
+import CraftSettingsPanel, { type CraftSettings, DEFAULT_CRAFT_SETTINGS } from "@/components/craft/CraftSettingsPanel";
 import { supabase } from "@/integrations/supabase/client";
 import {
   generateCustomFillIn,
@@ -68,6 +69,7 @@ const CraftPuzzle = () => {
   const [copied, setCopied] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [craftSettings, setCraftSettings] = useState<CraftSettings>(DEFAULT_CRAFT_SETTINGS);
   const [draftCount, setDraftCount] = useState(() => loadDrafts().length);
 
   // Active draft ID for auto-save
@@ -108,6 +110,7 @@ const CraftPuzzle = () => {
         phraseInput,
         clueEntries,
         revealMessage,
+        settings: craftSettings,
         updatedAt: Date.now(),
       };
       saveDraft(draft);
@@ -117,7 +120,7 @@ const CraftPuzzle = () => {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [step, selectedType, puzzleTitle, puzzleFrom, wordInput, phraseInput, clueEntries, revealMessage, refreshDraftCount]);
+  }, [step, selectedType, puzzleTitle, puzzleFrom, wordInput, phraseInput, clueEntries, revealMessage, craftSettings, refreshDraftCount]);
 
   const handleSelectType = (type: CraftType) => {
     setSelectedType(type);
@@ -173,6 +176,12 @@ const CraftPuzzle = () => {
         type: selectedType,
         puzzleData: data,
         revealMessage,
+        settings: {
+          difficulty: craftSettings.difficulty,
+          hintsEnabled: craftSettings.hintsEnabled,
+          revealEnabled: craftSettings.revealEnabled,
+          checkEnabled: craftSettings.checkEnabled,
+        },
       };
 
       if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
@@ -292,6 +301,7 @@ const CraftPuzzle = () => {
     setRevealMessage("");
     setPuzzleTitle("");
     setPuzzleFrom("");
+    setCraftSettings(DEFAULT_CRAFT_SETTINGS);
     setGeneratedData(null);
     setShareUrl(null);
     setCopied(false);
@@ -311,6 +321,16 @@ const CraftPuzzle = () => {
         : [{ answer: "", clue: "" }, { answer: "", clue: "" }, { answer: "", clue: "" }]
     );
     setRevealMessage(draft.revealMessage);
+    if (draft.settings) {
+      setCraftSettings({
+        difficulty: draft.settings.difficulty ?? DEFAULT_CRAFT_SETTINGS.difficulty,
+        hintsEnabled: draft.settings.hintsEnabled ?? DEFAULT_CRAFT_SETTINGS.hintsEnabled,
+        revealEnabled: draft.settings.revealEnabled ?? DEFAULT_CRAFT_SETTINGS.revealEnabled,
+        checkEnabled: draft.settings.checkEnabled ?? DEFAULT_CRAFT_SETTINGS.checkEnabled,
+      });
+    } else {
+      setCraftSettings(DEFAULT_CRAFT_SETTINGS);
+    }
     setGeneratedData(null);
     setShareUrl(null);
     setStep("content");
@@ -450,6 +470,9 @@ const CraftPuzzle = () => {
                   </div>
                 )}
 
+                {/* Creator settings */}
+                <CraftSettingsPanel value={craftSettings} onChange={setCraftSettings} />
+
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Message revealed after solving (optional)</label>
                   <Input
@@ -495,17 +518,20 @@ const CraftPuzzle = () => {
                 </div>
 
                 <div className="p-5 rounded-xl border border-border bg-card space-y-4">
-                  {(puzzleTitle.trim() || puzzleFrom.trim()) && (
-                    <div className="text-center space-y-0.5 pb-3 border-b border-border">
-                      {puzzleTitle.trim() && (
-                        <h3 className="text-base font-display font-semibold text-foreground">{puzzleTitle.trim()}</h3>
-                      )}
-                      {puzzleFrom.trim() && (
-                        <p className="text-xs text-muted-foreground">{puzzleFrom.trim()}</p>
-                      )}
+                  {/* Title centered, From as subtle bottom-right note */}
+                  {puzzleTitle.trim() && (
+                    <div className="text-center pb-3 border-b border-border">
+                      <h3 className="text-base font-display font-semibold text-foreground">{puzzleTitle.trim()}</h3>
                     </div>
                   )}
+
                   <CraftPreviewGrid data={generatedData} puzzleType={selectedType} />
+
+                  {puzzleFrom.trim() && (
+                    <p className="text-[11px] text-muted-foreground/60 text-right italic">
+                      {puzzleFrom.trim()}
+                    </p>
+                  )}
                 </div>
 
                 {revealMessage && (
@@ -528,7 +554,7 @@ const CraftPuzzle = () => {
                   )}
 
                   <Button onClick={handleShare} className="w-full gap-2">
-                    <Share2 className="h-4 w-4" /> Send Puzzle
+                    <Share className="h-4 w-4" /> Send Puzzle
                   </Button>
                   <button
                     onClick={handleCopyLink}

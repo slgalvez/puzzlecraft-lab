@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, ArrowLeft, RefreshCw, Share2, Copy, CheckCheck } from "lucide-react";
+import { Check, ArrowLeft, RefreshCw, Share, Copy, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
@@ -139,7 +139,7 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, ca
         </Button>
         {shareData && (
           <Button size="sm" variant="outline" onClick={handleShare} className="gap-1.5">
-            {copied ? <CheckCheck size={13} /> : <Share2 size={13} />}
+            {copied ? <CheckCheck size={13} /> : <Share size={13} />}
             {copied ? "Copied" : "Share"}
           </Button>
         )}

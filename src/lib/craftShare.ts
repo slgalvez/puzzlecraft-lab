@@ -1,11 +1,19 @@
 export type CraftType = "word-fill" | "cryptogram" | "crossword" | "word-search";
 
+export interface CraftPuzzleSettings {
+  difficulty?: "easy" | "medium" | "hard";
+  hintsEnabled?: boolean;
+  revealEnabled?: boolean;
+  checkEnabled?: boolean;
+}
+
 export interface CraftPayload {
   type: CraftType;
   puzzleData: Record<string, unknown>;
   revealMessage: string;
   title?: string;
   from?: string;
+  settings?: CraftPuzzleSettings;
 }
 
 const CRAFT_HANDOFF_KEY = "craft_message_handoff";

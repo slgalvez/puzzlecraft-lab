@@ -79,15 +79,9 @@ const PlayCraftPuzzle = () => {
           </button>
         </div>
 
-        {/* Title + From (matches preview exactly) */}
-        {(title || from) && (
-          <div className="mb-5 text-center space-y-0.5">
-            {title && (
-              <h1 className="text-xl font-display font-semibold text-foreground sm:text-2xl">{title}</h1>
-            )}
-            {from && (
-              <p className="text-sm text-muted-foreground">{from}</p>
-            )}
+        {title && (
+          <div className="mb-5 text-center">
+            <h1 className="text-xl font-display font-semibold text-foreground sm:text-2xl">{title}</h1>
           </div>
         )}
 
@@ -125,6 +119,12 @@ const PlayCraftPuzzle = () => {
 
         {solved && (
           <CraftCompletionActions senderName={from} puzzleType={type} />
+        )}
+
+        {from && (
+          <p className="text-[11px] text-muted-foreground/60 text-right italic mt-2 mb-4">
+            {from}
+          </p>
         )}
 
         <div className="min-h-[300px]">

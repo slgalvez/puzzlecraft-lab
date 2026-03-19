@@ -1,4 +1,4 @@
-import type { CraftType } from "@/lib/craftShare";
+import type { CraftType, CraftPuzzleSettings } from "@/lib/craftShare";
 
 /* ── Types ── */
 
@@ -11,6 +11,7 @@ export interface CraftDraft {
   phraseInput: string;
   clueEntries: { answer: string; clue: string }[];
   revealMessage: string;
+  settings?: CraftPuzzleSettings;
   updatedAt: number; // epoch ms
 }
 
