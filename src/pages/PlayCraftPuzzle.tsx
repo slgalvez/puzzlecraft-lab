@@ -12,12 +12,20 @@ import {
 
 type CraftType = "word-fill" | "cryptogram" | "crossword" | "word-search";
 
+interface CraftPuzzleSettings {
+  difficulty?: "easy" | "medium" | "hard";
+  hintsEnabled?: boolean;
+  revealEnabled?: boolean;
+  checkEnabled?: boolean;
+}
+
 interface CraftPayload {
   type: CraftType;
   puzzleData: Record<string, unknown>;
   revealMessage: string;
   title?: string;
   from?: string;
+  settings?: CraftPuzzleSettings;
 }
 
 function decodeShareData(encoded: string): CraftPayload | null {
