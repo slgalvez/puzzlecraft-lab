@@ -24,7 +24,7 @@ interface CryptogramState {
   guesses: Record<string, string>;
 }
 
-const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless }: Props) => {
+const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateCryptogram(seed, difficulty), [seed, difficulty]);
