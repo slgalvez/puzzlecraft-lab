@@ -194,8 +194,9 @@ export function MessageBubble({
             <img
               src={mediaUrl}
               alt="Image"
-              className="rounded-xl max-w-[220px] sm:max-w-[260px] w-full"
+              className="rounded-xl max-w-[220px] sm:max-w-[260px] w-full cursor-pointer active:opacity-80 transition-opacity"
               loading="lazy"
+              onClick={() => setViewerOpen(true)}
             />
             <div className={`flex items-center gap-1 mt-0.5 px-2 pb-0.5 ${isMine ? "justify-end" : ""}`}>
               <span className={`text-[10px] leading-none ${timeColor}`}>
@@ -209,6 +210,9 @@ export function MessageBubble({
                 )
               )}
             </div>
+            {viewerOpen && (
+              <ImageViewer src={mediaUrl} onClose={() => setViewerOpen(false)} />
+            )}
           </div>
         ) : (
           <div
