@@ -419,13 +419,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
           </p>
         )}
 
-        {isNumbers ? (
-          <MobileNumberPad
-            visible={isMobile && !!activeCell && !timer.isSolved && !isRevealed}
-            onNumber={(n) => enterChar(n.toString())}
-            onDelete={deleteChar}
-          />
-        ) : (
+        {!isNumbers && (
           <MobileLetterInput
             ref={mobileInputRef}
             active={isMobile && !!activeCell && !timer.isSolved && !isRevealed}
@@ -471,6 +465,13 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
           )}
         </div>
         </div>
+        {isNumbers && (
+          <MobileNumberPad
+            visible={isMobile && !!activeCell && !timer.isSolved && !isRevealed}
+            onNumber={(n) => enterChar(n.toString())}
+            onDelete={deleteChar}
+          />
+        )}
         {showControls && onNewPuzzle && (
           <PuzzleControls
             onReset={handleReset}

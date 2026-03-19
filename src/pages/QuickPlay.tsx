@@ -254,7 +254,7 @@ const QuickPlay = () => {
         </div>
 
         {/* Mode badge + puzzle identity */}
-        <div className="mb-6">
+        <div className="mb-4 md:mb-6">
           {modeLabel && ModeIcon && (
             <div className="flex items-center gap-1.5 mb-2">
               <ModeIcon size={14} className="text-primary" />
