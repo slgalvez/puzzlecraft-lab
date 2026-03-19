@@ -506,17 +506,20 @@ const CraftPuzzle = () => {
                 </div>
 
                 <div className="p-5 rounded-xl border border-border bg-card space-y-4">
-                  {(puzzleTitle.trim() || puzzleFrom.trim()) && (
-                    <div className="text-center space-y-0.5 pb-3 border-b border-border">
-                      {puzzleTitle.trim() && (
-                        <h3 className="text-base font-display font-semibold text-foreground">{puzzleTitle.trim()}</h3>
-                      )}
-                      {puzzleFrom.trim() && (
-                        <p className="text-xs text-muted-foreground">{puzzleFrom.trim()}</p>
-                      )}
+                  {/* Title centered, From as subtle bottom-right note */}
+                  {puzzleTitle.trim() && (
+                    <div className="text-center pb-3 border-b border-border">
+                      <h3 className="text-base font-display font-semibold text-foreground">{puzzleTitle.trim()}</h3>
                     </div>
                   )}
+
                   <CraftPreviewGrid data={generatedData} puzzleType={selectedType} />
+
+                  {puzzleFrom.trim() && (
+                    <p className="text-[11px] text-muted-foreground/60 text-right italic">
+                      {puzzleFrom.trim()}
+                    </p>
+                  )}
                 </div>
 
                 {revealMessage && (
