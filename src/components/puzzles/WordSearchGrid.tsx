@@ -370,6 +370,30 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
             Tap the end letter to complete selection
           </p>
         )}
+        {/* Word bank — mobile: inline before controls */}
+        {isMobile && (
+          <div className="mt-4">
+            <h3 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Words to Find ({foundWords.size}/{puzzle.words.length})
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {puzzle.words.map((word) => (
+                <span
+                  key={word}
+                  className={cn(
+                    "rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
+                    foundWords.has(word)
+                      ? "border-primary/30 bg-primary/10 text-primary line-through"
+                      : "border-border bg-card text-foreground"
+                  )}
+                >
+                  {word}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         <PuzzleControls
           onReset={handleReset}
           onCheck={handleCheck}
@@ -383,26 +407,29 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
         />
       </div>
 
-      <div className="lg:max-w-xs min-w-0">
-        <h3 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Words to Find ({foundWords.size}/{puzzle.words.length})
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {puzzle.words.map((word) => (
-            <span
-              key={word}
-              className={cn(
-                "rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
-                foundWords.has(word)
-                  ? "border-primary/30 bg-primary/10 text-primary line-through"
-                  : "border-border bg-card text-foreground"
-              )}
-            >
-              {word}
-            </span>
-          ))}
+      {/* Word bank — desktop only: side column */}
+      {!isMobile && (
+        <div className="lg:max-w-xs min-w-0">
+          <h3 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Words to Find ({foundWords.size}/{puzzle.words.length})
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {puzzle.words.map((word) => (
+              <span
+                key={word}
+                className={cn(
+                  "rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
+                  foundWords.has(word)
+                    ? "border-primary/30 bg-primary/10 text-primary line-through"
+                    : "border-border bg-card text-foreground"
+                )}
+              >
+                {word}
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

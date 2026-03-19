@@ -472,6 +472,23 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
             onDelete={deleteChar}
           />
         )}
+
+        {/* Entry list — mobile: inline before controls */}
+        {isMobile && (
+          <div className="mt-4">
+            <h3 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              {isNumbers ? "Numbers to Place" : "Words to Place"}
+            </h3>
+            <GroupedEntryList
+              entries={entries}
+              isNumbers={isNumbers}
+              interactive
+              usedEntries={usedEntries}
+              onToggle={toggleEntry}
+            />
+          </div>
+        )}
+
         {showControls && onNewPuzzle && (
           <PuzzleControls
             onReset={handleReset}
@@ -487,18 +504,21 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
         )}
       </div>
 
-      <div className="lg:max-w-xs">
-        <h3 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          {isNumbers ? "Numbers to Place" : "Words to Place"}
-        </h3>
-        <GroupedEntryList
-          entries={entries}
-          isNumbers={isNumbers}
-          interactive
-          usedEntries={usedEntries}
-          onToggle={toggleEntry}
-        />
-      </div>
+      {/* Entry list — desktop only: side column */}
+      {!isMobile && (
+        <div className="lg:max-w-xs">
+          <h3 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            {isNumbers ? "Numbers to Place" : "Words to Place"}
+          </h3>
+          <GroupedEntryList
+            entries={entries}
+            isNumbers={isNumbers}
+            interactive
+            usedEntries={usedEntries}
+            onToggle={toggleEntry}
+          />
+        </div>
+      )}
     </div>
   );
 };
