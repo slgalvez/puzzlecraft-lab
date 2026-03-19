@@ -227,7 +227,7 @@ const PuzzleGenerator = () => {
       ? difficulties[Math.floor(Math.random() * difficulties.length)][0]
       : randomDifficulty;
     setDifficulty(diff);
-    setMode("generate");
+    setMode("random");
     setSeed(newSeed);
     setPuzzleGenerated(true);
     setRandomPool(types.length > 1 ? types : null);
