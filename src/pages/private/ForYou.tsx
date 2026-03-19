@@ -15,6 +15,7 @@ import {
   generateCustomCrossword,
   generateCustomWordSearch,
 } from "@/lib/generators/customPuzzles";
+import { takeCraftMessageHandoff } from "@/lib/craftShare";
 import {
   GridSolver,
   CryptogramSolver,
@@ -61,6 +62,7 @@ const ForYou = () => {
   const [drafts, setDrafts] = useState<PrivatePuzzle[]>([]);
   const [loading, setLoading] = useState(true);
   const [recipients, setRecipients] = useState<{ id: string; first_name: string; last_name: string }[]>([]);
+  const [recipientsLoaded, setRecipientsLoaded] = useState(false);
   const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null);
 
   // Create state
@@ -78,6 +80,7 @@ const ForYou = () => {
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const autoSaveResetRef = useRef<ReturnType<typeof setTimeout>>();
+  const craftHandoffAppliedRef = useRef(false);
 
   // Solve state
   const [solvingPuzzle, setSolvingPuzzle] = useState<PrivatePuzzle | null>(null);
@@ -133,12 +136,13 @@ const ForYou = () => {
       const data = await invokeMessaging("list-recipients", token);
       const list = data.recipients || [];
       setRecipients(list);
-      // Auto-select if only one recipient
       if (list.length === 1 && !selectedRecipientId) {
         setSelectedRecipientId(list[0].id);
       }
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
+    } finally {
+      setRecipientsLoaded(true);
     }
   }, [token, handleSessionExpired, selectedRecipientId]);
 
@@ -146,6 +150,34 @@ const ForYou = () => {
     fetchPuzzles();
     fetchRecipients();
   }, [fetchPuzzles, fetchRecipients]);
+
+  useEffect(() => {
+    if (!recipientsLoaded || craftHandoffAppliedRef.current) return;
+
+    const pendingCraftPuzzle = takeCraftMessageHandoff();
+    if (!pendingCraftPuzzle) return;
+
+    craftHandoffAppliedRef.current = true;
+    setTab("create");
+    setEditingDraftId(null);
+    setSelectedType(pendingCraftPuzzle.type);
+    setGeneratedData(pendingCraftPuzzle.puzzleData);
+    setRevealMessage(pendingCraftPuzzle.revealMessage || "");
+    setWordInput("");
+    setPhraseInput("");
+    setClueEntries([{ answer: "", clue: "" }]);
+
+    if (recipients.length > 1) {
+      setCreateStep("recipient");
+    } else {
+      if (recipients.length === 1) {
+        setSelectedRecipientId(recipients[0].id);
+      }
+      setCreateStep("preview");
+    }
+
+    toast({ title: "Puzzle loaded into Messages" });
+  }, [recipients, recipientsLoaded, toast]);
 
   // Auto-save when generatedData changes (e.g. after regeneration) while editing a draft
   useEffect(() => {
