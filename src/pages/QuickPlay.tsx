@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { goBackOrFallback } from "@/lib/navigation";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
@@ -234,11 +235,11 @@ const QuickPlay = () => {
         {/* Minimal header */}
         <div className="mb-4 flex items-center justify-between">
           <button
-            onClick={() => navigate("/")}
+            onClick={() => goBackOrFallback(navigate, "/")}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft size={14} />
-            <span className="hidden sm:inline">Home</span>
+            <span className="hidden sm:inline">Back</span>
           </button>
           {mode === "endless" && (
             <Button
