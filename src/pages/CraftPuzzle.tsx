@@ -143,8 +143,8 @@ const CraftPuzzle = () => {
     <Layout>
       <div className="container py-6 md:py-10 max-w-2xl mx-auto">
         <div className="mb-6">
-          <h1 className="font-display text-2xl font-bold text-foreground">Craft a Puzzle</h1>
-          <p className="text-sm text-muted-foreground mt-1">Create a custom puzzle and share it with anyone</p>
+          <h1 className="font-display text-2xl font-bold text-foreground">Send a Puzzle</h1>
+          <p className="text-sm text-muted-foreground mt-1">Create a custom puzzle and share it with someone</p>
         </div>
 
         {/* ─── Type Selection ─── */}
