@@ -221,7 +221,7 @@ const CraftPuzzle = () => {
                   className="resize-none"
                 />
                 <p className="text-[10px] text-muted-foreground">
-                  {wordInput.split(/[,\n]+/).map(w => w.trim()).filter(Boolean).length} words entered
+                  Enter 5–15 words for best results
                 </p>
               </div>
             )}
