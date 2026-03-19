@@ -253,8 +253,13 @@ const CraftPuzzle = () => {
 
   const handleCopyLink = async () => {
     if (!shareUrl) return;
+    const fullText = buildCraftShareText(
+      puzzleTitle.trim() || undefined,
+      puzzleFrom.trim() || undefined,
+      shareUrl,
+    );
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(fullText);
       recordSent();
       setCopied(true);
       setShareSuccess(true);
