@@ -141,18 +141,25 @@ const PlayCraftPuzzle = () => {
               data={puzzleData}
               puzzleType={type}
               onComplete={handleComplete}
+              showHints={settings?.hintsEnabled ?? true}
+              showReveal={settings?.revealEnabled ?? false}
+              showCheck={settings?.checkEnabled ?? true}
             />
           )}
           {type === "cryptogram" && (
             <CryptogramSolver
               data={puzzleData as unknown as { encoded: string; decoded: string; reverseCipher: Record<string, string>; hints: Record<string, string> }}
               onComplete={handleComplete}
+              showHints={settings?.hintsEnabled ?? true}
+              showReveal={settings?.revealEnabled ?? false}
             />
           )}
           {type === "word-search" && (
             <WordSearchSolver
               data={puzzleData as unknown as { grid: string[][]; words: string[]; wordPositions: { word: string; row: number; col: number; dr: number; dc: number }[]; size: number }}
               onComplete={handleComplete}
+              showHints={settings?.hintsEnabled ?? true}
+              showReveal={settings?.revealEnabled ?? false}
             />
           )}
         </div>
