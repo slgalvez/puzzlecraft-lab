@@ -71,7 +71,7 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              className="h-9 w-9 text-muted-foreground hover:text-foreground"
               onClick={onReset}
               aria-label="Reset puzzle"
             >
@@ -80,17 +80,17 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
           </div>
 
           {/* Primary — Check Solution, full width */}
-          <Button className="w-full h-9" onClick={onCheck}>
+          <Button className="w-full h-11" onClick={onCheck}>
             <CheckCircle2 className="mr-1.5 h-4 w-4" /> Check Solution
           </Button>
 
           {/* Secondary — Hint + Reveal side by side */}
           {showControls && (onHint || onReveal) && (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2.5">
               {onHint && (
                 <Button
                   variant="outline"
-                  className="h-9 text-muted-foreground hover:text-foreground"
+                  className="h-11 text-muted-foreground hover:text-foreground"
                   onClick={onHint}
                 >
                   <Lightbulb className="mr-1.5 h-4 w-4" />
@@ -100,7 +100,7 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
               {onReveal && (
                 <Button
                   variant="ghost"
-                  className="h-9 text-muted-foreground hover:text-foreground"
+                  className="h-11 text-muted-foreground hover:text-foreground"
                   onClick={() => setShowRevealConfirm(true)}
                 >
                   <Eye className="mr-1.5 h-4 w-4" /> Reveal
@@ -110,8 +110,8 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
           )}
 
           {/* Separated — New Puzzle on its own row */}
-          <div className="pt-2">
-            <Button variant="outline" className="w-full h-9" onClick={onNewPuzzle}>
+          <div className="pt-3">
+            <Button variant="outline" className="w-full h-11" onClick={onNewPuzzle}>
               <Shuffle className="mr-1.5 h-4 w-4" /> New Puzzle
             </Button>
           </div>
