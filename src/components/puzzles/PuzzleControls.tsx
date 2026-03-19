@@ -132,22 +132,20 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
         </div>
       ) : (
         /* ── Desktop layout ── */
-        <div className="space-y-4">
-          {/* Reset — top-right aligned, icon-only, low emphasis */}
-          <div className="flex justify-end">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              onClick={onReset}
-              aria-label="Reset puzzle"
-            >
-              <RotateCcw className="h-4 w-4" />
-            </Button>
-          </div>
+        <div className="relative space-y-5">
+          {/* Reset — anchored top-right, pulled up into grid margin */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute -top-6 right-0 h-7 w-7 text-muted-foreground/60 hover:text-foreground"
+            onClick={onReset}
+            aria-label="Reset puzzle"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </Button>
 
-          {/* Main controls row: Hint, Reveal, Check Solution */}
-          <div className="flex items-center gap-4">
+          {/* Main controls row: Hint, Reveal → left | Check Solution → right */}
+          <div className="flex items-center gap-5">
             {onHint && showControls && (
               <Button
                 variant="outline"
@@ -161,7 +159,7 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
             )}
             {onReveal && showControls && (
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 className="text-muted-foreground hover:text-foreground"
                 onClick={() => setShowRevealConfirm(true)}
@@ -176,7 +174,7 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
             </div>
           </div>
 
-          {/* Separated — New Puzzle on its own row */}
+          {/* Separated — New Puzzle below with spacing */}
           <div className="pt-1">
             <Button variant="outline" size="sm" onClick={onNewPuzzle}>
               <Shuffle className="mr-1.5 h-4 w-4" /> New Puzzle
