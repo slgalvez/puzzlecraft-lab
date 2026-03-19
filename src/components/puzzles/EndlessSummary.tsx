@@ -189,7 +189,7 @@ const EndlessSummary = ({ solves, diffMap, onPlayAgain }: Props) => {
         {/* Actions */}
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Button size="lg" onClick={onPlayAgain} className="gap-1.5">
-            <RotateCcw size={16} /> Play Again
+            <RotateCcw size={16} /> New Puzzle
           </Button>
           <Button asChild variant="outline" size="lg">
             <Link to="/">

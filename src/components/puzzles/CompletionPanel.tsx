@@ -135,7 +135,7 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, ca
 
       <div className="flex flex-wrap gap-2">
         <Button size="sm" onClick={onPlayAgain} className="gap-1.5">
-          <RefreshCw size={13} /> Play Again
+          <RefreshCw size={13} /> New Puzzle
         </Button>
         {shareData && (
           <Button size="sm" variant="outline" onClick={handleShare} className="gap-1.5">
