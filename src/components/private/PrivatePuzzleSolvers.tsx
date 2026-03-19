@@ -839,9 +839,10 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress,
                 className={cn(
                   "w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-xs font-mono select-none border border-puzzle-border touch-manipulation transition-colors cursor-pointer",
                   isFound && "bg-primary/20 text-primary font-bold",
+                  !isFound && hintCells.has(key) && "bg-yellow-200/60 dark:bg-yellow-500/20 ring-2 ring-inset ring-yellow-400/60",
                   isTapStart && "bg-puzzle-cell-active ring-2 ring-inset ring-primary",
-                  !isFound && !isTapStart && isPreview && "bg-puzzle-cell-active",
-                  !isFound && !isTapStart && !isPreview && "bg-puzzle-cell hover:bg-puzzle-cell-highlight"
+                  !isFound && !isTapStart && !hintCells.has(key) && isPreview && "bg-puzzle-cell-active",
+                  !isFound && !isTapStart && !hintCells.has(key) && !isPreview && "bg-puzzle-cell hover:bg-puzzle-cell-highlight"
                 )}
                 onMouseDown={() => handleMouseDown(r, c)}
                 onMouseEnter={() => handleMouseEnter(r, c)}
