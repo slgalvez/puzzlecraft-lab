@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Grid3X3 } from "lucide-react";
+import flaskIcon from "@/assets/puzzle-lab-flask.png";
 
 const ACCESS_GRANT_KEY = "private_access_grant";
 
@@ -81,28 +81,66 @@ export default function LoginPage() {
 
   return (
     <div className="private-app flex items-center justify-center min-h-screen px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <h1 className="text-lg font-semibold text-foreground tracking-tight inline-flex items-center justify-center gap-1.5">
-            <Grid3X3 size={16} className="text-muted-foreground" />
-            Puzzle Lab
-          </h1>
-          <p className="mt-1 text-xs text-muted-foreground">Enter your puzzle to continue</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Puzzle Name</label>
-            <Input type="text" value={puzzleName} onChange={(e) => setPuzzleName(e.target.value)} placeholder="Puzzle name" className="bg-secondary border-border text-foreground" required autoComplete="name" maxLength={200} />
+      <div className="w-full max-w-sm space-y-8">
+        {/* Icon + Title + Subtext */}
+        <div className="text-center space-y-4">
+          <div className="flex justify-center">
+            <img
+              src={flaskIcon}
+              alt=""
+              className="h-14 w-auto"
+              aria-hidden="true"
+            />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Puzzle Code</label>
-            <Input type="password" value={puzzleCode} onChange={(e) => setPuzzleCode(e.target.value)} placeholder="Code" className="bg-secondary border-border text-foreground" required autoComplete="current-password" maxLength={200} />
+            <h1 className="text-xl font-semibold text-foreground tracking-tight">
+              Puzzle Lab
+            </h1>
+            <p className="mt-2 text-xs text-muted-foreground/70">
+              Enter your puzzle to continue
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              Puzzle Name
+            </label>
+            <Input
+              type="text"
+              value={puzzleName}
+              onChange={(e) => setPuzzleName(e.target.value)}
+              placeholder="Puzzle name"
+              className="bg-secondary border-border text-foreground h-11 px-4"
+              required
+              autoComplete="name"
+              maxLength={200}
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              Puzzle Code
+            </label>
+            <Input
+              type="password"
+              value={puzzleCode}
+              onChange={(e) => setPuzzleCode(e.target.value)}
+              placeholder="Code"
+              className="bg-secondary border-border text-foreground h-11 px-4"
+              required
+              autoComplete="current-password"
+              maxLength={200}
+            />
           </div>
 
           {error && <p className="text-xs text-destructive">{error}</p>}
 
-          <Button type="submit" className="w-full" disabled={submitting}>
+          <Button
+            type="submit"
+            className="w-full h-11"
+            disabled={submitting}
+          >
             {submitting ? "Entering..." : "Enter Puzzle"}
           </Button>
         </form>
@@ -110,7 +148,7 @@ export default function LoginPage() {
         <Button
           variant="ghost"
           size="sm"
-          className="w-full text-xs text-muted-foreground hover:text-foreground"
+          className="w-full text-xs text-muted-foreground/50 hover:text-muted-foreground"
           onClick={() => window.location.href = "/"}
         >
           Exit
