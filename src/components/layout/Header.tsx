@@ -8,6 +8,7 @@ const navLinks = [
   { to: "/daily", label: "Daily Challenge" },
   { to: "/puzzles", label: "Play" },
   { to: "/generate/sudoku", label: "Puzzle Lab" },
+  { to: "/craft", label: "Craft" },
   { to: "/stats", label: "Stats" },
 ];
 
