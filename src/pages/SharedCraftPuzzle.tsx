@@ -124,73 +124,80 @@ const SharedCraftPuzzle = () => {
           </button>
         </div>
 
-        {/* Header: type label, then title — matching preview layout */}
-        <div className="mb-5 text-center">
-          <p className="text-[10px] font-medium uppercase tracking-widest text-primary mb-1.5">
-            {PUZZLE_LABELS[type]}
-          </p>
-          {title && (
-            <h1 className="text-lg font-display font-semibold text-foreground sm:text-xl">{title}</h1>
+        {/* Unified puzzle container — all elements anchor to this */}
+        <div className="max-w-md mx-auto space-y-4">
+          {/* Header: type label + title */}
+          <div className="text-center">
+            <p className="text-[10px] font-medium uppercase tracking-widest text-primary mb-1.5">
+              {PUZZLE_LABELS[type]}
+            </p>
+            {title && (
+              <h1 className="text-lg font-display font-semibold text-foreground sm:text-xl">{title}</h1>
+            )}
+          </div>
+
+          {/* Puzzle solver */}
+          <div className="min-h-[300px]">
+            {(type === "word-fill" || type === "crossword") && (
+              <GridSolver
+                data={puzzleData}
+                puzzleType={type}
+                onComplete={handleComplete}
+                showHints={settings?.hintsEnabled ?? true}
+                showReveal={settings?.revealEnabled ?? false}
+                showCheck={settings?.checkEnabled ?? true}
+              />
+            )}
+            {type === "cryptogram" && (
+              <CryptogramSolver
+                data={puzzleData as unknown as { encoded: string; decoded: string; reverseCipher: Record<string, string>; hints: Record<string, string> }}
+                onComplete={handleComplete}
+                showHints={settings?.hintsEnabled ?? true}
+                showReveal={settings?.revealEnabled ?? false}
+              />
+            )}
+            {type === "word-search" && (
+              <WordSearchSolver
+                data={puzzleData as unknown as { grid: string[][]; words: string[]; wordPositions: { word: string; row: number; col: number; dr: number; dc: number }[]; size: number }}
+                onComplete={handleComplete}
+                showHints={settings?.hintsEnabled ?? true}
+                showReveal={settings?.revealEnabled ?? false}
+              />
+            )}
+          </div>
+
+          {/* From — anchored bottom-right of puzzle container */}
+          {from && (
+            <p className="text-[11px] text-muted-foreground/60 text-right italic">
+              {from}
+            </p>
+          )}
+
+          {/* Post-solve: reveal message */}
+          {solved && revealMessage && (
+            <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex items-center gap-2 mb-1">
+                <PartyPopper className="h-4 w-4 text-primary" />
+                <p className="text-xs font-medium text-primary">Puzzle Solved!</p>
+              </div>
+              <p className="text-sm italic text-foreground">{revealMessage}</p>
+            </div>
+          )}
+
+          {solved && !revealMessage && (
+            <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex items-center gap-2">
+                <PartyPopper className="h-4 w-4 text-primary" />
+                <p className="text-sm font-medium text-primary">Puzzle Solved!</p>
+              </div>
+            </div>
+          )}
+
+          {/* Post-solve: actions */}
+          {solved && (
+            <CraftCompletionActions senderName={from} puzzleType={type} />
           )}
         </div>
-
-        {solved && revealMessage && (
-          <div className="mb-4 p-4 rounded-lg bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="flex items-center gap-2 mb-1">
-              <PartyPopper className="h-4 w-4 text-primary" />
-              <p className="text-xs font-medium text-primary">Puzzle Solved!</p>
-            </div>
-            <p className="text-sm italic text-foreground">{revealMessage}</p>
-          </div>
-        )}
-
-        {solved && !revealMessage && (
-          <div className="mb-4 p-4 rounded-lg bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="flex items-center gap-2">
-              <PartyPopper className="h-4 w-4 text-primary" />
-              <p className="text-sm font-medium text-primary">Puzzle Solved!</p>
-            </div>
-          </div>
-        )}
-
-        {solved && (
-          <CraftCompletionActions senderName={from} puzzleType={type} />
-        )}
-
-        <div className="min-h-[300px]">
-          {(type === "word-fill" || type === "crossword") && (
-            <GridSolver
-              data={puzzleData}
-              puzzleType={type}
-              onComplete={handleComplete}
-              showHints={settings?.hintsEnabled ?? true}
-              showReveal={settings?.revealEnabled ?? false}
-              showCheck={settings?.checkEnabled ?? true}
-            />
-          )}
-          {type === "cryptogram" && (
-            <CryptogramSolver
-              data={puzzleData as unknown as { encoded: string; decoded: string; reverseCipher: Record<string, string>; hints: Record<string, string> }}
-              onComplete={handleComplete}
-              showHints={settings?.hintsEnabled ?? true}
-              showReveal={settings?.revealEnabled ?? false}
-            />
-          )}
-          {type === "word-search" && (
-            <WordSearchSolver
-              data={puzzleData as unknown as { grid: string[][]; words: string[]; wordPositions: { word: string; row: number; col: number; dr: number; dc: number }[]; size: number }}
-              onComplete={handleComplete}
-              showHints={settings?.hintsEnabled ?? true}
-              showReveal={settings?.revealEnabled ?? false}
-            />
-          )}
-        </div>
-
-        {from && (
-          <p className="text-[11px] text-muted-foreground/60 text-right italic mt-4">
-            {from}
-          </p>
-        )}
       </div>
     </Layout>
   );
