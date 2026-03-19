@@ -30,22 +30,30 @@ function isGracePeriodExpired(): boolean {
 }
 
 export default function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, signOut, sessionEnded } = useAuth();
+  const { user, loading, signOut, sessionEnded, clearSessionEnded } = useAuth();
   const location = useLocation();
+  const [redirecting, setRedirecting] = useState(false);
 
-  // The login page handles its own gating — let it through without access grant checks
   const isLoginPage = location.pathname === "/p/login";
 
-  // If session was ended by a newer login elsewhere, redirect out
-  // If session was ended by a newer login elsewhere, clean up and redirect home
-  if (sessionEnded) {
-    signOut();
-    return <Navigate to="/" replace />;
-  }
+  // Handle session ended by a newer login elsewhere — use effect to avoid side effects in render
+  useEffect(() => {
+    if (sessionEnded && !redirecting) {
+      setRedirecting(true);
+      clearSessionEnded();
+      signOut();
+    }
+  }, [sessionEnded, redirecting, clearSessionEnded, signOut]);
 
-  // If grace period expired, force full logout
-  if (user && isGracePeriodExpired()) {
-    signOut();
+  // Handle grace period expiry
+  useEffect(() => {
+    if (user && !isLoginPage && isGracePeriodExpired()) {
+      setRedirecting(true);
+      signOut();
+    }
+  }, [user, isLoginPage, signOut]);
+
+  if (redirecting) {
     return <Navigate to="/" replace />;
   }
 
@@ -57,12 +65,10 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
     );
   }
 
-  // Login page manages its own access grant check — don't redirect it away
   if (isLoginPage) {
     return <>{children}</>;
   }
 
-  // Must have a valid access grant to enter the private area
   if (!hasAccessGrant()) {
     return <Navigate to="/" replace />;
   }
