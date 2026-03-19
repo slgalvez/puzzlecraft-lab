@@ -26,10 +26,21 @@ export interface CraftSentItem {
   sentAt: number; // epoch ms
 }
 
+export interface CraftReceivedItem {
+  id: string;
+  shareId: string;
+  type: string;
+  title: string;
+  from: string;
+  status: "not_started" | "in_progress" | "completed";
+  receivedAt: number;
+}
+
 /* ── Constants ── */
 
 const DRAFTS_KEY = "puzzlecraft-craft-drafts";
 const SENT_KEY = "puzzlecraft-craft-sent";
+const RECEIVED_KEY = "puzzlecraft-craft-received";
 const MAX_DRAFTS = 20;
 const MAX_SENT = 50;
 
