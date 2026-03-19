@@ -20,13 +20,16 @@ interface Props {
   timeLimit?: number;
   isEndless?: boolean;
   dailyCode?: string;
+  showHints?: boolean;
+  showReveal?: boolean;
+  maxHints?: number | null;
 }
 
 interface CrosswordState {
   grid: string[][];
 }
 
-const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode }: Props) => {
+const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode, showHints = true, showReveal = true, maxHints }: Props) => {
   const { gridSize, blackCells, clues } = puzzle;
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -457,9 +460,10 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
             onReset={handleReset}
             onCheck={handleCheck}
             onNewPuzzle={onNewPuzzle}
-            onHint={handleHint}
-            onReveal={handleReveal}
+            onHint={showHints ? handleHint : undefined}
+            onReveal={showReveal ? handleReveal : undefined}
             hintCount={hintCount.current}
+            maxHints={showHints ? maxHints : undefined}
             isRevealed={isRevealed}
             puzzleCode={dailyCode ?? puzzle.id}
             solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty: puzzle.difficulty as any, isEndless, assisted: hintCount.current > 0, category: "crossword", seed: parseInt(puzzle.id.replace(/\D/g, "")) || 0, dailyCode }}

@@ -18,13 +18,16 @@ interface Props {
   timeLimit?: number;
   isEndless?: boolean;
   dailyCode?: string;
+  showHints?: boolean;
+  showReveal?: boolean;
+  maxHints?: number | null;
 }
 
 interface CryptogramState {
   guesses: Record<string, string>;
 }
 
-const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode }: Props) => {
+const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode, showHints = true, showReveal = true, maxHints }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateCryptogram(seed, difficulty), [seed, difficulty]);
@@ -281,9 +284,10 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
         onReset={handleReset}
         onCheck={handleCheck}
         onNewPuzzle={onNewPuzzle}
-        onHint={handleHint}
-        onReveal={handleReveal}
+        onHint={showHints ? handleHint : undefined}
+        onReveal={showReveal ? handleReveal : undefined}
         hintCount={hintCount.current}
+        maxHints={showHints ? maxHints : undefined}
         isRevealed={isRevealed}
         puzzleCode={dailyCode ?? `cryptogram-${seed}`}
         solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0, category: "cryptogram", seed, dailyCode }}

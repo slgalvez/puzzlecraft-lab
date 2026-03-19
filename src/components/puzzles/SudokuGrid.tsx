@@ -20,13 +20,16 @@ interface Props {
   timeLimit?: number;
   isEndless?: boolean;
   dailyCode?: string;
+  showHints?: boolean;
+  showReveal?: boolean;
+  maxHints?: number | null;
 }
 
 interface SudokuState {
   grid: (number | null)[][];
 }
 
-const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode }: Props) => {
+const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode, showHints = true, showReveal = true, maxHints }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateSudoku(seed, difficulty), [seed, difficulty]);
@@ -267,9 +270,10 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
         onReset={handleReset}
         onCheck={handleCheck}
         onNewPuzzle={onNewPuzzle}
-        onHint={handleHint}
-        onReveal={handleReveal}
+        onHint={showHints ? handleHint : undefined}
+        onReveal={showReveal ? handleReveal : undefined}
         hintCount={hintCount.current}
+        maxHints={showHints ? maxHints : undefined}
         isRevealed={isRevealed}
         puzzleCode={dailyCode ?? `sudoku-${seed}`}
         solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0, category: "sudoku", seed, dailyCode }}

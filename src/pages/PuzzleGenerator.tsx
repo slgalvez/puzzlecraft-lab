@@ -11,7 +11,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { getPuzzleById } from "@/data/puzzles";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { RefreshCw, Dices, ChevronDown, ChevronRight, ArrowLeft, Sparkles, Clock } from "lucide-react";
+import { RefreshCw, Dices, ChevronDown, ChevronRight, ArrowLeft, Sparkles, Clock, Lightbulb, Eye } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
@@ -57,6 +57,59 @@ const PuzzleGenerator = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
+  const hintLimits: { value: number | null; label: string }[] = [
+    { value: 1, label: "1" },
+    { value: 2, label: "2" },
+    { value: 3, label: "3" },
+    { value: null, label: "∞" },
+  ];
+
+  const renderAssists = (compact = false) => (
+    <div>
+      <label className={cn("mb-3 block text-xs font-medium uppercase tracking-widest text-muted-foreground", compact && "mb-2")}>
+        Assists
+      </label>
+      <div className="space-y-3">
+        {/* Hints toggle */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Switch checked={hintsEnabled} onCheckedChange={setHintsEnabled} id="hints-toggle" />
+            <label htmlFor="hints-toggle" className="flex items-center gap-1.5 text-sm font-medium text-foreground cursor-pointer">
+              <Lightbulb size={14} className="text-muted-foreground" />
+              Hints
+            </label>
+          </div>
+          {hintsEnabled && (
+            <div className="ml-10 flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground mr-1">Limit:</span>
+              {hintLimits.map(({ value, label }) => (
+                <button
+                  key={label}
+                  onClick={() => setHintLimit(value)}
+                  className={cn(
+                    "rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors min-w-[28px]",
+                    hintLimit === value
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {/* Reveal toggle */}
+        <div className="flex items-center gap-2">
+          <Switch checked={revealEnabled} onCheckedChange={setRevealEnabled} id="reveal-toggle" />
+          <label htmlFor="reveal-toggle" className="flex items-center gap-1.5 text-sm font-medium text-foreground cursor-pointer">
+            <Eye size={14} className="text-muted-foreground" />
+            Reveal
+          </label>
+        </div>
+      </div>
+    </div>
+  );
 
   useEffect(() => { setPuzzleOrigin("lab"); }, []);
 
@@ -80,6 +133,11 @@ const PuzzleGenerator = () => {
   const [timeLimitEnabled, setTimeLimitEnabled] = useState(false);
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(5);
   const [timeLimitSeconds, setTimeLimitSeconds] = useState(0);
+
+  // Assist settings (Puzzle Lab only)
+  const [hintsEnabled, setHintsEnabled] = useState(true);
+  const [hintLimit, setHintLimit] = useState<number | null>(null); // null = unlimited
+  const [revealEnabled, setRevealEnabled] = useState(true);
 
   // Mode & mobile stepper
   const [mode, setMode] = useState<Mode>(() => routeState?.randomPool ? "random" : "generate");
@@ -240,16 +298,22 @@ const PuzzleGenerator = () => {
 
   const activeTimeLimit = timeLimitEnabled ? (timeLimitMinutes * 60 + timeLimitSeconds) : undefined;
 
+  const assistProps = {
+    showHints: hintsEnabled,
+    showReveal: revealEnabled,
+    maxHints: hintsEnabled ? hintLimit : undefined,
+  };
+
   const renderPuzzle = () => {
     if (!category || !difficulty) return null;
     const d = getEffectiveDifficulty(category, difficulty as Difficulty);
     const key = `${seed}-${d}-${puzzleKey}`;
     switch (category) {
-      case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
-      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
-      case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
-      case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
-      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
+      case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} {...assistProps} />;
+      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} {...assistProps} />;
+      case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} {...assistProps} />;
+      case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} {...assistProps} />;
+      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} {...assistProps} />;
       case "crossword": {
         const gen = generateCrossword(seed, d);
         const puzzle: CrosswordPuzzle = {
@@ -257,7 +321,7 @@ const PuzzleGenerator = () => {
           difficulty: d as CrosswordPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, clues: gen.clues,
         };
-        return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
+        return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} {...assistProps} />;
       }
       case "word-fill": {
         const gen = generateWordFillIn(seed, d);
@@ -266,7 +330,7 @@ const PuzzleGenerator = () => {
           difficulty: d as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
-        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
+        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} {...assistProps} />;
       }
       case "number-fill": {
         const gen = generateNumberFillIn(seed, d);
@@ -275,7 +339,7 @@ const PuzzleGenerator = () => {
           difficulty: d as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
-        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
+        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} {...assistProps} />;
       }
       default: return null;
     }
@@ -411,6 +475,7 @@ const PuzzleGenerator = () => {
                     <span className="text-xs text-muted-foreground">sec</span>
                   </div>
                 )}
+                {renderAssists(true)}
                 <Button onClick={handleGenerate} size="lg" className="w-full gap-2 text-base">
                   <Sparkles size={18} />
                   Generate Puzzle
@@ -498,6 +563,8 @@ const PuzzleGenerator = () => {
           })}
         </div>
       </div>
+
+      {renderAssists(true)}
 
       <Button onClick={handleRandomGenerate} size="lg" className="w-full gap-2 text-base" disabled={!canRandomGenerate}>
         <Dices size={18} />
@@ -619,6 +686,9 @@ const PuzzleGenerator = () => {
           )}
         </div>
       </div>
+
+      {/* Assists */}
+      {renderAssists()}
 
       {/* Primary Action */}
       <div className="flex items-center gap-4">
@@ -756,6 +826,9 @@ const PuzzleGenerator = () => {
         </div>
       </div>
 
+      {/* Assists */}
+      {renderAssists()}
+
       <div className="flex items-center gap-4">
         <Button onClick={handleRandomGenerate} size="lg" className="gap-2 text-base px-8" disabled={!canRandomGenerate}>
           <Dices size={18} />
@@ -823,7 +896,12 @@ const PuzzleGenerator = () => {
             )}
           </>
         ) : (
-          isMobile ? renderMobileRandom() : renderDesktopRandom()
+          <>
+            {isMobile ? renderMobileRandom() : renderDesktopRandom()}
+            {puzzleGenerated && (
+              <div className="mt-10 min-h-[300px]">{renderPuzzle()}</div>
+            )}
+          </>
         )}
       </div>
     </Layout>

@@ -20,6 +20,9 @@ interface Props {
   timeLimit?: number;
   isEndless?: boolean;
   dailyCode?: string;
+  showHints?: boolean;
+  showReveal?: boolean;
+  maxHints?: number | null;
 }
 
 interface WordSearchState {
@@ -27,7 +30,7 @@ interface WordSearchState {
   foundCells: string[];
 }
 
-const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode }: Props) => {
+const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode, showHints = true, showReveal = true, maxHints }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateWordSearch(seed, difficulty, WORDS), [seed, difficulty]);
@@ -399,9 +402,10 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
           onReset={handleReset}
           onCheck={handleCheck}
           onNewPuzzle={onNewPuzzle}
-          onHint={handleHint}
-          onReveal={handleReveal}
+           onHint={showHints ? handleHint : undefined}
+          onReveal={showReveal ? handleReveal : undefined}
           hintCount={hintCount.current}
+          maxHints={showHints ? maxHints : undefined}
           isRevealed={isRevealed}
           puzzleCode={dailyCode ?? `word-search-${seed}`}
           solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0, category: "word-search", seed, dailyCode }}

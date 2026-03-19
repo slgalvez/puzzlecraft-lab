@@ -22,6 +22,7 @@ interface Props {
   onReveal?: () => void;
   onHint?: () => void;
   hintCount?: number;
+  maxHints?: number | null; // null or undefined = unlimited
   isRevealed?: boolean;
   puzzleCode?: string;
   solveData?: {
@@ -37,10 +38,11 @@ interface Props {
   };
 }
 
-const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintCount = 0, isRevealed, puzzleCode, solveData }: Props) => {
+const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintCount = 0, maxHints, isRevealed, puzzleCode, solveData }: Props) => {
   const [open, setOpen] = useState(false);
   const [showRevealConfirm, setShowRevealConfirm] = useState(false);
   const isMobile = useIsMobile();
+  const hintLimitReached = maxHints != null && hintCount >= maxHints;
 
   const showCompletion = solveData?.isSolved && !solveData?.isEndless;
   const showControls = !solveData?.isSolved && !isRevealed;
@@ -94,9 +96,10 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
                   variant="outline"
                   className="h-11 text-muted-foreground hover:text-foreground"
                   onClick={onHint}
+                  disabled={hintLimitReached}
                 >
                   <Lightbulb className="mr-1.5 h-4 w-4" />
-                  Hint{hintCount > 0 ? ` (${hintCount})` : ""}
+                  Hint{hintCount > 0 ? ` (${hintCount}${maxHints != null ? `/${maxHints}` : ""})` : maxHints != null ? ` (0/${maxHints})` : ""}
                 </Button>
               )}
               {onReveal && (
@@ -150,9 +153,10 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
                 size="sm"
                 className="gap-1.5 text-muted-foreground hover:text-foreground"
                 onClick={onHint}
+                disabled={hintLimitReached}
               >
                 <Lightbulb className="h-4 w-4" />
-                Hint{hintCount > 0 ? ` (${hintCount})` : ""}
+                Hint{hintCount > 0 ? ` (${hintCount}${maxHints != null ? `/${maxHints}` : ""})` : maxHints != null ? ` (0/${maxHints})` : ""}
               </Button>
             )}
             {onReveal && showControls && (
