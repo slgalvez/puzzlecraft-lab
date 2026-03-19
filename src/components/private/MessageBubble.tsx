@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Timer, Check, CheckCheck, Eye, Pencil } from "lucide-react";
 import { isGifMessage, getGifUrl } from "@/components/private/MessageComposer";
+import { ImageViewer } from "@/components/private/ImageViewer";
 
 const REACTION_OPTIONS = ["❤️", "👍", "😂", "‼️", "❓", "😢"];
 
