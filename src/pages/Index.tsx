@@ -12,16 +12,7 @@ import { getProgressStats } from "@/lib/progressTracker";
 import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 
-const CATEGORY_ICONS: Record<PuzzleCategory, React.ElementType> = {
-  crossword: Grid3X3,
-  sudoku: Calculator,
-  "word-search": Search,
-  kakuro: Plus,
-  nonogram: Palette,
-  cryptogram: Lock,
-  "number-fill": Hash,
-  "word-fill": Type,
-};
+
 
 const ACCESS_GRANT_KEY = "private_access_grant";
 
