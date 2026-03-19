@@ -11,7 +11,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { getPuzzleById } from "@/data/puzzles";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { RefreshCw, Dices, ChevronDown, ChevronRight, ArrowLeft, Sparkles, Clock, Lightbulb, Eye } from "lucide-react";
+import { RefreshCw, Dices, ChevronDown, ChevronRight, ArrowLeft, Sparkles, Clock, Lightbulb, Eye, RotateCcw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
@@ -131,14 +131,48 @@ const PuzzleGenerator = () => {
   );
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [randomSettingsOpen, setRandomSettingsOpen] = useState(false);
-  const [timeLimitEnabled, setTimeLimitEnabled] = useState(false);
-  const [timeLimitMinutes, setTimeLimitMinutes] = useState(5);
-  const [timeLimitSeconds, setTimeLimitSeconds] = useState(0);
 
-  // Assist settings (Puzzle Lab only)
-  const [hintsEnabled, setHintsEnabled] = useState(true);
-  const [hintLimit, setHintLimit] = useState<number | null>(null); // null = unlimited
-  const [revealEnabled, setRevealEnabled] = useState(true);
+  // Random settings with localStorage persistence
+  const RANDOM_SETTINGS_KEY = "puzzlecraft-random-settings";
+  interface RandomSettings { timer: boolean; timerMin: number; timerSec: number; hints: boolean; hintLimit: number | null; reveal: boolean; }
+  const defaultRandomSettings: RandomSettings = { timer: false, timerMin: 5, timerSec: 0, hints: true, hintLimit: 3, reveal: true };
+
+  const loadRandomSettings = (): RandomSettings => {
+    try {
+      const raw = localStorage.getItem(RANDOM_SETTINGS_KEY);
+      if (raw) { const parsed = JSON.parse(raw); return { ...defaultRandomSettings, ...parsed }; }
+    } catch { /* ignore */ }
+    return defaultRandomSettings;
+  };
+
+  const [randomSettings, setRandomSettings] = useState<RandomSettings>(loadRandomSettings);
+
+  const updateRandomSetting = <K extends keyof RandomSettings>(key: K, value: RandomSettings[K]) => {
+    setRandomSettings((prev) => {
+      const next = { ...prev, [key]: value };
+      localStorage.setItem(RANDOM_SETTINGS_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const resetRandomSettings = () => {
+    localStorage.removeItem(RANDOM_SETTINGS_KEY);
+    setRandomSettings(defaultRandomSettings);
+  };
+
+  // Derive convenience accessors from randomSettings (used throughout render)
+  const timeLimitEnabled = randomSettings.timer;
+  const setTimeLimitEnabled = (v: boolean) => updateRandomSetting("timer", v);
+  const timeLimitMinutes = randomSettings.timerMin;
+  const setTimeLimitMinutes = (v: number) => updateRandomSetting("timerMin", v);
+  const timeLimitSeconds = randomSettings.timerSec;
+  const setTimeLimitSeconds = (v: number) => updateRandomSetting("timerSec", v);
+  const hintsEnabled = randomSettings.hints;
+  const setHintsEnabled = (v: boolean) => updateRandomSetting("hints", v);
+  const hintLimit = randomSettings.hintLimit;
+  const setHintLimit = (v: number | null) => updateRandomSetting("hintLimit", v);
+  const revealEnabled = randomSettings.reveal;
+  const setRevealEnabled = (v: boolean) => updateRandomSetting("reveal", v);
 
   // Mode & mobile stepper
   const [mode, setMode] = useState<Mode>(() => routeState?.randomPool ? "random" : "generate");
@@ -619,6 +653,11 @@ const PuzzleGenerator = () => {
               Reveal
             </label>
           </div>
+          {/* Reset */}
+          <button onClick={resetRandomSettings} className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors mt-1">
+            <RotateCcw size={11} />
+            Reset to defaults
+          </button>
         </CollapsibleContent>
       </Collapsible>
 
@@ -936,6 +975,11 @@ const PuzzleGenerator = () => {
               Reveal
             </label>
           </div>
+          {/* Reset */}
+          <button onClick={resetRandomSettings} className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors mt-1">
+            <RotateCcw size={11} />
+            Reset to defaults
+          </button>
         </CollapsibleContent>
       </Collapsible>
 
