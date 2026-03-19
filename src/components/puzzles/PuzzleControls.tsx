@@ -3,7 +3,7 @@ import { RotateCcw, CheckCircle2, Shuffle, Eye, Lightbulb } from "lucide-react";
 import { useState } from "react";
 import CompletionPanel from "./CompletionPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { Difficulty } from "@/lib/puzzleTypes";
+import type { Difficulty, PuzzleCategory } from "@/lib/puzzleTypes";
 import {
   AlertDialog,
   AlertDialogAction,
