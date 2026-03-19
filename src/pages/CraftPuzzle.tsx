@@ -16,11 +16,11 @@ import {
 type CraftType = "word-fill" | "cryptogram" | "crossword" | "word-search";
 type Step = "type" | "content" | "preview";
 
-const TYPE_OPTIONS: { value: CraftType; label: string; icon: string; description: string }[] = [
-  { value: "word-search", label: "Word Search", icon: "🔍", description: "Hide words in a letter grid" },
-  { value: "word-fill", label: "Word Fill-In", icon: "📖", description: "Place words into a crossword-style grid" },
-  { value: "crossword", label: "Crossword", icon: "📝", description: "Create clued crossword entries" },
-  { value: "cryptogram", label: "Cryptogram", icon: "🔐", description: "Encode a secret message" },
+const TYPE_OPTIONS: { value: CraftType; label: string; description: string }[] = [
+  { value: "word-search", label: "Word Search", description: "Hide words and reveal a message" },
+  { value: "word-fill", label: "Word Fill-In", description: "Create a puzzle from your own words" },
+  { value: "crossword", label: "Crossword", description: "Write clues and challenge someone" },
+  { value: "cryptogram", label: "Cryptogram", description: "Turn your message into a coded puzzle" },
 ];
 
 function encodeShareData(data: {
@@ -143,25 +143,22 @@ const CraftPuzzle = () => {
     <Layout>
       <div className="container py-6 md:py-10 max-w-2xl mx-auto">
         <div className="mb-6">
-          <h1 className="font-display text-2xl font-bold text-foreground">Craft a Puzzle</h1>
-          <p className="text-sm text-muted-foreground mt-1">Create a custom puzzle and share it with anyone</p>
+          <h1 className="font-display text-2xl font-bold text-foreground">Send a Puzzle</h1>
+          <p className="text-sm text-muted-foreground mt-1">Create a custom puzzle and share it with someone</p>
         </div>
 
         {/* ─── Type Selection ─── */}
         {step === "type" && (
           <div className="space-y-4">
             <h2 className="text-sm font-medium text-foreground">Choose puzzle type</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {TYPE_OPTIONS.map(opt => (
                 <button
                   key={opt.value}
                   onClick={() => handleSelectType(opt.value)}
-                  className="p-4 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/10 transition-colors text-left space-y-1"
+                  className="p-5 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/10 transition-colors text-left space-y-1.5"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{opt.icon}</span>
-                    <span className="text-sm font-medium text-foreground">{opt.label}</span>
-                  </div>
+                  <span className="text-[15px] font-medium text-foreground">{opt.label}</span>
                   <p className="text-xs text-muted-foreground">{opt.description}</p>
                 </button>
               ))}
