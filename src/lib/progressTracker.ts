@@ -6,6 +6,7 @@ export interface CompletionRecord {
   difficulty: string;
   time: number;
   date: string;
+  assisted?: boolean;
 }
 
 export interface ProgressStats {
