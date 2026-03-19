@@ -653,23 +653,13 @@ const PuzzleGenerator = () => {
               Reveal
             </label>
           </div>
+          {/* Reset */}
+          <button onClick={resetRandomSettings} className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors mt-1">
+            <RotateCcw size={11} />
+            Reset to defaults
+          </button>
         </CollapsibleContent>
       </Collapsible>
-
-      <Button onClick={handleRandomGenerate} size="lg" className="w-full gap-2 text-base" disabled={!canRandomGenerate}>
-        <Dices size={18} />
-        Generate Random Puzzle
-      </Button>
-      {!canRandomGenerate && (
-        <p className="text-center text-xs text-muted-foreground">
-          Select at least one puzzle type and a difficulty
-        </p>
-      )}
-      {canRandomGenerate && (
-        <p className="text-center text-[10px] text-muted-foreground">
-          {randomTypes.size === allTypes.length ? "From all puzzle types" : `From ${randomTypes.size} selected type${randomTypes.size > 1 ? "s" : ""}`}
-        </p>
-      )}
     </div>
   );
 
