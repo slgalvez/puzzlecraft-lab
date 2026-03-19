@@ -31,3 +31,12 @@ export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   extreme: "Extreme",
   insane: "Insane",
 };
+
+/** Difficulties that are disabled (not yet reliably supported) per puzzle type */
+export const DISABLED_DIFFICULTIES: Partial<Record<PuzzleCategory, Set<Difficulty>>> = {
+  kakuro: new Set(["insane"]),
+};
+
+export function isDifficultyDisabled(category: PuzzleCategory, difficulty: Difficulty): boolean {
+  return DISABLED_DIFFICULTIES[category]?.has(difficulty) ?? false;
+}
