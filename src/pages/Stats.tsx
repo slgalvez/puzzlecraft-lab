@@ -8,12 +8,18 @@ import { getDailyStreak, getTotalDailyCompleted } from "@/lib/dailyChallenge";
 import { getEndlessStats } from "@/lib/endlessHistory";
 import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
 
 type ViewFilter = null | "daily" | "endless";
 
 const RECENT_COLLAPSED_COUNT = 5;
+
+const ALL_CATEGORIES: PuzzleCategory[] = [
+  "crossword", "word-fill", "number-fill", "sudoku",
+  "word-search", "kakuro", "nonogram", "cryptogram",
+];
 
 const Stats = () => {
   const stats = useMemo(() => getProgressStats(), []);
@@ -23,31 +29,52 @@ const Stats = () => {
 
   const [viewFilter, setViewFilter] = useState<ViewFilter>(null);
   const [categoryFilter, setCategoryFilter] = useState<PuzzleCategory | null>(null);
+  const [dateFilter, setDateFilter] = useState<string | null>(null);
   const [recentExpanded, setRecentExpanded] = useState(false);
 
   const toggleViewFilter = (f: ViewFilter) => {
     setViewFilter((prev) => (prev === f ? null : f));
   };
 
-  const toggleCategoryFilter = (cat: PuzzleCategory) => {
-    setCategoryFilter((prev) => (prev === cat ? null : cat));
+  const toggleDateFilter = (dateStr: string) => {
+    setDateFilter((prev) => (prev === dateStr ? null : dateStr));
   };
 
-  const statCards = [
-    { icon: Target, label: "Puzzles Solved", value: stats.totalSolved.toString() },
-    { icon: Flame, label: "Current Streak", value: `${stats.currentStreak} day${stats.currentStreak !== 1 ? "s" : ""}` },
-    { icon: Trophy, label: "Longest Streak", value: `${stats.longestStreak} day${stats.longestStreak !== 1 ? "s" : ""}` },
-    { icon: Clock, label: "Avg Solve Time", value: stats.totalSolved > 0 ? formatTime(stats.averageTime) : "—" },
-    { icon: BarChart3, label: "Total Time", value: stats.totalSolved > 0 ? formatTime(stats.totalTime) : "—" },
-    { icon: Trophy, label: "Fastest Solve", value: stats.bestTime !== null ? formatTime(stats.bestTime) : "—" },
-  ];
+  const handleCategoryChange = (value: string) => {
+    setCategoryFilter(value === "all" ? null : (value as PuzzleCategory));
+  };
 
-  const categoryKeys = Object.keys(stats.byCategory) as PuzzleCategory[];
+  // Derive filtered completions based on all active filters
+  const filteredCompletions = useMemo(() => {
+    let results = stats.recentCompletions;
+    if (categoryFilter) {
+      results = results.filter((r) => r.category === categoryFilter);
+    }
+    if (dateFilter) {
+      results = results.filter((r) => r.date.slice(0, 10) === dateFilter);
+    }
+    return results;
+  }, [stats.recentCompletions, categoryFilter, dateFilter]);
 
-  // Filter recent completions by category
-  const filteredCompletions = categoryFilter
-    ? stats.recentCompletions.filter((r) => r.category === categoryFilter)
-    : stats.recentCompletions;
+  // Derive filtered stat cards when date filter is active
+  const filteredStatCards = useMemo(() => {
+    if (!dateFilter) return null;
+    const dayCompletions = stats.recentCompletions.filter(
+      (r) => r.date.slice(0, 10) === dateFilter
+    );
+    const catFiltered = categoryFilter
+      ? dayCompletions.filter((r) => r.category === categoryFilter)
+      : dayCompletions;
+    const totalSolved = catFiltered.length;
+    const totalTime = catFiltered.reduce((s, r) => s + r.time, 0);
+    const bestTime = catFiltered.length > 0 ? Math.min(...catFiltered.map((r) => r.time)) : null;
+    return {
+      totalSolved,
+      totalTime,
+      averageTime: totalSolved > 0 ? Math.round(totalTime / totalSolved) : 0,
+      bestTime,
+    };
+  }, [dateFilter, categoryFilter, stats.recentCompletions]);
 
   const visibleCompletions = recentExpanded
     ? filteredCompletions
@@ -57,9 +84,27 @@ const Stats = () => {
   const showEndless = viewFilter === null || viewFilter === "endless";
   const showGeneral = viewFilter === null;
 
+  // Stat cards use filtered data when date filter is active
+  const displayStats = filteredStatCards ?? stats;
+  const statCards = [
+    { icon: Target, label: "Puzzles Solved", value: displayStats.totalSolved.toString() },
+    ...(!dateFilter ? [
+      { icon: Flame, label: "Current Streak", value: `${stats.currentStreak} day${stats.currentStreak !== 1 ? "s" : ""}` },
+      { icon: Trophy, label: "Longest Streak", value: `${stats.longestStreak} day${stats.longestStreak !== 1 ? "s" : ""}` },
+    ] : []),
+    { icon: Clock, label: "Avg Solve Time", value: displayStats.totalSolved > 0 ? formatTime(displayStats.averageTime) : "—" },
+    { icon: BarChart3, label: "Total Time", value: displayStats.totalSolved > 0 ? formatTime(displayStats.totalTime) : "—" },
+    { icon: Trophy, label: "Fastest Solve", value: displayStats.bestTime !== null ? formatTime(displayStats.bestTime) : "—" },
+  ];
+
+  const activeFilterLabel = [
+    dateFilter && new Date(dateFilter + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+    categoryFilter && CATEGORY_INFO[categoryFilter]?.name,
+  ].filter(Boolean).join(" · ");
+
   return (
     <Layout>
-      <div className="container py-12">
+      <div className="container py-6 md:py-12">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
           <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Your Progress</h1>
           <div className="flex gap-2">
@@ -79,11 +124,21 @@ const Stats = () => {
             </Button>
           </div>
         </div>
-        <p className="text-muted-foreground">Track your solving stats, streaks, and best times.</p>
+        <p className="text-muted-foreground">
+          Track your solving stats, streaks, and best times.
+          {activeFilterLabel && (
+            <span className="ml-2 text-sm font-medium text-primary">
+              Showing: {activeFilterLabel}
+            </span>
+          )}
+        </p>
 
         {/* Overview cards */}
         {showGeneral && (
-          <div className="mt-8 grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+          <div className={cn(
+            "mt-8 grid gap-4 grid-cols-2 sm:grid-cols-3",
+            !dateFilter && "lg:grid-cols-6"
+          )}>
             {statCards.map(({ icon: Icon, label, value }) => (
               <div key={label} className="rounded-xl border bg-card p-4 text-center">
                 <Icon className="mx-auto h-5 w-5 text-primary mb-2" />
@@ -146,7 +201,6 @@ const Stats = () => {
               </div>
             </div>
 
-            {/* Recent sessions */}
             {endlessStats.recentSessions.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold text-foreground mb-2">Recent Sessions</h3>
@@ -197,62 +251,64 @@ const Stats = () => {
           </div>
         )}
 
-        {/* By Puzzle Type — selectable filters, no navigation */}
-        {showGeneral && categoryKeys.length > 0 && (
+        {/* By Puzzle Type — dropdown selector */}
+        {showGeneral && (
           <div className="mt-12">
             <h2 className="font-display text-xl font-semibold text-foreground mb-4">By Puzzle Type</h2>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {categoryKeys.map((cat) => {
-                const info = CATEGORY_INFO[cat];
-                const data = stats.byCategory[cat];
-                const isActive = categoryFilter === cat;
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => toggleCategoryFilter(cat)}
-                    className={cn(
-                      "group rounded-xl border bg-card p-4 transition-colors text-left w-full",
-                      isActive
-                        ? "border-primary ring-1 ring-primary/30"
-                        : "hover:border-primary/40"
-                    )}
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-lg">{info?.icon}</span>
-                      <span className={cn(
-                        "font-display text-sm font-semibold transition-colors",
-                        isActive ? "text-primary" : "text-foreground group-hover:text-primary"
-                      )}>
-                        {info?.name || cat}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      <div>
-                        <p className="font-mono text-lg font-bold text-foreground">{data.solved}</p>
-                        <p className="text-[10px] text-muted-foreground">Solved</p>
-                      </div>
-                      <div>
-                        <p className="font-mono text-lg font-bold text-foreground">
-                          {formatTime(data.bestTime)}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">Best</p>
-                      </div>
-                      <div>
-                        <p className="font-mono text-lg font-bold text-foreground">
-                          {formatTime(Math.round(data.totalTime / data.solved))}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">Avg</p>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+            <Select
+              value={categoryFilter ?? "all"}
+              onValueChange={handleCategoryChange}
+            >
+              <SelectTrigger className="w-full sm:w-64">
+                <SelectValue placeholder="All Puzzle Types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Puzzle Types</SelectItem>
+                {ALL_CATEGORIES.map((cat) => {
+                  const info = CATEGORY_INFO[cat];
+                  return (
+                    <SelectItem key={cat} value={cat}>
+                      <span className="mr-1.5">{info?.icon}</span>
+                      {info?.name}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+
+            {/* Show category stats card when a type is selected */}
+            {categoryFilter && stats.byCategory[categoryFilter] && (
+              <div className="mt-4 rounded-xl border bg-card p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-lg">{CATEGORY_INFO[categoryFilter]?.icon}</span>
+                  <span className="font-display text-sm font-semibold text-primary">
+                    {CATEGORY_INFO[categoryFilter]?.name}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="font-mono text-lg font-bold text-foreground">{stats.byCategory[categoryFilter].solved}</p>
+                    <p className="text-[10px] text-muted-foreground">Solved</p>
+                  </div>
+                  <div>
+                    <p className="font-mono text-lg font-bold text-foreground">
+                      {formatTime(stats.byCategory[categoryFilter].bestTime)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">Best</p>
+                  </div>
+                  <div>
+                    <p className="font-mono text-lg font-bold text-foreground">
+                      {formatTime(Math.round(stats.byCategory[categoryFilter].totalTime / stats.byCategory[categoryFilter].solved))}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">Avg</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Activity calendar (last 30 days) */}
+        {/* Activity calendar (last 30 days) — clickable day cells */}
         {showGeneral && (
           <div className="mt-12">
             <h2 className="font-display text-xl font-semibold text-foreground mb-4">
@@ -264,25 +320,39 @@ const Stats = () => {
                 const d = new Date();
                 d.setDate(d.getDate() - (29 - i));
                 const dateStr = d.toISOString().slice(0, 10);
-                const active = stats.solvedDates.includes(dateStr);
+                const hasActivity = stats.solvedDates.includes(dateStr);
                 const isToday = i === 29;
+                const isSelected = dateFilter === dateStr;
                 return (
-                  <div
+                  <button
                     key={dateStr}
-                    title={`${dateStr}${active ? " ✓" : ""}`}
+                    type="button"
+                    onClick={() => toggleDateFilter(dateStr)}
+                    title={`${dateStr}${hasActivity ? " ✓" : ""}`}
                     className={cn(
-                      "w-7 h-7 sm:w-8 sm:h-8 rounded-md border text-[9px] flex items-center justify-center font-medium transition-colors",
-                      active
-                        ? "bg-primary/20 border-primary/40 text-primary"
-                        : "bg-card border-border text-muted-foreground/50",
-                      isToday && "ring-1 ring-primary/50"
+                      "w-7 h-7 sm:w-8 sm:h-8 rounded-md border text-[9px] flex items-center justify-center font-medium transition-colors cursor-pointer",
+                      isSelected
+                        ? "bg-primary text-primary-foreground border-primary ring-2 ring-primary/40"
+                        : hasActivity
+                          ? "bg-primary/20 border-primary/40 text-primary hover:bg-primary/30"
+                          : "bg-card border-border text-muted-foreground/50 hover:border-muted-foreground/30",
+                      isToday && !isSelected && "ring-1 ring-primary/50"
                     )}
                   >
                     {d.getDate()}
-                  </div>
+                  </button>
                 );
               })}
             </div>
+            {dateFilter && (
+              <button
+                type="button"
+                onClick={() => setDateFilter(null)}
+                className="mt-2 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+              >
+                Clear date filter
+              </button>
+            )}
           </div>
         )}
 
@@ -291,9 +361,12 @@ const Stats = () => {
           <div className="mt-12">
             <h2 className="font-display text-xl font-semibold text-foreground mb-4">
               Recent Solves
-              {categoryFilter && (
+              {(categoryFilter || dateFilter) && (
                 <span className="ml-2 text-sm font-normal text-muted-foreground">
-                  — {CATEGORY_INFO[categoryFilter]?.name}
+                  — {[
+                    categoryFilter && CATEGORY_INFO[categoryFilter]?.name,
+                    dateFilter && new Date(dateFilter + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+                  ].filter(Boolean).join(", ")}
                 </span>
               )}
             </h2>
