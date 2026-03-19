@@ -71,6 +71,7 @@ const CraftPuzzle = () => {
   const [saving, setSaving] = useState(false);
   const [craftSettings, setCraftSettings] = useState<CraftSettings>(DEFAULT_CRAFT_SETTINGS);
   const [draftCount, setDraftCount] = useState(() => loadDrafts().length);
+  const [draftSaved, setDraftSaved] = useState(false);
 
   // Active draft ID for auto-save
   const activeDraftId = useRef<string | null>(null);
@@ -115,6 +116,8 @@ const CraftPuzzle = () => {
       };
       saveDraft(draft);
       refreshDraftCount();
+      setDraftSaved(true);
+      setTimeout(() => setDraftSaved(false), 1500);
     }, 2000);
 
     return () => {
@@ -218,6 +221,7 @@ const CraftPuzzle = () => {
       activeDraftId.current = null;
       refreshDraftCount();
 
+      toast({ title: "Puzzle sent ✨" });
       setStep("preview");
     } catch (err) {
       toast({ title: "Generation failed", description: err instanceof Error ? err.message : "Please try different input" });
@@ -488,7 +492,11 @@ const CraftPuzzle = () => {
                   {saving ? "Saving…" : "Preview Puzzle"}
                 </Button>
                 <p className="text-[10px] text-muted-foreground text-center">
-                  No account needed • Share instantly with a link
+                  {draftSaved ? (
+                    <span className="text-primary animate-in fade-in-0 duration-300">Saved ✓</span>
+                  ) : (
+                    "No account needed • Share instantly with a link"
+                  )}
                 </p>
               </div>
             )}
