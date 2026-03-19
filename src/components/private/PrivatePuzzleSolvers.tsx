@@ -660,9 +660,12 @@ interface WordSearchSolverProps {
   onComplete: () => void;
   savedState?: { foundWords: string[] } | null;
   onSaveProgress?: (state: { foundWords: string[]; foundCells: string[] }) => void;
+  showHints?: boolean;
+  showReveal?: boolean;
 }
 
-export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress }: WordSearchSolverProps) {
+export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress, showHints = true, showReveal = false }: WordSearchSolverProps) {
+  const { toast } = useToast();
   const [foundWords, setFoundWords] = useState<Set<string>>(() => {
     if (savedState?.foundWords) return new Set(savedState.foundWords);
     return new Set();
