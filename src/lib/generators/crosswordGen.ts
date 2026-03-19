@@ -11,8 +11,23 @@ export interface GeneratedCrossword {
 
 const SIZES: Record<Difficulty, number> = { easy: 9, medium: 13, hard: 15, extreme: 19, insane: 21 };
 const TARGETS: Record<Difficulty, number> = { easy: 6, medium: 14, hard: 22, extreme: 34, insane: 46 };
+// Minimum placed words for the puzzle to be valid
+const MIN_PLACED: Record<Difficulty, number> = { easy: 4, medium: 8, hard: 14, extreme: 20, insane: 28 };
 
 export function generateCrossword(seed: number, difficulty: Difficulty): GeneratedCrossword {
+  const maxAttempts = difficulty === "insane" || difficulty === "extreme" ? 3 : 1;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const result = tryGenerateCrossword(seed + attempt * 4219, difficulty);
+    if (result.clues.length >= MIN_PLACED[difficulty]) return result;
+  }
+  // Fallback to hard if insane/extreme can't meet minimum
+  if (difficulty === "insane" || difficulty === "extreme") {
+    return tryGenerateCrossword(seed, "hard");
+  }
+  return tryGenerateCrossword(seed, difficulty);
+}
+
+function tryGenerateCrossword(seed: number, difficulty: Difficulty): GeneratedCrossword {
   const rng = new SeededRandom(seed);
   const size = SIZES[difficulty];
   const target = TARGETS[difficulty];

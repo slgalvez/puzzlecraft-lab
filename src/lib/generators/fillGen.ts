@@ -11,8 +11,21 @@ export interface GeneratedFillIn {
 
 const SIZES: Record<Difficulty, number> = { easy: 7, medium: 9, hard: 13, extreme: 15, insane: 19 };
 const TARGETS: Record<Difficulty, number> = { easy: 5, medium: 10, hard: 18, extreme: 28, insane: 40 };
+const MIN_PLACED: Record<Difficulty, number> = { easy: 3, medium: 6, hard: 10, extreme: 16, insane: 24 };
 
 export function generateWordFillIn(seed: number, difficulty: Difficulty): GeneratedFillIn {
+  const maxAttempts = difficulty === "insane" || difficulty === "extreme" ? 3 : 1;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const result = tryGenerateWordFillIn(seed + attempt * 3571, difficulty);
+    if (result.entries.length >= MIN_PLACED[difficulty]) return result;
+  }
+  if (difficulty === "insane" || difficulty === "extreme") {
+    return tryGenerateWordFillIn(seed, "hard");
+  }
+  return tryGenerateWordFillIn(seed, difficulty);
+}
+
+function tryGenerateWordFillIn(seed: number, difficulty: Difficulty): GeneratedFillIn {
   const rng = new SeededRandom(seed);
   const size = SIZES[difficulty];
   const target = TARGETS[difficulty];
@@ -63,6 +76,18 @@ export function generateWordFillIn(seed: number, difficulty: Difficulty): Genera
 }
 
 export function generateNumberFillIn(seed: number, difficulty: Difficulty): GeneratedFillIn {
+  const maxAttempts = difficulty === "insane" || difficulty === "extreme" ? 3 : 1;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const result = tryGenerateNumberFillIn(seed + attempt * 2917, difficulty);
+    if (result.entries.length >= MIN_PLACED[difficulty]) return result;
+  }
+  if (difficulty === "insane" || difficulty === "extreme") {
+    return tryGenerateNumberFillIn(seed, "hard");
+  }
+  return tryGenerateNumberFillIn(seed, difficulty);
+}
+
+function tryGenerateNumberFillIn(seed: number, difficulty: Difficulty): GeneratedFillIn {
   const rng = new SeededRandom(seed);
   const size = SIZES[difficulty];
   const target = TARGETS[difficulty];
