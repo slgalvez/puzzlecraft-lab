@@ -22,6 +22,7 @@ interface Props {
   onReveal?: () => void;
   onHint?: () => void;
   hintCount?: number;
+  maxHints?: number | null; // null or undefined = unlimited
   isRevealed?: boolean;
   puzzleCode?: string;
   solveData?: {
