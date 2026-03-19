@@ -146,6 +146,7 @@ const SharedCraftPuzzle = () => {
                 showHints={settings?.hintsEnabled ?? true}
                 showReveal={settings?.revealEnabled ?? false}
                 showCheck={settings?.checkEnabled ?? true}
+                compact
               />
             )}
             {type === "cryptogram" && (
@@ -162,6 +163,7 @@ const SharedCraftPuzzle = () => {
                 onComplete={handleComplete}
                 showHints={settings?.hintsEnabled ?? true}
                 showReveal={settings?.revealEnabled ?? false}
+                compact
               />
             )}
           </div>

@@ -109,6 +109,7 @@ const PlayCraftPuzzle = () => {
                 showHints={settings?.hintsEnabled ?? true}
                 showReveal={settings?.revealEnabled ?? false}
                 showCheck={settings?.checkEnabled ?? true}
+                compact
               />
             )}
             {type === "cryptogram" && (
@@ -125,6 +126,7 @@ const PlayCraftPuzzle = () => {
                 onComplete={handleComplete}
                 showHints={settings?.hintsEnabled ?? true}
                 showReveal={settings?.revealEnabled ?? false}
+                compact
               />
             )}
           </div>

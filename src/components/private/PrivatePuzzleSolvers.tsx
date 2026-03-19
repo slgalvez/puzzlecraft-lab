@@ -29,9 +29,11 @@ interface GridSolverProps {
   showHints?: boolean;
   showReveal?: boolean;
   showCheck?: boolean;
+  /** Hide instructions and force single-column layout (craft recipient view) */
+  compact?: boolean;
 }
 
-export function GridSolver({ data, puzzleType, onComplete, savedState, onSaveProgress, showHints = true, showReveal = false, showCheck = true }: GridSolverProps) {
+export function GridSolver({ data, puzzleType, onComplete, savedState, onSaveProgress, showHints = true, showReveal = false, showCheck = true, compact = false }: GridSolverProps) {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const gridSize = (data.gridSize as number) || 9;
@@ -356,7 +358,7 @@ export function GridSolver({ data, puzzleType, onComplete, savedState, onSavePro
   const downClues = clues.filter(c => c.direction === "down").sort((a, b) => a.number - b.number);
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
+    <div className={cn("flex flex-col gap-6", !compact && "lg:flex-row lg:gap-10")}>
       <div className="flex-shrink-0">
         {isMobile && activeCell && !solved && (
           <div className="flex items-center gap-2 mb-2">
@@ -378,7 +380,7 @@ export function GridSolver({ data, puzzleType, onComplete, savedState, onSavePro
             >Down ↓</button>
           </div>
         )}
-        {!isMobile && (
+        {!compact && !isMobile && (
           <p className="mb-2 text-xs text-muted-foreground">
             Arrow keys to move · Type to fill · Delete to clear · Tap same cell to toggle direction
           </p>
@@ -662,9 +664,11 @@ interface WordSearchSolverProps {
   onSaveProgress?: (state: { foundWords: string[]; foundCells: string[] }) => void;
   showHints?: boolean;
   showReveal?: boolean;
+  /** Hide instructions (craft recipient view) */
+  compact?: boolean;
 }
 
-export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress, showHints = true, showReveal = false }: WordSearchSolverProps) {
+export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress, showHints = true, showReveal = false, compact = false }: WordSearchSolverProps) {
   const { toast } = useToast();
   const [foundWords, setFoundWords] = useState<Set<string>>(() => {
     if (savedState?.foundWords) return new Set(savedState.foundWords);
@@ -815,9 +819,11 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress,
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-muted-foreground sm:hidden">
-        Tap two letters to select a word, or drag across letters
-      </p>
+      {!compact && (
+        <p className="text-xs text-muted-foreground sm:hidden">
+          Tap two letters to select a word, or drag across letters
+        </p>
+      )}
       <div
         ref={gridRef}
         className="inline-grid gap-0 select-none"
