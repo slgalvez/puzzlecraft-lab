@@ -47,6 +47,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <NavigationTracker />
+        <ScrollToTop />
         <AuthProvider>
           <Routes>
             {/* Public puzzle site */}
