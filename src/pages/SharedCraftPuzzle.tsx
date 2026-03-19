@@ -36,9 +36,17 @@ const PUZZLE_LABELS: Record<CraftType, string> = {
   "word-search": "Word Search",
 };
 
+const TAB_LABELS: Record<string, string> = {
+  drafts: "Drafts",
+  sent: "Sent",
+  received: "Received",
+};
+
 const SharedCraftPuzzle = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromInbox = (location.state as { fromInbox?: string } | null)?.fromInbox;
   const [solved, setSolved] = useState(false);
   const [payload, setPayload] = useState<CraftPayload | null>(null);
   const [loading, setLoading] = useState(true);
