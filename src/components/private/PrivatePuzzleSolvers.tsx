@@ -503,9 +503,12 @@ interface CryptogramSolverProps {
   onComplete: () => void;
   savedState?: Record<string, string> | null;
   onSaveProgress?: (state: Record<string, string>) => void;
+  showHints?: boolean;
+  showReveal?: boolean;
 }
 
-export function CryptogramSolver({ data, onComplete, savedState, onSaveProgress }: CryptogramSolverProps) {
+export function CryptogramSolver({ data, onComplete, savedState, onSaveProgress, showHints = true, showReveal = false }: CryptogramSolverProps) {
+  const { toast } = useToast();
   const [guesses, setGuesses] = useState<Record<string, string>>(() => {
     if (savedState && Object.keys(savedState).length > 0) return { ...data.hints, ...savedState };
     return { ...data.hints };
