@@ -34,14 +34,8 @@ export default function CraftCompletionActions({ senderName, puzzleType }: Craft
         Send one back
       </Button>
       <button
-        onClick={handleCreateOwn}
-        className="w-full text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
-      >
-        Create your own
-      </button>
-      <button
         onClick={handlePlayAnother}
-        className="w-full text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors py-1.5"
+        className="w-full text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
       >
         Play another puzzle
       </button>
