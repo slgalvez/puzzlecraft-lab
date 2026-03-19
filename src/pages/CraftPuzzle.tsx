@@ -56,6 +56,7 @@ const CraftPuzzle = () => {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const handleSelectType = (type: CraftType) => {
     setSelectedType(type);
