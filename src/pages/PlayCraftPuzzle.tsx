@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, PartyPopper } from "lucide-react";
+import CraftCompletionActions from "@/components/craft/CraftCompletionActions";
 import {
   GridSolver,
   CryptogramSolver,
