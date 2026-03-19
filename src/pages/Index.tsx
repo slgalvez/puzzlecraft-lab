@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Grid3X3, Hash, Type, Search, Plus, Palette, Lock, Calculator, Flame, CheckCircle2, Calendar, Trophy, Clock, Target, Infinity, Dices } from "lucide-react";
+import { ArrowRight, Grid3X3, Hash, Type, Search, Plus, Palette, Lock, Calculator, Flame, CheckCircle2, Trophy, Clock, Target, Infinity, Dices } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,16 +12,7 @@ import { getProgressStats } from "@/lib/progressTracker";
 import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 
-const CATEGORY_ICONS: Record<PuzzleCategory, React.ElementType> = {
-  crossword: Grid3X3,
-  sudoku: Calculator,
-  "word-search": Search,
-  kakuro: Plus,
-  nonogram: Palette,
-  cryptogram: Lock,
-  "number-fill": Hash,
-  "word-fill": Type,
-};
+
 
 const ACCESS_GRANT_KEY = "private_access_grant";
 
@@ -210,15 +201,12 @@ const Index = () => {
             <div className="flex flex-col md:flex-row">
               {/* Left: challenge info */}
               <div className="flex-1 p-6 sm:p-8">
-                <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-primary mb-3">
-                  <Calendar size={14} />
+                <p className="text-xs font-medium uppercase tracking-widest text-primary mb-4">
                   Daily Challenge
-                </div>
-              {(() => { const DailyIcon = CATEGORY_ICONS[challenge.category]; return (
-                <h2 className="font-display text-3xl font-bold text-foreground sm:text-4xl flex items-center gap-2.5">
-                  <DailyIcon size={30} className="text-primary" /> Today's {challengeInfo.name}
+                </p>
+                <h2 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
+                  Today's {challengeInfo.name}
                 </h2>
-                ); })()}
                 <p className="mt-1.5 text-sm text-muted-foreground/80">
                   {challengeInfo.description}. Everyone gets the same puzzle — how fast can you solve it?
                 </p>
