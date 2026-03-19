@@ -33,9 +33,11 @@ interface KakuroState {
   grid: string[][];
 }
 
-const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode }: Props) => {
+const KakuroGrid = ({ seed, difficulty: rawDifficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  // Always use effective difficulty to prevent insane from reaching generation
+  const difficulty = getEffectiveDifficulty("kakuro", rawDifficulty);
   const puzzle = useMemo(() => generateKakuro(seed, difficulty), [seed, difficulty]);
   const { size, isBlack, solution, clues } = puzzle;
   const timerKey = `kakuro-${seed}-${difficulty}`;
