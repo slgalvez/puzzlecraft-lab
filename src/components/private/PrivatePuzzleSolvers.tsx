@@ -358,7 +358,7 @@ export function GridSolver({ data, puzzleType, onComplete, savedState, onSavePro
   const downClues = clues.filter(c => c.direction === "down").sort((a, b) => a.number - b.number);
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
+    <div className={cn("flex flex-col gap-6", !compact && "lg:flex-row lg:gap-10")}>
       <div className="flex-shrink-0">
         {isMobile && activeCell && !solved && (
           <div className="flex items-center gap-2 mb-2">
@@ -380,7 +380,7 @@ export function GridSolver({ data, puzzleType, onComplete, savedState, onSavePro
             >Down ↓</button>
           </div>
         )}
-        {!isMobile && (
+        {!compact && !isMobile && (
           <p className="mb-2 text-xs text-muted-foreground">
             Arrow keys to move · Type to fill · Delete to clear · Tap same cell to toggle direction
           </p>
