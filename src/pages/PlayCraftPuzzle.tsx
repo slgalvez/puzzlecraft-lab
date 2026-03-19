@@ -113,13 +113,13 @@ const PlayCraftPuzzle = () => {
           )}
           {type === "cryptogram" && (
             <CryptogramSolver
-              data={puzzleData}
+              data={puzzleData as unknown as { encoded: string; decoded: string; reverseCipher: Record<string, string>; hints: Record<string, string> }}
               onComplete={handleComplete}
             />
           )}
           {type === "word-search" && (
             <WordSearchSolver
-              data={puzzleData}
+              data={puzzleData as unknown as { grid: string[][]; words: string[]; wordPositions: { word: string; row: number; col: number; dr: number; dc: number }[]; size: number }}
               onComplete={handleComplete}
             />
           )}
