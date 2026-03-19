@@ -564,6 +564,8 @@ const PuzzleGenerator = () => {
         </div>
       </div>
 
+      {renderAssists(true)}
+
       <Button onClick={handleRandomGenerate} size="lg" className="w-full gap-2 text-base" disabled={!canRandomGenerate}>
         <Dices size={18} />
         Generate Random Puzzle
