@@ -138,20 +138,12 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
         </div>
       ) : (
         /* ── Desktop layout ── */
-        <div className="relative space-y-5">
-          {/* Reset — anchored top-right, pulled up into grid margin */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute -top-6 right-0 h-7 w-7 text-muted-foreground/60 hover:text-foreground"
-            onClick={onReset}
-            aria-label="Reset puzzle"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-          </Button>
-
-          {/* Main controls row: Hint, Reveal → left | Check Solution → right */}
-          <div className="flex items-center gap-5">
+        <div className="space-y-4">
+          {/* All controls in one unified row */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Button size="sm" onClick={onCheck}>
+              <CheckCircle2 className="mr-1.5 h-4 w-4" /> Check Solution
+            </Button>
             {onHint && showControls && (
               <Button
                 variant="outline"
@@ -173,17 +165,17 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
                 <Eye className="mr-1.5 h-4 w-4" /> Reveal
               </Button>
             )}
-            <div className="ml-auto">
-              <Button size="sm" onClick={onCheck}>
-                <CheckCircle2 className="mr-1.5 h-4 w-4" /> Check Solution
-              </Button>
-            </div>
-          </div>
-
-          {/* Separated — New Puzzle below with spacing */}
-          <div className="pt-1">
             <Button variant="outline" size="sm" onClick={onNewPuzzle}>
               <Shuffle className="mr-1.5 h-4 w-4" /> New Puzzle
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground/60 hover:text-foreground"
+              onClick={onReset}
+              aria-label="Reset puzzle"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
             </Button>
           </div>
 
