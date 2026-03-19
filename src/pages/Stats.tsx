@@ -382,7 +382,6 @@ const Stats = () => {
                     return (
                       <tr key={i} className="border-b last:border-0">
                         <td className="px-4 py-2.5 text-foreground">
-                          <span className="mr-1.5">{info?.icon}</span>
                           {info?.name || r.category}
                         </td>
                         <td className="px-4 py-2.5 capitalize text-muted-foreground">{r.difficulty}</td>
