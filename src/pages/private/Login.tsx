@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import flaskIcon from "@/assets/puzzle-lab-flask-v2.png";
+
 
 const ACCESS_GRANT_KEY = "private_access_grant";
 
@@ -84,13 +84,6 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-8">
         {/* Icon + Title + Subtext */}
         <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <img
-              src={flaskIcon}
-              alt=""
-              className="h-[80px] w-auto object-contain"
-              aria-hidden="true" />
-          </div>
           <div>
             <h1 className="text-xl font-semibold text-foreground tracking-tight">
               Puzzle Lab
