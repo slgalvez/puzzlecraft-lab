@@ -81,6 +81,11 @@ const PuzzleGenerator = () => {
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(5);
   const [timeLimitSeconds, setTimeLimitSeconds] = useState(0);
 
+  // Assist settings (Puzzle Lab only)
+  const [hintsEnabled, setHintsEnabled] = useState(true);
+  const [hintLimit, setHintLimit] = useState<number | null>(null); // null = unlimited
+  const [revealEnabled, setRevealEnabled] = useState(true);
+
   // Mode & mobile stepper
   const [mode, setMode] = useState<Mode>(() => routeState?.randomPool ? "random" : "generate");
   const [mobileStep, setMobileStep] = useState<MobileStep>(1);
