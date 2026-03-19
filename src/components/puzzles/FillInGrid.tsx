@@ -21,6 +21,7 @@ interface Props {
   onSolve?: (perf: PuzzlePerformance) => void;
   timeLimit?: number;
   isEndless?: boolean;
+  dailyCode?: string;
 }
 
 type Direction = "across" | "down";

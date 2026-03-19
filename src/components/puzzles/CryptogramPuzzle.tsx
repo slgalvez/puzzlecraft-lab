@@ -17,6 +17,7 @@ interface Props {
   onSolve?: (perf: PuzzlePerformance) => void;
   timeLimit?: number;
   isEndless?: boolean;
+  dailyCode?: string;
 }
 
 interface CryptogramState {

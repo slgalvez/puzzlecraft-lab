@@ -18,6 +18,7 @@ interface Props {
   onSolve?: (perf: PuzzlePerformance) => void;
   timeLimit?: number;
   isEndless?: boolean;
+  dailyCode?: string;
 }
 
 type CellState = "empty" | "filled" | "marked";
