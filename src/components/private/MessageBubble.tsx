@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Timer, Check, CheckCheck, Eye, Pencil } from "lucide-react";
 import { isGifMessage, getGifUrl } from "@/components/private/MessageComposer";
+import { ImageViewer } from "@/components/private/ImageViewer";
 
 const REACTION_OPTIONS = ["❤️", "👍", "😂", "‼️", "❓", "😢"];
 
@@ -38,6 +39,7 @@ export function MessageBubble({
   const [showMenu, setShowMenu] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
+  const [viewerOpen, setViewerOpen] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const didLongPress = useRef(false);
   const lastTapRef = useRef(0);
@@ -192,8 +194,9 @@ export function MessageBubble({
             <img
               src={mediaUrl}
               alt="Image"
-              className="rounded-xl max-w-[220px] sm:max-w-[260px] w-full"
+              className="rounded-xl max-w-[220px] sm:max-w-[260px] w-full cursor-pointer active:opacity-80 transition-opacity"
               loading="lazy"
+              onClick={() => setViewerOpen(true)}
             />
             <div className={`flex items-center gap-1 mt-0.5 px-2 pb-0.5 ${isMine ? "justify-end" : ""}`}>
               <span className={`text-[10px] leading-none ${timeColor}`}>
@@ -207,6 +210,9 @@ export function MessageBubble({
                 )
               )}
             </div>
+            {viewerOpen && (
+              <ImageViewer src={mediaUrl} onClose={() => setViewerOpen(false)} />
+            )}
           </div>
         ) : (
           <div
