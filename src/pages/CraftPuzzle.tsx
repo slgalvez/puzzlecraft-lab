@@ -308,7 +308,8 @@ const CraftPuzzle = () => {
         setView("inbox");
         return;
       }
-      setStep("type");
+    sentRecorded.current = false;
+    setStep("type");
       setSelectedType(null);
     }
   };
