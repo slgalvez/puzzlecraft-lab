@@ -960,6 +960,11 @@ const PuzzleGenerator = () => {
               Reveal
             </label>
           </div>
+          {/* Reset */}
+          <button onClick={resetRandomSettings} className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors mt-1">
+            <RotateCcw size={11} />
+            Reset to defaults
+          </button>
         </CollapsibleContent>
       </Collapsible>
 
