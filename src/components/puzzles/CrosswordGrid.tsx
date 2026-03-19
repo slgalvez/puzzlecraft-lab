@@ -35,7 +35,13 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   const saved = useMemo(() => loadProgress<CrosswordState>(timerKey), [timerKey]);
 
   const [grid, setGrid] = useState<string[][]>(
-    () => saved?.state.grid ?? Array.from({ length: gridSize }, () => Array(gridSize).fill(""))
+    () => {
+      const savedGrid = saved?.state.grid;
+      if (savedGrid && savedGrid.length === gridSize && savedGrid[0]?.length === gridSize) {
+        return savedGrid;
+      }
+      return Array.from({ length: gridSize }, () => Array(gridSize).fill(""));
+    }
   );
   const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
   const [direction, setDirection] = useState<"across" | "down">("across");
