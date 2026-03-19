@@ -664,6 +664,8 @@ interface WordSearchSolverProps {
   onSaveProgress?: (state: { foundWords: string[]; foundCells: string[] }) => void;
   showHints?: boolean;
   showReveal?: boolean;
+  /** Hide instructions (craft recipient view) */
+  compact?: boolean;
 }
 
 export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress, showHints = true, showReveal = false }: WordSearchSolverProps) {
