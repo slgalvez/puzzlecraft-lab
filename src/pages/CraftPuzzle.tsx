@@ -19,15 +19,23 @@ import {
 type CraftType = "word-fill" | "cryptogram" | "crossword" | "word-search";
 type Step = "type" | "content" | "preview";
 
-function encodeShareData(data: {
-  type: CraftType;
-  puzzleData: Record<string, unknown>;
-  revealMessage: string;
-  title?: string;
-  from?: string;
-}): string {
-  const json = JSON.stringify(data);
-  return btoa(unescape(encodeURIComponent(json)));
+function generateShortId(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+function buildShareText(title?: string, from?: string): string {
+  const lines: string[] = [];
+  if (title) lines.push(title);
+  if (from) lines.push(`From ${from}`);
+  lines.push("");
+  lines.push("I made you a puzzle 🧩");
+  lines.push("Solve it here:");
+  return lines.join("\n");
 }
 
 const CraftPuzzle = () => {
