@@ -13,12 +13,20 @@ import {
 
 type CraftType = "word-fill" | "cryptogram" | "crossword" | "word-search";
 
+interface CraftPuzzleSettings {
+  difficulty?: "easy" | "medium" | "hard";
+  hintsEnabled?: boolean;
+  revealEnabled?: boolean;
+  checkEnabled?: boolean;
+}
+
 interface CraftPayload {
   type: CraftType;
   puzzleData: Record<string, unknown>;
   revealMessage: string;
   title?: string;
   from?: string;
+  settings?: CraftPuzzleSettings;
 }
 
 const PUZZLE_LABELS: Record<CraftType, string> = {
@@ -88,7 +96,7 @@ const SharedCraftPuzzle = () => {
     );
   }
 
-  const { type, puzzleData, revealMessage, title, from } = payload;
+  const { type, puzzleData, revealMessage, title, from, settings } = payload;
 
   return (
     <Layout>
@@ -151,18 +159,29 @@ const SharedCraftPuzzle = () => {
 
         <div className="min-h-[300px]">
           {(type === "word-fill" || type === "crossword") && (
-            <GridSolver data={puzzleData} puzzleType={type} onComplete={handleComplete} />
+            <GridSolver
+              data={puzzleData}
+              puzzleType={type}
+              onComplete={handleComplete}
+              showHints={settings?.hintsEnabled ?? true}
+              showReveal={settings?.revealEnabled ?? false}
+              showCheck={settings?.checkEnabled ?? true}
+            />
           )}
           {type === "cryptogram" && (
             <CryptogramSolver
               data={puzzleData as unknown as { encoded: string; decoded: string; reverseCipher: Record<string, string>; hints: Record<string, string> }}
               onComplete={handleComplete}
+              showHints={settings?.hintsEnabled ?? true}
+              showReveal={settings?.revealEnabled ?? false}
             />
           )}
           {type === "word-search" && (
             <WordSearchSolver
               data={puzzleData as unknown as { grid: string[][]; words: string[]; wordPositions: { word: string; row: number; col: number; dr: number; dc: number }[]; size: number }}
               onComplete={handleComplete}
+              showHints={settings?.hintsEnabled ?? true}
+              showReveal={settings?.revealEnabled ?? false}
             />
           )}
         </div>

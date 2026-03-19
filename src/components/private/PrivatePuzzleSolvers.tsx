@@ -7,7 +7,8 @@ import GroupedEntryList from "@/components/puzzles/GroupedEntryList";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, RotateCcw } from "lucide-react";
+import { Check, RotateCcw, Lightbulb, Eye } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobileLetterInput from "@/components/puzzles/MobileLetterInput";
 import type { MobileLetterInputHandle } from "@/components/puzzles/MobileLetterInput";
@@ -25,9 +26,13 @@ interface GridSolverProps {
   onComplete: () => void;
   savedState?: { grid: string[][] } | null;
   onSaveProgress?: (state: { grid: string[][] }) => void;
+  showHints?: boolean;
+  showReveal?: boolean;
+  showCheck?: boolean;
 }
 
-export function GridSolver({ data, puzzleType, onComplete, savedState, onSaveProgress }: GridSolverProps) {
+export function GridSolver({ data, puzzleType, onComplete, savedState, onSaveProgress, showHints = true, showReveal = false, showCheck = true }: GridSolverProps) {
+  const { toast } = useToast();
   const isMobile = useIsMobile();
   const gridSize = (data.gridSize as number) || 9;
   const blackCells = (data.blackCells as [number, number][]) || [];
@@ -314,6 +319,39 @@ export function GridSolver({ data, puzzleType, onComplete, savedState, onSavePro
     }
   };
 
+  const handleHint = () => {
+    if (solved) return;
+    // Find first empty or wrong cell
+    for (let r = 0; r < gridSize; r++)
+      for (let c = 0; c < gridSize; c++) {
+        if (isBlack(r, c) || !solutionMap[r]?.[c]) continue;
+        if (grid[r][c] !== solutionMap[r][c]) {
+          setGrid(prev => {
+            const next = prev.map(row => [...row]);
+            next[r][c] = solutionMap[r][c]!;
+            checkCompletion(next);
+            return next;
+          });
+          toast({ title: "Hint revealed" });
+          return;
+        }
+      }
+  };
+
+  const handleReveal = () => {
+    if (solved) return;
+    setGrid(prev => {
+      const next = prev.map(row => [...row]);
+      for (let r = 0; r < gridSize; r++)
+        for (let c = 0; c < gridSize; c++)
+          if (!isBlack(r, c) && solutionMap[r]?.[c]) next[r][c] = solutionMap[r][c]!;
+      return next;
+    });
+    setSolved(true);
+    onComplete();
+    toast({ title: "Solution revealed" });
+  };
+
   const acrossClues = clues.filter(c => c.direction === "across").sort((a, b) => a.number - b.number);
   const downClues = clues.filter(c => c.direction === "down").sort((a, b) => a.number - b.number);
 
@@ -397,9 +435,21 @@ export function GridSolver({ data, puzzleType, onComplete, savedState, onSavePro
           <Button variant="outline" size="sm" onClick={handleReset}>
             <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Reset
           </Button>
-          <Button variant="outline" size="sm" onClick={handleCheck}>
-            <Check className="mr-1.5 h-3.5 w-3.5" /> Check
-          </Button>
+          {showCheck && (
+            <Button variant="outline" size="sm" onClick={handleCheck}>
+              <Check className="mr-1.5 h-3.5 w-3.5" /> Check
+            </Button>
+          )}
+          {showHints && (
+            <Button variant="outline" size="sm" onClick={handleHint}>
+              <Lightbulb className="mr-1.5 h-3.5 w-3.5" /> Hint
+            </Button>
+          )}
+          {showReveal && (
+            <Button variant="outline" size="sm" onClick={handleReveal}>
+              <Eye className="mr-1.5 h-3.5 w-3.5" /> Reveal
+            </Button>
+          )}
         </div>
       </div>
 
@@ -453,9 +503,12 @@ interface CryptogramSolverProps {
   onComplete: () => void;
   savedState?: Record<string, string> | null;
   onSaveProgress?: (state: Record<string, string>) => void;
+  showHints?: boolean;
+  showReveal?: boolean;
 }
 
-export function CryptogramSolver({ data, onComplete, savedState, onSaveProgress }: CryptogramSolverProps) {
+export function CryptogramSolver({ data, onComplete, savedState, onSaveProgress, showHints = true, showReveal = false }: CryptogramSolverProps) {
+  const { toast } = useToast();
   const [guesses, setGuesses] = useState<Record<string, string>>(() => {
     if (savedState && Object.keys(savedState).length > 0) return { ...data.hints, ...savedState };
     return { ...data.hints };
@@ -562,6 +615,39 @@ export function CryptogramSolver({ data, onComplete, savedState, onSaveProgress 
           );
         })}
       </div>
+      <div className="flex flex-wrap gap-2">
+        {showHints && !completed && (
+          <Button variant="outline" size="sm" onClick={() => {
+            // Reveal one random unsolved letter
+            const unsolved = encodedLetters.filter(ch => !(ch in data.hints) && guesses[ch] !== data.reverseCipher[ch]);
+            if (unsolved.length === 0) return;
+            const pick = unsolved[Math.floor(Math.random() * unsolved.length)];
+            const newGuesses = { ...guesses, [pick]: data.reverseCipher[pick] };
+            setGuesses(newGuesses);
+            toast({ title: "Hint revealed" });
+            // Check completion
+            const allFilled = encodedLetters.every(ch => newGuesses[ch]);
+            if (allFilled) {
+              const decoded = data.encoded.split("").map(ch => /[A-Z]/.test(ch) ? (newGuesses[ch] || "") : ch).join("");
+              if (decoded === data.decoded) { setCompleted(true); onComplete(); }
+            }
+          }}>
+            <Lightbulb className="mr-1.5 h-3.5 w-3.5" /> Hint
+          </Button>
+        )}
+        {showReveal && !completed && (
+          <Button variant="outline" size="sm" onClick={() => {
+            const full: Record<string, string> = {};
+            encodedLetters.forEach(ch => { full[ch] = data.reverseCipher[ch]; });
+            setGuesses({ ...data.hints, ...full });
+            setCompleted(true);
+            onComplete();
+            toast({ title: "Solution revealed" });
+          }}>
+            <Eye className="mr-1.5 h-3.5 w-3.5" /> Reveal
+          </Button>
+        )}
+      </div>
       {completed && <p className="text-sm text-primary font-medium text-center">✓ Solved!</p>}
     </div>
   );
@@ -574,9 +660,12 @@ interface WordSearchSolverProps {
   onComplete: () => void;
   savedState?: { foundWords: string[] } | null;
   onSaveProgress?: (state: { foundWords: string[]; foundCells: string[] }) => void;
+  showHints?: boolean;
+  showReveal?: boolean;
 }
 
-export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress }: WordSearchSolverProps) {
+export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress, showHints = true, showReveal = false }: WordSearchSolverProps) {
+  const { toast } = useToast();
   const [foundWords, setFoundWords] = useState<Set<string>>(() => {
     if (savedState?.foundWords) return new Set(savedState.foundWords);
     return new Set();
@@ -775,6 +864,42 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress 
           </Badge>
         ))}
       </div>
+      {!completed && (showHints || showReveal) && (
+        <div className="flex flex-wrap gap-2">
+          {showHints && (
+            <Button variant="outline" size="sm" onClick={() => {
+              const remaining = data.wordPositions.filter(wp => !foundWords.has(wp.word));
+              if (remaining.length === 0) return;
+              const wp = remaining[Math.floor(Math.random() * remaining.length)];
+              const newFound = new Set(foundWords);
+              newFound.add(wp.word);
+              const newCells = new Set(foundCells);
+              for (let i = 0; i < wp.word.length; i++) newCells.add(`${wp.row + wp.dr * i}-${wp.col + wp.dc * i}`);
+              setFoundWords(newFound);
+              setFoundCells(newCells);
+              toast({ title: `Found: ${wp.word}` });
+              if (newFound.size === data.words.length) onComplete();
+            }}>
+              <Lightbulb className="mr-1.5 h-3.5 w-3.5" /> Hint
+            </Button>
+          )}
+          {showReveal && (
+            <Button variant="outline" size="sm" onClick={() => {
+              const allWords = new Set(data.words);
+              const allCells = new Set<string>();
+              data.wordPositions.forEach(wp => {
+                for (let i = 0; i < wp.word.length; i++) allCells.add(`${wp.row + wp.dr * i}-${wp.col + wp.dc * i}`);
+              });
+              setFoundWords(allWords);
+              setFoundCells(allCells);
+              onComplete();
+              toast({ title: "Solution revealed" });
+            }}>
+              <Eye className="mr-1.5 h-3.5 w-3.5" /> Reveal
+            </Button>
+          )}
+        </div>
+      )}
       {completed && <p className="text-sm text-primary font-medium text-center">✓ All words found!</p>}
     </div>
   );
