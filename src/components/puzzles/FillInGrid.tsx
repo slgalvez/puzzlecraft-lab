@@ -36,7 +36,7 @@ interface FillInState {
   usedEntries: string[];
 }
 
-const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isEndless }: Props) => {
+const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode }: Props) => {
   const { gridSize, blackCells, entries, type, solution } = puzzle;
   const isNumbers = type === "number-fill";
   const { toast } = useToast();
