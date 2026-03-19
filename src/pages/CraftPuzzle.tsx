@@ -108,8 +108,8 @@ const CraftPuzzle = () => {
       setSaving(true);
       const shortId = generateShortId();
       const { error: dbErr } = await supabase
-        .from("shared_puzzles")
-        .insert({ id: shortId, payload: payload as unknown as Record<string, unknown> });
+        .from("shared_puzzles" as any)
+        .insert({ id: shortId, payload: payload as unknown } as any);
 
       setSaving(false);
       if (dbErr) {
