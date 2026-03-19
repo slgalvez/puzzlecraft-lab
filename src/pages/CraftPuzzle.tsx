@@ -104,11 +104,24 @@ const CraftPuzzle = () => {
       if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
       if (puzzleFrom.trim()) payload.from = puzzleFrom.trim();
 
-      const encoded = encodeShareData(payload);
-      const url = `${window.location.origin}/craft/play?d=${encoded}`;
+      // Save to DB and get short URL
+      setSaving(true);
+      const shortId = generateShortId();
+      const { error: dbErr } = await supabase
+        .from("shared_puzzles")
+        .insert({ id: shortId, payload: payload as unknown as Record<string, unknown> });
+
+      setSaving(false);
+      if (dbErr) {
+        toast({ title: "Failed to save puzzle", description: "Please try again" });
+        return;
+      }
+
+      const url = `${window.location.origin}/s/${shortId}`;
       setShareUrl(url);
       setStep("preview");
     } catch (err) {
+      setSaving(false);
       toast({ title: "Generation failed", description: err instanceof Error ? err.message : "Please try different input" });
     }
   }, [selectedType, wordInput, phraseInput, clueEntries, revealMessage, puzzleTitle, puzzleFrom, toast]);
