@@ -44,9 +44,6 @@ function PuzzlePiece({
   );
 }
 
-}: {size: number;rotate: number;offsetX: number;offsetY: number;delay: number;}) {
-  return;
-
 
 
 
