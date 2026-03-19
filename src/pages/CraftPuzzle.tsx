@@ -110,6 +110,7 @@ const CraftPuzzle = () => {
         phraseInput,
         clueEntries,
         revealMessage,
+        settings: craftSettings,
         updatedAt: Date.now(),
       };
       saveDraft(draft);
