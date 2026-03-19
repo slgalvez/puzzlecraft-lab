@@ -20,6 +20,7 @@ import Stats from "./pages/Stats";
 import NotFound from "./pages/NotFound";
 import CraftPuzzle from "./pages/CraftPuzzle";
 import PlayCraftPuzzle from "./pages/PlayCraftPuzzle";
+import SharedCraftPuzzle from "./pages/SharedCraftPuzzle";
 
 // Private app
 import { AuthProvider } from "./contexts/AuthContext";
