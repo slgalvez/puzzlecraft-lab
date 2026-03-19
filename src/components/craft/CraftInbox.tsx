@@ -254,7 +254,7 @@ export default function CraftInbox({ onResumeDraft, onDataChange }: CraftInboxPr
                     size="sm"
                     variant="outline"
                     className="text-xs h-7 gap-1 px-3"
-                    onClick={() => navigate(`/s/${r.shareId}`)}
+                    onClick={() => navigate(`/s/${r.shareId}`, { state: { fromInbox: "received" } })}
                   >
                     <Play className="h-3 w-3" />
                     {r.status === "in_progress" ? "Continue" : r.status === "completed" ? "View" : "Play"}
