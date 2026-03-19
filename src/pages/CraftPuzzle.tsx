@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share2, Copy, Check } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share2, Copy, Check, Loader2 } from "lucide-react";
 import CraftStepper from "@/components/craft/CraftStepper";
 import CraftTypeCards, { TYPE_OPTIONS } from "@/components/craft/CraftTypeCards";
 import CraftPreviewGrid from "@/components/craft/CraftPreviewGrid";
+import { supabase } from "@/integrations/supabase/client";
 import {
   generateCustomFillIn,
   generateCustomCryptogram,
@@ -18,15 +19,23 @@ import {
 type CraftType = "word-fill" | "cryptogram" | "crossword" | "word-search";
 type Step = "type" | "content" | "preview";
 
-function encodeShareData(data: {
-  type: CraftType;
-  puzzleData: Record<string, unknown>;
-  revealMessage: string;
-  title?: string;
-  from?: string;
-}): string {
-  const json = JSON.stringify(data);
-  return btoa(unescape(encodeURIComponent(json)));
+function generateShortId(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+function buildShareText(title?: string, from?: string): string {
+  const lines: string[] = [];
+  if (title) lines.push(title);
+  if (from) lines.push(`From ${from}`);
+  lines.push("");
+  lines.push("I made you a puzzle 🧩");
+  lines.push("Solve it here:");
+  return lines.join("\n");
 }
 
 const CraftPuzzle = () => {
@@ -47,13 +56,14 @@ const CraftPuzzle = () => {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const handleSelectType = (type: CraftType) => {
     setSelectedType(type);
     setStep("content");
   };
 
-  const handleGenerate = useCallback(() => {
+  const handleGenerate = useCallback(async () => {
     if (!selectedType) return;
     try {
       let data: Record<string, unknown>;
@@ -94,11 +104,24 @@ const CraftPuzzle = () => {
       if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
       if (puzzleFrom.trim()) payload.from = puzzleFrom.trim();
 
-      const encoded = encodeShareData(payload);
-      const url = `${window.location.origin}/craft/play?d=${encoded}`;
+      // Save to DB and get short URL
+      setSaving(true);
+      const shortId = generateShortId();
+      const { error: dbErr } = await supabase
+        .from("shared_puzzles" as any)
+        .insert({ id: shortId, payload: payload as unknown } as any);
+
+      setSaving(false);
+      if (dbErr) {
+        toast({ title: "Failed to save puzzle", description: "Please try again" });
+        return;
+      }
+
+      const url = `${window.location.origin}/s/${shortId}`;
       setShareUrl(url);
       setStep("preview");
     } catch (err) {
+      setSaving(false);
       toast({ title: "Generation failed", description: err instanceof Error ? err.message : "Please try different input" });
     }
   }, [selectedType, wordInput, phraseInput, clueEntries, revealMessage, puzzleTitle, puzzleFrom, toast]);
@@ -115,7 +138,7 @@ const CraftPuzzle = () => {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setShareSuccess(true);
-      toast({ title: "Link copied!" });
+      toast({ title: "Puzzle link copied" });
       setTimeout(() => setCopied(false), 2000);
       setTimeout(() => setShareSuccess(false), 1500);
     } catch {
@@ -125,8 +148,8 @@ const CraftPuzzle = () => {
 
   const handleShare = async () => {
     if (!shareUrl) return;
-    const shareTitle = puzzleTitle.trim() || "Solve my puzzle!";
-    const shareText = puzzleFrom.trim() ? `${shareTitle} — ${puzzleFrom.trim()}` : shareTitle;
+    const shareText = buildShareText(puzzleTitle.trim() || undefined, puzzleFrom.trim() || undefined);
+    const shareTitle = puzzleTitle.trim() || "I made you a puzzle 🧩";
     if (navigator.share) {
       try {
         await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
@@ -290,8 +313,9 @@ const CraftPuzzle = () => {
               />
             </div>
 
-            <Button onClick={handleGenerate} className="w-full gap-2">
-              <Sparkles className="h-4 w-4" /> Preview Puzzle
+            <Button onClick={handleGenerate} disabled={saving} className="w-full gap-2">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {saving ? "Saving…" : "Preview Puzzle"}
             </Button>
             <p className="text-[10px] text-muted-foreground text-center">
               No account needed • Share instantly with a link
