@@ -216,7 +216,7 @@ const CraftPuzzle = () => {
                 <Textarea
                   value={wordInput}
                   onChange={e => setWordInput(e.target.value)}
-                  placeholder="HELLO, WORLD, PUZZLE, FRIEND, GAMES"
+                  placeholder={"LOVE\nSARAH\nBIRTHDAY\nMEMORIES\nFOREVER"}
                   rows={6}
                   className="resize-none"
                 />
