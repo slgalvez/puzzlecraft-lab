@@ -316,11 +316,11 @@ const CraftPuzzle = () => {
             </div>
 
             {/* Ready message */}
-            <div className="text-center space-y-1">
-              <h2 className="text-sm font-medium text-foreground">
-                Your puzzle is ready ✨
+            <div className="text-center space-y-2">
+              <h2 className="text-base font-semibold leading-tight text-foreground">
+                Your puzzle is ready to send
               </h2>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground/70">
                 This is exactly what they'll see
               </p>
             </div>
