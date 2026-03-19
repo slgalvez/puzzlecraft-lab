@@ -264,15 +264,11 @@ const Stats = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Puzzle Types</SelectItem>
-                {ALL_CATEGORIES.map((cat) => {
-                  const info = CATEGORY_INFO[cat];
-                  return (
-                    <SelectItem key={cat} value={cat}>
-                      <span className="mr-1.5">{info?.icon}</span>
-                      {info?.name}
-                    </SelectItem>
-                  );
-                })}
+                {ALL_CATEGORIES.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {CATEGORY_INFO[cat]?.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -357,7 +353,7 @@ const Stats = () => {
         )}
 
         {/* Recent completions */}
-        {showGeneral && filteredCompletions.length > 0 && (
+        {showGeneral && (filteredCompletions.length > 0 || stats.recentCompletions.length > 0) && (
           <div className="mt-12">
             <h2 className="font-display text-xl font-semibold text-foreground mb-4">
               Recent Solves
