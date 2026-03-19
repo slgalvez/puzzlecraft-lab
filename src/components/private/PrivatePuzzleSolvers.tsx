@@ -873,14 +873,10 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress,
               const remaining = data.wordPositions.filter(wp => !foundWords.has(wp.word));
               if (remaining.length === 0) return;
               const wp = remaining[Math.floor(Math.random() * remaining.length)];
-              const newFound = new Set(foundWords);
-              newFound.add(wp.word);
-              const newCells = new Set(foundCells);
-              for (let i = 0; i < wp.word.length; i++) newCells.add(`${wp.row + wp.dr * i}-${wp.col + wp.dc * i}`);
-              setFoundWords(newFound);
-              setFoundCells(newCells);
-              toast({ title: `Found: ${wp.word}` });
-              if (newFound.size === data.words.length) onComplete();
+              // Highlight only the first letter of the word
+              const firstCellKey = `${wp.row}-${wp.col}`;
+              setHintCells(prev => new Set(prev).add(firstCellKey));
+              toast({ title: `Hint: look for "${wp.word}" starting here` });
             }}>
               <Lightbulb className="mr-1.5 h-3.5 w-3.5" /> Hint
             </Button>
