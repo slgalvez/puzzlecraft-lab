@@ -319,6 +319,39 @@ export function GridSolver({ data, puzzleType, onComplete, savedState, onSavePro
     }
   };
 
+  const handleHint = () => {
+    if (solved) return;
+    // Find first empty or wrong cell
+    for (let r = 0; r < gridSize; r++)
+      for (let c = 0; c < gridSize; c++) {
+        if (isBlack(r, c) || !solutionMap[r]?.[c]) continue;
+        if (grid[r][c] !== solutionMap[r][c]) {
+          setGrid(prev => {
+            const next = prev.map(row => [...row]);
+            next[r][c] = solutionMap[r][c]!;
+            checkCompletion(next);
+            return next;
+          });
+          toast({ title: "Hint revealed" });
+          return;
+        }
+      }
+  };
+
+  const handleReveal = () => {
+    if (solved) return;
+    setGrid(prev => {
+      const next = prev.map(row => [...row]);
+      for (let r = 0; r < gridSize; r++)
+        for (let c = 0; c < gridSize; c++)
+          if (!isBlack(r, c) && solutionMap[r]?.[c]) next[r][c] = solutionMap[r][c]!;
+      return next;
+    });
+    setSolved(true);
+    onComplete();
+    toast({ title: "Solution revealed" });
+  };
+
   const acrossClues = clues.filter(c => c.direction === "across").sort((a, b) => a.number - b.number);
   const downClues = clues.filter(c => c.direction === "down").sort((a, b) => a.number - b.number);
 
