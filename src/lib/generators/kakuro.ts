@@ -1,5 +1,6 @@
 import { SeededRandom } from "../seededRandom";
 import type { Difficulty } from "../puzzleTypes";
+import { getEffectiveDifficulty } from "../puzzleTypes";
 
 export interface KakuroClue {
   row: number;
