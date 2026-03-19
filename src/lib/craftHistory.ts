@@ -99,6 +99,18 @@ export function deleteSentItem(id: string) {
   writeJson(SENT_KEY, readJson<CraftSentItem>(SENT_KEY).filter((s) => s.id !== id));
 }
 
+/* ── Received ── */
+
+export function loadReceivedItems(): CraftReceivedItem[] {
+  return readJson<CraftReceivedItem>(RECEIVED_KEY).sort((a, b) => b.receivedAt - a.receivedAt);
+}
+
+export function addReceivedItem(item: CraftReceivedItem) {
+  const items = readJson<CraftReceivedItem>(RECEIVED_KEY).filter((r) => r.id !== item.id);
+  items.unshift(item);
+  writeJson(RECEIVED_KEY, items.slice(0, MAX_SENT));
+}
+
 /* ── Relative time ── */
 
 export function relativeTime(epochMs: number): string {
