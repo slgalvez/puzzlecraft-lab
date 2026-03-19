@@ -216,12 +216,12 @@ const CraftPuzzle = () => {
                 <Textarea
                   value={wordInput}
                   onChange={e => setWordInput(e.target.value)}
-                  placeholder="HELLO, WORLD, PUZZLE, FRIEND, GAMES"
+                  placeholder={"LOVE\nSARAH\nBIRTHDAY\nMEMORIES\nFOREVER"}
                   rows={6}
                   className="resize-none"
                 />
                 <p className="text-[10px] text-muted-foreground">
-                  {wordInput.split(/[,\n]+/).map(w => w.trim()).filter(Boolean).length} words entered
+                  Enter 5–15 words for best results
                 </p>
               </div>
             )}
@@ -232,7 +232,7 @@ const CraftPuzzle = () => {
                 <Textarea
                   value={phraseInput}
                   onChange={e => setPhraseInput(e.target.value)}
-                  placeholder="THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"
+                  placeholder="MEET ME AT MIDNIGHT"
                   rows={4}
                   className="resize-none"
                 />
@@ -281,7 +281,7 @@ const CraftPuzzle = () => {
             )}
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Reveal message (shown after solving — optional)</label>
+              <label className="text-xs font-medium text-muted-foreground">Message revealed after solving (optional)</label>
               <Input
                 value={revealMessage}
                 onChange={e => setRevealMessage(e.target.value)}
@@ -291,8 +291,11 @@ const CraftPuzzle = () => {
             </div>
 
             <Button onClick={handleGenerate} className="w-full gap-2">
-              <Sparkles className="h-4 w-4" /> Generate & Preview
+              <Sparkles className="h-4 w-4" /> Preview Puzzle
             </Button>
+            <p className="text-[10px] text-muted-foreground text-center">
+              No account needed • Share instantly with a link
+            </p>
           </div>
         )}
 
