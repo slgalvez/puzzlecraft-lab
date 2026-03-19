@@ -207,22 +207,9 @@ const CraftPuzzle = () => {
       const url = buildCraftShareUrl(shortId);
       setShareUrl(url);
 
-      // Move draft → sent
-      if (activeDraftId.current) {
-        deleteDraft(activeDraftId.current);
-      }
-      addSentItem({
-        id: shortId,
-        shareId: shortId,
-        type: selectedType,
-        title: puzzleTitle.trim(),
-        from: puzzleFrom.trim(),
-        revealMessage,
-        shareUrl: url,
-        sentAt: Date.now(),
-      });
-      activeDraftId.current = null;
-      refreshDraftCount();
+      // Keep draft alive until actual send; just clear the draft ID so
+      // auto-save won't overwrite the generated state, but do NOT record sent yet.
+      sentRecorded.current = false;
 
       toast({ title: "Puzzle sent ✨" });
       setStep("preview");
