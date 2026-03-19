@@ -114,20 +114,33 @@ const RandomPuzzleGenerator = ({ compact }: Props) => {
           Difficulty
         </label>
         <div className="flex flex-wrap gap-1.5">
-          {difficulties.map(([val, label]) => (
-            <button
-              key={val}
-              onClick={() => setDifficulty(val)}
-              className={cn(
-                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                difficulty === val
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {label}
-            </button>
-          ))}
+          {difficulties.map(([val, label]) => {
+            const onlyKakuro = selected.size === 1 && selected.has("kakuro");
+            const disabled = onlyKakuro && isDifficultyDisabled("kakuro", val);
+            return (
+              <button
+                key={val}
+                onClick={() => {
+                  if (disabled) {
+                    toast({ title: `${label} not available for Kakuro yet` });
+                    return;
+                  }
+                  setDifficulty(val);
+                }}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  disabled
+                    ? "border-border text-muted-foreground/40 cursor-not-allowed"
+                    : difficulty === val
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-card text-muted-foreground hover:text-foreground"
+                )}
+                title={disabled ? `${label} not available for Kakuro yet` : undefined}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
