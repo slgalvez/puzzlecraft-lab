@@ -234,11 +234,14 @@ const QuickPlay = () => {
         {/* Minimal header */}
         <div className="mb-4 flex items-center justify-between">
           <button
-            onClick={() => navigate("/")}
+            onClick={() => {
+              const { goBackOrFallback } = await import("@/lib/navigation");
+              goBackOrFallback(navigate, "/");
+            }}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft size={14} />
-            <span className="hidden sm:inline">Home</span>
+            <span className="hidden sm:inline">Back</span>
           </button>
           {mode === "endless" && (
             <Button

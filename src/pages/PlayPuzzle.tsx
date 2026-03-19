@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { goBackOrFallback } from "@/lib/navigation";
 import Layout from "@/components/layout/Layout";
 import CrosswordGrid from "@/components/puzzles/CrosswordGrid";
 import FillInGrid from "@/components/puzzles/FillInGrid";
