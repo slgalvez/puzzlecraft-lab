@@ -200,6 +200,10 @@ const PuzzleGenerator = () => {
       const next = new Set(prev);
       if (next.has(type)) next.delete(type);
       else next.add(type);
+      // If only kakuro remains and insane is selected, downgrade to extreme
+      if (next.size === 1 && next.has("kakuro") && randomDifficulty === "insane") {
+        setRandomDifficulty("extreme");
+      }
       return next;
     });
   };
