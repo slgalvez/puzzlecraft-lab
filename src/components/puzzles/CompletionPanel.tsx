@@ -163,7 +163,7 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, ca
             Play: <span className="font-medium text-foreground select-all">{shareData.url}</span>
           </p>
           <p className="text-[11px] text-muted-foreground">
-            Puzzle Code: <code className="font-mono text-foreground/70 select-all">{shareData.seed}</code>
+            Puzzle Code: <code className="font-mono text-foreground/70 select-all">{shareData.displayCode}</code>
           </p>
         </div>
       )}
