@@ -1,5 +1,6 @@
 import { SeededRandom } from "../seededRandom";
 import type { Difficulty } from "../puzzleTypes";
+import { getEffectiveDifficulty } from "../puzzleTypes";
 
 export interface KakuroClue {
   row: number;
@@ -24,7 +25,9 @@ interface Run {
   cells: [number, number][];
 }
 
-export function generateKakuro(seed: number, difficulty: Difficulty): KakuroPuzzle {
+export function generateKakuro(seed: number, rawDifficulty: Difficulty): KakuroPuzzle {
+  // Safeguard: always downgrade unsupported difficulties (e.g. insane → extreme)
+  const difficulty = getEffectiveDifficulty("kakuro", rawDifficulty);
   const maxAttempts = difficulty === "insane" || difficulty === "extreme" ? 30 : 20;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const result = tryGenerate(seed + attempt * 1000, difficulty);

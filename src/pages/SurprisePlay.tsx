@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory, getEffectiveDifficulty } from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
 
 const allTypes = Object.keys(CATEGORY_INFO) as PuzzleCategory[];
@@ -15,7 +15,8 @@ const SurprisePlay = () => {
 
   useEffect(() => {
     const type = allTypes[Math.floor(Math.random() * allTypes.length)];
-    const diff = allDifficulties[Math.floor(Math.random() * allDifficulties.length)];
+    const rawDiff = allDifficulties[Math.floor(Math.random() * allDifficulties.length)];
+    const diff = getEffectiveDifficulty(type, rawDiff);
     const seed = randomSeed();
     navigate(`/quick-play/${type}?d=${diff}&seed=${seed}&mode=surprise`, { replace: true });
   }, [navigate]);
