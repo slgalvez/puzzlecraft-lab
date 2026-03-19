@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { getProgressStats } from "@/lib/progressTracker";
@@ -6,16 +6,32 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puz
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { getDailyStreak, getTotalDailyCompleted } from "@/lib/dailyChallenge";
 import { getEndlessStats } from "@/lib/endlessHistory";
-import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
+import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
+
+type ViewFilter = null | "daily" | "endless";
+
+const RECENT_COLLAPSED_COUNT = 5;
 
 const Stats = () => {
   const stats = useMemo(() => getProgressStats(), []);
   const dailyStreak = useMemo(() => getDailyStreak(), []);
   const dailyCompleted = useMemo(() => getTotalDailyCompleted(), []);
   const endlessStats = useMemo(() => getEndlessStats(), []);
+
+  const [viewFilter, setViewFilter] = useState<ViewFilter>(null);
+  const [categoryFilter, setCategoryFilter] = useState<PuzzleCategory | null>(null);
+  const [recentExpanded, setRecentExpanded] = useState(false);
+
+  const toggleViewFilter = (f: ViewFilter) => {
+    setViewFilter((prev) => (prev === f ? null : f));
+  };
+
+  const toggleCategoryFilter = (cat: PuzzleCategory) => {
+    setCategoryFilter((prev) => (prev === cat ? null : cat));
+  };
 
   const statCards = [
     { icon: Target, label: "Puzzles Solved", value: stats.totalSolved.toString() },
@@ -28,39 +44,58 @@ const Stats = () => {
 
   const categoryKeys = Object.keys(stats.byCategory) as PuzzleCategory[];
 
+  // Filter recent completions by category
+  const filteredCompletions = categoryFilter
+    ? stats.recentCompletions.filter((r) => r.category === categoryFilter)
+    : stats.recentCompletions;
+
+  const visibleCompletions = recentExpanded
+    ? filteredCompletions
+    : filteredCompletions.slice(0, RECENT_COLLAPSED_COUNT);
+
+  const showDaily = viewFilter === null || viewFilter === "daily";
+  const showEndless = viewFilter === null || viewFilter === "endless";
+  const showGeneral = viewFilter === null;
+
   return (
     <Layout>
       <div className="container py-12">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
           <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Your Progress</h1>
           <div className="flex gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link to="/daily">
-                <Calendar size={14} /> Daily
-              </Link>
+            <Button
+              variant={viewFilter === "daily" ? "default" : "outline"}
+              size="sm"
+              onClick={() => toggleViewFilter("daily")}
+            >
+              <Calendar size={14} /> Daily
             </Button>
-            <Button asChild size="sm">
-              <Link to="/quick-play/sudoku?mode=endless">
-                <Infinity size={14} /> Endless
-              </Link>
+            <Button
+              variant={viewFilter === "endless" ? "default" : "outline"}
+              size="sm"
+              onClick={() => toggleViewFilter("endless")}
+            >
+              <Infinity size={14} /> Endless
             </Button>
           </div>
         </div>
         <p className="text-muted-foreground">Track your solving stats, streaks, and best times.</p>
 
         {/* Overview cards */}
-        <div className="mt-8 grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-          {statCards.map(({ icon: Icon, label, value }) => (
-            <div key={label} className="rounded-xl border bg-card p-4 text-center">
-              <Icon className="mx-auto h-5 w-5 text-primary mb-2" />
-              <p className="font-mono text-xl font-bold text-foreground">{value}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{label}</p>
-            </div>
-          ))}
-        </div>
+        {showGeneral && (
+          <div className="mt-8 grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+            {statCards.map(({ icon: Icon, label, value }) => (
+              <div key={label} className="rounded-xl border bg-card p-4 text-center">
+                <Icon className="mx-auto h-5 w-5 text-primary mb-2" />
+                <p className="font-mono text-xl font-bold text-foreground">{value}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{label}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Daily challenge stats */}
-        {dailyCompleted > 0 && (
+        {showDaily && dailyCompleted > 0 && (
           <div className="mt-8 rounded-xl border bg-card p-5">
             <h2 className="font-display text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
               <Calendar size={18} className="text-primary" />
@@ -84,7 +119,7 @@ const Stats = () => {
         )}
 
         {/* Endless Mode sessions */}
-        {endlessStats && (
+        {showEndless && endlessStats && (
           <div className="mt-8 rounded-xl border bg-card p-5">
             <h2 className="font-display text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
               <Infinity size={18} className="text-primary" />
@@ -162,22 +197,33 @@ const Stats = () => {
           </div>
         )}
 
-        {categoryKeys.length > 0 && (
+        {/* By Puzzle Type — selectable filters, no navigation */}
+        {showGeneral && categoryKeys.length > 0 && (
           <div className="mt-12">
             <h2 className="font-display text-xl font-semibold text-foreground mb-4">By Puzzle Type</h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {categoryKeys.map((cat) => {
                 const info = CATEGORY_INFO[cat];
                 const data = stats.byCategory[cat];
+                const isActive = categoryFilter === cat;
                 return (
-                  <Link
+                  <button
                     key={cat}
-                    to={`/generate/${cat}`}
-                    className="group rounded-xl border bg-card p-4 transition-colors hover:border-primary/40"
+                    type="button"
+                    onClick={() => toggleCategoryFilter(cat)}
+                    className={cn(
+                      "group rounded-xl border bg-card p-4 transition-colors text-left w-full",
+                      isActive
+                        ? "border-primary ring-1 ring-primary/30"
+                        : "hover:border-primary/40"
+                    )}
                   >
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-lg">{info?.icon}</span>
-                      <span className="font-display text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                      <span className={cn(
+                        "font-display text-sm font-semibold transition-colors",
+                        isActive ? "text-primary" : "text-foreground group-hover:text-primary"
+                      )}>
                         {info?.name || cat}
                       </span>
                     </div>
@@ -199,7 +245,7 @@ const Stats = () => {
                         <p className="text-[10px] text-muted-foreground">Avg</p>
                       </div>
                     </div>
-                  </Link>
+                  </button>
                 );
               })}
             </div>
@@ -207,41 +253,50 @@ const Stats = () => {
         )}
 
         {/* Activity calendar (last 30 days) */}
-        <div className="mt-12">
-          <h2 className="font-display text-xl font-semibold text-foreground mb-4">
-            <Calendar className="inline h-5 w-5 mr-2 text-primary" />
-            Last 30 Days
-          </h2>
-          <div className="flex flex-wrap gap-1.5">
-            {Array.from({ length: 30 }, (_, i) => {
-              const d = new Date();
-              d.setDate(d.getDate() - (29 - i));
-              const dateStr = d.toISOString().slice(0, 10);
-              const active = stats.solvedDates.includes(dateStr);
-              const isToday = i === 29;
-              return (
-                <div
-                  key={dateStr}
-                  title={`${dateStr}${active ? " ✓" : ""}`}
-                  className={cn(
-                    "w-7 h-7 sm:w-8 sm:h-8 rounded-md border text-[9px] flex items-center justify-center font-medium transition-colors",
-                    active
-                      ? "bg-primary/20 border-primary/40 text-primary"
-                      : "bg-card border-border text-muted-foreground/50",
-                    isToday && "ring-1 ring-primary/50"
-                  )}
-                >
-                  {d.getDate()}
-                </div>
-              );
-            })}
+        {showGeneral && (
+          <div className="mt-12">
+            <h2 className="font-display text-xl font-semibold text-foreground mb-4">
+              <Calendar className="inline h-5 w-5 mr-2 text-primary" />
+              Last 30 Days
+            </h2>
+            <div className="flex flex-wrap gap-1.5">
+              {Array.from({ length: 30 }, (_, i) => {
+                const d = new Date();
+                d.setDate(d.getDate() - (29 - i));
+                const dateStr = d.toISOString().slice(0, 10);
+                const active = stats.solvedDates.includes(dateStr);
+                const isToday = i === 29;
+                return (
+                  <div
+                    key={dateStr}
+                    title={`${dateStr}${active ? " ✓" : ""}`}
+                    className={cn(
+                      "w-7 h-7 sm:w-8 sm:h-8 rounded-md border text-[9px] flex items-center justify-center font-medium transition-colors",
+                      active
+                        ? "bg-primary/20 border-primary/40 text-primary"
+                        : "bg-card border-border text-muted-foreground/50",
+                      isToday && "ring-1 ring-primary/50"
+                    )}
+                  >
+                    {d.getDate()}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Recent completions */}
-        {stats.recentCompletions.length > 0 && (
+        {showGeneral && filteredCompletions.length > 0 && (
           <div className="mt-12">
-            <h2 className="font-display text-xl font-semibold text-foreground mb-4">Recent Solves</h2>
+            <h2 className="font-display text-xl font-semibold text-foreground mb-4">
+              Recent Solves
+              {categoryFilter && (
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  — {CATEGORY_INFO[categoryFilter]?.name}
+                </span>
+              )}
+            </h2>
             <div className="rounded-xl border bg-card overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -253,7 +308,7 @@ const Stats = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {stats.recentCompletions.map((r, i) => {
+                  {visibleCompletions.map((r, i) => {
                     const info = CATEGORY_INFO[r.category as PuzzleCategory];
                     return (
                       <tr key={i} className="border-b last:border-0">
@@ -272,6 +327,19 @@ const Stats = () => {
                 </tbody>
               </table>
             </div>
+            {filteredCompletions.length > RECENT_COLLAPSED_COUNT && (
+              <button
+                type="button"
+                onClick={() => setRecentExpanded((p) => !p)}
+                className="mt-3 flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 transition-colors mx-auto"
+              >
+                {recentExpanded ? (
+                  <>Show less <ChevronUp size={14} /></>
+                ) : (
+                  <>See more <ChevronDown size={14} /></>
+                )}
+              </button>
+            )}
           </div>
         )}
 
