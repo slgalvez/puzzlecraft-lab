@@ -345,7 +345,7 @@ const CraftPuzzle = () => {
             {/* Reveal message preview */}
             {revealMessage && (
               <div className="p-4 rounded-xl bg-muted/50 border border-border space-y-1.5">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Preview: Reveal Message</p>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Reveal Message (Preview)</p>
                 <p className="text-sm italic text-foreground/80">{revealMessage}</p>
               </div>
             )}
