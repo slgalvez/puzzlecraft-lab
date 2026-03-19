@@ -53,6 +53,8 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
           onPlayAgain={onNewPuzzle}
           accuracy={solveData.accuracy}
           assisted={solveData.assisted}
+          category={solveData.category}
+          seed={solveData.seed}
         />
       ) : isRevealed ? (
         <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
