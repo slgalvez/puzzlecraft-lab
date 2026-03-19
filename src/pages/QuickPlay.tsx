@@ -272,20 +272,32 @@ const QuickPlay = () => {
 
           {mode === "default" && (
             <div className="flex flex-wrap gap-1.5">
-              {difficulties.map(([val, label]) => (
-                <button
-                  key={val}
-                  onClick={() => handleDifficultyChange(val)}
-                  className={cn(
-                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                    activeDifficulty === val
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
+              {difficulties.map(([val, label]) => {
+                const disabled = isDifficultyDisabled(activeType, val);
+                return (
+                  <button
+                    key={val}
+                    onClick={() => {
+                      if (disabled) {
+                        toast({ title: `${label} not available for ${activeInfo.name} yet` });
+                        return;
+                      }
+                      handleDifficultyChange(val);
+                    }}
+                    className={cn(
+                      "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                      disabled
+                        ? "border-border text-muted-foreground/40 cursor-not-allowed"
+                        : activeDifficulty === val
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+                    )}
+                    title={disabled ? `${label} not available for ${activeInfo.name} yet` : undefined}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           )}
 

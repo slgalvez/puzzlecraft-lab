@@ -524,20 +524,32 @@ const PuzzleGenerator = () => {
           Difficulty
         </label>
         <div className="flex flex-wrap gap-2">
-          {difficulties.map(([val, label]) => (
-            <button
-              key={val}
-              onClick={() => { setDifficulty(val); }}
-              className={cn(
-                "rounded-full border-2 px-5 py-2 text-sm font-medium transition-all",
-                difficulty === val
-                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                  : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-primary/40"
-              )}
-            >
-              {label}
-            </button>
-          ))}
+          {difficulties.map(([val, label]) => {
+            const disabled = category ? isDifficultyDisabled(category, val) : false;
+            return (
+              <button
+                key={val}
+                onClick={() => {
+                  if (disabled) {
+                    toast({ title: `${label} not available for ${info?.name} yet` });
+                    return;
+                  }
+                  setDifficulty(val);
+                }}
+                className={cn(
+                  "rounded-full border-2 px-5 py-2 text-sm font-medium transition-all",
+                  disabled
+                    ? "border-border bg-card text-muted-foreground/40 cursor-not-allowed"
+                    : difficulty === val
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-primary/40"
+                )}
+                title={disabled ? `${label} not available for ${info?.name} yet` : undefined}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
