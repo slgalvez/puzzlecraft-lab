@@ -16,6 +16,7 @@ interface Props {
   assisted?: boolean;
   category?: PuzzleCategory;
   seed?: number;
+  dailyCode?: string;
 }
 
 function buildShareData(props: {
