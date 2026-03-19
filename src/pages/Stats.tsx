@@ -353,7 +353,7 @@ const Stats = () => {
         )}
 
         {/* Recent completions */}
-        {showGeneral && filteredCompletions.length > 0 && (
+        {showGeneral && (filteredCompletions.length > 0 || stats.recentCompletions.length > 0) && (
           <div className="mt-12">
             <h2 className="font-display text-xl font-semibold text-foreground mb-4">
               Recent Solves
