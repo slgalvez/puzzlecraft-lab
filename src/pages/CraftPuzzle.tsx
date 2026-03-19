@@ -389,7 +389,7 @@ const CraftPuzzle = () => {
                     <Input
                       value={puzzleTitle}
                       onChange={e => setPuzzleTitle(e.target.value)}
-                      placeholder="For Sarah 💌"
+                      placeholder="For my Mariah"
                       maxLength={100}
                     />
                   </div>
@@ -398,7 +398,7 @@ const CraftPuzzle = () => {
                     <Input
                       value={puzzleFrom}
                       onChange={e => setPuzzleFrom(e.target.value)}
-                      placeholder="— Alex 🫶"
+                      placeholder="- Sylas"
                       maxLength={100}
                     />
                   </div>
