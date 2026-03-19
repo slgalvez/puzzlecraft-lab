@@ -23,7 +23,7 @@ export function getPuzzleOrigin(): PuzzleOrigin {
 export function getBackPath(origin: PuzzleOrigin): string {
   switch (origin) {
     case "lab": return "/generate";
-    case "daily": return "/daily";
+    case "daily": return "/puzzles";
     case "library": return "/puzzles";
     case "play":
     default: return "/puzzles";
@@ -33,7 +33,7 @@ export function getBackPath(origin: PuzzleOrigin): string {
 export function getBackLabel(origin: PuzzleOrigin): string {
   switch (origin) {
     case "lab": return "Puzzle Lab";
-    case "daily": return "Daily Challenge";
+    case "daily": return "Play";
     case "library": return "Library";
     case "play":
     default: return "Play";

@@ -58,7 +58,7 @@ const Header = () => {
 
       {/* Mobile nav */}
       {mobileOpen && (
-        <nav className="border-t bg-surface-elevated px-4 pb-4 md:hidden">
+        <nav className="border-t bg-surface-elevated px-4 pt-2 pb-4 md:hidden">
           {navLinks.map((link) => (
             <Link
               key={link.to}

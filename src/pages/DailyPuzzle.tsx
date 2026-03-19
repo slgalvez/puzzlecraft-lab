@@ -11,7 +11,7 @@ import {
   getDailyStreak,
   type DailyChallenge,
 } from "@/lib/dailyChallenge";
-import { Calendar, CheckCircle2, Clock, Flame, Trophy, ArrowRight } from "lucide-react";
+import { Calendar, CheckCircle2, Clock, Flame, Trophy, ArrowRight, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
 
@@ -96,6 +96,17 @@ const DailyPuzzle = () => {
   return (
     <Layout>
       <div className="container py-6 md:py-12">
+        {/* Back arrow */}
+        <div className="mb-4">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft size={14} />
+            <span>Back</span>
+          </Link>
+        </div>
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
@@ -108,7 +119,6 @@ const DailyPuzzle = () => {
                 Daily Challenge
               </h1>
               <p className="mt-1 text-muted-foreground flex items-center gap-2">
-                <span className="text-lg">{info.icon}</span>
                 Today's puzzle: <span className="font-medium text-foreground">{info.name}</span>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground capitalize">
                   {challenge.difficulty}
