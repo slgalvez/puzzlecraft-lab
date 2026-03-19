@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Grid3X3, Hash, Type, Search, Plus, Palette, Lock, Calculator, Flame, CheckCircle2, Calendar, Trophy, Clock, Target, Infinity, Dices } from "lucide-react";
+import { ArrowRight, Grid3X3, Hash, Type, Search, Plus, Palette, Lock, Calculator, Flame, CheckCircle2, Trophy, Clock, Target, Infinity, Dices } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
