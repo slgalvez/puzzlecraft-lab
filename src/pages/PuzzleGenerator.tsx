@@ -230,7 +230,7 @@ const PuzzleGenerator = () => {
 
   const renderPuzzle = () => {
     if (!category || !difficulty) return null;
-    const d = difficulty as Difficulty;
+    const d = getEffectiveDifficulty(category, difficulty as Difficulty);
     const key = `${seed}-${d}-${puzzleKey}`;
     switch (category) {
       case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
