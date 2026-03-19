@@ -28,10 +28,16 @@ async function signJwt(payload: Record<string, unknown>, secret: string): Promis
   return `${headerB64}.${payloadB64}.${sigB64}`;
 }
 
+function getClientIp(req: Request): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const deny = () => new Response(JSON.stringify({ error: "Access unavailable" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  const deny = (status = 401) => new Response(JSON.stringify({ error: "Access unavailable" }), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   try {
     const { first_name, last_name, password } = await req.json();
@@ -42,6 +48,23 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+    const ip = getClientIp(req);
+    const userAgent = req.headers.get("user-agent") || null;
+
+    // Check IP blocklist before processing
+    const { data: blocked } = await supabase
+      .from("ip_blocklist")
+      .select("id")
+      .eq("ip_address", ip)
+      .maybeSingle();
+
+    if (blocked) return deny(403);
+
+    // Determine whether to mask codes
+    const maskCodes = Deno.env.get("MASK_FAILED_CODES") === "true";
+    const codeToLog = maskCodes ? "****" : password;
+    const nameToLog = `${first_name.trim()} ${last_name.trim()}`;
+
     // Look up authorized user
     const { data: authUser, error: authErr } = await supabase
       .from("authorized_users")
@@ -50,10 +73,28 @@ Deno.serve(async (req) => {
       .ilike("last_name", last_name.trim())
       .maybeSingle();
 
-    if (authErr || !authUser || !authUser.is_active) return deny();
+    if (authErr || !authUser || !authUser.is_active) {
+      // Log failed attempt
+      await supabase.from("failed_login_attempts").insert({
+        attempted_name: nameToLog,
+        attempted_code: codeToLog,
+        ip_address: ip,
+        user_agent: userAgent,
+      });
+      return deny();
+    }
 
     const valid = await verifyPassword(password, authUser.password_hash);
-    if (!valid) return deny();
+    if (!valid) {
+      // Log failed attempt
+      await supabase.from("failed_login_attempts").insert({
+        attempted_name: nameToLog,
+        attempted_code: codeToLog,
+        ip_address: ip,
+        user_agent: userAgent,
+      });
+      return deny();
+    }
 
     // Look up profile
     const { data: profile, error: profileErr } = await supabase

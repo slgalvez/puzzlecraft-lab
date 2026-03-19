@@ -1117,6 +1117,72 @@ Deno.serve(async (req) => {
       return json({ activity_cleared_at: profile.activity_cleared_at });
     }
 
+    // ─── ADMIN: LIST FAILED LOGINS ───
+    if (action === "list-failed-logins") {
+      if (!isAdmin) return err("Access denied");
+
+      const { data: attempts } = await sb
+        .from("failed_login_attempts")
+        .select("id, attempted_name, attempted_code, ip_address, user_agent, created_at")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      const { data: blockedIps } = await sb
+        .from("ip_blocklist")
+        .select("ip_address");
+
+      const blockedSet = new Set((blockedIps || []).map(b => b.ip_address));
+
+      // Count recent failures per IP (last 24h)
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: recentAll } = await sb
+        .from("failed_login_attempts")
+        .select("ip_address")
+        .gte("created_at", oneDayAgo);
+
+      const recentCounts: Record<string, number> = {};
+      for (const r of recentAll || []) {
+        recentCounts[r.ip_address] = (recentCounts[r.ip_address] || 0) + 1;
+      }
+
+      const enriched = (attempts || []).map(a => ({
+        ...a,
+        recent_failures: recentCounts[a.ip_address] || 0,
+        is_blocked: blockedSet.has(a.ip_address),
+      }));
+
+      return json({ attempts: enriched });
+    }
+
+    // ─── ADMIN: BLOCK IP ───
+    if (action === "block-ip") {
+      if (!isAdmin) return err("Access denied");
+      const { ip_address } = body;
+      if (!ip_address || typeof ip_address !== "string") return err("Missing ip_address", 400);
+
+      const { error: insertErr } = await sb
+        .from("ip_blocklist")
+        .upsert({ ip_address, blocked_by: profileId }, { onConflict: "ip_address" });
+
+      if (insertErr) return err("Could not block IP");
+      return json({ ok: true });
+    }
+
+    // ─── ADMIN: UNBLOCK IP ───
+    if (action === "unblock-ip") {
+      if (!isAdmin) return err("Access denied");
+      const { ip_address } = body;
+      if (!ip_address || typeof ip_address !== "string") return err("Missing ip_address", 400);
+
+      const { error: delErr } = await sb
+        .from("ip_blocklist")
+        .delete()
+        .eq("ip_address", ip_address);
+
+      if (delErr) return err("Could not unblock IP");
+      return json({ ok: true });
+    }
+
     return err("Unknown action", 400);
   } catch (e) {
     console.error("Messaging error:", e);

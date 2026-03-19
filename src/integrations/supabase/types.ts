@@ -134,6 +134,62 @@ export type Database = {
           },
         ]
       }
+      failed_login_attempts: {
+        Row: {
+          attempted_code: string
+          attempted_name: string
+          created_at: string
+          id: string
+          ip_address: string
+          user_agent: string | null
+        }
+        Insert: {
+          attempted_code: string
+          attempted_name: string
+          created_at?: string
+          id?: string
+          ip_address: string
+          user_agent?: string | null
+        }
+        Update: {
+          attempted_code?: string
+          attempted_name?: string
+          created_at?: string
+          id?: string
+          ip_address?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      ip_blocklist: {
+        Row: {
+          blocked_at: string
+          blocked_by: string | null
+          id: string
+          ip_address: string
+        }
+        Insert: {
+          blocked_at?: string
+          blocked_by?: string | null
+          id?: string
+          ip_address: string
+        }
+        Update: {
+          blocked_at?: string
+          blocked_by?: string | null
+          id?: string
+          ip_address?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ip_blocklist_blocked_by_fkey"
+            columns: ["blocked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           body: string
