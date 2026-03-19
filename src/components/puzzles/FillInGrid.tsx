@@ -53,23 +53,24 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
     () => saved?.state.usedEntries ? new Set(saved.state.usedEntries) : new Set()
   );
   const [errors, setErrors] = useState<Set<string>>(new Set());
+  const [isRevealed, setIsRevealed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const mobileInputRef = useRef<MobileLetterInputHandle>(null);
   const resetCount = useRef(0);
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
+  const hintCount = useRef(0);
 
   const timer = usePuzzleTimer(timerKey, { category: puzzle.type as "word-fill" | "number-fill", difficulty: puzzle.difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
-  // Auto-save
   useEffect(() => {
-    if (!timer.isSolved) {
+    if (!timer.isSolved && !isRevealed) {
       saveProgress<FillInState>(timerKey, {
         grid,
         usedEntries: Array.from(usedEntries),
       }, timer.elapsed);
     }
-  }, [grid, usedEntries, timer.elapsed, timer.isSolved, timerKey]);
+  }, [grid, usedEntries, timer.elapsed, timer.isSolved, isRevealed, timerKey]);
 
   const blacks = useMemo(() => {
     const set = new Set<string>();
@@ -159,7 +160,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
   }, [puzzle.id]);
 
   const enterChar = useCallback((char: string) => {
-    if (!activeCell || timer.isSolved) return;
+    if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
     setGrid((prev) => {
       const next = prev.map((row) => [...row]);
@@ -174,10 +175,10 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
         setActiveCell(slot.cells[idx + 1]);
       }
     }
-  }, [activeCell, timer.isSolved, direction, getActiveSlot]);
+  }, [activeCell, timer.isSolved, isRevealed, direction, getActiveSlot]);
 
   const deleteChar = useCallback(() => {
-    if (!activeCell || timer.isSolved) return;
+    if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
     if (grid[r][c]) {
       setGrid((prev) => {
@@ -195,10 +196,10 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
         }
       }
     }
-  }, [activeCell, timer.isSolved, grid, direction, getActiveSlot]);
+  }, [activeCell, timer.isSolved, isRevealed, grid, direction, getActiveSlot]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (!activeCell || timer.isSolved) return;
+    if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
 
     switch (e.key) {
@@ -244,7 +245,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
         if (char) { e.preventDefault(); enterChar(char); }
       }
     }
-  }, [activeCell, timer.isSolved, gridSize, isNumbers, enterChar, deleteChar, isBlack, direction, getActiveSlot, entrySlots]);
+  }, [activeCell, timer.isSolved, isRevealed, gridSize, isNumbers, enterChar, deleteChar, isBlack, direction, getActiveSlot, entrySlots]);
 
   const handleCellClick = (r: number, c: number) => {
     if (isBlack(r, c)) return;
@@ -287,6 +288,8 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
     setUsedEntries(new Set());
     setErrors(new Set());
     setDirection("across");
+    setIsRevealed(false);
+    hintCount.current = 0;
     resetCount.current++;
     timer.reset();
     clearProgress(timerKey);
@@ -327,7 +330,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
       }
 
       if (badSlots.length === 0) {
-        const { isNewBest } = timer.solve();
+        const { isNewBest } = timer.solve({ assisted: hintCount.current > 0 });
         clearProgress(timerKey);
         toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Puzzle solved correctly!" });
         onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
@@ -357,6 +360,55 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
     }
   };
 
+  const handleHint = () => {
+    if (timer.isSolved || isRevealed) return;
+    // Prefer crossing cells (cells in 2+ slots)
+    for (const [key, slots] of cellToSlots.entries()) {
+      if (slots.length < 2) continue;
+      const [r, c] = key.split("-").map(Number);
+      if (solution[r][c] && grid[r][c] !== solution[r][c]) {
+        setGrid((prev) => {
+          const next = prev.map((row) => [...row]);
+          next[r][c] = solution[r][c]!;
+          return next;
+        });
+        setErrors(new Set());
+        setActiveCell([r, c]);
+        hintCount.current++;
+        toast({ title: "💡 Hint", description: `Revealed a ${isNumbers ? "digit" : "letter"}. (${hintCount.current} hint${hintCount.current > 1 ? "s" : ""} used)` });
+        return;
+      }
+    }
+    // Fallback: any cell
+    for (let r = 0; r < gridSize; r++) {
+      for (let c = 0; c < gridSize; c++) {
+        if (isBlack(r, c) || solution[r][c] === null) continue;
+        if (grid[r][c] !== solution[r][c]) {
+          setGrid((prev) => {
+            const next = prev.map((row) => [...row]);
+            next[r][c] = solution[r][c]!;
+            return next;
+          });
+          setErrors(new Set());
+          setActiveCell([r, c]);
+          hintCount.current++;
+          toast({ title: "💡 Hint", description: `Revealed a ${isNumbers ? "digit" : "letter"}. (${hintCount.current} hint${hintCount.current > 1 ? "s" : ""} used)` });
+          return;
+        }
+      }
+    }
+    toast({ title: "No hints needed", description: "All cells are correct!" });
+  };
+
+  const handleReveal = () => {
+    const revealedGrid = solution.map((r) => r.map((v) => v ?? ""));
+    setGrid(revealedGrid);
+    setErrors(new Set());
+    setIsRevealed(true);
+    timer.pause();
+    clearProgress(timerKey);
+  };
+
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
       <div className="flex-shrink-0">
@@ -369,14 +421,14 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
 
         {isNumbers ? (
           <MobileNumberPad
-            visible={isMobile && !!activeCell && !timer.isSolved}
+            visible={isMobile && !!activeCell && !timer.isSolved && !isRevealed}
             onNumber={(n) => enterChar(n.toString())}
             onDelete={deleteChar}
           />
         ) : (
           <MobileLetterInput
             ref={mobileInputRef}
-            active={isMobile && !!activeCell && !timer.isSolved}
+            active={isMobile && !!activeCell && !timer.isSolved && !isRevealed}
             onLetter={enterChar}
             onDelete={deleteChar}
           />
@@ -420,7 +472,17 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
         </div>
         </div>
         {showControls && onNewPuzzle && (
-          <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={puzzle.id} solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty: puzzle.difficulty as any, isEndless }} />
+          <PuzzleControls
+            onReset={handleReset}
+            onCheck={handleCheck}
+            onNewPuzzle={onNewPuzzle}
+            onHint={handleHint}
+            onReveal={handleReveal}
+            hintCount={hintCount.current}
+            isRevealed={isRevealed}
+            puzzleCode={puzzle.id}
+            solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty: puzzle.difficulty as any, isEndless, assisted: hintCount.current > 0 }}
+          />
         )}
       </div>
 

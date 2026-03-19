@@ -62,11 +62,44 @@ function removeClues(
   const cells = rng.shuffle(
     Array.from({ length: 81 }, (_, i) => [Math.floor(i / 9), i % 9] as [number, number])
   );
-  let toRemove = 81 - givens;
+  let removed = 0;
+  const target = 81 - givens;
   for (const [r, c] of cells) {
-    if (toRemove <= 0) break;
+    if (removed >= target) break;
+    const val = grid[r][c];
     grid[r][c] = null;
-    toRemove--;
+    if (countSolutions(grid) > 1) {
+      grid[r][c] = val; // uniqueness violated, put it back
+    } else {
+      removed++;
+    }
   }
   return grid;
+}
+
+/** Count solutions up to a limit of 2 (enough to verify uniqueness). */
+function countSolutions(grid: (number | null)[][]): number {
+  const g = grid.map((r) => r.map((v) => v ?? 0));
+  let count = 0;
+
+  function solve(pos: number): boolean {
+    while (pos < 81) {
+      const r = Math.floor(pos / 9), c = pos % 9;
+      if (g[r][c] === 0) break;
+      pos++;
+    }
+    if (pos >= 81) { count++; return count >= 2; }
+    const r = Math.floor(pos / 9), c = pos % 9;
+    for (let n = 1; n <= 9; n++) {
+      if (isValid(g, r, c, n)) {
+        g[r][c] = n;
+        if (solve(pos + 1)) return true;
+        g[r][c] = 0;
+      }
+    }
+    return false;
+  }
+
+  solve(0);
+  return count;
 }

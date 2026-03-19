@@ -39,11 +39,13 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
   const [direction, setDirection] = useState<"across" | "down">("across");
   const [errors, setErrors] = useState<Set<string>>(new Set());
+  const [isRevealed, setIsRevealed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const mobileInputRef = useRef<MobileLetterInputHandle>(null);
   const resetCount = useRef(0);
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
+  const hintCount = useRef(0);
 
   const timer = usePuzzleTimer(timerKey, { category: "crossword", difficulty: puzzle.difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
@@ -61,12 +63,23 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
     return clue?.number;
   };
 
-  // Auto-save
+  const solutionGrid = useMemo(() => {
+    const sg: string[][] = Array.from({ length: gridSize }, () => Array(gridSize).fill(""));
+    for (const clue of clues) {
+      const dr = clue.direction === "down" ? 1 : 0;
+      const dc = clue.direction === "across" ? 1 : 0;
+      for (let i = 0; i < clue.answer.length; i++) {
+        sg[clue.row + dr * i][clue.col + dc * i] = clue.answer[i];
+      }
+    }
+    return sg;
+  }, [clues, gridSize]);
+
   useEffect(() => {
-    if (!timer.isSolved) {
+    if (!timer.isSolved && !isRevealed) {
       saveProgress<CrosswordState>(timerKey, { grid }, timer.elapsed);
     }
-  }, [grid, timer.elapsed, timer.isSolved, timerKey]);
+  }, [grid, timer.elapsed, timer.isSolved, isRevealed, timerKey]);
 
   useEffect(() => {
     for (let r = 0; r < gridSize; r++)
@@ -155,7 +168,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   };
 
   const enterLetter = useCallback((letter: string) => {
-    if (!activeCell || timer.isSolved) return;
+    if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
     setGrid((prev) => {
       const next = prev.map((row) => [...row]);
@@ -164,10 +177,10 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
     });
     setErrors(new Set());
     moveToNext(r, c);
-  }, [activeCell, timer.isSolved, moveToNext]);
+  }, [activeCell, timer.isSolved, isRevealed, moveToNext]);
 
   const deleteLetter = useCallback(() => {
-    if (!activeCell || timer.isSolved) return;
+    if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
     if (grid[r][c]) {
       setGrid((prev) => {
@@ -179,10 +192,10 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
     } else {
       moveToPrev(r, c);
     }
-  }, [activeCell, timer.isSolved, grid, moveToPrev]);
+  }, [activeCell, timer.isSolved, isRevealed, grid, moveToPrev]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (!activeCell || timer.isSolved) return;
+    if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
     switch (e.key) {
       case "ArrowUp":
@@ -220,7 +233,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
         if (/^[A-Z]$/.test(letter)) { e.preventDefault(); enterLetter(letter); }
       }
     }
-  }, [activeCell, direction, timer.isSolved, grid, gridSize, blacks, clues, enterLetter, deleteLetter]);
+  }, [activeCell, direction, timer.isSolved, isRevealed, grid, gridSize, blacks, clues, enterLetter, deleteLetter]);
 
   const handleCellClick = (r: number, c: number) => {
     if (isBlack(r, c)) return;
@@ -240,6 +253,8 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   const handleReset = () => {
     setGrid(Array.from({ length: gridSize }, () => Array(gridSize).fill("")));
     setErrors(new Set());
+    setIsRevealed(false);
+    hintCount.current = 0;
     resetCount.current++;
     timer.reset();
     clearProgress(timerKey);
@@ -248,14 +263,6 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
 
   const handleCheck = () => {
     checkCount.current++;
-    const solutionGrid: string[][] = Array.from({ length: gridSize }, () => Array(gridSize).fill(""));
-    for (const clue of clues) {
-      const dr = clue.direction === "down" ? 1 : 0;
-      const dc = clue.direction === "across" ? 1 : 0;
-      for (let i = 0; i < clue.answer.length; i++) {
-        solutionGrid[clue.row + dr * i][clue.col + dc * i] = clue.answer[i];
-      }
-    }
     const errs = new Set<string>();
     let filled = true;
     for (let r = 0; r < gridSize; r++) {
@@ -268,7 +275,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
     setErrors(errs);
     if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0 && filled) {
-      const { isNewBest } = timer.solve();
+      const { isNewBest } = timer.solve({ assisted: hintCount.current > 0 });
       clearProgress(timerKey);
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Crossword solved correctly!" });
       onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
@@ -276,6 +283,56 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
       toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
     else
       toast({ title: "Keep going!", description: "No errors so far." });
+  };
+
+  const handleHint = () => {
+    if (timer.isSolved || isRevealed) return;
+    // Try active clue cells first
+    if (activeCell) {
+      const highlightedArr = Array.from(highlighted);
+      for (const key of highlightedArr) {
+        const [r, c] = key.split("-").map(Number);
+        if (solutionGrid[r][c] && grid[r][c] !== solutionGrid[r][c]) {
+          setGrid((prev) => {
+            const next = prev.map((row) => [...row]);
+            next[r][c] = solutionGrid[r][c];
+            return next;
+          });
+          setErrors(new Set());
+          setActiveCell([r, c]);
+          hintCount.current++;
+          toast({ title: "💡 Hint", description: `Revealed a letter. (${hintCount.current} hint${hintCount.current > 1 ? "s" : ""} used)` });
+          return;
+        }
+      }
+    }
+    // Fallback: any cell
+    for (let r = 0; r < gridSize; r++) {
+      for (let c = 0; c < gridSize; c++) {
+        if (isBlack(r, c)) continue;
+        if (solutionGrid[r][c] && grid[r][c] !== solutionGrid[r][c]) {
+          setGrid((prev) => {
+            const next = prev.map((row) => [...row]);
+            next[r][c] = solutionGrid[r][c];
+            return next;
+          });
+          setErrors(new Set());
+          setActiveCell([r, c]);
+          hintCount.current++;
+          toast({ title: "💡 Hint", description: `Revealed a letter. (${hintCount.current} hint${hintCount.current > 1 ? "s" : ""} used)` });
+          return;
+        }
+      }
+    }
+    toast({ title: "No hints needed", description: "All cells are correct!" });
+  };
+
+  const handleReveal = () => {
+    setGrid(solutionGrid.map((r) => [...r]));
+    setErrors(new Set());
+    setIsRevealed(true);
+    timer.pause();
+    clearProgress(timerKey);
   };
 
   const acrossClues = clues.filter((c) => c.direction === "across");
@@ -286,7 +343,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
       <div className="flex-shrink-0">
         <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} remaining={timer.remaining} timeLimit={timer.timeLimit} expired={timer.expired} onPause={timer.pause} onResume={timer.resume} />
 
-        {isMobile && activeCell && !timer.isSolved && (
+        {isMobile && activeCell && !timer.isSolved && !isRevealed && (
           <div className="flex items-center gap-2 mb-2">
             <button
               type="button"
@@ -319,7 +376,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
 
         <MobileLetterInput
           ref={mobileInputRef}
-          active={isMobile && !!activeCell && !timer.isSolved}
+          active={isMobile && !!activeCell && !timer.isSolved && !isRevealed}
           onLetter={enterLetter}
           onDelete={deleteLetter}
         />
@@ -366,7 +423,17 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
         </div>
         </div>
         {showControls && onNewPuzzle && (
-          <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={puzzle.id} solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty: puzzle.difficulty as any, isEndless }} />
+          <PuzzleControls
+            onReset={handleReset}
+            onCheck={handleCheck}
+            onNewPuzzle={onNewPuzzle}
+            onHint={handleHint}
+            onReveal={handleReveal}
+            hintCount={hintCount.current}
+            isRevealed={isRevealed}
+            puzzleCode={puzzle.id}
+            solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty: puzzle.difficulty as any, isEndless, assisted: hintCount.current > 0 }}
+          />
         )}
       </div>
 

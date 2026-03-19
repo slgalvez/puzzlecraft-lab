@@ -6,6 +6,7 @@ export interface CompletionRecord {
   difficulty: string;
   time: number;
   date: string;
+  assisted?: boolean;
 }
 
 export interface ProgressStats {
@@ -38,7 +39,8 @@ export function recordCompletion(
   puzzleKey: string,
   category: PuzzleCategory,
   difficulty: string,
-  time: number
+  time: number,
+  assisted?: boolean
 ) {
   const records = getCompletions();
   records.push({
@@ -47,6 +49,7 @@ export function recordCompletion(
     difficulty,
     time,
     date: new Date().toISOString(),
+    assisted: assisted || false,
   });
   saveCompletions(records);
 }
@@ -112,7 +115,8 @@ export function getProgressStats(): ProgressStats {
 
   const totalTime = records.reduce((s, r) => s + r.time, 0);
   const bestTime = Math.min(...records.map((r) => r.time));
-  const dates = records.map((r) => toDateStr(r.date));
+  const nonAssisted = records.filter((r) => !r.assisted);
+  const dates = nonAssisted.map((r) => toDateStr(r.date));
   const { current, longest } = calcStreak(dates);
 
   const byCategory: ProgressStats["byCategory"] = {};

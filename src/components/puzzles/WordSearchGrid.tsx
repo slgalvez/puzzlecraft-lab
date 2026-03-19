@@ -46,28 +46,31 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
   const [isDragging, setIsDragging] = useState(false);
   const [isMouseDragging, setIsMouseDragging] = useState(false);
   const [tapStart, setTapStart] = useState<[number, number] | null>(null);
+  const [isRevealed, setIsRevealed] = useState(false);
+  const [hintCells, setHintCells] = useState<Set<string>>(new Set());
   const gridRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const resetCount = useRef(0);
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
+  const hintCount = useRef(0);
 
   const timer = usePuzzleTimer(timerKey, { category: "word-search", difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
-  // Auto-save
   useEffect(() => {
-    if (!timer.isSolved) {
+    if (!timer.isSolved && !isRevealed) {
       saveProgress<WordSearchState>(timerKey, {
         foundWords: Array.from(foundWords),
         foundCells: Array.from(foundCells),
       }, timer.elapsed);
     }
-  }, [foundWords, foundCells, timer.elapsed, timer.isSolved, timerKey]);
+  }, [foundWords, foundCells, timer.elapsed, timer.isSolved, isRevealed, timerKey]);
 
   useEffect(() => {
     setCursor([0, 0]);
     setStartCell(null);
     setTapStart(null);
+    setHintCells(new Set());
     containerRef.current?.focus();
   }, [seed, difficulty]);
 
@@ -123,7 +126,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
       setFoundWords(newFound);
       setFoundCells((prev) => { const next = new Set(prev); cells.forEach((c) => next.add(c)); return next; });
       if (newFound.size === puzzle.words.length) {
-        const { isNewBest } = timer.solve();
+        const { isNewBest } = timer.solve({ assisted: hintCount.current > 0 });
         clearProgress(timerKey);
         toast({
           title: "🎉 Congratulations!",
@@ -139,7 +142,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
   const touchMoved = useRef(false);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (timer.isSolved) return;
+    if (timer.isSolved || isRevealed) return;
     const touch = e.touches[0];
     const cell = getCellFromPoint(touch.clientX, touch.clientY);
     if (cell) {
@@ -189,7 +192,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
   };
 
   const handleMouseDown = (r: number, c: number) => {
-    if (timer.isSolved || isMobile) return;
+    if (timer.isSolved || isMobile || isRevealed) return;
     setStartCell([r, c]);
     setHoverCell([r, c]);
     setCursor([r, c]);
@@ -225,7 +228,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
   }, [isMouseDragging, startCell, hoverCell, trySelectWord]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (timer.isSolved) return;
+    if (timer.isSolved || isRevealed) return;
     const [r, c] = cursor;
     const size = puzzle.size;
 
@@ -241,10 +244,11 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
         break;
       case "Escape": e.preventDefault(); setStartCell(null); setTapStart(null); break;
     }
-  }, [cursor, startCell, timer.isSolved, puzzle, trySelectWord]);
+  }, [cursor, startCell, timer.isSolved, isRevealed, puzzle, trySelectWord]);
 
   const handleReset = () => {
     setFoundWords(new Set()); setFoundCells(new Set()); setStartCell(null); setTapStart(null); setCursor([0, 0]);
+    setIsRevealed(false); setHintCells(new Set()); hintCount.current = 0;
     resetCount.current++; timer.reset(); clearProgress(timerKey); containerRef.current?.focus();
   };
 
@@ -254,6 +258,38 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
     } else {
       toast({ title: "Keep searching!", description: `${foundWords.size}/${puzzle.words.length} words found.` });
     }
+  };
+
+  const handleHint = () => {
+    if (timer.isSolved || isRevealed) return;
+    const unfound = puzzle.wordPositions.filter((p) => !foundWords.has(p.word));
+    if (unfound.length === 0) return;
+    const pos = unfound[0];
+    setHintCells((prev) => {
+      const next = new Set(prev);
+      next.add(`${pos.row}-${pos.col}`);
+      return next;
+    });
+    hintCount.current++;
+    toast({ title: "💡 Hint", description: `Look near the highlighted cell for "${pos.word}". (${hintCount.current} hint${hintCount.current > 1 ? "s" : ""} used)` });
+  };
+
+  const handleReveal = () => {
+    const allWords = new Set(puzzle.words);
+    setFoundWords(allWords);
+    const allCells = new Set<string>();
+    for (const pos of puzzle.wordPositions) {
+      let r = pos.row, c = pos.col;
+      for (let i = 0; i < pos.word.length; i++) {
+        allCells.add(`${r}-${c}`);
+        r += pos.dr;
+        c += pos.dc;
+      }
+    }
+    setFoundCells(allCells);
+    setIsRevealed(true);
+    timer.pause();
+    clearProgress(timerKey);
   };
 
   const cellSizeStyle = useMemo(() => {
@@ -304,6 +340,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
               const isPreview = previewCells.has(key);
               const isCursor = cursor[0] === r && cursor[1] === c;
               const isTapStart = tapStartKey === key;
+              const isHintCell = hintCells.has(key);
 
               return (
                 <div
@@ -313,8 +350,9 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
                     isFound && "bg-puzzle-cell-highlight text-primary",
                     (isStart || isTapStart) && "bg-puzzle-cell-active ring-2 ring-inset ring-primary",
                     isPreview && !isFound && !isStart && !isTapStart && "bg-secondary",
-                    isCursor && !isFound && !isStart && !isTapStart && !isPreview && !isMobile && "ring-2 ring-inset ring-primary bg-puzzle-cell-active",
-                    !isFound && !isStart && !isTapStart && !isPreview && !(isCursor && !isMobile) && "bg-puzzle-cell hover:bg-secondary"
+                    isHintCell && !isFound && !isStart && !isTapStart && !isPreview && "bg-accent ring-2 ring-inset ring-accent-foreground/50 animate-pulse",
+                    isCursor && !isFound && !isStart && !isTapStart && !isPreview && !isHintCell && !isMobile && "ring-2 ring-inset ring-primary bg-puzzle-cell-active",
+                    !isFound && !isStart && !isTapStart && !isPreview && !isHintCell && !(isCursor && !isMobile) && "bg-puzzle-cell hover:bg-secondary"
                   )}
                   style={{ width: cellSizeStyle.width, height: cellSizeStyle.height, fontSize: cellSizeStyle.fontSize }}
                   onMouseDown={() => handleMouseDown(r, c)}
@@ -332,7 +370,17 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
             Tap the end letter to complete selection
           </p>
         )}
-        <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`word-search-${seed}`} solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless }} />
+        <PuzzleControls
+          onReset={handleReset}
+          onCheck={handleCheck}
+          onNewPuzzle={onNewPuzzle}
+          onHint={handleHint}
+          onReveal={handleReveal}
+          hintCount={hintCount.current}
+          isRevealed={isRevealed}
+          puzzleCode={`word-search-${seed}`}
+          solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0 }}
+        />
       </div>
 
       <div className="lg:max-w-xs min-w-0">
