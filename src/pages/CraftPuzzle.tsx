@@ -116,6 +116,8 @@ const CraftPuzzle = () => {
       };
       saveDraft(draft);
       refreshDraftCount();
+      setDraftSaved(true);
+      setTimeout(() => setDraftSaved(false), 1500);
     }, 2000);
 
     return () => {
