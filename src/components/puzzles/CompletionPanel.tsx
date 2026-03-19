@@ -50,7 +50,7 @@ function buildShareData(props: {
   return { text, url: shareUrl, code, displayCode };
 }
 
-const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, category, seed }: Props) => {
+const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, category, seed, dailyCode }: Props) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [visible, setVisible] = useState(false);
@@ -58,7 +58,7 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, ca
   const origin = getPuzzleOrigin();
   const isDaily = origin === "daily";
 
-  const shareData = buildShareData({ category, seed, difficulty, time, isDaily });
+  const shareData = buildShareData({ category, seed, difficulty, time, isDaily, dailyCode });
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setVisible(true));
