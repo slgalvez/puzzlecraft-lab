@@ -302,7 +302,20 @@ const CraftPuzzle = () => {
         {/* ─── Step 3: Preview & Share ─── */}
         {step === "preview" && generatedData && selectedType && (
           <div className="animate-in fade-in-0 slide-in-from-right-4 duration-300 space-y-5">
-            {/* Header */}
+            {/* Header row */}
+            <div className="flex items-center justify-between">
+              <button onClick={handleBack} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                <ArrowLeft size={13} /> Edit content
+              </button>
+              <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/60 font-medium">
+                Preview
+              </p>
+              <button onClick={handleStartOver} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                Start over
+              </button>
+            </div>
+
+            {/* Ready message */}
             <div className="text-center space-y-1">
               <h2 className="text-sm font-medium text-foreground">
                 Your puzzle is ready ✨
@@ -311,21 +324,6 @@ const CraftPuzzle = () => {
                 This is exactly what they'll see
               </p>
             </div>
-
-            {/* Creator actions */}
-            <div className="flex items-center justify-between">
-              <button onClick={handleBack} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                <ArrowLeft size={13} /> Edit content
-              </button>
-              <button onClick={handleStartOver} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                Start over
-              </button>
-            </div>
-
-            {/* Preview label */}
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-medium text-center">
-              👁 Preview
-            </p>
 
             {/* Preview — matches final experience */}
             <div className="p-5 rounded-xl border border-border bg-card space-y-4">
