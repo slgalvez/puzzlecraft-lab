@@ -73,6 +73,7 @@ const CraftPuzzle = () => {
   const [craftSettings, setCraftSettings] = useState<CraftSettings>(DEFAULT_CRAFT_SETTINGS);
   const [draftCount, setDraftCount] = useState(() => loadDrafts().length);
   const [draftSaved, setDraftSaved] = useState(false);
+  const [enteredFromDraft, setEnteredFromDraft] = useState(false);
 
   // Active draft ID for auto-save
   const activeDraftId = useRef<string | null>(null);
@@ -286,6 +287,11 @@ const CraftPuzzle = () => {
   const handleBack = () => {
     if (step === "preview") setStep("content");
     else if (step === "content") {
+      if (enteredFromDraft) {
+        setEnteredFromDraft(false);
+        setView("inbox");
+        return;
+      }
       setStep("type");
       setSelectedType(null);
     }
@@ -340,6 +346,7 @@ const CraftPuzzle = () => {
     setShareUrl(null);
     setStep("content");
     setView("create");
+    setEnteredFromDraft(true);
   }, []);
 
   return (
