@@ -138,7 +138,7 @@ const CraftPuzzle = () => {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setShareSuccess(true);
-      toast({ title: "Link copied!" });
+      toast({ title: "Puzzle link copied" });
       setTimeout(() => setCopied(false), 2000);
       setTimeout(() => setShareSuccess(false), 1500);
     } catch {
