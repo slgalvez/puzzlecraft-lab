@@ -10,7 +10,7 @@ interface Props {
 }
 
 const DifficultySelector = ({ value, onChange }: Props) => (
-  <div className="flex flex-wrap gap-2">
+  <div className="flex flex-wrap gap-1.5">
     {levels.map(([val, label]) => (
       <button
         key={val}
