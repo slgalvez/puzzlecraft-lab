@@ -16,7 +16,7 @@ const DifficultySelector = ({ value, onChange }: Props) => (
         key={val}
         onClick={() => onChange(val)}
         className={cn(
-          "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+          "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
           value === val
             ? "border-primary bg-primary text-primary-foreground"
             : "border-border bg-card text-muted-foreground hover:text-foreground"

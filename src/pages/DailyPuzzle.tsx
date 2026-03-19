@@ -95,7 +95,7 @@ const DailyPuzzle = () => {
 
   return (
     <Layout>
-      <div className="container py-12">
+      <div className="container py-6 md:py-12">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">

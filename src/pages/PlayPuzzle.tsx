@@ -42,7 +42,7 @@ const PlayPuzzle = () => {
 
   return (
     <Layout>
-      <div className="container py-12">
+      <div className="container py-6 md:py-12">
         <button
           onClick={() => goBackOrFallback(navigate, "/puzzles")}
           className="text-sm text-muted-foreground hover:text-foreground transition-colors"
