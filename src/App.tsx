@@ -18,6 +18,8 @@ import About from "./pages/About";
 import Help from "./pages/Help";
 import Stats from "./pages/Stats";
 import NotFound from "./pages/NotFound";
+import CraftPuzzle from "./pages/CraftPuzzle";
+import PlayCraftPuzzle from "./pages/PlayCraftPuzzle";
 
 // Private app
 import { AuthProvider } from "./contexts/AuthContext";
@@ -63,6 +65,8 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/help" element={<Help />} />
             <Route path="/stats" element={<Stats />} />
+            <Route path="/craft" element={<CraftPuzzle />} />
+            <Route path="/craft/play" element={<PlayCraftPuzzle />} />
 
             {/* Private app */}
             <Route path="/p/login" element={<Login />} />

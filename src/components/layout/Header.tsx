@@ -8,6 +8,7 @@ const navLinks = [
   { to: "/daily", label: "Daily Challenge" },
   { to: "/puzzles", label: "Play" },
   { to: "/generate/sudoku", label: "Puzzle Lab" },
+  { to: "/craft", label: "Craft" },
   { to: "/stats", label: "Stats" },
 ];
 
@@ -18,6 +19,7 @@ const Header = () => {
   const isActive = (to: string) => {
     if (to === "/") return location.pathname === "/";
     if (to.startsWith("/generate")) return location.pathname.startsWith("/generate");
+    if (to === "/craft") return location.pathname.startsWith("/craft");
     return location.pathname === to;
   };
 
