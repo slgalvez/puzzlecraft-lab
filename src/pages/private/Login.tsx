@@ -123,18 +123,12 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-8">
         {/* Icon + Title + Subtext */}
         <div className="text-center space-y-4">
-          <div className="relative flex justify-center" style={{ height: 120 }}>
-            {/* Floating puzzle pieces */}
-            <PuzzlePiece size={16} rotate={-20} offsetX={-8} offsetY={2} delay={0} />
-            <PuzzlePiece size={12} rotate={15} offsetX={12} offsetY={-6} delay={0.8} />
-            <PuzzlePiece size={9} rotate={-35} offsetX={2} offsetY={-16} delay={1.6} />
-            {/* Flask icon */}
+          <div className="flex justify-center">
             <img
               src={flaskIcon}
               alt=""
-              className="absolute bottom-0 h-[80px] w-[80px] rounded-xl object-cover"
+              className="h-[80px] w-auto object-contain"
               aria-hidden="true" />
-            
           </div>
           <div>
             <h1 className="text-xl font-semibold text-foreground tracking-tight">
