@@ -19,6 +19,7 @@ const Header = () => {
   const isActive = (to: string) => {
     if (to === "/") return location.pathname === "/";
     if (to.startsWith("/generate")) return location.pathname.startsWith("/generate");
+    if (to === "/craft") return location.pathname.startsWith("/craft");
     return location.pathname === to;
   };
 
