@@ -36,7 +36,7 @@ interface KakuroState {
   grid: string[][];
 }
 
-const KakuroGrid = ({ seed, difficulty: rawDifficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode }: Props) => {
+const KakuroGrid = ({ seed, difficulty: rawDifficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode, showHints = true, showReveal = true, maxHints }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   // Always use effective difficulty to prevent insane from reaching generation
