@@ -688,6 +688,7 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress,
   const [selStart, setSelStart] = useState<[number, number] | null>(null);
   const [selEnd, setSelEnd] = useState<[number, number] | null>(null);
   const [tapStart, setTapStart] = useState<[number, number] | null>(null);
+  const [hintCells, setHintCells] = useState<Set<string>>(new Set());
   const touchMoved = useRef(false);
   const gridRef = useRef<HTMLDivElement>(null);
   const completed = foundWords.size === data.words.length;
