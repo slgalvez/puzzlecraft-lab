@@ -310,10 +310,13 @@ const CraftPuzzle = () => {
               <Button onClick={handleShare} className="w-full gap-2">
                 <Share2 className="h-4 w-4" /> Send Puzzle
               </Button>
-              <Button onClick={handleCopyLink} variant="ghost" className="w-full gap-2 text-muted-foreground">
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              <button
+                onClick={handleCopyLink}
+                className="w-full flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors py-2"
+              >
+                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                 {copied ? "Copied!" : "Copy link instead"}
-              </Button>
+              </button>
             </div>
 
             <Button onClick={handleRegenerate} variant="ghost" className="w-full gap-2 text-muted-foreground">
