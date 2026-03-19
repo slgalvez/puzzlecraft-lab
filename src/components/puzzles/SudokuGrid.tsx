@@ -271,7 +271,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
         hintCount={hintCount.current}
         isRevealed={isRevealed}
         puzzleCode={`sudoku-${seed}`}
-        solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0 }}
+        solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0, category: "sudoku", seed }}
       />
     </div>
   );

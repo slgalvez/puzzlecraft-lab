@@ -432,7 +432,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
             hintCount={hintCount.current}
             isRevealed={isRevealed}
             puzzleCode={puzzle.id}
-            solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty: puzzle.difficulty as any, isEndless, assisted: hintCount.current > 0 }}
+            solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty: puzzle.difficulty as any, isEndless, assisted: hintCount.current > 0, category: "crossword", seed: parseInt(puzzle.id.replace(/\D/g, "")) || 0 }}
           />
         )}
       </div>
