@@ -285,7 +285,7 @@ const PuzzleGenerator = () => {
               <PuzzleIcon type={category!} size={24} className="text-foreground" />
               <div>
                 <h2 className="font-display text-lg font-bold text-foreground">{info.name}</h2>
-                <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[difficulty]}</p>
+                <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[getEffectiveDifficulty(category!, difficulty)]}</p>
               </div>
             </div>
             <Button onClick={handleGenerate} size="sm" variant="outline" className="gap-1.5">
