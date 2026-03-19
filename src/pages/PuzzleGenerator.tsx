@@ -684,6 +684,9 @@ const PuzzleGenerator = () => {
         </div>
       </div>
 
+      {/* Assists */}
+      {renderAssists()}
+
       {/* Primary Action */}
       <div className="flex items-center gap-4">
         <Button onClick={handleGenerate} size="lg" className="gap-2 text-base px-8" disabled={!canGenerate}>
