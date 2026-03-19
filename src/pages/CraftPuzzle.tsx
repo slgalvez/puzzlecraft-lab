@@ -4,8 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Trash2, Eye, RefreshCw, Share2, Copy, Check } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share2, Copy, Check } from "lucide-react";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
+import CraftStepper from "@/components/craft/CraftStepper";
+import CraftTypeCards, { TYPE_OPTIONS } from "@/components/craft/CraftTypeCards";
+import CraftPreviewGrid from "@/components/craft/CraftPreviewGrid";
 import {
   generateCustomFillIn,
   generateCustomCryptogram,
@@ -15,13 +18,6 @@ import {
 
 type CraftType = "word-fill" | "cryptogram" | "crossword" | "word-search";
 type Step = "type" | "content" | "preview";
-
-const TYPE_OPTIONS: { value: CraftType; label: string; description: string }[] = [
-  { value: "word-search", label: "Word Search", description: "Hide words and reveal a message" },
-  { value: "word-fill", label: "Word Fill-In", description: "Create a puzzle from your own words" },
-  { value: "crossword", label: "Crossword", description: "Write clues and challenge someone" },
-  { value: "cryptogram", label: "Cryptogram", description: "Turn your message into a coded puzzle" },
-];
 
 function encodeShareData(data: {
   type: CraftType;
@@ -47,6 +43,7 @@ const CraftPuzzle = () => {
   const [generatedData, setGeneratedData] = useState<Record<string, unknown> | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [shareSuccess, setShareSuccess] = useState(false);
 
   const handleSelectType = (type: CraftType) => {
     setSelectedType(type);
@@ -104,8 +101,10 @@ const CraftPuzzle = () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
+      setShareSuccess(true);
       toast({ title: "Link copied!" });
       setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setShareSuccess(false), 1500);
     } catch {
       toast({ title: "Failed to copy link" });
     }
@@ -116,6 +115,8 @@ const CraftPuzzle = () => {
     if (navigator.share) {
       try {
         await navigator.share({ title: "Solve my puzzle!", url: shareUrl });
+        setShareSuccess(true);
+        setTimeout(() => setShareSuccess(false), 1500);
       } catch { /* user cancelled */ }
     } else {
       handleCopyLink();
@@ -137,43 +138,37 @@ const CraftPuzzle = () => {
     setGeneratedData(null);
     setShareUrl(null);
     setCopied(false);
+    setShareSuccess(false);
   };
 
   return (
     <Layout>
       <div className="container py-6 md:py-10 max-w-2xl mx-auto">
-        <div className="mb-6">
+        {/* Header */}
+        <div className="mb-2 text-center">
           <h1 className="font-display text-2xl font-bold text-foreground">Send a Puzzle</h1>
           <p className="text-sm text-muted-foreground mt-1">Create a custom puzzle and share it with someone</p>
         </div>
 
-        {/* ─── Type Selection ─── */}
+        {/* Progress Stepper */}
+        <CraftStepper current={step} />
+
+        {/* ─── Step 1: Type Selection ─── */}
         {step === "type" && (
-          <div className="space-y-4">
-            <h2 className="text-sm font-medium text-foreground">Choose puzzle type</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {TYPE_OPTIONS.map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => handleSelectType(opt.value)}
-                  className="p-5 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/10 transition-colors text-left space-y-1.5"
-                >
-                  <span className="text-[15px] font-medium text-foreground">{opt.label}</span>
-                  <p className="text-xs text-muted-foreground">{opt.description}</p>
-                </button>
-              ))}
-            </div>
-          </div>
+          <CraftTypeCards onSelect={handleSelectType} />
         )}
 
-        {/* ─── Content Entry ─── */}
+        {/* ─── Step 2: Content Entry ─── */}
         {step === "content" && selectedType && (
-          <div className="space-y-5">
-            <button onClick={handleBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft size={12} /> Back
+          <div className="animate-in fade-in-0 slide-in-from-right-4 duration-300 space-y-5">
+            <button onClick={handleBack} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft size={13} /> Back
             </button>
-            <div className="flex items-center gap-2">
-              <PuzzleIcon type={selectedType === "word-fill" ? "word-fill" : selectedType === "word-search" ? "word-search" : selectedType === "crossword" ? "crossword" : "cryptogram"} size={20} className="text-foreground" />
+
+            <div className="flex items-center gap-2.5 pb-2 border-b border-border">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <PuzzleIcon type={selectedType} size={16} />
+              </div>
               <h2 className="text-sm font-medium text-foreground">
                 {TYPE_OPTIONS.find(o => o.value === selectedType)?.label}
               </h2>
@@ -181,12 +176,13 @@ const CraftPuzzle = () => {
 
             {(selectedType === "word-fill" || selectedType === "word-search") && (
               <div className="space-y-2">
-                <label className="text-xs text-muted-foreground">Enter words (one per line or comma-separated)</label>
+                <label className="text-xs font-medium text-muted-foreground">Enter words (one per line or comma-separated)</label>
                 <Textarea
                   value={wordInput}
                   onChange={e => setWordInput(e.target.value)}
                   placeholder="HELLO, WORLD, PUZZLE, FRIEND, GAMES"
                   rows={6}
+                  className="resize-none"
                 />
                 <p className="text-[10px] text-muted-foreground">
                   {wordInput.split(/[,\n]+/).map(w => w.trim()).filter(Boolean).length} words entered
@@ -196,19 +192,20 @@ const CraftPuzzle = () => {
 
             {selectedType === "cryptogram" && (
               <div className="space-y-2">
-                <label className="text-xs text-muted-foreground">Enter a phrase or message to encode</label>
+                <label className="text-xs font-medium text-muted-foreground">Enter a phrase or message to encode</label>
                 <Textarea
                   value={phraseInput}
                   onChange={e => setPhraseInput(e.target.value)}
                   placeholder="THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"
                   rows={4}
+                  className="resize-none"
                 />
               </div>
             )}
 
             {selectedType === "crossword" && (
               <div className="space-y-3">
-                <label className="text-xs text-muted-foreground">Enter answer + clue pairs</label>
+                <label className="text-xs font-medium text-muted-foreground">Enter answer + clue pairs</label>
                 {clueEntries.map((entry, i) => (
                   <div key={i} className="flex gap-2">
                     <Input
@@ -248,7 +245,7 @@ const CraftPuzzle = () => {
             )}
 
             <div className="space-y-2">
-              <label className="text-xs text-muted-foreground">Reveal message (shown after solving — optional)</label>
+              <label className="text-xs font-medium text-muted-foreground">Reveal message (shown after solving — optional)</label>
               <Input
                 value={revealMessage}
                 onChange={e => setRevealMessage(e.target.value)}
@@ -257,36 +254,36 @@ const CraftPuzzle = () => {
               />
             </div>
 
-            <Button onClick={handleGenerate} className="w-full">
-              <Eye className="h-4 w-4 mr-2" /> Generate & Preview
+            <Button onClick={handleGenerate} className="w-full gap-2">
+              <Sparkles className="h-4 w-4" /> Generate & Preview
             </Button>
           </div>
         )}
 
-        {/* ─── Preview & Share ─── */}
+        {/* ─── Step 3: Preview & Share ─── */}
         {step === "preview" && generatedData && selectedType && (
-          <div className="space-y-5">
+          <div className="animate-in fade-in-0 slide-in-from-right-4 duration-300 space-y-5">
             <div className="flex items-center justify-between">
-              <button onClick={handleBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                <ArrowLeft size={12} /> Edit content
+              <button onClick={handleBack} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                <ArrowLeft size={13} /> Edit content
               </button>
               <button onClick={handleStartOver} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                 Start over
               </button>
             </div>
 
-            <div className="space-y-1">
+            <div className="text-center space-y-1">
               <h2 className="text-sm font-medium text-foreground">
-                {TYPE_OPTIONS.find(o => o.value === selectedType)?.label} — Preview
+                Your {TYPE_OPTIONS.find(o => o.value === selectedType)?.label} is ready!
               </h2>
               <p className="text-xs text-muted-foreground">
-                This is what solvers will see. Share the link below to send it!
+                Share the link below to send it to someone
               </p>
             </div>
 
-            {/* Preview of generated puzzle */}
-            <div className="p-4 rounded-lg border border-border bg-card">
-              <PreviewGrid data={generatedData} puzzleType={selectedType} />
+            {/* Preview */}
+            <div className="p-5 rounded-xl border border-border bg-card">
+              <CraftPreviewGrid data={generatedData} puzzleType={selectedType} />
             </div>
 
             {revealMessage && (
@@ -296,8 +293,20 @@ const CraftPuzzle = () => {
               </div>
             )}
 
-            {/* Share controls */}
-            <div className="space-y-3 p-4 rounded-lg border border-border bg-card">
+            {/* Share controls with success animation */}
+            <div className="relative space-y-3 p-5 rounded-xl border border-border bg-card overflow-hidden">
+              {/* Success overlay */}
+              {shareSuccess && (
+                <div className="absolute inset-0 flex items-center justify-center bg-card/90 z-10 animate-in fade-in-0 duration-200">
+                  <div className="flex flex-col items-center gap-2 animate-in zoom-in-75 duration-300">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-primary">
+                      <Check size={24} strokeWidth={2.5} />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">Ready to share!</span>
+                  </div>
+                </div>
+              )}
+
               <p className="text-xs font-medium text-foreground">Share your puzzle</p>
               <div className="flex gap-2">
                 <Button onClick={handleCopyLink} variant="outline" className="flex-1 gap-2">
@@ -319,88 +328,5 @@ const CraftPuzzle = () => {
     </Layout>
   );
 };
-
-// ─── Simple preview (read-only grid rendering) ───
-
-function PreviewGrid({ data, puzzleType }: { data: Record<string, unknown>; puzzleType: CraftType }) {
-  if (puzzleType === "word-fill" || puzzleType === "crossword") {
-    const gridSize = (data.gridSize as number) || 9;
-    const blackCells = (data.blackCells as [number, number][]) || [];
-    const solution = (data.solution as (string | null)[][]) || null;
-    const clues = (data.clues as { answer: string; row: number; col: number; direction: string }[]) || [];
-    const blacks = new Set(blackCells.map(([r, c]) => `${r}-${c}`));
-
-    // Build solution grid from clues if needed
-    const grid: (string | null)[][] = solution || (() => {
-      const g: (string | null)[][] = Array.from({ length: gridSize }, () => Array(gridSize).fill(null));
-      for (const c of clues) {
-        const dr = c.direction === "down" ? 1 : 0;
-        const dc = c.direction === "across" ? 1 : 0;
-        for (let i = 0; i < c.answer.length; i++) {
-          g[c.row + dr * i][c.col + dc * i] = c.answer[i];
-        }
-      }
-      return g;
-    })();
-
-    const cellSize = Math.min(28, Math.floor(280 / gridSize));
-    return (
-      <div className="overflow-x-auto">
-        <div className="inline-grid gap-0 border border-border" style={{ gridTemplateColumns: `repeat(${gridSize}, ${cellSize}px)` }}>
-          {Array.from({ length: gridSize }, (_, r) =>
-            Array.from({ length: gridSize }, (_, c) => {
-              const isBlack = blacks.has(`${r}-${c}`);
-              return (
-                <div
-                  key={`${r}-${c}`}
-                  className={`flex items-center justify-center border border-border/30 text-[10px] font-mono font-medium ${isBlack ? "bg-foreground/90" : "bg-card text-foreground"}`}
-                  style={{ width: cellSize, height: cellSize }}
-                >
-                  {!isBlack && grid[r]?.[c] ? grid[r][c] : ""}
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (puzzleType === "cryptogram") {
-    const decoded = (data.decoded as string) || "";
-    return (
-      <p className="text-sm font-mono text-foreground tracking-wider break-all">
-        {decoded.split("").map((ch, i) => (
-          <span key={i} className={/[A-Z]/.test(ch) ? "border-b border-foreground/30 mx-px" : "mx-0.5"}>
-            {/[A-Z]/.test(ch) ? "•" : ch}
-          </span>
-        ))}
-      </p>
-    );
-  }
-
-  if (puzzleType === "word-search") {
-    const grid = (data.grid as string[][]) || [];
-    const size = grid.length;
-    const cellSize = Math.min(24, Math.floor(280 / size));
-    return (
-      <div className="overflow-x-auto">
-        <div className="inline-grid gap-0" style={{ gridTemplateColumns: `repeat(${size}, ${cellSize}px)` }}>
-          {grid.flat().map((ch, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-center text-[10px] font-mono font-medium text-foreground"
-              style={{ width: cellSize, height: cellSize }}
-            >
-              {ch}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  return null;
-}
 
 export default CraftPuzzle;
