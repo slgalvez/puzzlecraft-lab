@@ -131,32 +131,58 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
           )}
         </div>
       ) : (
-        /* ── Desktop layout (unchanged) ── */
-        <>
-          {onHint && showControls && (
-            <div>
-              <Button variant="outline" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground" onClick={onHint}>
+        /* ── Desktop layout ── */
+        <div className="space-y-4">
+          {/* Reset — top-right aligned, icon-only, low emphasis */}
+          <div className="flex justify-end">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              onClick={onReset}
+              aria-label="Reset puzzle"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Main controls row: Hint, Reveal, Check Solution */}
+          <div className="flex items-center gap-4">
+            {onHint && showControls && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-muted-foreground hover:text-foreground"
+                onClick={onHint}
+              >
                 <Lightbulb className="h-4 w-4" />
                 Hint{hintCount > 0 ? ` (${hintCount})` : ""}
               </Button>
-            </div>
-          )}
-          <div className="flex flex-wrap gap-3">
-            <Button variant="outline" size="sm" onClick={onReset}>
-              <RotateCcw className="mr-1.5 h-4 w-4" /> Reset
-            </Button>
-            <Button size="sm" onClick={onCheck}>
-              <CheckCircle2 className="mr-1.5 h-4 w-4" /> Check Solution
-            </Button>
+            )}
             {onReveal && showControls && (
-              <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setShowRevealConfirm(true)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground"
+                onClick={() => setShowRevealConfirm(true)}
+              >
                 <Eye className="mr-1.5 h-4 w-4" /> Reveal
               </Button>
             )}
-            <Button size="sm" onClick={onNewPuzzle}>
+            <div className="ml-auto">
+              <Button size="sm" onClick={onCheck}>
+                <CheckCircle2 className="mr-1.5 h-4 w-4" /> Check Solution
+              </Button>
+            </div>
+          </div>
+
+          {/* Separated — New Puzzle on its own row */}
+          <div className="pt-1">
+            <Button variant="outline" size="sm" onClick={onNewPuzzle}>
               <Shuffle className="mr-1.5 h-4 w-4" /> New Puzzle
             </Button>
           </div>
+
           {puzzleCode && (
             <details
               className="text-xs text-muted-foreground"
@@ -174,7 +200,7 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
               </div>
             </details>
           )}
-        </>
+        </div>
       )}
 
       <AlertDialog open={showRevealConfirm} onOpenChange={setShowRevealConfirm}>
