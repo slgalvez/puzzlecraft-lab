@@ -346,6 +346,7 @@ const CraftPuzzle = () => {
     setShareUrl(null);
     setStep("content");
     setView("create");
+    setEnteredFromDraft(true);
   }, []);
 
   return (
