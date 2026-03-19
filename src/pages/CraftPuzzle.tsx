@@ -221,6 +221,7 @@ const CraftPuzzle = () => {
       activeDraftId.current = null;
       refreshDraftCount();
 
+      toast({ title: "Puzzle sent ✨" });
       setStep("preview");
     } catch (err) {
       toast({ title: "Generation failed", description: err instanceof Error ? err.message : "Please try different input" });
