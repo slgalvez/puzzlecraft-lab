@@ -73,7 +73,9 @@ const PuzzleGenerator = () => {
   const [seedInput, setSeedInput] = useState(initialSeed || "");
   const [puzzleKey, setPuzzleKey] = useState(0);
   const [loadingSeed, setLoadingSeed] = useState(false);
-  const [puzzleGenerated, setPuzzleGenerated] = useState(false);
+  const [puzzleGenerated, setPuzzleGenerated] = useState(
+    () => !!(routeState?.randomPool && routeState.randomDifficulty)
+  );
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [timeLimitEnabled, setTimeLimitEnabled] = useState(false);
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(5);
