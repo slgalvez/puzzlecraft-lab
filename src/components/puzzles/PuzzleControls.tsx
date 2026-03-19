@@ -56,6 +56,7 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
           assisted={solveData.assisted}
           category={solveData.category}
           seed={solveData.seed}
+          dailyCode={solveData.dailyCode}
         />
       ) : isRevealed ? (
         <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
