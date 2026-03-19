@@ -459,18 +459,31 @@ const PuzzleGenerator = () => {
           >
             Any
           </button>
-          {difficulties.map(([val, label]) => (
-            <button
-              key={val}
-              onClick={() => setRandomDifficulty(val)}
-              className={cn(
-                "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
-                randomDifficulty === val ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {label}
-            </button>
-          ))}
+          {difficulties.map(([val, label]) => {
+            const onlyKakuro = randomTypes.size === 1 && randomTypes.has("kakuro");
+            const disabled = onlyKakuro && isDifficultyDisabled("kakuro", val);
+            return (
+              <button
+                key={val}
+                onClick={() => {
+                  if (disabled) {
+                    toast({ title: `${label} not available for Kakuro yet` });
+                    return;
+                  }
+                  setRandomDifficulty(val);
+                }}
+                className={cn(
+                  "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+                  disabled
+                    ? "border-border text-muted-foreground/40 cursor-not-allowed"
+                    : randomDifficulty === val ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:text-foreground"
+                )}
+                title={disabled ? `${label} not available for Kakuro yet` : undefined}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
