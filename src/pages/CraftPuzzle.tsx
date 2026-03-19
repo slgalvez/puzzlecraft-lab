@@ -356,7 +356,7 @@ const CraftPuzzle = () => {
 
         {/* ─── Inbox View ─── */}
         {view === "inbox" && (
-          <CraftInbox onResumeDraft={handleResumeDraft} onDataChange={refreshDraftCount} />
+          <CraftInbox onResumeDraft={handleResumeDraft} onDataChange={refreshDraftCount} initialTab={inboxTabFromState || undefined} />
         )}
 
         {/* ─── Create View ─── */}

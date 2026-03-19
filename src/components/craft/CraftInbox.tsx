@@ -37,9 +37,10 @@ function displayTitle(title: string | undefined | null, type: string): string {
 interface CraftInboxProps {
   onResumeDraft: (draft: CraftDraft) => void;
   onDataChange?: () => void;
+  initialTab?: string;
 }
 
-export default function CraftInbox({ onResumeDraft, onDataChange }: CraftInboxProps) {
+export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: CraftInboxProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [drafts, setDrafts] = useState<CraftDraft[]>(() => loadDrafts());
