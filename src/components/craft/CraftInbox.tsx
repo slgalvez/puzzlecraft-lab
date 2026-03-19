@@ -200,7 +200,7 @@ export default function CraftInbox({ onResumeDraft, onDataChange }: CraftInboxPr
                       size="sm"
                       variant="outline"
                       className="text-xs h-7 gap-1 px-3"
-                      onClick={() => navigate(`/s/${s.shareId}`)}
+                      onClick={() => navigate(`/s/${s.shareId}`, { state: { fromInbox: "sent" } })}
                     >
                       <Eye className="h-3 w-3" /> View
                     </Button>
