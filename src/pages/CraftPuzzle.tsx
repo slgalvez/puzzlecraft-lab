@@ -63,7 +63,7 @@ const CraftPuzzle = () => {
     setStep("content");
   };
 
-  const handleGenerate = useCallback(() => {
+  const handleGenerate = useCallback(async () => {
     if (!selectedType) return;
     try {
       let data: Record<string, unknown>;
