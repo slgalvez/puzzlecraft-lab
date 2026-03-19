@@ -615,6 +615,39 @@ export function CryptogramSolver({ data, onComplete, savedState, onSaveProgress,
           );
         })}
       </div>
+      <div className="flex flex-wrap gap-2">
+        {showHints && !completed && (
+          <Button variant="outline" size="sm" onClick={() => {
+            // Reveal one random unsolved letter
+            const unsolved = encodedLetters.filter(ch => !(ch in data.hints) && guesses[ch] !== data.reverseCipher[ch]);
+            if (unsolved.length === 0) return;
+            const pick = unsolved[Math.floor(Math.random() * unsolved.length)];
+            const newGuesses = { ...guesses, [pick]: data.reverseCipher[pick] };
+            setGuesses(newGuesses);
+            toast({ title: "Hint revealed" });
+            // Check completion
+            const allFilled = encodedLetters.every(ch => newGuesses[ch]);
+            if (allFilled) {
+              const decoded = data.encoded.split("").map(ch => /[A-Z]/.test(ch) ? (newGuesses[ch] || "") : ch).join("");
+              if (decoded === data.decoded) { setCompleted(true); onComplete(); }
+            }
+          }}>
+            <Lightbulb className="mr-1.5 h-3.5 w-3.5" /> Hint
+          </Button>
+        )}
+        {showReveal && !completed && (
+          <Button variant="outline" size="sm" onClick={() => {
+            const full: Record<string, string> = {};
+            encodedLetters.forEach(ch => { full[ch] = data.reverseCipher[ch]; });
+            setGuesses({ ...data.hints, ...full });
+            setCompleted(true);
+            onComplete();
+            toast({ title: "Solution revealed" });
+          }}>
+            <Eye className="mr-1.5 h-3.5 w-3.5" /> Reveal
+          </Button>
+        )}
+      </div>
       {completed && <p className="text-sm text-primary font-medium text-center">✓ Solved!</p>}
     </div>
   );
