@@ -25,12 +25,13 @@ function decodeBase64Url(value: string): string {
   return atob(padded);
 }
 
-export function buildCraftShareText(title?: string, from?: string): string {
+export function buildCraftShareText(title?: string, from?: string, url?: string): string {
   const lines: string[] = [];
 
   if (title) lines.push(title);
-  if (from) lines.push(`From ${from}`);
-  lines.push("", "I made you a puzzle 🧩", "Solve it here:");
+  if (from) lines.push(`From — ${from}`);
+  lines.push("", "I made you a puzzle 🧩", "", "Solve it here:");
+  if (url) lines.push(url);
 
   return lines.join("\n");
 }

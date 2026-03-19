@@ -282,12 +282,14 @@ const CraftPuzzle = () => {
       return;
     }
 
-    const shareText = buildCraftShareText(puzzleTitle.trim() || undefined, puzzleFrom.trim() || undefined);
-    const shareTitle = puzzleTitle.trim() || "I made you a puzzle 🧩";
+    const shareText = buildCraftShareText(
+      puzzleTitle.trim() || undefined,
+      puzzleFrom.trim() || undefined,
+    );
 
     if (navigator.share) {
       try {
-        await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
+        await navigator.share({ text: shareText, url: shareUrl });
         recordSent();
         setShareSuccess(true);
         setTimeout(() => setShareSuccess(false), 1500);
