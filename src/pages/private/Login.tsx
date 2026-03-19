@@ -11,32 +11,32 @@ function PuzzlePiece({
   rotate,
   offsetX,
   offsetY,
-  delay,
-}: {
-  size: number;
-  rotate: number;
-  offsetX: number;
-  offsetY: number;
-  delay: number;
-}) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="hsl(172 50% 45%)"
-      className="absolute"
-      style={{
-        left: `calc(50% + ${offsetX}px)`,
-        top: offsetY,
-        transform: `rotate(${rotate}deg) translateX(-50%)`,
-        animation: `puzzleFloat 4s ease-in-out ${delay}s infinite`,
-      }}
-      aria-hidden="true"
-    >
-      <path d="M20 11c-.6 0-1-.4-1-1 0-1.7-1.3-3-3-3-.6 0-1-.4-1-1V3c0-.6-.4-1-1-1H6c-.6 0-1 .4-1 1v5c0 .6.4 1 1 1 1.7 0 3 1.3 3 3s-1.3 3-3 3c-.6 0-1 .4-1 1v5c0 .6.4 1 1 1h8c.6 0 1-.4 1-1 0-1.7 1.3-3 3-3s3 1.3 3 3c0 .6.4 1 1 1h3c.6 0 1-.4 1-1V14c0-.6-.4-1-1-1-1.7 0-3-1.3-3-3s1.3-3 3-3c.6 0 1-.4 1-1V3c0-.6-.4-1-1-1h-3c-.6 0-1 .4-1 1v3c0 .6-.4 1-1 1-1.7 0-3 1.3-3 3 0 .6.4 1 1 1z" />
-    </svg>
-  );
+  delay
+
+
+
+
+
+
+}: {size: number;rotate: number;offsetX: number;offsetY: number;delay: number;}) {
+  return;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 const ACCESS_GRANT_KEY = "private_access_grant";
@@ -74,16 +74,16 @@ export default function LoginPage() {
     return (
       <div className="private-app flex items-center justify-center min-h-screen">
         <p className="text-sm text-muted-foreground">Session unavailable</p>
-      </div>
-    );
+      </div>);
+
   }
 
   if (loading) {
     return (
       <div className="private-app flex items-center justify-center min-h-screen">
         <div className="text-sm text-muted-foreground">Loading...</div>
-      </div>
-    );
+      </div>);
+
   }
 
   if (user) {
@@ -128,8 +128,8 @@ export default function LoginPage() {
               src={flaskIcon}
               alt=""
               className="absolute bottom-0 h-[80px] w-[80px] rounded-xl object-cover"
-              aria-hidden="true"
-            />
+              aria-hidden="true" />
+            
           </div>
           <div>
             <h1 className="text-xl font-semibold text-foreground tracking-tight">
@@ -154,8 +154,8 @@ export default function LoginPage() {
               className="bg-secondary border-border text-foreground h-11 px-4"
               required
               autoComplete="name"
-              maxLength={200}
-            />
+              maxLength={200} />
+            
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
@@ -169,8 +169,8 @@ export default function LoginPage() {
               className="bg-secondary border-border text-foreground h-11 px-4"
               required
               autoComplete="current-password"
-              maxLength={200}
-            />
+              maxLength={200} />
+            
           </div>
 
           {error && <p className="text-xs text-destructive">{error}</p>}
@@ -178,8 +178,8 @@ export default function LoginPage() {
           <Button
             type="submit"
             className="w-full h-11"
-            disabled={submitting}
-          >
+            disabled={submitting}>
+            
             {submitting ? "Entering..." : "Enter Puzzle"}
           </Button>
         </form>
@@ -188,11 +188,11 @@ export default function LoginPage() {
           variant="ghost"
           size="sm"
           className="w-full text-xs text-muted-foreground/50 hover:text-muted-foreground"
-          onClick={() => window.location.href = "/"}
-        >
+          onClick={() => window.location.href = "/"}>
+          
           Exit
         </Button>
       </div>
-    </div>
-  );
+    </div>);
+
 }
