@@ -45,6 +45,7 @@ const App = () => (
              <Route path="/generate/:type" element={<PuzzleGenerator />} />
             <Route path="/daily" element={<DailyPuzzle />} />
             <Route path="/play/:id" element={<PlayPuzzle />} />
+            <Route path="/play" element={<SharedPuzzle />} />
             <Route path="/quick-play/:type" element={<QuickPlay />} />
             <Route path="/surprise" element={<SurprisePlay />} />
             <Route path="/about" element={<About />} />
