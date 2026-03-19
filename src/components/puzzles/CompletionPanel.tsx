@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, ArrowLeft, RefreshCw } from "lucide-react";
+import { Check, ArrowLeft, RefreshCw, Share2, Copy, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatTime } from "@/hooks/usePuzzleTimer";
-import { DIFFICULTY_LABELS, type Difficulty } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { getPuzzleOrigin, getBackPath, getBackLabel } from "@/lib/puzzleOrigin";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   time: number;
@@ -13,17 +14,73 @@ interface Props {
   onPlayAgain: () => void;
   accuracy?: number | null;
   assisted?: boolean;
+  category?: PuzzleCategory;
+  seed?: number;
 }
 
-const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted }: Props) => {
+function buildShareData(props: {
+  category?: PuzzleCategory;
+  seed?: number;
+  difficulty: Difficulty;
+  time: number;
+  isDaily: boolean;
+}) {
+  const { category, seed, difficulty, time, isDaily } = props;
+  if (!category || seed == null) return null;
+
+  const code = `${category}-${seed}-${difficulty}`;
+  const shareUrl = `${window.location.origin}/play?code=${code}`;
+  const typeName = CATEGORY_INFO[category]?.name ?? category;
+  const diffLabel = DIFFICULTY_LABELS[difficulty];
+  const timeStr = formatTime(time);
+
+  const headline = isDaily
+    ? "I just completed today's Puzzlecraft challenge 🧠"
+    : "I just completed a Puzzlecraft puzzle 🧠";
+
+  const text = `${headline}\n\n${typeName} • ${diffLabel} • ${timeStr}\n\nThink you can beat my time?\n\nPlay: ${shareUrl}\n\nPuzzle Code: ${seed}`;
+
+  return { text, url: shareUrl, code, seed };
+}
+
+const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, category, seed }: Props) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [visible, setVisible] = useState(false);
+  const [copied, setCopied] = useState(false);
   const origin = getPuzzleOrigin();
+  const isDaily = origin === "daily";
+
+  const shareData = buildShareData({ category, seed, difficulty, time, isDaily });
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(id);
   }, []);
+
+  const handleShare = async () => {
+    if (!shareData) return;
+
+    // Try native share on mobile
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: shareData.text });
+        return;
+      } catch {
+        // User cancelled or share failed — fall through to clipboard
+      }
+    }
+
+    // Clipboard fallback
+    try {
+      await navigator.clipboard.writeText(shareData.text);
+      setCopied(true);
+      toast({ title: "Copied to clipboard" });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast({ title: "Unable to copy", variant: "destructive" });
+    }
+  };
 
   return (
     <div
@@ -73,6 +130,12 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted }: 
         <Button size="sm" onClick={onPlayAgain} className="gap-1.5">
           <RefreshCw size={13} /> Play Again
         </Button>
+        {shareData && (
+          <Button size="sm" variant="outline" onClick={handleShare} className="gap-1.5">
+            {copied ? <CheckCheck size={13} /> : <Share2 size={13} />}
+            {copied ? "Copied" : "Share"}
+          </Button>
+        )}
         <Button
           size="sm"
           variant="outline"
@@ -82,6 +145,21 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted }: 
           <ArrowLeft size={13} /> Back to {getBackLabel(origin)}
         </Button>
       </div>
+
+      {/* Share link + code preview */}
+      {shareData && (
+        <div className={cn(
+          "mt-3 rounded-lg bg-muted/50 px-3 py-2.5 space-y-1 transition-all duration-500",
+          visible ? "opacity-100" : "opacity-0"
+        )}>
+          <p className="text-xs text-muted-foreground truncate">
+            Play: <span className="font-medium text-foreground select-all">{shareData.url}</span>
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            Puzzle Code: <code className="font-mono text-foreground/70 select-all">{shareData.seed}</code>
+          </p>
+        </div>
+      )}
     </div>
   );
 };

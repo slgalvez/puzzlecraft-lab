@@ -285,7 +285,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
         hintCount={hintCount.current}
         isRevealed={isRevealed}
         puzzleCode={`cryptogram-${seed}`}
-        solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0 }}
+        solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0, category: "cryptogram", seed }}
       />
     </div>
   );
