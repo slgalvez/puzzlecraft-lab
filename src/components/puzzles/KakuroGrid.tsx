@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
 import { saveProgress, loadProgress, clearProgress } from "@/lib/puzzleProgress";
-import type { Difficulty } from "@/lib/puzzleTypes";
+import { type Difficulty, getEffectiveDifficulty } from "@/lib/puzzleTypes";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
 interface Props {
