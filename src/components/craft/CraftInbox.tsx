@@ -113,7 +113,7 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
 
   return (
     <div className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
-      <Tabs defaultValue="drafts">
+      <Tabs defaultValue={initialTab || "drafts"}>
         <TabsList className="w-full">
           <TabsTrigger value="drafts" className="flex-1 gap-1.5">
             <FileText className="h-3 w-3" /> Drafts
