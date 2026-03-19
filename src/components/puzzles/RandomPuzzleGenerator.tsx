@@ -5,6 +5,7 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory,
 import { randomSeed } from "@/lib/seededRandom";
 import { Dices } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const allTypes = Object.entries(CATEGORY_INFO) as [PuzzleCategory, typeof CATEGORY_INFO[PuzzleCategory]][];
 const difficulties = Object.entries(DIFFICULTY_LABELS) as [Difficulty, string][];
