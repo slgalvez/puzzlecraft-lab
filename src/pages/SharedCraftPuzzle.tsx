@@ -111,10 +111,16 @@ const SharedCraftPuzzle = () => {
       <div className="container py-6 md:py-10 max-w-2xl mx-auto">
         <div className="mb-4">
           <button
-            onClick={() => navigate("/")}
+            onClick={() => {
+              if (fromInbox) {
+                navigate("/craft", { state: { inboxTab: fromInbox } });
+              } else {
+                navigate("/");
+              }
+            }}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ArrowLeft size={14} /> Home
+            <ArrowLeft size={14} /> {fromInbox ? TAB_LABELS[fromInbox] || "Inbox" : "Home"}
           </button>
         </div>
 
