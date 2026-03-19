@@ -8,10 +8,10 @@ const Footer = () => (
           <p className="font-display text-lg font-semibold text-foreground">Puzzlecraft</p>
           <p className="mt-1 text-sm text-muted-foreground">Daily puzzles for curious minds.</p>
         </div>
-        <nav className="flex justify-center gap-8 text-sm text-muted-foreground">
-          <Link to="/about" className="hover:text-foreground transition-colors py-1">About</Link>
-          <Link to="/help" className="hover:text-foreground transition-colors py-1">Help</Link>
-          <Link to="/puzzles" className="hover:text-foreground transition-colors py-1">Puzzles</Link>
+        <nav className="flex justify-center gap-6 text-sm text-muted-foreground">
+          <Link to="/about" className="hover:text-foreground transition-colors py-2 px-1">About</Link>
+          <Link to="/help" className="hover:text-foreground transition-colors py-2 px-1">Help</Link>
+          <Link to="/puzzles" className="hover:text-foreground transition-colors py-2 px-1">Puzzles</Link>
         </nav>
       </div>
       <p className="mt-6 text-center text-xs text-muted-foreground">

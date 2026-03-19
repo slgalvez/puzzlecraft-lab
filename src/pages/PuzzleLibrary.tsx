@@ -50,7 +50,7 @@ const PuzzleLibrary = () => {
 
   return (
     <Layout>
-      <div className="container py-10 md:py-14 pb-20 md:pb-28">
+      <div className="container py-6 md:py-14 pb-20 md:pb-28">
         <div className="max-w-xl">
           <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
             Play

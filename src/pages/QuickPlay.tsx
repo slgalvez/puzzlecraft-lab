@@ -239,7 +239,7 @@ const QuickPlay = () => {
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft size={14} />
-            <span className="hidden sm:inline">Back</span>
+            <span>Back</span>
           </button>
           {mode === "endless" && (
             <Button

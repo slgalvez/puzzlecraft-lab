@@ -10,13 +10,13 @@ interface Props {
 }
 
 const DifficultySelector = ({ value, onChange }: Props) => (
-  <div className="flex flex-wrap gap-2">
+  <div className="flex flex-wrap gap-1.5">
     {levels.map(([val, label]) => (
       <button
         key={val}
         onClick={() => onChange(val)}
         className={cn(
-          "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+          "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
           value === val
             ? "border-primary bg-primary text-primary-foreground"
             : "border-border bg-card text-muted-foreground hover:text-foreground"
