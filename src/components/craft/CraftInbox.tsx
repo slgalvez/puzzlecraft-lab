@@ -1,8 +1,9 @@
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Check, Trash2, FileText, Send } from "lucide-react";
+import { Copy, Check, Trash2, FileText, Send, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TYPE_OPTIONS } from "@/components/craft/CraftTypeCards";
 import {
@@ -23,6 +24,7 @@ interface CraftInboxProps {
 
 export default function CraftInbox({ onResumeDraft, onDataChange }: CraftInboxProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [drafts, setDrafts] = useState<CraftDraft[]>(() => loadDrafts());
   const [sent, setSent] = useState<CraftSentItem[]>(() => loadSentItems());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -155,15 +157,25 @@ export default function CraftInbox({ onResumeDraft, onDataChange }: CraftInboxPr
                       {s.title || "Untitled puzzle"}
                     </p>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7 gap-1"
-                    onClick={() => handleCopyLink(s.id, s.shareUrl)}
-                  >
-                    {copiedId === s.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                    {copiedId === s.id ? "Copied" : "Copy link"}
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-7 gap-1"
+                      onClick={() => navigate(`/s/${s.shareId}`)}
+                    >
+                      <Eye className="h-3 w-3" /> View
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-xs h-7 gap-1"
+                      onClick={() => handleCopyLink(s.id, s.shareUrl)}
+                    >
+                      {copiedId === s.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                      {copiedId === s.id ? "Copied" : "Copy link"}
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
