@@ -16,6 +16,7 @@ const typeLabels = {
 
 const PlayPuzzle = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const puzzle = getPuzzleById(id || "");
 
   useEffect(() => { setPuzzleOrigin("library"); }, []);
@@ -28,9 +29,12 @@ const PlayPuzzle = () => {
           <p className="mt-2 text-muted-foreground">
             This puzzle doesn't exist or isn't available yet.
           </p>
-          <Link to="/puzzles" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
+          <button
+            onClick={() => goBackOrFallback(navigate, "/puzzles")}
+            className="mt-4 inline-block text-sm font-medium text-primary hover:underline"
+          >
             ← Back to library
-          </Link>
+          </button>
         </div>
       </Layout>
     );
@@ -39,9 +43,12 @@ const PlayPuzzle = () => {
   return (
     <Layout>
       <div className="container py-12">
-        <Link to="/puzzles" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <button
+          onClick={() => goBackOrFallback(navigate, "/puzzles")}
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
           ← Back to library
-        </Link>
+        </button>
         <div className="mt-4 mb-8">
           <p className="text-xs font-medium uppercase tracking-widest text-primary">
             {typeLabels[puzzle.type]}
