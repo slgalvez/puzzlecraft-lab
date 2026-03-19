@@ -33,12 +33,19 @@ import ForYou from "./pages/private/ForYou";
 
 const queryClient = new QueryClient();
 
+function NavigationTracker() {
+  const location = useLocation();
+  useEffect(() => { trackNavigation(); }, [location.pathname]);
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <NavigationTracker />
         <AuthProvider>
           <Routes>
             {/* Public puzzle site */}
