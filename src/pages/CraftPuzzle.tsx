@@ -492,7 +492,11 @@ const CraftPuzzle = () => {
                   {saving ? "Saving…" : "Preview Puzzle"}
                 </Button>
                 <p className="text-[10px] text-muted-foreground text-center">
-                  No account needed • Share instantly with a link
+                  {draftSaved ? (
+                    <span className="text-primary animate-in fade-in-0 duration-300">Saved ✓</span>
+                  ) : (
+                    "No account needed • Share instantly with a link"
+                  )}
                 </p>
               </div>
             )}
