@@ -249,15 +249,3 @@ body:has(.private-app) [data-sidebar="sidebar"][data-mobile="true"] {
   background: hsl(var(--secondary));
   border-color: hsl(var(--border));
 }
-
-/* Floating puzzle piece animation */
-@keyframes puzzleFloat {
-  0%, 100% {
-    transform: translateY(0) translateX(-50%) rotate(var(--r, 0deg));
-    opacity: 0.7;
-  }
-  50% {
-    transform: translateY(-6px) translateX(-50%) rotate(var(--r, 0deg));
-    opacity: 0.35;
-  }
-}
