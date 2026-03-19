@@ -96,7 +96,7 @@ const SharedCraftPuzzle = () => {
     );
   }
 
-  const { type, puzzleData, revealMessage, title, from } = payload;
+  const { type, puzzleData, revealMessage, title, from, settings } = payload;
 
   return (
     <Layout>
