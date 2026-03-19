@@ -883,8 +883,61 @@ const PuzzleGenerator = () => {
         </div>
       </div>
 
-      {/* Assists */}
-      {renderAssists()}
+      {/* Collapsible Settings */}
+      <Collapsible open={randomSettingsOpen} onOpenChange={setRandomSettingsOpen}>
+        <CollapsibleTrigger className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+          <ChevronDown size={14} className={cn("transition-transform", randomSettingsOpen && "rotate-180")} />
+          Settings
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-3 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+          {/* Timer */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Switch checked={timeLimitEnabled} onCheckedChange={setTimeLimitEnabled} id="random-timer-desktop" />
+              <label htmlFor="random-timer-desktop" className="flex items-center gap-1.5 text-sm font-medium text-foreground cursor-pointer">
+                <Clock size={14} className="text-muted-foreground" />
+                Timer
+              </label>
+            </div>
+            {timeLimitEnabled && (
+              <div className="ml-10 flex items-center gap-1.5">
+                <Input type="number" min={0} max={120} value={timeLimitMinutes} onChange={(e) => setTimeLimitMinutes(Math.max(0, Math.min(120, parseInt(e.target.value) || 0)))} className="w-16 h-8 text-center text-sm" />
+                <span className="text-xs text-muted-foreground">min</span>
+                <Input type="number" min={0} max={59} value={timeLimitSeconds} onChange={(e) => setTimeLimitSeconds(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))} className="w-16 h-8 text-center text-sm" />
+                <span className="text-xs text-muted-foreground">sec</span>
+              </div>
+            )}
+          </div>
+          {/* Hints */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Switch checked={hintsEnabled} onCheckedChange={setHintsEnabled} id="random-hints-desktop" />
+              <label htmlFor="random-hints-desktop" className="flex items-center gap-1.5 text-sm font-medium text-foreground cursor-pointer">
+                <Lightbulb size={14} className="text-muted-foreground" />
+                Hints
+              </label>
+            </div>
+            {hintsEnabled && (
+              <div className="ml-10 flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground mr-1">Limit:</span>
+                {hintLimits.map(({ value, label }) => (
+                  <button key={label} onClick={() => setHintLimit(value)} className={cn("rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors min-w-[28px]", hintLimit === value ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40")}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Reveal */}
+          <div className="flex items-center gap-2">
+            <Switch checked={revealEnabled} onCheckedChange={setRevealEnabled} id="random-reveal-desktop" />
+            <label htmlFor="random-reveal-desktop" className="flex items-center gap-1.5 text-sm font-medium text-foreground cursor-pointer">
+              <Eye size={14} className="text-muted-foreground" />
+              Reveal
+            </label>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       <div className="flex items-center gap-4">
         <Button onClick={handleRandomGenerate} size="lg" className="gap-2 text-base px-8" disabled={!canRandomGenerate}>
