@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import flaskIcon from "@/assets/puzzle-lab-flask-v2.png";
+
 
 const ACCESS_GRANT_KEY = "private_access_grant";
 
