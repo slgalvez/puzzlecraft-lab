@@ -19,6 +19,9 @@ interface Props {
   timeLimit?: number;
   isEndless?: boolean;
   dailyCode?: string;
+  showHints?: boolean;
+  showReveal?: boolean;
+  maxHints?: number | null;
 }
 
 type CellState = "empty" | "filled" | "marked";
