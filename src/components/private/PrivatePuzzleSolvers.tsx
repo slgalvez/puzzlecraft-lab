@@ -33,7 +33,7 @@ interface GridSolverProps {
   compact?: boolean;
 }
 
-export function GridSolver({ data, puzzleType, onComplete, savedState, onSaveProgress, showHints = true, showReveal = false, showCheck = true }: GridSolverProps) {
+export function GridSolver({ data, puzzleType, onComplete, savedState, onSaveProgress, showHints = true, showReveal = false, showCheck = true, compact = false }: GridSolverProps) {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const gridSize = (data.gridSize as number) || 9;
