@@ -29,6 +29,10 @@ const RandomPuzzleGenerator = ({ compact }: Props) => {
       } else {
         next.add(type);
       }
+      // If only kakuro remains and insane is selected, downgrade
+      if (next.size === 1 && next.has("kakuro") && isDifficultyDisabled("kakuro", difficulty)) {
+        setDifficulty("extreme");
+      }
       return next;
     });
   };
