@@ -864,6 +864,42 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress,
           </Badge>
         ))}
       </div>
+      {!completed && (showHints || showReveal) && (
+        <div className="flex flex-wrap gap-2">
+          {showHints && (
+            <Button variant="outline" size="sm" onClick={() => {
+              const remaining = data.wordPositions.filter(wp => !foundWords.has(wp.word));
+              if (remaining.length === 0) return;
+              const wp = remaining[Math.floor(Math.random() * remaining.length)];
+              const newFound = new Set(foundWords);
+              newFound.add(wp.word);
+              const newCells = new Set(foundCells);
+              for (let i = 0; i < wp.word.length; i++) newCells.add(`${wp.row + wp.dr * i}-${wp.col + wp.dc * i}`);
+              setFoundWords(newFound);
+              setFoundCells(newCells);
+              toast({ title: `Found: ${wp.word}` });
+              if (newFound.size === data.words.length) onComplete();
+            }}>
+              <Lightbulb className="mr-1.5 h-3.5 w-3.5" /> Hint
+            </Button>
+          )}
+          {showReveal && (
+            <Button variant="outline" size="sm" onClick={() => {
+              const allWords = new Set(data.words);
+              const allCells = new Set<string>();
+              data.wordPositions.forEach(wp => {
+                for (let i = 0; i < wp.word.length; i++) allCells.add(`${wp.row + wp.dr * i}-${wp.col + wp.dc * i}`);
+              });
+              setFoundWords(allWords);
+              setFoundCells(allCells);
+              onComplete();
+              toast({ title: "Solution revealed" });
+            }}>
+              <Eye className="mr-1.5 h-3.5 w-3.5" /> Reveal
+            </Button>
+          )}
+        </div>
+      )}
       {completed && <p className="text-sm text-primary font-medium text-center">✓ All words found!</p>}
     </div>
   );
