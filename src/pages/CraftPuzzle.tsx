@@ -74,6 +74,7 @@ const CraftPuzzle = () => {
   const [draftCount, setDraftCount] = useState(() => loadDrafts().length);
   const [draftSaved, setDraftSaved] = useState(false);
   const [enteredFromDraft, setEnteredFromDraft] = useState(false);
+  const sentRecorded = useRef(false);
 
   // Active draft ID for auto-save
   const activeDraftId = useRef<string | null>(null);
