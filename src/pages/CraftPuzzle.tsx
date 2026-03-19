@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share2, Copy, Check } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share2, Copy, Check, Loader2 } from "lucide-react";
 import CraftStepper from "@/components/craft/CraftStepper";
 import CraftTypeCards, { TYPE_OPTIONS } from "@/components/craft/CraftTypeCards";
 import CraftPreviewGrid from "@/components/craft/CraftPreviewGrid";
+import { supabase } from "@/integrations/supabase/client";
 import {
   generateCustomFillIn,
   generateCustomCryptogram,
