@@ -17,6 +17,7 @@ interface Props {
 
 const RandomPuzzleGenerator = ({ compact }: Props) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [selected, setSelected] = useState<Set<PuzzleCategory>>(
     new Set(allTypes.map(([t]) => t))
   );
