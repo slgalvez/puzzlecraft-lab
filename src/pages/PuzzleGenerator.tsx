@@ -475,6 +475,7 @@ const PuzzleGenerator = () => {
                     <span className="text-xs text-muted-foreground">sec</span>
                   </div>
                 )}
+                {renderAssists(true)}
                 <Button onClick={handleGenerate} size="lg" className="w-full gap-2 text-base">
                   <Sparkles size={18} />
                   Generate Puzzle
