@@ -321,6 +321,16 @@ const CraftPuzzle = () => {
         : [{ answer: "", clue: "" }, { answer: "", clue: "" }, { answer: "", clue: "" }]
     );
     setRevealMessage(draft.revealMessage);
+    if (draft.settings) {
+      setCraftSettings({
+        difficulty: draft.settings.difficulty ?? DEFAULT_CRAFT_SETTINGS.difficulty,
+        hintsEnabled: draft.settings.hintsEnabled ?? DEFAULT_CRAFT_SETTINGS.hintsEnabled,
+        revealEnabled: draft.settings.revealEnabled ?? DEFAULT_CRAFT_SETTINGS.revealEnabled,
+        checkEnabled: draft.settings.checkEnabled ?? DEFAULT_CRAFT_SETTINGS.checkEnabled,
+      });
+    } else {
+      setCraftSettings(DEFAULT_CRAFT_SETTINGS);
+    }
     setGeneratedData(null);
     setShareUrl(null);
     setStep("content");
