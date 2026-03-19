@@ -24,6 +24,7 @@ interface CraftInboxProps {
 
 export default function CraftInbox({ onResumeDraft, onDataChange }: CraftInboxProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [drafts, setDrafts] = useState<CraftDraft[]>(() => loadDrafts());
   const [sent, setSent] = useState<CraftSentItem[]>(() => loadSentItems());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
