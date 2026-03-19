@@ -435,9 +435,21 @@ export function GridSolver({ data, puzzleType, onComplete, savedState, onSavePro
           <Button variant="outline" size="sm" onClick={handleReset}>
             <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Reset
           </Button>
-          <Button variant="outline" size="sm" onClick={handleCheck}>
-            <Check className="mr-1.5 h-3.5 w-3.5" /> Check
-          </Button>
+          {showCheck && (
+            <Button variant="outline" size="sm" onClick={handleCheck}>
+              <Check className="mr-1.5 h-3.5 w-3.5" /> Check
+            </Button>
+          )}
+          {showHints && (
+            <Button variant="outline" size="sm" onClick={handleHint}>
+              <Lightbulb className="mr-1.5 h-3.5 w-3.5" /> Hint
+            </Button>
+          )}
+          {showReveal && (
+            <Button variant="outline" size="sm" onClick={handleReveal}>
+              <Eye className="mr-1.5 h-3.5 w-3.5" /> Reveal
+            </Button>
+          )}
         </div>
       </div>
 
