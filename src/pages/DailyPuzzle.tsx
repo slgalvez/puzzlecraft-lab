@@ -11,7 +11,7 @@ import {
   getDailyStreak,
   type DailyChallenge,
 } from "@/lib/dailyChallenge";
-import { Calendar, CheckCircle2, Clock, Flame, Trophy, ArrowRight } from "lucide-react";
+import { Calendar, CheckCircle2, Clock, Flame, Trophy, ArrowRight, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
 
