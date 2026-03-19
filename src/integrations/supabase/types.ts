@@ -352,6 +352,24 @@ export type Database = {
           },
         ]
       }
+      shared_puzzles: {
+        Row: {
+          created_at: string
+          id: string
+          payload: Json
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          payload: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payload?: Json
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
