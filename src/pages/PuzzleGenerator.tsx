@@ -4,7 +4,7 @@ import Layout from "@/components/layout/Layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory, isDifficultyDisabled } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory, isDifficultyDisabled, getEffectiveDifficulty } from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -200,6 +200,10 @@ const PuzzleGenerator = () => {
       const next = new Set(prev);
       if (next.has(type)) next.delete(type);
       else next.add(type);
+      // If only kakuro remains and insane is selected, downgrade to extreme
+      if (next.size === 1 && next.has("kakuro") && randomDifficulty === "insane") {
+        setRandomDifficulty("extreme");
+      }
       return next;
     });
   };
@@ -230,7 +234,7 @@ const PuzzleGenerator = () => {
 
   const renderPuzzle = () => {
     if (!category || !difficulty) return null;
-    const d = difficulty as Difficulty;
+    const d = getEffectiveDifficulty(category, difficulty as Difficulty);
     const key = `${seed}-${d}-${puzzleKey}`;
     switch (category) {
       case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={d} onNewPuzzle={handleNewPuzzle} timeLimit={activeTimeLimit} />;
@@ -285,7 +289,7 @@ const PuzzleGenerator = () => {
               <PuzzleIcon type={category!} size={24} className="text-foreground" />
               <div>
                 <h2 className="font-display text-lg font-bold text-foreground">{info.name}</h2>
-                <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[difficulty]}</p>
+                <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[getEffectiveDifficulty(category!, difficulty)]}</p>
               </div>
             </div>
             <Button onClick={handleGenerate} size="sm" variant="outline" className="gap-1.5">
@@ -459,18 +463,31 @@ const PuzzleGenerator = () => {
           >
             Any
           </button>
-          {difficulties.map(([val, label]) => (
-            <button
-              key={val}
-              onClick={() => setRandomDifficulty(val)}
-              className={cn(
-                "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
-                randomDifficulty === val ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {label}
-            </button>
-          ))}
+          {difficulties.map(([val, label]) => {
+            const onlyKakuro = randomTypes.size === 1 && randomTypes.has("kakuro");
+            const disabled = onlyKakuro && isDifficultyDisabled("kakuro", val);
+            return (
+              <button
+                key={val}
+                onClick={() => {
+                  if (disabled) {
+                    toast({ title: `${label} not available for Kakuro yet` });
+                    return;
+                  }
+                  setRandomDifficulty(val);
+                }}
+                className={cn(
+                  "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+                  disabled
+                    ? "border-border text-muted-foreground/40 cursor-not-allowed"
+                    : randomDifficulty === val ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:text-foreground"
+                )}
+                title={disabled ? `${label} not available for Kakuro yet` : undefined}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -703,18 +720,31 @@ const PuzzleGenerator = () => {
           >
             Any
           </button>
-          {difficulties.map(([val, label]) => (
-            <button
-              key={val}
-              onClick={() => setRandomDifficulty(val)}
-              className={cn(
-                "rounded-full border-2 px-5 py-2 text-sm font-medium transition-all",
-                randomDifficulty === val ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {label}
-            </button>
-          ))}
+          {difficulties.map(([val, label]) => {
+            const onlyKakuro = randomTypes.size === 1 && randomTypes.has("kakuro");
+            const disabled = onlyKakuro && isDifficultyDisabled("kakuro", val);
+            return (
+              <button
+                key={val}
+                onClick={() => {
+                  if (disabled) {
+                    toast({ title: `${label} not available for Kakuro yet` });
+                    return;
+                  }
+                  setRandomDifficulty(val);
+                }}
+                className={cn(
+                  "rounded-full border-2 px-5 py-2 text-sm font-medium transition-all",
+                  disabled
+                    ? "border-border bg-card text-muted-foreground/40 cursor-not-allowed"
+                    : randomDifficulty === val ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:text-foreground"
+                )}
+                title={disabled ? `${label} not available for Kakuro yet` : undefined}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 

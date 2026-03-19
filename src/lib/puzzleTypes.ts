@@ -40,3 +40,19 @@ export const DISABLED_DIFFICULTIES: Partial<Record<PuzzleCategory, Set<Difficult
 export function isDifficultyDisabled(category: PuzzleCategory, difficulty: Difficulty): boolean {
   return DISABLED_DIFFICULTIES[category]?.has(difficulty) ?? false;
 }
+
+/** Fallback map: when a difficulty is disabled, use this instead */
+const DIFFICULTY_FALLBACK: Partial<Record<Difficulty, Difficulty>> = {
+  insane: "extreme",
+};
+
+/**
+ * Returns the effective difficulty for a given category.
+ * If the requested difficulty is disabled for that category, returns the fallback.
+ */
+export function getEffectiveDifficulty(category: PuzzleCategory, difficulty: Difficulty): Difficulty {
+  if (isDifficultyDisabled(category, difficulty)) {
+    return DIFFICULTY_FALLBACK[difficulty] ?? difficulty;
+  }
+  return difficulty;
+}

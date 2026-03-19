@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory, isDifficultyDisabled } from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
 import { Dices } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const allTypes = Object.entries(CATEGORY_INFO) as [PuzzleCategory, typeof CATEGORY_INFO[PuzzleCategory]][];
 const difficulties = Object.entries(DIFFICULTY_LABELS) as [Difficulty, string][];
@@ -16,6 +17,7 @@ interface Props {
 
 const RandomPuzzleGenerator = ({ compact }: Props) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [selected, setSelected] = useState<Set<PuzzleCategory>>(
     new Set(allTypes.map(([t]) => t))
   );
@@ -28,6 +30,10 @@ const RandomPuzzleGenerator = ({ compact }: Props) => {
         if (next.size > 1) next.delete(type);
       } else {
         next.add(type);
+      }
+      // If only kakuro remains and insane is selected, downgrade
+      if (next.size === 1 && next.has("kakuro") && isDifficultyDisabled("kakuro", difficulty)) {
+        setDifficulty("extreme");
       }
       return next;
     });
@@ -108,20 +114,33 @@ const RandomPuzzleGenerator = ({ compact }: Props) => {
           Difficulty
         </label>
         <div className="flex flex-wrap gap-1.5">
-          {difficulties.map(([val, label]) => (
-            <button
-              key={val}
-              onClick={() => setDifficulty(val)}
-              className={cn(
-                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                difficulty === val
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {label}
-            </button>
-          ))}
+          {difficulties.map(([val, label]) => {
+            const onlyKakuro = selected.size === 1 && selected.has("kakuro");
+            const disabled = onlyKakuro && isDifficultyDisabled("kakuro", val);
+            return (
+              <button
+                key={val}
+                onClick={() => {
+                  if (disabled) {
+                    toast({ title: `${label} not available for Kakuro yet` });
+                    return;
+                  }
+                  setDifficulty(val);
+                }}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  disabled
+                    ? "border-border text-muted-foreground/40 cursor-not-allowed"
+                    : difficulty === val
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-card text-muted-foreground hover:text-foreground"
+                )}
+                title={disabled ? `${label} not available for Kakuro yet` : undefined}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 

@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { goBackOrFallback } from "@/lib/navigation";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory, isDifficultyDisabled } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory, isDifficultyDisabled, getEffectiveDifficulty } from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
 import { cn } from "@/lib/utils";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
@@ -66,6 +66,8 @@ const QuickPlay = () => {
   const [showFlash, setShowFlash] = useState(false);
 
   const activeDifficulty = mode === "endless" ? endlessDiffMap[currentType] : difficulty;
+  // For generation: downgrade unsupported difficulties (e.g. kakuro insane → extreme)
+  const effectiveDifficulty = getEffectiveDifficulty(currentType, activeDifficulty);
 
   const handleNewPuzzle = useCallback(() => {
     if (mode === "surprise") {
@@ -188,36 +190,36 @@ const QuickPlay = () => {
   const isEndless = mode === "endless";
 
   const renderPuzzle = () => {
-    const key = `${seed}-${activeDifficulty}-${puzzleKey}`;
+    const key = `${seed}-${effectiveDifficulty}-${puzzleKey}`;
     switch (activeType) {
-      case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
-      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
-      case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
-      case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
-      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={activeDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
+      case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={effectiveDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
+      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={effectiveDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
+      case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={effectiveDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
+      case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={effectiveDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
+      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={effectiveDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
       case "crossword": {
-        const gen = generateCrossword(seed, activeDifficulty);
+        const gen = generateCrossword(seed, effectiveDifficulty);
         const puzzle: CrosswordPuzzle = {
           id: `gen-${seed}`, title: "Generated Crossword", type: "crossword",
-          difficulty: activeDifficulty as CrosswordPuzzle["difficulty"],
+          difficulty: effectiveDifficulty as CrosswordPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, clues: gen.clues,
         };
         return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
       }
       case "word-fill": {
-        const gen = generateWordFillIn(seed, activeDifficulty);
+        const gen = generateWordFillIn(seed, effectiveDifficulty);
         const puzzle: FillInPuzzle = {
           id: `gen-${seed}`, title: "Generated Word Fill-In", type: "word-fill",
-          difficulty: activeDifficulty as FillInPuzzle["difficulty"],
+          difficulty: effectiveDifficulty as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
         return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
       }
       case "number-fill": {
-        const gen = generateNumberFillIn(seed, activeDifficulty);
+        const gen = generateNumberFillIn(seed, effectiveDifficulty);
         const puzzle: FillInPuzzle = {
           id: `gen-${seed}`, title: "Generated Number Fill-In", type: "number-fill",
-          difficulty: activeDifficulty as FillInPuzzle["difficulty"],
+          difficulty: effectiveDifficulty as FillInPuzzle["difficulty"],
           size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
         return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
@@ -302,13 +304,13 @@ const QuickPlay = () => {
           )}
 
           {mode === "surprise" && (
-            <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[activeDifficulty]}</p>
+            <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[effectiveDifficulty]}</p>
           )}
 
           {mode === "endless" && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">
-                Difficulty: <span className="font-medium text-foreground capitalize">{DIFFICULTY_LABELS[activeDifficulty]}</span>
+                Difficulty: <span className="font-medium text-foreground capitalize">{DIFFICULTY_LABELS[effectiveDifficulty]}</span>
               </span>
               {lastDiffChange === "up" && <TrendingUp size={12} className="text-primary" />}
               {lastDiffChange === "down" && <TrendingDown size={12} className="text-destructive" />}
