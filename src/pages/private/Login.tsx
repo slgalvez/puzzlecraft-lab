@@ -88,8 +88,7 @@ export default function LoginPage() {
             <img
               src={flaskIcon}
               alt=""
-              className="h-[72px] w-auto"
-              style={{ background: "none" }}
+              className="h-[72px] w-[72px] rounded-xl object-cover"
               aria-hidden="true"
             />
           </div>
