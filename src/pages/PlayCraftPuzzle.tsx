@@ -15,6 +15,8 @@ interface CraftPayload {
   type: CraftType;
   puzzleData: Record<string, unknown>;
   revealMessage: string;
+  title?: string;
+  from?: string;
 }
 
 function decodeShareData(encoded: string): CraftPayload | null {
@@ -39,7 +41,6 @@ const PlayCraftPuzzle = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [solved, setSolved] = useState(false);
-  const [startTime] = useState(() => Date.now());
 
   const payload = useMemo(() => {
     const d = searchParams.get("d");
@@ -63,7 +64,7 @@ const PlayCraftPuzzle = () => {
     );
   }
 
-  const { type, puzzleData, revealMessage } = payload;
+  const { type, puzzleData, revealMessage, title, from } = payload;
 
   return (
     <Layout>
@@ -77,11 +78,29 @@ const PlayCraftPuzzle = () => {
           </button>
         </div>
 
+        {/* Title + From (matches preview exactly) */}
+        {(title || from) && (
+          <div className="mb-5 text-center space-y-0.5">
+            {title && (
+              <h1 className="text-xl font-display font-semibold text-foreground sm:text-2xl">{title}</h1>
+            )}
+            {from && (
+              <p className="text-sm text-muted-foreground">{from}</p>
+            )}
+          </div>
+        )}
+
+        {/* Puzzle type label (shown below title or as main heading if no title) */}
         <div className="mb-6">
           <p className="text-xs font-medium uppercase tracking-widest text-primary mb-1">Custom Puzzle</p>
-          <h1 className="font-display text-xl font-bold text-foreground sm:text-2xl">
-            {PUZZLE_LABELS[type]}
-          </h1>
+          {!title && (
+            <h1 className="font-display text-xl font-bold text-foreground sm:text-2xl">
+              {PUZZLE_LABELS[type]}
+            </h1>
+          )}
+          {title && (
+            <p className="text-xs text-muted-foreground">{PUZZLE_LABELS[type]}</p>
+          )}
         </div>
 
         {solved && revealMessage && (

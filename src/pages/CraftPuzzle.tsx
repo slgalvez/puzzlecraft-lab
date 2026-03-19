@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share2, Copy, Check } from "lucide-react";
-import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import CraftStepper from "@/components/craft/CraftStepper";
 import CraftTypeCards, { TYPE_OPTIONS } from "@/components/craft/CraftTypeCards";
 import CraftPreviewGrid from "@/components/craft/CraftPreviewGrid";
@@ -23,6 +22,8 @@ function encodeShareData(data: {
   type: CraftType;
   puzzleData: Record<string, unknown>;
   revealMessage: string;
+  title?: string;
+  from?: string;
 }): string {
   const json = JSON.stringify(data);
   return btoa(unescape(encodeURIComponent(json)));
@@ -40,6 +41,8 @@ const CraftPuzzle = () => {
     { answer: "", clue: "" },
   ]);
   const [revealMessage, setRevealMessage] = useState("");
+  const [puzzleTitle, setPuzzleTitle] = useState("");
+  const [puzzleFrom, setPuzzleFrom] = useState("");
   const [generatedData, setGeneratedData] = useState<Record<string, unknown> | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -81,14 +84,24 @@ const CraftPuzzle = () => {
       }
       setGeneratedData(data);
 
-      const encoded = encodeShareData({ type: selectedType, puzzleData: data, revealMessage });
+      const payload: {
+        type: CraftType;
+        puzzleData: Record<string, unknown>;
+        revealMessage: string;
+        title?: string;
+        from?: string;
+      } = { type: selectedType, puzzleData: data, revealMessage };
+      if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
+      if (puzzleFrom.trim()) payload.from = puzzleFrom.trim();
+
+      const encoded = encodeShareData(payload);
       const url = `${window.location.origin}/craft/play?d=${encoded}`;
       setShareUrl(url);
       setStep("preview");
     } catch (err) {
       toast({ title: "Generation failed", description: err instanceof Error ? err.message : "Please try different input" });
     }
-  }, [selectedType, wordInput, phraseInput, clueEntries, revealMessage, toast]);
+  }, [selectedType, wordInput, phraseInput, clueEntries, revealMessage, puzzleTitle, puzzleFrom, toast]);
 
   const handleRegenerate = () => {
     setGeneratedData(null);
@@ -112,9 +125,11 @@ const CraftPuzzle = () => {
 
   const handleShare = async () => {
     if (!shareUrl) return;
+    const shareTitle = puzzleTitle.trim() || "Solve my puzzle!";
+    const shareText = puzzleFrom.trim() ? `${shareTitle} — ${puzzleFrom.trim()}` : shareTitle;
     if (navigator.share) {
       try {
-        await navigator.share({ title: "Solve my puzzle!", url: shareUrl });
+        await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
         setShareSuccess(true);
         setTimeout(() => setShareSuccess(false), 1500);
       } catch { /* user cancelled */ }
@@ -135,6 +150,8 @@ const CraftPuzzle = () => {
     setPhraseInput("");
     setClueEntries([{ answer: "", clue: "" }, { answer: "", clue: "" }, { answer: "", clue: "" }]);
     setRevealMessage("");
+    setPuzzleTitle("");
+    setPuzzleFrom("");
     setGeneratedData(null);
     setShareUrl(null);
     setCopied(false);
@@ -165,13 +182,32 @@ const CraftPuzzle = () => {
               <ArrowLeft size={13} /> Back
             </button>
 
-            <div className="flex items-center gap-2.5 pb-2 border-b border-border">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <PuzzleIcon type={selectedType} size={16} />
-              </div>
+            <div className="pb-2 border-b border-border">
               <h2 className="text-sm font-medium text-foreground">
                 {TYPE_OPTIONS.find(o => o.value === selectedType)?.label}
               </h2>
+            </div>
+
+            {/* Title + From fields */}
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Puzzle title (optional)</label>
+                <Input
+                  value={puzzleTitle}
+                  onChange={e => setPuzzleTitle(e.target.value)}
+                  placeholder="For Sarah 💌"
+                  maxLength={100}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">From (optional)</label>
+                <Input
+                  value={puzzleFrom}
+                  onChange={e => setPuzzleFrom(e.target.value)}
+                  placeholder="— Alex 🫶"
+                  maxLength={100}
+                />
+              </div>
             </div>
 
             {(selectedType === "word-fill" || selectedType === "word-search") && (
@@ -244,7 +280,7 @@ const CraftPuzzle = () => {
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">Reveal message (shown after solving — optional)</label>
               <Input
                 value={revealMessage}
@@ -277,12 +313,24 @@ const CraftPuzzle = () => {
                 Your {TYPE_OPTIONS.find(o => o.value === selectedType)?.label} is ready!
               </h2>
               <p className="text-xs text-muted-foreground">
-                Share the link below to send it to someone
+                This is exactly what the recipient will see
               </p>
             </div>
 
-            {/* Preview */}
-            <div className="p-5 rounded-xl border border-border bg-card">
+            {/* Preview — matches final experience */}
+            <div className="p-5 rounded-xl border border-border bg-card space-y-4">
+              {/* Title + From (only if provided) */}
+              {(puzzleTitle.trim() || puzzleFrom.trim()) && (
+                <div className="text-center space-y-0.5 pb-3 border-b border-border">
+                  {puzzleTitle.trim() && (
+                    <h3 className="text-base font-display font-semibold text-foreground">{puzzleTitle.trim()}</h3>
+                  )}
+                  {puzzleFrom.trim() && (
+                    <p className="text-xs text-muted-foreground">{puzzleFrom.trim()}</p>
+                  )}
+                </div>
+              )}
+
               <CraftPreviewGrid data={generatedData} puzzleType={selectedType} />
             </div>
 
