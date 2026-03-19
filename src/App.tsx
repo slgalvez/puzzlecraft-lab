@@ -18,6 +18,8 @@ import About from "./pages/About";
 import Help from "./pages/Help";
 import Stats from "./pages/Stats";
 import NotFound from "./pages/NotFound";
+import CraftPuzzle from "./pages/CraftPuzzle";
+import PlayCraftPuzzle from "./pages/PlayCraftPuzzle";
 
 // Private app
 import { AuthProvider } from "./contexts/AuthContext";
