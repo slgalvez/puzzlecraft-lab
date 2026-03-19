@@ -542,7 +542,7 @@ const CraftPuzzle = () => {
                   )}
 
                   <Button onClick={handleShare} className="w-full gap-2">
-                    <Share2 className="h-4 w-4" /> Send Puzzle
+                    <Share className="h-4 w-4" /> Send Puzzle
                   </Button>
                   <button
                     onClick={handleCopyLink}
