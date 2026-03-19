@@ -51,7 +51,8 @@ const CraftPuzzle = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const [view, setView] = useState<CraftView>("create");
+  const inboxTabFromState = (location.state as { inboxTab?: string } | null)?.inboxTab;
+  const [view, setView] = useState<CraftView>(inboxTabFromState ? "inbox" : "create");
   const [step, setStep] = useState<Step>("type");
   const [selectedType, setSelectedType] = useState<CraftType | null>(null);
   const [wordInput, setWordInput] = useState("");
@@ -355,7 +356,7 @@ const CraftPuzzle = () => {
 
         {/* ─── Inbox View ─── */}
         {view === "inbox" && (
-          <CraftInbox onResumeDraft={handleResumeDraft} onDataChange={refreshDraftCount} />
+          <CraftInbox onResumeDraft={handleResumeDraft} onDataChange={refreshDraftCount} initialTab={inboxTabFromState || undefined} />
         )}
 
         {/* ─── Create View ─── */}

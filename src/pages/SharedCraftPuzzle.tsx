@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, PartyPopper, Loader2 } from "lucide-react";
@@ -36,9 +36,17 @@ const PUZZLE_LABELS: Record<CraftType, string> = {
   "word-search": "Word Search",
 };
 
+const TAB_LABELS: Record<string, string> = {
+  drafts: "Drafts",
+  sent: "Sent",
+  received: "Received",
+};
+
 const SharedCraftPuzzle = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromInbox = (location.state as { fromInbox?: string } | null)?.fromInbox;
   const [solved, setSolved] = useState(false);
   const [payload, setPayload] = useState<CraftPayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -103,10 +111,16 @@ const SharedCraftPuzzle = () => {
       <div className="container py-6 md:py-10 max-w-2xl mx-auto">
         <div className="mb-4">
           <button
-            onClick={() => navigate("/")}
+            onClick={() => {
+              if (fromInbox) {
+                navigate("/craft", { state: { inboxTab: fromInbox } });
+              } else {
+                navigate("/");
+              }
+            }}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ArrowLeft size={14} /> Home
+            <ArrowLeft size={14} /> {fromInbox ? TAB_LABELS[fromInbox] || "Inbox" : "Home"}
           </button>
         </div>
 

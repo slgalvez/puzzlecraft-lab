@@ -37,9 +37,10 @@ function displayTitle(title: string | undefined | null, type: string): string {
 interface CraftInboxProps {
   onResumeDraft: (draft: CraftDraft) => void;
   onDataChange?: () => void;
+  initialTab?: string;
 }
 
-export default function CraftInbox({ onResumeDraft, onDataChange }: CraftInboxProps) {
+export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: CraftInboxProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [drafts, setDrafts] = useState<CraftDraft[]>(() => loadDrafts());
@@ -112,7 +113,7 @@ export default function CraftInbox({ onResumeDraft, onDataChange }: CraftInboxPr
 
   return (
     <div className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
-      <Tabs defaultValue="drafts">
+      <Tabs defaultValue={initialTab || "drafts"}>
         <TabsList className="w-full">
           <TabsTrigger value="drafts" className="flex-1 gap-1.5">
             <FileText className="h-3 w-3" /> Drafts
@@ -200,7 +201,7 @@ export default function CraftInbox({ onResumeDraft, onDataChange }: CraftInboxPr
                       size="sm"
                       variant="outline"
                       className="text-xs h-7 gap-1 px-3"
-                      onClick={() => navigate(`/s/${s.shareId}`)}
+                      onClick={() => navigate(`/s/${s.shareId}`, { state: { fromInbox: "sent" } })}
                     >
                       <Eye className="h-3 w-3" /> View
                     </Button>
@@ -254,7 +255,7 @@ export default function CraftInbox({ onResumeDraft, onDataChange }: CraftInboxPr
                     size="sm"
                     variant="outline"
                     className="text-xs h-7 gap-1 px-3"
-                    onClick={() => navigate(`/s/${r.shareId}`)}
+                    onClick={() => navigate(`/s/${r.shareId}`, { state: { fromInbox: "received" } })}
                   >
                     <Play className="h-3 w-3" />
                     {r.status === "in_progress" ? "Continue" : r.status === "completed" ? "View" : "Play"}
