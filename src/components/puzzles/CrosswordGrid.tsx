@@ -422,6 +422,29 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
           )}
         </div>
         </div>
+
+        {/* Clues — mobile: inline before controls; desktop: side column */}
+        {isMobile && (
+          <div className="grid gap-4 grid-cols-2 mt-4">
+            <div>
+              <h3 className="mb-2 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Across</h3>
+              <ul className="space-y-1 text-sm">
+                {acrossClues.map((cl) => (
+                  <li key={`a-${cl.number}`} className="text-foreground"><span className="mr-1.5 font-semibold">{cl.number}.</span>{cl.clue}</li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className="mb-2 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Down</h3>
+              <ul className="space-y-1 text-sm">
+                {downClues.map((cl) => (
+                  <li key={`d-${cl.number}`} className="text-foreground"><span className="mr-1.5 font-semibold">{cl.number}.</span>{cl.clue}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
         {showControls && onNewPuzzle && (
           <PuzzleControls
             onReset={handleReset}
@@ -437,24 +460,27 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
         )}
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-1 lg:max-w-xs">
-        <div>
-          <h3 className="mb-2 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Across</h3>
-          <ul className="space-y-1 text-sm">
-            {acrossClues.map((cl) => (
-              <li key={`a-${cl.number}`} className="text-foreground"><span className="mr-1.5 font-semibold">{cl.number}.</span>{cl.clue}</li>
-            ))}
-          </ul>
+      {/* Clues — desktop only: side column */}
+      {!isMobile && (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-1 lg:max-w-xs">
+          <div>
+            <h3 className="mb-2 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Across</h3>
+            <ul className="space-y-1 text-sm">
+              {acrossClues.map((cl) => (
+                <li key={`a-${cl.number}`} className="text-foreground"><span className="mr-1.5 font-semibold">{cl.number}.</span>{cl.clue}</li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3 className="mb-2 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Down</h3>
+            <ul className="space-y-1 text-sm">
+              {downClues.map((cl) => (
+                <li key={`d-${cl.number}`} className="text-foreground"><span className="mr-1.5 font-semibold">{cl.number}.</span>{cl.clue}</li>
+              ))}
+            </ul>
+          </div>
         </div>
-        <div>
-          <h3 className="mb-2 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Down</h3>
-          <ul className="space-y-1 text-sm">
-            {downClues.map((cl) => (
-              <li key={`d-${cl.number}`} className="text-foreground"><span className="mr-1.5 font-semibold">{cl.number}.</span>{cl.clue}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
