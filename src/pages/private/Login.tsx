@@ -11,12 +11,38 @@ function PuzzlePiece({
   rotate,
   offsetX,
   offsetY,
-  delay
-
-
-
-
-
+  delay,
+}: {
+  size: number;
+  rotate: number;
+  offsetX: number;
+  offsetY: number;
+  delay: number;
+}) {
+  return (
+    <svg
+      className="absolute pointer-events-none"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      style={{
+        left: `calc(50% + ${offsetX}px)`,
+        top: offsetY,
+        transform: `rotate(${rotate}deg) translateX(-50%)`,
+        animation: `puzzleFloat 4s ease-in-out ${delay}s infinite`,
+        opacity: 0.7,
+      }}
+      aria-hidden="true"
+    >
+      <path
+        d="M20 11c-.6 0-1-.4-1-1 0-1.7-1.3-3-3-3-.6 0-1-.4-1-1V3c0-.6-.4-1-1-1H6c-.6 0-1 .4-1 1v5c0 .6.4 1 1 1 1.7 0 3 1.3 3 3s-1.3 3-3 3c-.6 0-1 .4-1 1v5c0 .6.4 1 1 1h8c.6 0 1-.4 1-1 0-1.7 1.3-3 3-3s3 1.3 3 3c0 .6.4 1 1 1h3c.6 0 1-.4 1-1V14c0-.6-.4-1-1-1-1.7 0-3-1.3-3-3s1.3-3 3-3c.6 0 1-.4 1-1V3c0-.6-.4-1-1-1h-3c-.6 0-1 .4-1 1v3c0 .6-.4 1-1 1-1.7 0-3 1.3-3 3 0 .6.4 1 1 1z"
+        fill="currentColor"
+        className="text-muted-foreground/40"
+      />
+    </svg>
+  );
+}
 
 }: {size: number;rotate: number;offsetX: number;offsetY: number;delay: number;}) {
   return;
