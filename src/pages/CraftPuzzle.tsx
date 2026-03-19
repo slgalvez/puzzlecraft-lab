@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,8 +16,15 @@ import {
   generateCustomCrossword,
   generateCustomWordSearch,
 } from "@/lib/generators/customPuzzles";
+import {
+  type CraftPayload,
+  type CraftType,
+  buildCraftShareText,
+  buildCraftShareUrl,
+  isPrivateSessionAvailable,
+  saveCraftMessageHandoff,
+} from "@/lib/craftShare";
 
-type CraftType = "word-fill" | "cryptogram" | "crossword" | "word-search";
 type Step = "type" | "content" | "preview";
 
 function generateShortId(): string {
@@ -28,17 +36,8 @@ function generateShortId(): string {
   return result;
 }
 
-function buildShareText(title?: string, from?: string): string {
-  const lines: string[] = [];
-  if (title) lines.push(title);
-  if (from) lines.push(`From ${from}`);
-  lines.push("");
-  lines.push("I made you a puzzle 🧩");
-  lines.push("Solve it here:");
-  return lines.join("\n");
-}
-
 const CraftPuzzle = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [step, setStep] = useState<Step>("type");
   const [selectedType, setSelectedType] = useState<CraftType | null>(null);
@@ -65,64 +64,75 @@ const CraftPuzzle = () => {
 
   const handleGenerate = useCallback(async () => {
     if (!selectedType) return;
+
     try {
       let data: Record<string, unknown>;
       switch (selectedType) {
         case "word-fill": {
-          const words = wordInput.split(/[,\n]+/).map(w => w.trim()).filter(Boolean);
-          if (words.length < 2) { toast({ title: "Enter at least 2 words" }); return; }
+          const words = wordInput.split(/[,\n]+/).map((w) => w.trim()).filter(Boolean);
+          if (words.length < 2) {
+            toast({ title: "Enter at least 2 words" });
+            return;
+          }
           data = generateCustomFillIn(words) as unknown as Record<string, unknown>;
           break;
         }
         case "word-search": {
-          const words = wordInput.split(/[,\n]+/).map(w => w.trim()).filter(Boolean);
-          if (words.length < 2) { toast({ title: "Enter at least 2 words" }); return; }
+          const words = wordInput.split(/[,\n]+/).map((w) => w.trim()).filter(Boolean);
+          if (words.length < 2) {
+            toast({ title: "Enter at least 2 words" });
+            return;
+          }
           data = generateCustomWordSearch(words) as unknown as Record<string, unknown>;
           break;
         }
         case "cryptogram": {
-          if (phraseInput.trim().length < 3) { toast({ title: "Enter a longer phrase" }); return; }
+          if (phraseInput.trim().length < 3) {
+            toast({ title: "Enter a longer phrase" });
+            return;
+          }
           data = generateCustomCryptogram(phraseInput.trim()) as unknown as Record<string, unknown>;
           break;
         }
         case "crossword": {
-          const valid = clueEntries.filter(e => e.answer.trim() && e.clue.trim());
-          if (valid.length < 2) { toast({ title: "Enter at least 2 answer/clue pairs" }); return; }
+          const valid = clueEntries.filter((entry) => entry.answer.trim() && entry.clue.trim());
+          if (valid.length < 2) {
+            toast({ title: "Enter at least 2 answer/clue pairs" });
+            return;
+          }
           data = generateCustomCrossword(valid) as unknown as Record<string, unknown>;
           break;
         }
       }
+
       setGeneratedData(data);
 
-      const payload: {
-        type: CraftType;
-        puzzleData: Record<string, unknown>;
-        revealMessage: string;
-        title?: string;
-        from?: string;
-      } = { type: selectedType, puzzleData: data, revealMessage };
+      const payload: CraftPayload = {
+        type: selectedType,
+        puzzleData: data,
+        revealMessage,
+      };
+
       if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
       if (puzzleFrom.trim()) payload.from = puzzleFrom.trim();
 
-      // Save to DB and get short URL
       setSaving(true);
       const shortId = generateShortId();
       const { error: dbErr } = await supabase
         .from("shared_puzzles" as any)
-        .insert({ id: shortId, payload: payload as unknown } as any);
+        .insert({ id: shortId, payload } as any);
 
-      setSaving(false);
       if (dbErr) {
         toast({ title: "Failed to save puzzle", description: "Please try again" });
         return;
       }
 
-      const url = `${window.location.origin}/s/${shortId}`;
-      setShareUrl(url);
+      setShareUrl(buildCraftShareUrl(shortId));
       setStep("preview");
     } catch (err) {
-      setSaving(false);
       toast({ title: "Generation failed", description: err instanceof Error ? err.message : "Please try different input" });
+    } finally {
+      setSaving(false);
     }
   }, [selectedType, wordInput, phraseInput, clueEntries, revealMessage, puzzleTitle, puzzleFrom, toast]);
 
@@ -134,6 +144,7 @@ const CraftPuzzle = () => {
 
   const handleCopyLink = async () => {
     if (!shareUrl) return;
+
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
@@ -147,23 +158,43 @@ const CraftPuzzle = () => {
   };
 
   const handleShare = async () => {
-    if (!shareUrl) return;
-    const shareText = buildShareText(puzzleTitle.trim() || undefined, puzzleFrom.trim() || undefined);
+    if (!shareUrl || !generatedData || !selectedType) return;
+
+    if (isPrivateSessionAvailable()) {
+      saveCraftMessageHandoff({
+        type: selectedType,
+        puzzleData: generatedData,
+        revealMessage,
+        title: puzzleTitle.trim() || undefined,
+        from: puzzleFrom.trim() || undefined,
+      });
+      navigate("/p/for-you");
+      return;
+    }
+
+    const shareText = buildCraftShareText(puzzleTitle.trim() || undefined, puzzleFrom.trim() || undefined);
     const shareTitle = puzzleTitle.trim() || "I made you a puzzle 🧩";
+
     if (navigator.share) {
       try {
         await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
         setShareSuccess(true);
         setTimeout(() => setShareSuccess(false), 1500);
-      } catch { /* user cancelled */ }
-    } else {
-      handleCopyLink();
+      } catch {
+        // user cancelled
+      }
+      return;
     }
+
+    handleCopyLink();
   };
 
   const handleBack = () => {
     if (step === "preview") setStep("content");
-    else if (step === "content") { setStep("type"); setSelectedType(null); }
+    else if (step === "content") {
+      setStep("type");
+      setSelectedType(null);
+    }
   };
 
   const handleStartOver = () => {
