@@ -668,7 +668,7 @@ interface WordSearchSolverProps {
   compact?: boolean;
 }
 
-export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress, showHints = true, showReveal = false }: WordSearchSolverProps) {
+export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress, showHints = true, showReveal = false, compact = false }: WordSearchSolverProps) {
   const { toast } = useToast();
   const [foundWords, setFoundWords] = useState<Set<string>>(() => {
     if (savedState?.foundWords) return new Set(savedState.foundWords);
