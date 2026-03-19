@@ -30,7 +30,7 @@ interface NonogramState {
   grid: CellState[][];
 }
 
-const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode }: Props) => {
+const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode, showHints = true, showReveal = true, maxHints }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateNonogram(seed, difficulty), [seed, difficulty]);
