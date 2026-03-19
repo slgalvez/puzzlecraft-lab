@@ -139,7 +139,7 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, ca
         </Button>
         {shareData && (
           <Button size="sm" variant="outline" onClick={handleShare} className="gap-1.5">
-            {copied ? <CheckCheck size={13} /> : <Share2 size={13} />}
+            {copied ? <CheckCheck size={13} /> : <Share size={13} />}
             {copied ? "Copied" : "Share"}
           </Button>
         )}

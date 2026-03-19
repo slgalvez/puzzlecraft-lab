@@ -300,6 +300,7 @@ const CraftPuzzle = () => {
     setRevealMessage("");
     setPuzzleTitle("");
     setPuzzleFrom("");
+    setCraftSettings(DEFAULT_CRAFT_SETTINGS);
     setGeneratedData(null);
     setShareUrl(null);
     setCopied(false);

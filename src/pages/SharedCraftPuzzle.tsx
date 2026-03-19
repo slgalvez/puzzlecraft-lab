@@ -143,6 +143,12 @@ const SharedCraftPuzzle = () => {
           <CraftCompletionActions senderName={from} puzzleType={type} />
         )}
 
+        {from && (
+          <p className="text-[11px] text-muted-foreground/60 text-right italic mt-2 mb-4">
+            {from}
+          </p>
+        )}
+
         <div className="min-h-[300px]">
           {(type === "word-fill" || type === "crossword") && (
             <GridSolver data={puzzleData} puzzleType={type} onComplete={handleComplete} />
