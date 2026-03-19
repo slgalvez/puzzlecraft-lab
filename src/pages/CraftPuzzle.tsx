@@ -38,6 +38,7 @@ function generateShortId(): string {
 
 const CraftPuzzle = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [step, setStep] = useState<Step>("type");
   const [selectedType, setSelectedType] = useState<CraftType | null>(null);
@@ -56,6 +57,18 @@ const CraftPuzzle = () => {
   const [copied, setCopied] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Accept pre-filled state from "Send one back" flow
+  useEffect(() => {
+    const state = location.state as { prefillTitle?: string; startAtContent?: boolean } | null;
+    if (state?.prefillTitle) {
+      setPuzzleTitle(state.prefillTitle);
+    }
+    // Clear location state so refresh doesn't re-apply
+    if (state) {
+      window.history.replaceState({}, "");
+    }
+  }, [location.state]);
 
   const handleSelectType = (type: CraftType) => {
     setSelectedType(type);
