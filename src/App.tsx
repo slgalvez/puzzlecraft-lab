@@ -24,6 +24,7 @@ import PrivateHome from "./pages/private/PrivateHome";
 import AdminConversationView from "./pages/private/AdminConversationView";
 import AdminConversations from "./pages/private/AdminConversations";
 import AdminUsers from "./pages/private/AdminUsers";
+import AdminFailedLogins from "./pages/private/AdminFailedLogins";
 import UserConversation from "./pages/private/UserConversation";
 import PrivateSettings from "./pages/private/PrivateSettings";
 import ForYou from "./pages/private/ForYou";
