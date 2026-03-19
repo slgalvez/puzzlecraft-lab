@@ -157,15 +157,25 @@ export default function CraftInbox({ onResumeDraft, onDataChange }: CraftInboxPr
                       {s.title || "Untitled puzzle"}
                     </p>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7 gap-1"
-                    onClick={() => handleCopyLink(s.id, s.shareUrl)}
-                  >
-                    {copiedId === s.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                    {copiedId === s.id ? "Copied" : "Copy link"}
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-7 gap-1"
+                      onClick={() => navigate(`/s/${s.shareId}`)}
+                    >
+                      <Eye className="h-3 w-3" /> View
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-xs h-7 gap-1"
+                      onClick={() => handleCopyLink(s.id, s.shareUrl)}
+                    >
+                      {copiedId === s.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                      {copiedId === s.id ? "Copied" : "Copy link"}
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
