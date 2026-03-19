@@ -3,8 +3,8 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { CATEGORY_INFO, type PuzzleCategory, type Difficulty, DIFFICULTY_LABELS } from "@/lib/puzzleTypes";
 
 /**
- * Handles /play?code={category}-{seed}-{difficulty}
- * Redirects to the appropriate quick-play route or falls back to homepage.
+ * Handles /play?code={category}-{seed}-{difficulty} and /play?code=daily-{YYYY-MM-DD}
+ * Redirects to the appropriate route or falls back to homepage.
  */
 const SharedPuzzle = () => {
   const [searchParams] = useSearchParams();
@@ -12,8 +12,15 @@ const SharedPuzzle = () => {
 
   useEffect(() => {
     const code = searchParams.get("code") || "";
-    const parsed = parseShareCode(code);
 
+    // Handle daily codes: daily-YYYY-MM-DD
+    const dailyMatch = code.match(/^daily-(\d{4}-\d{2}-\d{2})$/);
+    if (dailyMatch) {
+      navigate("/daily", { replace: true });
+      return;
+    }
+
+    const parsed = parseShareCode(code);
     if (parsed) {
       navigate(`/quick-play/${parsed.category}?seed=${parsed.seed}&d=${parsed.difficulty}`, { replace: true });
     } else {

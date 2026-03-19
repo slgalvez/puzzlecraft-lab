@@ -215,7 +215,7 @@ const Index = () => {
                     {challenge.difficulty}
                   </span>
                   <span className="text-[11px] text-muted-foreground/60">
-                    Puzzle Code: <span className="font-mono">{challenge.seed}</span>
+                    Puzzle Code: <span className="font-mono">daily-{challenge.dateStr}</span>
                   </span>
                 </div>
 
