@@ -124,21 +124,13 @@ const SharedCraftPuzzle = () => {
           </button>
         </div>
 
-        {title && (
-          <div className="mb-5 text-center">
-            <h1 className="text-xl font-display font-semibold text-foreground sm:text-2xl">{title}</h1>
-          </div>
-        )}
-
-        <div className="mb-6">
-          <p className="text-xs font-medium uppercase tracking-widest text-primary mb-1">Custom Puzzle</p>
-          {!title && (
-            <h1 className="font-display text-xl font-bold text-foreground sm:text-2xl">
-              {PUZZLE_LABELS[type]}
-            </h1>
-          )}
+        {/* Header: type label, then title — matching preview layout */}
+        <div className="mb-5 text-center">
+          <p className="text-[10px] font-medium uppercase tracking-widest text-primary mb-1.5">
+            {PUZZLE_LABELS[type]}
+          </p>
           {title && (
-            <p className="text-xs text-muted-foreground">{PUZZLE_LABELS[type]}</p>
+            <h1 className="text-lg font-display font-semibold text-foreground sm:text-xl">{title}</h1>
           )}
         </div>
 
@@ -163,12 +155,6 @@ const SharedCraftPuzzle = () => {
 
         {solved && (
           <CraftCompletionActions senderName={from} puzzleType={type} />
-        )}
-
-        {from && (
-          <p className="text-[11px] text-muted-foreground/60 text-right italic mt-2 mb-4">
-            {from}
-          </p>
         )}
 
         <div className="min-h-[300px]">
