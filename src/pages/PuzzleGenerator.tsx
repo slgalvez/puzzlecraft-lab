@@ -448,8 +448,9 @@ const PuzzleGenerator = () => {
                     onCheckedChange={setTimeLimitEnabled}
                     id="time-limit-toggle-mobile"
                   />
-                  <label htmlFor="time-limit-toggle-mobile" className="text-sm font-medium text-foreground cursor-pointer">
-                    {timeLimitEnabled ? "Timed" : "No time limit"}
+                  <label htmlFor="time-limit-toggle-mobile" className="flex items-center gap-1.5 text-sm font-medium text-foreground cursor-pointer">
+                    <Clock size={14} className="text-muted-foreground" />
+                    Timer
                   </label>
                 </div>
                 {timeLimitEnabled && (
