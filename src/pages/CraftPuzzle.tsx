@@ -287,6 +287,11 @@ const CraftPuzzle = () => {
   const handleBack = () => {
     if (step === "preview") setStep("content");
     else if (step === "content") {
+      if (enteredFromDraft) {
+        setEnteredFromDraft(false);
+        setView("inbox");
+        return;
+      }
       setStep("type");
       setSelectedType(null);
     }
