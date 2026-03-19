@@ -104,23 +104,30 @@ const PuzzleLibrary = () => {
                   </button>
                   {isExpanded && (
                     <div className="mt-2 flex flex-wrap gap-1.5 pb-1 animate-in fade-in slide-in-from-top-1 duration-150">
-                      {difficulties.map(([val, label]) => (
-                        <button
-                          key={val}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDifficultyChange(type, val);
-                          }}
-                          className={cn(
-                            "rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors",
-                            currentDiff === val
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
-                          )}
-                        >
-                          {label}
-                        </button>
-                      ))}
+                      {difficulties.map(([val, label]) => {
+                        const disabled = isDifficultyDisabled(type, val);
+                        return (
+                          <button
+                            key={val}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (disabled) return;
+                              handleDifficultyChange(type, val);
+                            }}
+                            className={cn(
+                              "rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors",
+                              disabled
+                                ? "border-border text-muted-foreground/40 cursor-not-allowed"
+                                : currentDiff === val
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+                            )}
+                            title={disabled ? `${label} not available for ${info.name} yet` : undefined}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
