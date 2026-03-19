@@ -268,8 +268,8 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
         onReveal={handleReveal}
         hintCount={hintCount.current}
         isRevealed={isRevealed}
-        puzzleCode={`nonogram-${seed}`}
-        solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0, category: "nonogram", seed }}
+        puzzleCode={dailyCode ?? `nonogram-${seed}`}
+        solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0, category: "nonogram", seed, dailyCode }}
       />
     </div>
   );

@@ -403,8 +403,8 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
           onReveal={handleReveal}
           hintCount={hintCount.current}
           isRevealed={isRevealed}
-          puzzleCode={`word-search-${seed}`}
-          solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0, category: "word-search", seed }}
+          puzzleCode={dailyCode ?? `word-search-${seed}`}
+          solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0, category: "word-search", seed, dailyCode }}
         />
       </div>
 
