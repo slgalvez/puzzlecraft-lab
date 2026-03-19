@@ -148,8 +148,8 @@ const CraftPuzzle = () => {
 
   const handleShare = async () => {
     if (!shareUrl) return;
-    const shareTitle = puzzleTitle.trim() || "Solve my puzzle!";
-    const shareText = puzzleFrom.trim() ? `${shareTitle} — ${puzzleFrom.trim()}` : shareTitle;
+    const shareText = buildShareText(puzzleTitle.trim() || undefined, puzzleFrom.trim() || undefined);
+    const shareTitle = puzzleTitle.trim() || "I made you a puzzle 🧩";
     if (navigator.share) {
       try {
         await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });

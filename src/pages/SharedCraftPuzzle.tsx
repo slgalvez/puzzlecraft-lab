@@ -40,7 +40,7 @@ const SharedCraftPuzzle = () => {
 
     const load = async () => {
       const { data, error: err } = await supabase
-        .from("shared_puzzles")
+        .from("shared_puzzles" as any)
         .select("payload")
         .eq("id", id)
         .single();

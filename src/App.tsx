@@ -68,6 +68,7 @@ const App = () => (
             <Route path="/stats" element={<Stats />} />
             <Route path="/craft" element={<CraftPuzzle />} />
             <Route path="/craft/play" element={<PlayCraftPuzzle />} />
+            <Route path="/s/:id" element={<SharedCraftPuzzle />} />
 
             {/* Private app */}
             <Route path="/p/login" element={<Login />} />
