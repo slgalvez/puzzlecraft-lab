@@ -163,6 +163,7 @@ const SharedCraftPuzzle = () => {
                 onComplete={handleComplete}
                 showHints={settings?.hintsEnabled ?? true}
                 showReveal={settings?.revealEnabled ?? false}
+                compact
               />
             )}
           </div>

@@ -819,9 +819,11 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress,
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-muted-foreground sm:hidden">
-        Tap two letters to select a word, or drag across letters
-      </p>
+      {!compact && (
+        <p className="text-xs text-muted-foreground sm:hidden">
+          Tap two letters to select a word, or drag across letters
+        </p>
+      )}
       <div
         ref={gridRef}
         className="inline-grid gap-0 select-none"
