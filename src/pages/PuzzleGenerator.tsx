@@ -130,6 +130,7 @@ const PuzzleGenerator = () => {
     () => !!(routeState?.randomPool && routeState.randomDifficulty)
   );
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [randomSettingsOpen, setRandomSettingsOpen] = useState(false);
   const [timeLimitEnabled, setTimeLimitEnabled] = useState(false);
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(5);
   const [timeLimitSeconds, setTimeLimitSeconds] = useState(0);
