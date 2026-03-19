@@ -48,7 +48,8 @@ const SharedCraftPuzzle = () => {
       if (err || !data) {
         setError(true);
       } else {
-        const p = data.payload as unknown as CraftPayload;
+        const row = data as any;
+        const p = row.payload as CraftPayload;
         if (p?.type && p?.puzzleData) {
           setPayload(p);
         } else {
