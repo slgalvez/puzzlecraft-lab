@@ -142,7 +142,7 @@ const CraftPuzzle = () => {
             toast({ title: "Enter at least 2 words" });
             return;
           }
-          data = generateCustomFillIn(words) as unknown as Record<string, unknown>;
+          data = generateCustomFillIn(words, craftSettings.difficulty) as unknown as Record<string, unknown>;
           break;
         }
         case "word-search": {
@@ -151,7 +151,7 @@ const CraftPuzzle = () => {
             toast({ title: "Enter at least 2 words" });
             return;
           }
-          data = generateCustomWordSearch(words) as unknown as Record<string, unknown>;
+          data = generateCustomWordSearch(words, craftSettings.difficulty) as unknown as Record<string, unknown>;
           break;
         }
         case "cryptogram": {
@@ -159,7 +159,7 @@ const CraftPuzzle = () => {
             toast({ title: "Enter a longer phrase" });
             return;
           }
-          data = generateCustomCryptogram(phraseInput.trim()) as unknown as Record<string, unknown>;
+          data = generateCustomCryptogram(phraseInput.trim(), craftSettings.difficulty) as unknown as Record<string, unknown>;
           break;
         }
         case "crossword": {
@@ -168,7 +168,7 @@ const CraftPuzzle = () => {
             toast({ title: "Enter at least 2 answer/clue pairs" });
             return;
           }
-          data = generateCustomCrossword(valid) as unknown as Record<string, unknown>;
+          data = generateCustomCrossword(valid, craftSettings.difficulty) as unknown as Record<string, unknown>;
           break;
         }
       }
@@ -389,7 +389,7 @@ const CraftPuzzle = () => {
                     <Input
                       value={puzzleTitle}
                       onChange={e => setPuzzleTitle(e.target.value)}
-                      placeholder="For Sarah 💌"
+                      placeholder="For my Mariah"
                       maxLength={100}
                     />
                   </div>
@@ -398,7 +398,7 @@ const CraftPuzzle = () => {
                     <Input
                       value={puzzleFrom}
                       onChange={e => setPuzzleFrom(e.target.value)}
-                      placeholder="— Alex 🫶"
+                      placeholder="- Sylas"
                       maxLength={100}
                     />
                   </div>
