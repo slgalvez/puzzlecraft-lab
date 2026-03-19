@@ -57,6 +57,59 @@ const PuzzleGenerator = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
+  const hintLimits: { value: number | null; label: string }[] = [
+    { value: 1, label: "1" },
+    { value: 2, label: "2" },
+    { value: 3, label: "3" },
+    { value: null, label: "∞" },
+  ];
+
+  const renderAssists = (compact = false) => (
+    <div>
+      <label className={cn("mb-3 block text-xs font-medium uppercase tracking-widest text-muted-foreground", compact && "mb-2")}>
+        Assists
+      </label>
+      <div className="space-y-3">
+        {/* Hints toggle */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Switch checked={hintsEnabled} onCheckedChange={setHintsEnabled} id="hints-toggle" />
+            <label htmlFor="hints-toggle" className="flex items-center gap-1.5 text-sm font-medium text-foreground cursor-pointer">
+              <Lightbulb size={14} className="text-muted-foreground" />
+              Hints
+            </label>
+          </div>
+          {hintsEnabled && (
+            <div className="ml-10 flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground mr-1">Limit:</span>
+              {hintLimits.map(({ value, label }) => (
+                <button
+                  key={label}
+                  onClick={() => setHintLimit(value)}
+                  className={cn(
+                    "rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors min-w-[28px]",
+                    hintLimit === value
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {/* Reveal toggle */}
+        <div className="flex items-center gap-2">
+          <Switch checked={revealEnabled} onCheckedChange={setRevealEnabled} id="reveal-toggle" />
+          <label htmlFor="reveal-toggle" className="flex items-center gap-1.5 text-sm font-medium text-foreground cursor-pointer">
+            <Eye size={14} className="text-muted-foreground" />
+            Reveal
+          </label>
+        </div>
+      </div>
+    </div>
+  );
 
   useEffect(() => { setPuzzleOrigin("lab"); }, []);
 
