@@ -82,7 +82,7 @@ const PuzzleGenerator = () => {
   const [timeLimitSeconds, setTimeLimitSeconds] = useState(0);
 
   // Mode & mobile stepper
-  const [mode, setMode] = useState<Mode>("generate");
+  const [mode, setMode] = useState<Mode>(() => routeState?.randomPool ? "random" : "generate");
   const [mobileStep, setMobileStep] = useState<MobileStep>(1);
 
   // Random tab state
@@ -227,7 +227,7 @@ const PuzzleGenerator = () => {
       ? difficulties[Math.floor(Math.random() * difficulties.length)][0]
       : randomDifficulty;
     setDifficulty(diff);
-    setMode("generate");
+    setMode("random");
     setSeed(newSeed);
     setPuzzleGenerated(true);
     setRandomPool(types.length > 1 ? types : null);
