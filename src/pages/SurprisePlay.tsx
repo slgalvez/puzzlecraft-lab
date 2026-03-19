@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory, getEffectiveDifficulty } from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
 
 const allTypes = Object.keys(CATEGORY_INFO) as PuzzleCategory[];
