@@ -26,9 +26,13 @@ interface GridSolverProps {
   onComplete: () => void;
   savedState?: { grid: string[][] } | null;
   onSaveProgress?: (state: { grid: string[][] }) => void;
+  showHints?: boolean;
+  showReveal?: boolean;
+  showCheck?: boolean;
 }
 
-export function GridSolver({ data, puzzleType, onComplete, savedState, onSaveProgress }: GridSolverProps) {
+export function GridSolver({ data, puzzleType, onComplete, savedState, onSaveProgress, showHints = true, showReveal = false, showCheck = true }: GridSolverProps) {
+  const { toast } = useToast();
   const isMobile = useIsMobile();
   const gridSize = (data.gridSize as number) || 9;
   const blackCells = (data.blackCells as [number, number][]) || [];
