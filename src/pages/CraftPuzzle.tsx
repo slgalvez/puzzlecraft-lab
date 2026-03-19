@@ -120,7 +120,7 @@ const CraftPuzzle = () => {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [step, selectedType, puzzleTitle, puzzleFrom, wordInput, phraseInput, clueEntries, revealMessage, refreshDraftCount]);
+  }, [step, selectedType, puzzleTitle, puzzleFrom, wordInput, phraseInput, clueEntries, revealMessage, craftSettings, refreshDraftCount]);
 
   const handleSelectType = (type: CraftType) => {
     setSelectedType(type);
