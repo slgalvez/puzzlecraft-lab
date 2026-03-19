@@ -293,7 +293,7 @@ const CraftPuzzle = () => {
               </div>
             )}
 
-            {/* Share controls with success animation */}
+            {/* Share controls */}
             <div className="relative space-y-3 p-5 rounded-xl border border-border bg-card overflow-hidden">
               {/* Success overlay */}
               {shareSuccess && (
@@ -302,21 +302,18 @@ const CraftPuzzle = () => {
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-primary">
                       <Check size={24} strokeWidth={2.5} />
                     </div>
-                    <span className="text-sm font-medium text-foreground">Ready to share!</span>
+                    <span className="text-sm font-medium text-foreground">Sent!</span>
                   </div>
                 </div>
               )}
 
-              <p className="text-xs font-medium text-foreground">Share your puzzle</p>
-              <div className="flex gap-2">
-                <Button onClick={handleCopyLink} variant="outline" className="flex-1 gap-2">
-                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  {copied ? "Copied!" : "Copy Link"}
-                </Button>
-                <Button onClick={handleShare} className="flex-1 gap-2">
-                  <Share2 className="h-4 w-4" /> Share
-                </Button>
-              </div>
+              <Button onClick={handleShare} className="w-full gap-2">
+                <Share2 className="h-4 w-4" /> Send Puzzle
+              </Button>
+              <Button onClick={handleCopyLink} variant="ghost" className="w-full gap-2 text-muted-foreground">
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied ? "Copied!" : "Copy link instead"}
+              </Button>
             </div>
 
             <Button onClick={handleRegenerate} variant="ghost" className="w-full gap-2 text-muted-foreground">
