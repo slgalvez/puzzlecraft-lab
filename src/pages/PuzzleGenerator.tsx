@@ -893,7 +893,12 @@ const PuzzleGenerator = () => {
             )}
           </>
         ) : (
-          isMobile ? renderMobileRandom() : renderDesktopRandom()
+          <>
+            {isMobile ? renderMobileRandom() : renderDesktopRandom()}
+            {puzzleGenerated && (
+              <div className="mt-10 min-h-[300px]">{renderPuzzle()}</div>
+            )}
+          </>
         )}
       </div>
     </Layout>
