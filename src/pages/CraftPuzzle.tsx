@@ -302,6 +302,17 @@ const CraftPuzzle = () => {
         {/* ─── Step 3: Preview & Share ─── */}
         {step === "preview" && generatedData && selectedType && (
           <div className="animate-in fade-in-0 slide-in-from-right-4 duration-300 space-y-5">
+            {/* Header */}
+            <div className="text-center space-y-1">
+              <h2 className="text-sm font-medium text-foreground">
+                Your puzzle is ready ✨
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                This is exactly what they'll see
+              </p>
+            </div>
+
+            {/* Creator actions */}
             <div className="flex items-center justify-between">
               <button onClick={handleBack} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
                 <ArrowLeft size={13} /> Edit content
@@ -311,14 +322,10 @@ const CraftPuzzle = () => {
               </button>
             </div>
 
-            <div className="text-center space-y-1">
-              <h2 className="text-sm font-medium text-foreground">
-                Your {TYPE_OPTIONS.find(o => o.value === selectedType)?.label} is ready!
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                This is exactly what the recipient will see
-              </p>
-            </div>
+            {/* Preview label */}
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-medium text-center">
+              👁 Preview
+            </p>
 
             {/* Preview — matches final experience */}
             <div className="p-5 rounded-xl border border-border bg-card space-y-4">
@@ -337,10 +344,11 @@ const CraftPuzzle = () => {
               <CraftPreviewGrid data={generatedData} puzzleType={selectedType} />
             </div>
 
+            {/* Reveal message preview */}
             {revealMessage && (
-              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Reveal message</p>
-                <p className="text-sm italic text-foreground">{revealMessage}</p>
+              <div className="p-4 rounded-xl bg-muted/50 border border-border space-y-1.5">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Preview: Reveal Message</p>
+                <p className="text-sm italic text-foreground/80">{revealMessage}</p>
               </div>
             )}
 
@@ -363,10 +371,10 @@ const CraftPuzzle = () => {
               </Button>
               <button
                 onClick={handleCopyLink}
-                className="w-full flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors py-2"
+                className="w-full flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors py-1.5"
               >
-                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                {copied ? "Copied!" : "Copy link instead"}
+                {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                {copied ? "Copied!" : "or copy link"}
               </button>
             </div>
 

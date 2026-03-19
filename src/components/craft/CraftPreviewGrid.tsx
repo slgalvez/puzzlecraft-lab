@@ -204,14 +204,14 @@ function WordSearchPreview({ data, showSolution }: { data: Record<string, unknow
 
       {/* Word bank */}
       {words.length > 0 && (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Words to Find</p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {[...words].sort().map((word, i) => (
               <span
                 key={i}
-                className={`px-2 py-0.5 text-[11px] font-mono rounded ${
-                  showSolution ? "bg-primary/10 text-primary line-through" : "bg-muted text-muted-foreground"
+                className={`px-2.5 py-1 text-[11px] font-mono rounded ${
+                  showSolution ? "bg-primary/10 text-primary line-through" : "bg-muted text-foreground/70"
                 }`}
               >
                 {word}
