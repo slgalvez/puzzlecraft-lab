@@ -47,19 +47,20 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
   const [direction, setDirection] = useState<Direction>("across");
+  const [isRevealed, setIsRevealed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const resetCount = useRef(0);
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
+  const hintCount = useRef(0);
 
   const timer = usePuzzleTimer(timerKey, { category: "kakuro", difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
-  // Auto-save
   useEffect(() => {
-    if (!timer.isSolved) {
+    if (!timer.isSolved && !isRevealed) {
       saveProgress<KakuroState>(timerKey, { grid }, timer.elapsed);
     }
-  }, [grid, timer.elapsed, timer.isSolved, timerKey]);
+  }, [grid, timer.elapsed, timer.isSolved, isRevealed, timerKey]);
 
   const clueMap = useMemo(() => {
     const map = new Map<string, { across?: number; down?: number }>();
@@ -139,7 +140,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
   }, [seed, difficulty]);
 
   const enterNumber = useCallback((num: number) => {
-    if (!activeCell || timer.isSolved) return;
+    if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
     setGrid((prev) => {
       const next = prev.map((row) => [...row]);
@@ -154,10 +155,10 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
         setActiveCell(slot.cells[idx + 1]);
       }
     }
-  }, [activeCell, timer.isSolved, direction, getActiveSlot]);
+  }, [activeCell, timer.isSolved, isRevealed, direction, getActiveSlot]);
 
   const deleteCell = useCallback(() => {
-    if (!activeCell || timer.isSolved) return;
+    if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
     if (grid[r][c]) {
       setGrid((prev) => {
@@ -175,10 +176,10 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
         }
       }
     }
-  }, [activeCell, timer.isSolved, grid, direction, getActiveSlot]);
+  }, [activeCell, timer.isSolved, isRevealed, grid, direction, getActiveSlot]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (!activeCell || timer.isSolved) return;
+    if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
 
     switch (e.key) {
@@ -215,7 +216,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
       case "Backspace": case "Delete": e.preventDefault(); deleteCell(); break;
       default: { if (/^[1-9]$/.test(e.key)) { e.preventDefault(); enterNumber(parseInt(e.key)); } }
     }
-  }, [activeCell, timer.isSolved, size, isBlack, enterNumber, deleteCell, direction, getActiveSlot, entrySlots]);
+  }, [activeCell, timer.isSolved, isRevealed, size, isBlack, enterNumber, deleteCell, direction, getActiveSlot, entrySlots]);
 
   const handleCellClick = (r: number, c: number) => {
     if (isBlack[r][c]) return;
@@ -245,6 +246,8 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
     setGrid(Array.from({ length: size }, () => Array(size).fill("")));
     setErrors(new Set());
     setDirection("across");
+    setIsRevealed(false);
+    hintCount.current = 0;
     resetCount.current++;
     timer.reset();
     clearProgress(timerKey);
@@ -265,7 +268,7 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
     setErrors(errs);
     if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0 && filled) {
-      const { isNewBest } = timer.solve();
+      const { isNewBest } = timer.solve({ assisted: hintCount.current > 0 });
       clearProgress(timerKey);
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Puzzle solved correctly!" });
       onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
@@ -273,6 +276,41 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
       toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
     else
       toast({ title: "Keep going!", description: "No errors so far." });
+  };
+
+  const handleHint = () => {
+    if (timer.isSolved || isRevealed) return;
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (isBlack[r][c]) continue;
+        if (grid[r][c] !== solution[r][c].toString()) {
+          setGrid((prev) => {
+            const next = prev.map((row) => [...row]);
+            next[r][c] = solution[r][c].toString();
+            return next;
+          });
+          setErrors(new Set());
+          setActiveCell([r, c]);
+          hintCount.current++;
+          toast({ title: "💡 Hint", description: `Revealed a cell. (${hintCount.current} hint${hintCount.current > 1 ? "s" : ""} used)` });
+          return;
+        }
+      }
+    }
+    toast({ title: "No hints needed", description: "All cells are correct!" });
+  };
+
+  const handleReveal = () => {
+    const revealedGrid = Array.from({ length: size }, (_, r) =>
+      Array.from({ length: size }, (_, c) =>
+        isBlack[r][c] ? "" : solution[r][c].toString()
+      )
+    );
+    setGrid(revealedGrid);
+    setErrors(new Set());
+    setIsRevealed(true);
+    timer.pause();
+    clearProgress(timerKey);
   };
 
   return (
@@ -337,11 +375,21 @@ const KakuroGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
       </div>
       </div>
       <MobileNumberPad
-        visible={isMobile && !!activeCell && !timer.isSolved}
+        visible={isMobile && !!activeCell && !timer.isSolved && !isRevealed}
         onNumber={enterNumber}
         onDelete={deleteCell}
       />
-      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`kakuro-${seed}`} solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless }} />
+      <PuzzleControls
+        onReset={handleReset}
+        onCheck={handleCheck}
+        onNewPuzzle={onNewPuzzle}
+        onHint={handleHint}
+        onReveal={handleReveal}
+        hintCount={hintCount.current}
+        isRevealed={isRevealed}
+        puzzleCode={`kakuro-${seed}`}
+        solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0 }}
+      />
     </div>
   );
 };

@@ -115,7 +115,8 @@ export function getProgressStats(): ProgressStats {
 
   const totalTime = records.reduce((s, r) => s + r.time, 0);
   const bestTime = Math.min(...records.map((r) => r.time));
-  const dates = records.map((r) => toDateStr(r.date));
+  const nonAssisted = records.filter((r) => !r.assisted);
+  const dates = nonAssisted.map((r) => toDateStr(r.date));
   const { current, longest } = calcStreak(dates);
 
   const byCategory: ProgressStats["byCategory"] = {};

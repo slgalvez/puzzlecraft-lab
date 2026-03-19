@@ -123,11 +123,12 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
   const pause = useCallback(() => setState((s) => ({ ...s, isRunning: false })), []);
   const resume = useCallback(() => setState((s) => (s.isSolved || s.countdown > 0 || s.expired ? s : { ...s, isRunning: true })), []);
 
-  const solve = useCallback(() => {
+  const solve = useCallback((opts?: { assisted?: boolean }) => {
     setState((s) => ({ ...s, isRunning: false, isSolved: true, countdown: 0 }));
-    const isNew = saveBestTime(puzzleKey, state.elapsed, options?.category, options?.difficulty);
+    const assisted = opts?.assisted ?? false;
+    const isNew = assisted ? false : saveBestTime(puzzleKey, state.elapsed, options?.category, options?.difficulty);
     if (options?.category && options?.difficulty) {
-      recordCompletion(puzzleKey, options.category, options.difficulty, state.elapsed);
+      recordCompletion(puzzleKey, options.category, options.difficulty, state.elapsed, assisted);
       if (puzzleKey.startsWith("daily-")) {
         const challenge = getTodaysChallenge();
         if (puzzleKey === `daily-${challenge.dateStr}-${challenge.category}-${challenge.difficulty}`) {

@@ -41,21 +41,22 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const [cursor, setCursor] = useState<[number, number]>([0, 0]);
   const [touchMode, setTouchMode] = useState<"fill" | "mark">("fill");
+  const [isRevealed, setIsRevealed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const resetCount = useRef(0);
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
+  const hintCount = useRef(0);
 
   const timer = usePuzzleTimer(timerKey, { category: "nonogram", difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
   const maxRowClueLen = Math.max(...rowClues.map((c) => c.length));
 
-  // Auto-save
   useEffect(() => {
-    if (!timer.isSolved) {
+    if (!timer.isSolved && !isRevealed) {
       saveProgress<NonogramState>(timerKey, { grid }, timer.elapsed);
     }
-  }, [grid, timer.elapsed, timer.isSolved, timerKey]);
+  }, [grid, timer.elapsed, timer.isSolved, isRevealed, timerKey]);
 
   useEffect(() => {
     setCursor([0, 0]);
@@ -63,7 +64,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
   }, [seed, difficulty]);
 
   const setCellState = (r: number, c: number, state: CellState) => {
-    if (timer.isSolved) return;
+    if (timer.isSolved || isRevealed) return;
     setGrid((prev) => {
       const next = prev.map((row) => [...row]);
       next[r][c] = state;
@@ -73,7 +74,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
   };
 
   const handleCellTap = (r: number, c: number) => {
-    if (timer.isSolved) return;
+    if (timer.isSolved || isRevealed) return;
     setCursor([r, c]);
     if (isMobile) haptic();
     if (isMobile) {
@@ -91,7 +92,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
   };
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (timer.isSolved) return;
+    if (timer.isSolved || isRevealed) return;
     const [r, c] = cursor;
 
     switch (e.key) {
@@ -103,12 +104,14 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
       case "x": case "X": e.preventDefault(); setCellState(r, c, grid[r][c] === "marked" ? "empty" : "marked"); break;
       case "Delete": case "Backspace": e.preventDefault(); setCellState(r, c, "empty"); break;
     }
-  }, [cursor, timer.isSolved, grid, rows, cols]);
+  }, [cursor, timer.isSolved, isRevealed, grid, rows, cols]);
 
   const handleReset = () => {
     setGrid(Array.from({ length: rows }, () => Array(cols).fill("empty")));
     setErrors(new Set());
     setCursor([0, 0]);
+    setIsRevealed(false);
+    hintCount.current = 0;
     resetCount.current++;
     timer.reset();
     clearProgress(timerKey);
@@ -127,12 +130,41 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
     setErrors(errs);
     if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0) {
-      const { isNewBest } = timer.solve();
+      const { isNewBest } = timer.solve({ assisted: hintCount.current > 0 });
       clearProgress(timerKey);
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Nonogram solved correctly!" });
       onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
     } else
       toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
+  };
+
+  const handleHint = () => {
+    if (timer.isSolved || isRevealed) return;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const shouldBeFilled = solution[r][c];
+        const isFilled = grid[r][c] === "filled";
+        if (shouldBeFilled !== isFilled) {
+          setCellState(r, c, shouldBeFilled ? "filled" : "marked");
+          setCursor([r, c]);
+          hintCount.current++;
+          toast({ title: "💡 Hint", description: `Revealed a cell. (${hintCount.current} hint${hintCount.current > 1 ? "s" : ""} used)` });
+          return;
+        }
+      }
+    }
+    toast({ title: "No hints needed", description: "All cells are correct!" });
+  };
+
+  const handleReveal = () => {
+    const revealedGrid: CellState[][] = solution.map((row) =>
+      row.map((cell) => (cell ? "filled" : "marked"))
+    );
+    setGrid(revealedGrid);
+    setErrors(new Set());
+    setIsRevealed(true);
+    timer.pause();
+    clearProgress(timerKey);
   };
 
   const cellSize = rows <= 10 ? "w-7 h-7 sm:w-9 sm:h-9" : "w-5 h-5 sm:w-6 sm:h-6";
@@ -147,7 +179,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
     >
       <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} remaining={timer.remaining} timeLimit={timer.timeLimit} expired={timer.expired} onPause={timer.pause} onResume={timer.resume} />
 
-      {isMobile && !timer.isSolved && (
+      {isMobile && !timer.isSolved && !isRevealed && (
         <div className="flex items-center gap-2 mb-3">
           <button
             type="button"
@@ -227,7 +259,17 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
           </div>
         ))}
       </div>
-      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`nonogram-${seed}`} solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless }} />
+      <PuzzleControls
+        onReset={handleReset}
+        onCheck={handleCheck}
+        onNewPuzzle={onNewPuzzle}
+        onHint={handleHint}
+        onReveal={handleReveal}
+        hintCount={hintCount.current}
+        isRevealed={isRevealed}
+        puzzleCode={`nonogram-${seed}`}
+        solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0 }}
+      />
     </div>
   );
 };

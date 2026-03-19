@@ -37,11 +37,13 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
   );
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const [activeIdx, setActiveIdx] = useState<number>(-1);
+  const [isRevealed, setIsRevealed] = useState(false);
   const inputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
   const resetCount = useRef(0);
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
+  const hintCount = useRef(0);
 
   const timer = usePuzzleTimer(timerKey, { category: "cryptogram", difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
@@ -73,12 +75,11 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
     return map;
   }, [encoded]);
 
-  // Auto-save
   useEffect(() => {
-    if (!timer.isSolved) {
+    if (!timer.isSolved && !isRevealed) {
       saveProgress<CryptogramState>(timerKey, { guesses }, timer.elapsed);
     }
-  }, [guesses, timer.elapsed, timer.isSolved, timerKey]);
+  }, [guesses, timer.elapsed, timer.isSolved, isRevealed, timerKey]);
 
   useEffect(() => {
     if (editableIndices.length > 0) {
@@ -104,7 +105,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
   };
 
   const handleInput = (encodedLetter: string, value: string, idx: number) => {
-    if (hints[encodedLetter] || timer.isSolved) return;
+    if (hints[encodedLetter] || timer.isSolved || isRevealed) return;
     const letter = value.toUpperCase().replace(/[^A-Z]/g, "").slice(-1);
     setGuesses((prev) => ({ ...prev, [encodedLetter]: letter }));
     setErrors(new Set());
@@ -115,7 +116,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
   };
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent, encodedLetter: string, idx: number) => {
-    if (timer.isSolved) return;
+    if (timer.isSolved || isRevealed) return;
     switch (e.key) {
       case "ArrowRight": { e.preventDefault(); const next = findNextEditable(idx, 1); if (next !== null) focusIdx(next); break; }
       case "ArrowLeft": { e.preventDefault(); const prev = findNextEditable(idx, -1); if (prev !== null) focusIdx(prev); break; }
@@ -136,10 +137,10 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
         }
       }
     }
-  }, [timer.isSolved, hints, editableIndices]);
+  }, [timer.isSolved, isRevealed, hints, editableIndices]);
 
   const handleReset = () => {
-    setGuesses({ ...hints }); setErrors(new Set()); resetCount.current++; timer.reset(); clearProgress(timerKey);
+    setGuesses({ ...hints }); setErrors(new Set()); setIsRevealed(false); hintCount.current = 0; resetCount.current++; timer.reset(); clearProgress(timerKey);
     if (editableIndices.length > 0) focusIdx(editableIndices[0]);
   };
 
@@ -155,7 +156,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
     setErrors(errs);
     if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0 && allFilled) {
-      const { isNewBest } = timer.solve();
+      const { isNewBest } = timer.solve({ assisted: hintCount.current > 0 });
       clearProgress(timerKey);
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Message decoded correctly!" });
       onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
@@ -163,6 +164,33 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
       toast({ title: "Not quite right", description: `${errs.size} letter(s) are incorrect.`, variant: "destructive" });
     else
       toast({ title: "Keep going!", description: "No errors so far." });
+  };
+
+  const handleHint = () => {
+    if (timer.isSolved || isRevealed) return;
+    for (const el of encodedLetters) {
+      if (hints[el]) continue;
+      if (guesses[el] !== reverseCipher[el]) {
+        setGuesses((prev) => ({ ...prev, [el]: reverseCipher[el] }));
+        setErrors(new Set());
+        hintCount.current++;
+        toast({ title: "💡 Hint", description: `Revealed: ${el} → ${reverseCipher[el]}. (${hintCount.current} hint${hintCount.current > 1 ? "s" : ""} used)` });
+        return;
+      }
+    }
+    toast({ title: "No hints needed", description: "All letters are correct!" });
+  };
+
+  const handleReveal = () => {
+    const revealed: Record<string, string> = {};
+    for (const el of encodedLetters) {
+      revealed[el] = reverseCipher[el];
+    }
+    setGuesses(revealed);
+    setErrors(new Set());
+    setIsRevealed(true);
+    timer.pause();
+    clearProgress(timerKey);
   };
 
   const words = encoded.split(" ");
@@ -212,7 +240,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
                       !isHint && !hasError && !isActive && "text-foreground border-border focus:border-primary"
                     )}
                     value={guess}
-                    readOnly={!!isHint}
+                    readOnly={!!isHint || isRevealed}
                     maxLength={1}
                     inputMode="text"
                     autoCapitalize="characters"
@@ -248,7 +276,17 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
         </div>
       </details>
 
-      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`cryptogram-${seed}`} solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless }} />
+      <PuzzleControls
+        onReset={handleReset}
+        onCheck={handleCheck}
+        onNewPuzzle={onNewPuzzle}
+        onHint={handleHint}
+        onReveal={handleReveal}
+        hintCount={hintCount.current}
+        isRevealed={isRevealed}
+        puzzleCode={`cryptogram-${seed}`}
+        solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0 }}
+      />
     </div>
   );
 };

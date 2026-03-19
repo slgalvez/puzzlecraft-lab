@@ -38,21 +38,22 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
   );
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const [activeCell, setActiveCell] = useState<[number, number] | null>([0, 0]);
+  const [isRevealed, setIsRevealed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const resetCount = useRef(0);
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
+  const hintCount = useRef(0);
 
   const timer = usePuzzleTimer(timerKey, { category: "sudoku", difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
   const isGiven = (r: number, c: number) => puzzle.grid[r][c] !== null;
 
-  // Auto-save on grid changes
   useEffect(() => {
-    if (!timer.isSolved) {
+    if (!timer.isSolved && !isRevealed) {
       saveProgress<SudokuState>(timerKey, { grid }, timer.elapsed);
     }
-  }, [grid, timer.elapsed, timer.isSolved, timerKey]);
+  }, [grid, timer.elapsed, timer.isSolved, isRevealed, timerKey]);
 
   useEffect(() => {
     containerRef.current?.focus();
@@ -63,7 +64,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
   }, [seed, difficulty]);
 
   const enterNumber = useCallback((num: number) => {
-    if (!activeCell || timer.isSolved) return;
+    if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
     if (isGiven(r, c)) return;
     setGrid((prev) => {
@@ -79,10 +80,10 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
         return;
       }
     }
-  }, [activeCell, timer.isSolved, grid, puzzle.grid]);
+  }, [activeCell, timer.isSolved, isRevealed, grid, puzzle.grid]);
 
   const deleteCell = useCallback(() => {
-    if (!activeCell || timer.isSolved) return;
+    if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
     if (isGiven(r, c)) return;
     setGrid((prev) => {
@@ -95,10 +96,10 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
       const nr = Math.floor(i / 9), nc = i % 9;
       if (!isGiven(nr, nc)) { setActiveCell([nr, nc]); return; }
     }
-  }, [activeCell, timer.isSolved, puzzle.grid]);
+  }, [activeCell, timer.isSolved, isRevealed, puzzle.grid]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (!activeCell || timer.isSolved) return;
+    if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
 
     switch (e.key) {
@@ -129,11 +130,13 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
         }
       }
     }
-  }, [activeCell, timer.isSolved, grid, puzzle.grid, enterNumber, deleteCell]);
+  }, [activeCell, timer.isSolved, isRevealed, grid, puzzle.grid, enterNumber, deleteCell]);
 
   const handleReset = () => {
     setGrid(puzzle.grid.map((r) => [...r]));
     setErrors(new Set());
+    setIsRevealed(false);
+    hintCount.current = 0;
     resetCount.current++;
     timer.reset();
     clearProgress(timerKey);
@@ -152,7 +155,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
     setErrors(errs);
     if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0 && filled) {
-      const { isNewBest } = timer.solve();
+      const { isNewBest } = timer.solve({ assisted: hintCount.current > 0 });
       clearProgress(timerKey);
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Puzzle solved correctly!" });
       onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
@@ -160,6 +163,36 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
       toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
     else
       toast({ title: "Keep going!", description: "No errors so far — fill in the rest." });
+  };
+
+  const handleHint = () => {
+    if (timer.isSolved || isRevealed) return;
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        if (isGiven(r, c)) continue;
+        if (grid[r][c] !== puzzle.solution[r][c]) {
+          setGrid((prev) => {
+            const next = prev.map((row) => [...row]);
+            next[r][c] = puzzle.solution[r][c];
+            return next;
+          });
+          setErrors(new Set());
+          setActiveCell([r, c]);
+          hintCount.current++;
+          toast({ title: "💡 Hint", description: `Revealed a cell. (${hintCount.current} hint${hintCount.current > 1 ? "s" : ""} used)` });
+          return;
+        }
+      }
+    }
+    toast({ title: "No hints needed", description: "All cells are correct!" });
+  };
+
+  const handleReveal = () => {
+    setGrid(puzzle.solution.map((r) => [...r]));
+    setErrors(new Set());
+    setIsRevealed(true);
+    timer.pause();
+    clearProgress(timerKey);
   };
 
   const getHighlightSet = (): Set<string> => {
@@ -225,11 +258,21 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
       </div>
       </div>
       <MobileNumberPad
-        visible={isMobile && !!activeCell && !timer.isSolved}
+        visible={isMobile && !!activeCell && !timer.isSolved && !isRevealed}
         onNumber={enterNumber}
         onDelete={deleteCell}
       />
-      <PuzzleControls onReset={handleReset} onCheck={handleCheck} onNewPuzzle={onNewPuzzle} puzzleCode={`sudoku-${seed}`} solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless }} />
+      <PuzzleControls
+        onReset={handleReset}
+        onCheck={handleCheck}
+        onNewPuzzle={onNewPuzzle}
+        onHint={handleHint}
+        onReveal={handleReveal}
+        hintCount={hintCount.current}
+        isRevealed={isRevealed}
+        puzzleCode={`sudoku-${seed}`}
+        solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0 }}
+      />
     </div>
   );
 };

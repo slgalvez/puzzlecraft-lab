@@ -12,9 +12,10 @@ interface Props {
   difficulty: Difficulty;
   onPlayAgain: () => void;
   accuracy?: number | null;
+  assisted?: boolean;
 }
 
-const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy }: Props) => {
+const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted }: Props) => {
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
   const origin = getPuzzleOrigin();
@@ -41,6 +42,11 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy }: Props) => 
           <Check size={14} className="text-primary" strokeWidth={3} />
         </div>
         <span className="font-display text-base font-semibold text-foreground">Solved</span>
+        {assisted && (
+          <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+            Assisted
+          </span>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm mb-4">
@@ -56,6 +62,12 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy }: Props) => 
           </span>
         )}
       </div>
+
+      {assisted && (
+        <p className="text-xs text-muted-foreground mb-3">
+          Hints were used — this solve won't count toward your best time or streak.
+        </p>
+      )}
 
       <div className="flex flex-wrap gap-2">
         <Button size="sm" onClick={onPlayAgain} className="gap-1.5">
