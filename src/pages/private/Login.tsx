@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import flaskIcon from "@/assets/puzzle-lab-flask.png";
+import flaskIcon from "@/assets/puzzle-lab-flask-clean.png";
 
 const ACCESS_GRANT_KEY = "private_access_grant";
 
@@ -88,7 +88,8 @@ export default function LoginPage() {
             <img
               src={flaskIcon}
               alt=""
-              className="h-14 w-auto"
+              className="h-[72px] w-auto"
+              style={{ background: "none" }}
               aria-hidden="true"
             />
           </div>
