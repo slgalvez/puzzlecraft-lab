@@ -303,14 +303,14 @@ const CraftPuzzle = () => {
         {step === "preview" && generatedData && selectedType && (
           <div className="animate-in fade-in-0 slide-in-from-right-4 duration-300 space-y-5">
             {/* Header row */}
-            <div className="flex items-center justify-between">
-              <button onClick={handleBack} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center">
+              <button onClick={handleBack} className="justify-self-start flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
                 <ArrowLeft size={13} /> Edit content
               </button>
-              <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/60 font-medium">
+              <p className="justify-self-center text-[10px] uppercase tracking-[0.15em] text-muted-foreground/60 font-medium">
                 Preview
               </p>
-              <button onClick={handleStartOver} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={handleStartOver} className="justify-self-end text-xs text-muted-foreground hover:text-foreground transition-colors">
                 Start over
               </button>
             </div>
