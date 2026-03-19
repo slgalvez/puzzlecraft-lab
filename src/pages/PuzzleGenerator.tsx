@@ -337,21 +337,32 @@ const PuzzleGenerator = () => {
               <PuzzleIcon type={category!} size={20} className="text-foreground mr-1 inline-block align-text-bottom" /> {info.name}
             </p>
             <div className="flex flex-col gap-3">
-              {difficulties.map(([val, label]) => (
-                <button
-                  key={val}
-                  onClick={() => handleDifficultyChange(val)}
-                  className={cn(
-                    "flex items-center justify-between rounded-xl border-2 px-5 py-4 text-left transition-all",
-                    difficulty === val
-                      ? "border-primary bg-primary/5"
-                      : "border-border bg-card hover:border-primary/40"
-                  )}
-                >
-                  <span className="text-base font-medium text-foreground">{label}</span>
-                  <ChevronRight size={16} className="text-muted-foreground" />
-                </button>
-              ))}
+              {difficulties.map(([val, label]) => {
+                const disabled = isDifficultyDisabled(category!, val);
+                return (
+                  <button
+                    key={val}
+                    onClick={() => {
+                      if (disabled) {
+                        toast({ title: `${label} not available for ${info!.name} yet` });
+                        return;
+                      }
+                      handleDifficultyChange(val);
+                    }}
+                    className={cn(
+                      "flex items-center justify-between rounded-xl border-2 px-5 py-4 text-left transition-all",
+                      disabled
+                        ? "border-border bg-card text-muted-foreground/40 cursor-not-allowed"
+                        : difficulty === val
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-card hover:border-primary/40"
+                    )}
+                  >
+                    <span className={cn("text-base font-medium", disabled ? "text-muted-foreground/40" : "text-foreground")}>{label}</span>
+                    {!disabled && <ChevronRight size={16} className="text-muted-foreground" />}
+                  </button>
+                );
+              })}
             </div>
             {difficulty && (
               <div className="mt-6 space-y-4">
