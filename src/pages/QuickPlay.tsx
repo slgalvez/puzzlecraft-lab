@@ -230,7 +230,7 @@ const QuickPlay = () => {
 
   return (
     <Layout>
-      <div className="container py-6 md:py-10">
+      <div className="container py-4 md:py-10">
         {/* Minimal header */}
         <div className="mb-4 flex items-center justify-between">
           <button
