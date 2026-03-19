@@ -66,6 +66,8 @@ const QuickPlay = () => {
   const [showFlash, setShowFlash] = useState(false);
 
   const activeDifficulty = mode === "endless" ? endlessDiffMap[currentType] : difficulty;
+  // For generation: downgrade unsupported difficulties (e.g. kakuro insane → extreme)
+  const effectiveDifficulty = getEffectiveDifficulty(currentType, activeDifficulty);
 
   const handleNewPuzzle = useCallback(() => {
     if (mode === "surprise") {
