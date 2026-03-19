@@ -1,8 +1,9 @@
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Check, Trash2, FileText, Send } from "lucide-react";
+import { Copy, Check, Trash2, FileText, Send, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TYPE_OPTIONS } from "@/components/craft/CraftTypeCards";
 import {
