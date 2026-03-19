@@ -688,6 +688,7 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress,
   const [selStart, setSelStart] = useState<[number, number] | null>(null);
   const [selEnd, setSelEnd] = useState<[number, number] | null>(null);
   const [tapStart, setTapStart] = useState<[number, number] | null>(null);
+  const [hintCells, setHintCells] = useState<Set<string>>(new Set());
   const touchMoved = useRef(false);
   const gridRef = useRef<HTMLDivElement>(null);
   const completed = foundWords.size === data.words.length;
@@ -838,9 +839,10 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress,
                 className={cn(
                   "w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-xs font-mono select-none border border-puzzle-border touch-manipulation transition-colors cursor-pointer",
                   isFound && "bg-primary/20 text-primary font-bold",
+                  !isFound && hintCells.has(key) && "bg-yellow-200/60 dark:bg-yellow-500/20 ring-2 ring-inset ring-yellow-400/60",
                   isTapStart && "bg-puzzle-cell-active ring-2 ring-inset ring-primary",
-                  !isFound && !isTapStart && isPreview && "bg-puzzle-cell-active",
-                  !isFound && !isTapStart && !isPreview && "bg-puzzle-cell hover:bg-puzzle-cell-highlight"
+                  !isFound && !isTapStart && !hintCells.has(key) && isPreview && "bg-puzzle-cell-active",
+                  !isFound && !isTapStart && !hintCells.has(key) && !isPreview && "bg-puzzle-cell hover:bg-puzzle-cell-highlight"
                 )}
                 onMouseDown={() => handleMouseDown(r, c)}
                 onMouseEnter={() => handleMouseEnter(r, c)}
@@ -871,14 +873,10 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress,
               const remaining = data.wordPositions.filter(wp => !foundWords.has(wp.word));
               if (remaining.length === 0) return;
               const wp = remaining[Math.floor(Math.random() * remaining.length)];
-              const newFound = new Set(foundWords);
-              newFound.add(wp.word);
-              const newCells = new Set(foundCells);
-              for (let i = 0; i < wp.word.length; i++) newCells.add(`${wp.row + wp.dr * i}-${wp.col + wp.dc * i}`);
-              setFoundWords(newFound);
-              setFoundCells(newCells);
-              toast({ title: `Found: ${wp.word}` });
-              if (newFound.size === data.words.length) onComplete();
+              // Highlight only the first letter of the word
+              const firstCellKey = `${wp.row}-${wp.col}`;
+              setHintCells(prev => new Set(prev).add(firstCellKey));
+              toast({ title: `Hint: look for "${wp.word}" starting here` });
             }}>
               <Lightbulb className="mr-1.5 h-3.5 w-3.5" /> Hint
             </Button>
