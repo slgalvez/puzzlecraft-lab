@@ -4,6 +4,7 @@ import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, PartyPopper, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import CraftCompletionActions from "@/components/craft/CraftCompletionActions";
 import {
   GridSolver,
   CryptogramSolver,
