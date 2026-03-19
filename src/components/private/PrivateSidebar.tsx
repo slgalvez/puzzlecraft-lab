@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, MessageSquare, Users, Settings, LogOut, Puzzle } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Users, Settings, LogOut, Puzzle, ShieldAlert } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import { NavLink } from "@/components/NavLink";
