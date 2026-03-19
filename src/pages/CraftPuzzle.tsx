@@ -71,6 +71,7 @@ const CraftPuzzle = () => {
   const [saving, setSaving] = useState(false);
   const [craftSettings, setCraftSettings] = useState<CraftSettings>(DEFAULT_CRAFT_SETTINGS);
   const [draftCount, setDraftCount] = useState(() => loadDrafts().length);
+  const [draftSaved, setDraftSaved] = useState(false);
 
   // Active draft ID for auto-save
   const activeDraftId = useRef<string | null>(null);
