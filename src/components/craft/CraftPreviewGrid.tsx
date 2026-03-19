@@ -15,7 +15,7 @@ export default function CraftPreviewGrid({ data, puzzleType }: { data: Record<st
           className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
         >
           {showSolution ? <EyeOff size={13} /> : <Eye size={13} />}
-          {showSolution ? "Hide solution" : "Show solution"}
+          {showSolution ? "Hide solution" : "Preview solution"}
         </button>
       </div>
 
