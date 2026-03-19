@@ -150,7 +150,7 @@ export default function LoginPage() {
               type="text"
               value={puzzleName}
               onChange={(e) => setPuzzleName(e.target.value)}
-              placeholder="Puzzle name"
+              placeholder="Puzzle Name"
               className="bg-secondary border-border text-foreground h-11 px-4"
               required
               autoComplete="name"
