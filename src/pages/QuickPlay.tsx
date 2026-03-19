@@ -304,7 +304,7 @@ const QuickPlay = () => {
           )}
 
           {mode === "surprise" && (
-            <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[activeDifficulty]}</p>
+            <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[effectiveDifficulty]}</p>
           )}
 
           {mode === "endless" && (
