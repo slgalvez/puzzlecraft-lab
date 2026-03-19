@@ -5,6 +5,40 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import flaskIcon from "@/assets/puzzle-lab-flask-v2.png";
 
+/* Floating puzzle piece as inline SVG */
+function PuzzlePiece({
+  size,
+  rotate,
+  offsetX,
+  offsetY,
+  delay,
+}: {
+  size: number;
+  rotate: number;
+  offsetX: number;
+  offsetY: number;
+  delay: number;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="hsl(172 50% 45%)"
+      className="absolute"
+      style={{
+        left: `calc(50% + ${offsetX}px)`,
+        top: offsetY,
+        transform: `rotate(${rotate}deg) translateX(-50%)`,
+        animation: `puzzleFloat 4s ease-in-out ${delay}s infinite`,
+      }}
+      aria-hidden="true"
+    >
+      <path d="M20 11c-.6 0-1-.4-1-1 0-1.7-1.3-3-3-3-.6 0-1-.4-1-1V3c0-.6-.4-1-1-1H6c-.6 0-1 .4-1 1v5c0 .6.4 1 1 1 1.7 0 3 1.3 3 3s-1.3 3-3 3c-.6 0-1 .4-1 1v5c0 .6.4 1 1 1h8c.6 0 1-.4 1-1 0-1.7 1.3-3 3-3s3 1.3 3 3c0 .6.4 1 1 1h3c.6 0 1-.4 1-1V14c0-.6-.4-1-1-1-1.7 0-3-1.3-3-3s1.3-3 3-3c.6 0 1-.4 1-1V3c0-.6-.4-1-1-1h-3c-.6 0-1 .4-1 1v3c0 .6-.4 1-1 1-1.7 0-3 1.3-3 3 0 .6.4 1 1 1z" />
+    </svg>
+  );
+}
+
 const ACCESS_GRANT_KEY = "private_access_grant";
 
 function hasValidGrant(): boolean {
@@ -84,11 +118,16 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-8">
         {/* Icon + Title + Subtext */}
         <div className="text-center space-y-4">
-          <div className="flex justify-center">
+          <div className="relative flex justify-center" style={{ height: 120 }}>
+            {/* Floating puzzle pieces */}
+            <PuzzlePiece size={16} rotate={-20} offsetX={-8} offsetY={2} delay={0} />
+            <PuzzlePiece size={12} rotate={15} offsetX={12} offsetY={-6} delay={0.8} />
+            <PuzzlePiece size={9} rotate={-35} offsetX={2} offsetY={-16} delay={1.6} />
+            {/* Flask icon */}
             <img
               src={flaskIcon}
               alt=""
-              className="h-[72px] w-[72px] rounded-xl object-cover"
+              className="absolute bottom-0 h-[80px] w-[80px] rounded-xl object-cover"
               aria-hidden="true"
             />
           </div>
