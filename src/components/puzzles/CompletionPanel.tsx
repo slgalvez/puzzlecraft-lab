@@ -16,6 +16,7 @@ interface Props {
   assisted?: boolean;
   category?: PuzzleCategory;
   seed?: number;
+  dailyCode?: string;
 }
 
 function buildShareData(props: {
@@ -24,26 +25,32 @@ function buildShareData(props: {
   difficulty: Difficulty;
   time: number;
   isDaily: boolean;
+  dailyCode?: string;
 }) {
-  const { category, seed, difficulty, time, isDaily } = props;
+  const { category, seed, difficulty, time, isDaily, dailyCode } = props;
   if (!category || seed == null) return null;
 
-  const code = `${category}-${seed}-${difficulty}`;
-  const shareUrl = `${window.location.origin}/play?code=${code}`;
   const typeName = CATEGORY_INFO[category]?.name ?? category;
   const diffLabel = DIFFICULTY_LABELS[difficulty];
   const timeStr = formatTime(time);
+
+  // For daily puzzles, use the canonical daily code
+  const code = dailyCode ?? `${category}-${seed}-${difficulty}`;
+  const shareUrl = dailyCode
+    ? `${window.location.origin}/play?code=${dailyCode}`
+    : `${window.location.origin}/play?code=${category}-${seed}-${difficulty}`;
+  const displayCode = dailyCode ?? String(seed);
 
   const headline = isDaily
     ? "I just completed today's Puzzlecraft challenge 🧠"
     : "I just completed a Puzzlecraft puzzle 🧠";
 
-  const text = `${headline}\n\n${typeName} • ${diffLabel} • ${timeStr}\n\nThink you can beat my time?\n\nPlay: ${shareUrl}\n\nPuzzle Code: ${seed}`;
+  const text = `${headline}\n\n${typeName} • ${diffLabel} • ${timeStr}\n\nThink you can beat my time?\n\nPlay: ${shareUrl}\n\nPuzzle Code: ${displayCode}`;
 
-  return { text, url: shareUrl, code, seed };
+  return { text, url: shareUrl, code, displayCode };
 }
 
-const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, category, seed }: Props) => {
+const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, category, seed, dailyCode }: Props) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [visible, setVisible] = useState(false);
@@ -51,7 +58,7 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, ca
   const origin = getPuzzleOrigin();
   const isDaily = origin === "daily";
 
-  const shareData = buildShareData({ category, seed, difficulty, time, isDaily });
+  const shareData = buildShareData({ category, seed, difficulty, time, isDaily, dailyCode });
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setVisible(true));
@@ -156,7 +163,7 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, ca
             Play: <span className="font-medium text-foreground select-all">{shareData.url}</span>
           </p>
           <p className="text-[11px] text-muted-foreground">
-            Puzzle Code: <code className="font-mono text-foreground/70 select-all">{shareData.seed}</code>
+            Puzzle Code: <code className="font-mono text-foreground/70 select-all">{shareData.displayCode}</code>
           </p>
         </div>
       )}

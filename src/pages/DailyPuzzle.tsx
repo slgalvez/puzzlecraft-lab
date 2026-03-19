@@ -46,18 +46,19 @@ const DailyPuzzle = () => {
   const renderPuzzle = () => {
     const { seed, difficulty, category } = challenge;
     const key = `daily-${challenge.dateStr}`;
+    const dailyCode = `daily-${challenge.dateStr}`;
 
     switch (category) {
       case "sudoku":
-        return <SudokuGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
+        return <SudokuGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} dailyCode={dailyCode} />;
       case "word-search":
-        return <WordSearchGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
+        return <WordSearchGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} dailyCode={dailyCode} />;
       case "kakuro":
-        return <KakuroGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
+        return <KakuroGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} dailyCode={dailyCode} />;
       case "nonogram":
-        return <NonogramGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
+        return <NonogramGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} dailyCode={dailyCode} />;
       case "cryptogram":
-        return <CryptogramPuzzle key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} />;
+        return <CryptogramPuzzle key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} dailyCode={dailyCode} />;
       case "crossword": {
         const gen = generateCrossword(seed, difficulty);
         const puzzle: CrosswordPuzzle = {
@@ -66,7 +67,7 @@ const DailyPuzzle = () => {
           size: `${gen.gridSize}×${gen.gridSize}`,
           gridSize: gen.gridSize, blackCells: gen.blackCells, clues: gen.clues,
         };
-        return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} />;
+        return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} dailyCode={dailyCode} />;
       }
       case "word-fill": {
         const gen = generateWordFillIn(seed, difficulty);
@@ -76,7 +77,7 @@ const DailyPuzzle = () => {
           size: `${gen.gridSize}×${gen.gridSize}`,
           gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
-        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} />;
+        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} dailyCode={dailyCode} />;
       }
       case "number-fill": {
         const gen = generateNumberFillIn(seed, difficulty);
@@ -86,7 +87,7 @@ const DailyPuzzle = () => {
           size: `${gen.gridSize}×${gen.gridSize}`,
           gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
         };
-        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} />;
+        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} dailyCode={dailyCode} />;
       }
       default:
         return null;

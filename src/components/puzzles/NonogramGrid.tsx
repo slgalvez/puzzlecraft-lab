@@ -18,6 +18,7 @@ interface Props {
   onSolve?: (perf: PuzzlePerformance) => void;
   timeLimit?: number;
   isEndless?: boolean;
+  dailyCode?: string;
 }
 
 type CellState = "empty" | "filled" | "marked";
@@ -26,7 +27,7 @@ interface NonogramState {
   grid: CellState[][];
 }
 
-const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless }: Props) => {
+const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateNonogram(seed, difficulty), [seed, difficulty]);
@@ -267,8 +268,8 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
         onReveal={handleReveal}
         hintCount={hintCount.current}
         isRevealed={isRevealed}
-        puzzleCode={`nonogram-${seed}`}
-        solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0, category: "nonogram", seed }}
+        puzzleCode={dailyCode ?? `nonogram-${seed}`}
+        solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0, category: "nonogram", seed, dailyCode }}
       />
     </div>
   );

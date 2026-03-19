@@ -21,6 +21,7 @@ interface Props {
   onSolve?: (perf: PuzzlePerformance) => void;
   timeLimit?: number;
   isEndless?: boolean;
+  dailyCode?: string;
 }
 
 type Direction = "across" | "down";
@@ -35,7 +36,7 @@ interface FillInState {
   usedEntries: string[];
 }
 
-const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isEndless }: Props) => {
+const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode }: Props) => {
   const { gridSize, blackCells, entries, type, solution } = puzzle;
   const isNumbers = type === "number-fill";
   const { toast } = useToast();
@@ -498,8 +499,8 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
             onReveal={handleReveal}
             hintCount={hintCount.current}
             isRevealed={isRevealed}
-            puzzleCode={puzzle.id}
-            solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty: puzzle.difficulty as any, isEndless, assisted: hintCount.current > 0, category: puzzle.type as any, seed: parseInt(puzzle.id.replace(/\D/g, "")) || 0 }}
+            puzzleCode={dailyCode ?? puzzle.id}
+            solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty: puzzle.difficulty as any, isEndless, assisted: hintCount.current > 0, category: puzzle.type as any, seed: parseInt(puzzle.id.replace(/\D/g, "")) || 0, dailyCode }}
           />
         )}
       </div>
