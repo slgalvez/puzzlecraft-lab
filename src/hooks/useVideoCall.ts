@@ -50,17 +50,6 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
   const cleaningUp = useRef(false);
   const sessionExpiredRef = useRef(false);
 
-  const handleSessionEnded = useCallback(() => {
-    if (sessionExpiredRef.current) return;
-    sessionExpiredRef.current = true;
-    clearInterval(pollTimerRef.current);
-    clearInterval(incomingPollRef.current);
-    clearInterval(durationTimerRef.current);
-    setIncomingCall(null);
-    cleanup();
-    onSessionExpired();
-  }, [cleanup, onSessionExpired]);
-
   const api = useCallback(async (action: string, data: Record<string, unknown> = {}) => {
     try {
       return await invokeMessaging(action, token, data);
@@ -94,6 +83,17 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     remoteDescSet.current = false;
     cleaningUp.current = false;
   }, [localStream]);
+
+  const handleSessionEnded = useCallback(() => {
+    if (sessionExpiredRef.current) return;
+    sessionExpiredRef.current = true;
+    clearInterval(pollTimerRef.current);
+    clearInterval(incomingPollRef.current);
+    clearInterval(durationTimerRef.current);
+    setIncomingCall(null);
+    cleanup();
+    onSessionExpired();
+  }, [cleanup, onSessionExpired]);
 
   const getMedia = useCallback(async () => {
     try {
