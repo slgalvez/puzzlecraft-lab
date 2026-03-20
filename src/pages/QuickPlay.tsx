@@ -226,42 +226,6 @@ const QuickPlay = () => {
   const onSolveHandler = mode === "endless" ? handleEndlessSolve : undefined;
   const isEndless = mode === "endless";
 
-  // Memoize heavy generators to prevent re-running on every render (mobile Safari crash fix)
-  const generatedPuzzle = useMemo(() => {
-    try {
-      switch (activeType) {
-        case "crossword": {
-          const gen = generateCrossword(seed, effectiveDifficulty);
-          return {
-            id: `gen-${seed}`, title: "Generated Crossword", type: "crossword" as const,
-            difficulty: effectiveDifficulty as CrosswordPuzzle["difficulty"],
-            size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, clues: gen.clues,
-          } satisfies CrosswordPuzzle;
-        }
-        case "word-fill": {
-          const gen = generateWordFillIn(seed, effectiveDifficulty);
-          return {
-            id: `gen-${seed}`, title: "Generated Word Fill-In", type: "word-fill" as const,
-            difficulty: effectiveDifficulty as FillInPuzzle["difficulty"],
-            size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
-          } satisfies FillInPuzzle;
-        }
-        case "number-fill": {
-          const gen = generateNumberFillIn(seed, effectiveDifficulty);
-          return {
-            id: `gen-${seed}`, title: "Generated Number Fill-In", type: "number-fill" as const,
-            difficulty: effectiveDifficulty as FillInPuzzle["difficulty"],
-            size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
-          } satisfies FillInPuzzle;
-        }
-        default:
-          return null;
-      }
-    } catch (e) {
-      console.error("Puzzle generation failed:", e);
-      return null;
-    }
-  }, [activeType, seed, effectiveDifficulty]);
 
   const renderPuzzle = () => {
     const key = `${seed}-${effectiveDifficulty}-${puzzleKey}`;
