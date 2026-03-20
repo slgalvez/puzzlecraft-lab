@@ -75,12 +75,29 @@ export function applyChatTheme(id?: ChatThemeId) {
     hsl = theme.hue;
   }
 
+  const fg = foregroundForHsl(hsl);
+
+  // Apply to .private-app (desktop sidebar lives here)
   const el = document.querySelector(".private-app") as HTMLElement | null;
-  if (!el) return;
+  if (el) {
+    applyVarsToElement(el, hsl, fg);
+  }
+
+  // Apply to mobile sidebar portal (rendered outside .private-app)
+  const mobileSidebar = document.querySelector(
+    '[data-sidebar="sidebar"][data-mobile="true"]'
+  ) as HTMLElement | null;
+  if (mobileSidebar) {
+    applyVarsToElement(mobileSidebar, hsl, fg);
+  }
+}
+
+function applyVarsToElement(el: HTMLElement, hsl: string, fg: string) {
   el.style.setProperty("--primary", hsl);
-  el.style.setProperty("--primary-foreground", foregroundForHsl(hsl));
+  el.style.setProperty("--primary-foreground", fg);
   el.style.setProperty("--accent", hsl);
   el.style.setProperty("--ring", hsl);
   el.style.setProperty("--sidebar-primary", hsl);
+  el.style.setProperty("--sidebar-primary-foreground", fg);
   el.style.setProperty("--sidebar-ring", hsl);
 }
