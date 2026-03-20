@@ -69,7 +69,7 @@ function b64urlDecode(s: string): Uint8Array {
 // ── VAPID JWT (ES256) ──
 
 const VAPID_PUBLIC_KEY =
-  "BFkn49h7I0ULvu3Ta1UiFLMUsLW3JUNwD8yRQhIiV7AhncanXqPLiW4eu2rv7I6WmbFB67fX2kycpcHBvwk6k5g";
+  "BL5ZmmMev3IGnEK00k93bYHwW3INeuoo-FfFgNP8uNZcF1NgFJCRzsXvnVaZFVgtW02oZqpiupUECg4Pq_Pvkns";
 
 /** Verify the private key matches the public key at startup */
 async function verifyVapidKeyPair(): Promise<{ valid: boolean; error?: string }> {
