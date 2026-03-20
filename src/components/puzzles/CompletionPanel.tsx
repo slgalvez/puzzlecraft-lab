@@ -7,6 +7,7 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory 
 import { getPuzzleOrigin, getBackPath, getBackLabel } from "@/lib/puzzleOrigin";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { hapticSuccess } from "@/lib/haptic";
 
 interface Props {
   time: number;
@@ -61,6 +62,7 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, ca
   const shareData = buildShareData({ category, seed, difficulty, time, isDaily, dailyCode });
 
   useEffect(() => {
+    hapticSuccess();
     const id = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(id);
   }, []);

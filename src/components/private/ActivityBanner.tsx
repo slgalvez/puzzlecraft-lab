@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { MessageSquare, Puzzle, X } from "lucide-react";
+import { hapticTap } from "@/lib/haptic";
 
 export type ActivityType = "message" | "puzzle";
 
@@ -51,6 +52,7 @@ export function ActivityBanner({ item, onDismiss }: ActivityBannerProps) {
 
     if (item) {
       setCurrent(item);
+      hapticTap();
       requestAnimationFrame(() => setVisible(true));
       dismissTimerRef.current = setTimeout(dismiss, AUTO_DISMISS_MS);
     } else {

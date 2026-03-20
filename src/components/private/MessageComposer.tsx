@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { GifPicker } from "@/components/private/GifPicker";
 import { VoiceRecorder, VoicePreviewBar, type VoicePreview } from "@/components/private/VoiceRecorder";
+import { hapticTap } from "@/lib/haptic";
 
 export interface EditingMessage {
   id: string;
@@ -102,6 +103,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
     if (editingMessage) {
       const trimmed = message.trim();
       if (trimmed && trimmed !== editingMessage.body) {
+        hapticTap();
         onSaveEdit?.(editingMessage.id, trimmed);
       }
       setMessage("");
@@ -119,6 +121,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
       textareaRef.current.style.height = "auto";
     }
     try {
+      hapticTap();
       await onSend(body);
     } catch {
       setMessage(body);
@@ -159,6 +162,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
       const dur = Math.round(voicePreview.duration);
       URL.revokeObjectURL(voicePreview.url);
       setVoicePreview(null);
+      hapticTap();
       await onSend(`__AUDIO__:${data.url}|${dur}`);
     } catch {
       toast({ title: "Upload failed", description: "Please try again." });

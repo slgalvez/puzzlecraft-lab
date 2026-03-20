@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Video, VideoOff, Mic, MicOff, PhoneOff } from "lucide-react";
 import type { CallState } from "@/hooks/useVideoCall";
+import { hapticTap } from "@/lib/haptic";
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -148,7 +149,7 @@ export function VideoCallScreen({
           </button>
 
           <button
-            onClick={onEndCall}
+            onClick={() => { hapticTap(); onEndCall(); }}
             className="w-14 h-14 rounded-full bg-destructive flex items-center justify-center text-white hover:bg-destructive/90 transition-colors"
             aria-label="End call"
           >

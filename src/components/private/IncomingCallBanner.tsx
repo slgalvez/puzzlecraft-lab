@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { Phone, PhoneOff, Video } from "lucide-react";
 import type { IncomingCallInfo } from "@/hooks/useVideoCall";
+import { hapticMedium } from "@/lib/haptic";
 
 interface IncomingCallBannerProps {
   call: IncomingCallInfo;
@@ -10,6 +12,10 @@ interface IncomingCallBannerProps {
 
 export function IncomingCallBanner({ call, resolvedCallerName, onAccept, onDecline }: IncomingCallBannerProps) {
   const displayName = resolvedCallerName || call.callerName;
+
+  // Haptic on banner appearance
+  useEffect(() => { hapticMedium(); }, [call.callId]);
+
   return (
     <div
       className="fixed left-0 right-0 z-[90] px-3 pb-3 pt-3 animate-in slide-in-from-top duration-300"
@@ -31,14 +37,14 @@ export function IncomingCallBanner({ call, resolvedCallerName, onAccept, onDecli
           {/* Actions */}
           <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => onDecline(call.callId)}
+              onClick={() => { hapticMedium(); onDecline(call.callId); }}
               className="w-10 h-10 rounded-full bg-destructive/15 flex items-center justify-center text-destructive hover:bg-destructive/25 transition-colors"
               aria-label="Decline call"
             >
               <PhoneOff size={16} />
             </button>
             <button
-              onClick={() => onAccept(call.callId)}
+              onClick={() => { hapticMedium(); onAccept(call.callId); }}
               className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white hover:bg-green-700 transition-colors"
               aria-label="Accept call"
             >

@@ -6,6 +6,7 @@ import { ImageViewer } from "@/components/private/ImageViewer";
 import { AudioBubble, isAudioMessage, getAudioData } from "@/components/private/AudioBubble";
 import { FeatureHint } from "@/components/private/FeatureHint";
 import { isHintSeen, markHintSeen } from "@/lib/featureHints";
+import { hapticTap, hapticStrong } from "@/lib/haptic";
 
 const REACTION_OPTIONS = ["❤️", "👍", "😂", "‼️", "❓", "😢"];
 
@@ -71,6 +72,7 @@ export function MessageBubble({
   const handleTap = useCallback(() => {
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
+      hapticTap();
       onReact?.(id, "❤️");
       lastTapRef.current = 0;
     } else {
@@ -82,6 +84,7 @@ export function MessageBubble({
     didLongPress.current = false;
     longPressTimer.current = setTimeout(() => {
       didLongPress.current = true;
+      hapticStrong();
       setShowMenu(true);
     }, 500);
   }, []);
@@ -98,11 +101,13 @@ export function MessageBubble({
   }, []);
 
   const handleReact = (reaction: string) => {
+    hapticTap();
     onReact?.(id, reaction);
     closeMenu();
   };
 
   const handleStartEdit = () => {
+    hapticTap();
     onStartEdit?.(id, body);
     closeMenu();
   };
