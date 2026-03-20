@@ -156,7 +156,7 @@ export function MessageBubble({
               })}
             </div>
             {/* Actions */}
-            {isMine && !isMedia && onEdit && (
+            {isMine && !isMedia && !isAudio && onEdit && (
               <button
                 onClick={handleStartEdit}
                 className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-foreground hover:bg-secondary/60 transition-colors"
