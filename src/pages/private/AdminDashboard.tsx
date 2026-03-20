@@ -390,7 +390,7 @@ const AdminDashboard = () => {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <p className={`text-[13px] truncate ${isUnread ? "font-semibold text-foreground" : "font-medium text-foreground/80"}`}>
-                          {conv.user_name}
+                          {resolve(conv.user_profile_id, conv.user_name)}
                         </p>
                         {conv.disappearing_enabled && (
                           <Timer size={10} className="text-primary/60 shrink-0" />
