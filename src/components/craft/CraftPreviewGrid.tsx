@@ -145,16 +145,43 @@ function CryptogramPreview({ data, showSolution }: { data: Record<string, unknow
   const decoded = (data.decoded as string) || "";
   const encoded = (data.encoded as string) || "";
   const display = showSolution ? decoded : encoded;
+  const hints = (data.hints as Record<string, string>) || {};
+
+  const words = display.split(" ");
 
   return (
     <div className="space-y-3">
-      <p className="text-sm font-mono text-foreground tracking-wider break-all text-center leading-relaxed">
-        {display.split("").map((ch, i) => (
-          <span key={i} className={/[A-Z]/.test(ch) ? "border-b border-foreground/30 mx-px" : "mx-0.5"}>
-            {ch}
-          </span>
+      <div className="flex flex-wrap gap-x-4 gap-y-4">
+        {words.map((word, wi) => (
+          <div key={wi} className="flex gap-0.5">
+            {word.split("").map((ch, ci) => {
+              const isLetter = /[A-Z]/.test(ch);
+              const isHint = isLetter && !showSolution && ch in hints;
+
+              if (!isLetter) {
+                return (
+                  <div key={ci} className="w-6 flex flex-col items-center justify-end">
+                    <span className="text-lg text-muted-foreground">{ch}</span>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={ci} className="flex flex-col items-center">
+                  <div className={`w-8 h-9 flex items-center justify-center text-lg font-semibold border-b-2 ${
+                    isHint ? "text-primary border-primary/50" : "text-foreground border-foreground/30"
+                  }`}>
+                    {showSolution ? ch : (isHint ? hints[ch] : "")}
+                  </div>
+                  {!showSolution && (
+                    <span className="mt-1 text-xs font-medium text-muted-foreground">{ch}</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         ))}
-      </p>
+      </div>
       {!showSolution && (
         <p className="text-[10px] text-center text-muted-foreground">Each letter represents another letter</p>
       )}
