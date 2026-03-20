@@ -179,30 +179,7 @@ export function MessageBubble({
         )}
 
 
-        {/* Edit mode */}
-        {editing ? (
-          <div className={`${bubbleClass} px-3 py-2`}>
-            <textarea
-              ref={editInputRef}
-              value={editText}
-              onChange={(e) => setEditText(e.target.value)}
-              className="w-full bg-transparent text-[15px] leading-[1.35] resize-none outline-none min-h-[2.5rem]"
-              rows={Math.min(editText.split("\n").length + 1, 6)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSaveEdit(); }
-                if (e.key === "Escape") handleCancelEdit();
-              }}
-            />
-            <div className="flex items-center gap-2 mt-1 justify-end">
-              <button onClick={handleCancelEdit} className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-0.5 rounded">
-                Cancel
-              </button>
-              <button onClick={handleSaveEdit} className="text-[11px] text-primary font-medium px-2 py-0.5 rounded hover:bg-primary/10">
-                Save
-              </button>
-            </div>
-          </div>
-        ) : isAudio && audioData ? (
+        {isAudio && audioData ? (
           <div
             className={`px-3.5 py-2.5 ${bubbleClass} select-none`}
             onTouchStart={handleTouchStart}
