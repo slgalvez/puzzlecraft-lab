@@ -60,6 +60,8 @@ const AdminConversationView = () => {
     navigate("/");
   }, [signOut, navigate]);
 
+  const { resolve, setNickname, removeNickname, nicknames } = useNicknames(token, handleSessionExpired);
+
   const videoCall = useVideoCall({
     token: token || "",
     conversationId: conversationId || null,
