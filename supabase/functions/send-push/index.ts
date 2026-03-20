@@ -422,7 +422,14 @@ Deno.serve(async (req) => {
         }
       }
 
-      return json({ ok: sent > 0, sent, failed, results });
+      // Include explicit error when all deliveries failed
+      const firstFailure = results.find((r) => r.status !== 200 && r.status !== 201);
+      const errorMsg =
+        sent === 0 && failed > 0 && firstFailure
+          ? `Push delivery failed (${firstFailure.status} ${firstFailure.statusText})`
+          : undefined;
+
+      return json({ ok: sent > 0, sent, failed, results, ...(errorMsg ? { error: errorMsg } : {}) });
     }
 
     // ── SEND PUSH (internal) ──
