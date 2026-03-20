@@ -178,6 +178,25 @@ export function MessageBubble({
                 Edit
               </button>
             )}
+            {isMine && onUnsend && (
+              confirmUnsend ? (
+                <button
+                  onClick={() => { onUnsend(id); setShowMenu(false); setConfirmUnsend(false); }}
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <Undo2 size={14} />
+                  Unsend?
+                </button>
+              ) : (
+                <button
+                  onClick={() => setConfirmUnsend(true)}
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:bg-secondary/60 transition-colors"
+                >
+                  <Undo2 size={14} />
+                  Unsend
+                </button>
+              )
+            )}
           </div>
         )}
 
