@@ -151,9 +151,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const timeoutPromise = new Promise<{ data: null; error: string }>((resolve) =>
         setTimeout(() => resolve({ data: null, error: "timeout" }), 15_000)
       );
-      const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
-      if (error || !data?.token) {
-        console.debug("[auth] signIn: failed", error);
+      const result = await Promise.race([invokePromise, timeoutPromise]);
+      const { data, error } = result;
+
+      console.debug("[auth] signIn result:", JSON.stringify({
+        hasData: !!data,
+        hasToken: !!data?.token,
+        errorType: error ? (typeof error === "string" ? error : error?.name || "object") : null,
+        errorMsg: error ? (typeof error === "string" ? error : error?.message || String(error)) : null,
+        dataKeys: data ? Object.keys(data) : null,
+      }));
+
+      if (error) {
+        if (typeof error === "string" && error === "timeout") {
+          return { error: "Connection timed out — please try again" };
+        }
+        // supabase-js wraps non-2xx responses — try to get the response body
+        const errObj = error as { context?: { json?: () => Promise<unknown> } };
+        if (errObj.context?.json) {
+          try {
+            const body = await errObj.context.json() as { error?: string };
+            console.debug("[auth] signIn: function returned error body:", body);
+          } catch {}
+        }
+        return { error: "Access unavailable" };
+      }
+      if (!data?.token) {
+        console.debug("[auth] signIn: no token in response, data:", JSON.stringify(data));
         return { error: "Access unavailable" };
       }
       console.debug("[auth] signIn: success, setting session");
@@ -165,7 +189,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: null };
     } catch (e) {
       console.warn("[auth] signIn: exception", e);
-      return { error: "Access unavailable" };
+      return { error: "Connection failed — please try again" };
     }
   }, []);
 
