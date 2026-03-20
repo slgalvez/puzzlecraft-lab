@@ -4,19 +4,35 @@ import {
   dispatchNotification,
   sendPushNotification,
   getNotificationsEnabled,
+  subscribeToPush,
   type NotifyEventType,
-  type NotifyResult,
 } from "@/lib/privateNotifications";
 
 /**
  * Hook that manages notification dispatch for the private app.
  * Returns banner state + a `notify` function to trigger notifications.
  */
-export function usePrivateNotifications() {
+export function usePrivateNotifications(token?: string | null) {
   const [bannerPhrase, setBannerPhrase] = useState<string | null>(null);
   const location = useLocation();
   const prevUnreadRef = useRef<number>(0);
   const prevIncomingCallRef = useRef<boolean>(false);
+  const subscribeAttempted = useRef(false);
+
+  // Auto-subscribe to push when notifications are enabled
+  useEffect(() => {
+    if (!token || subscribeAttempted.current) return;
+    if (!getNotificationsEnabled()) return;
+    if (!("serviceWorker" in navigator)) return;
+
+    subscribeAttempted.current = true;
+    // Delay subscription to not block initial load
+    const timer = setTimeout(() => {
+      subscribeToPush(token).catch(() => {});
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [token]);
 
   const clearBanner = useCallback(() => {
     setBannerPhrase(null);

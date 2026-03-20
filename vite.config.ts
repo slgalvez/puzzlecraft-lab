@@ -25,6 +25,7 @@ export default defineConfig(({ mode }) => ({
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
+        importScripts: ["/push-sw.js"],
       },
       manifest: {
         name: "Puzzlecraft",

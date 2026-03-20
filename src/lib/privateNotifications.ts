@@ -1,12 +1,20 @@
 /**
  * Private notification system — coded phrases, batching, context-aware delivery.
  * Messages = low urgency (batched ~8 min), Calls = live interaction (immediate).
+ *
+ * Push delivery uses the Web Push API via service worker subscription,
+ * backed by the send-push edge function.
  */
 
 const SETTINGS_KEY = "private_notifications_enabled";
 const LAST_MSG_NOTIFY_KEY = "private_last_msg_notify";
 const BATCH_WINDOW_MS = 8 * 60 * 1000; // 8 minutes
 const PHRASE_INDEX_KEY = "private_phrase_idx";
+const PUSH_SUB_KEY = "private_push_subscribed";
+
+// VAPID public key (matches the private key stored as a secret)
+export const VAPID_PUBLIC_KEY =
+  "BJrEgKHA6zTGGE2HCv4B9Fr8zjBIP7ebEyR94U2YWbEA9iM0WYTCb2BbWDizAWbdFuEOV90FX11dMqOi1YkCcP0";
 
 // ── Phrase pools ──
 
@@ -87,8 +95,8 @@ export function markMessageNotificationSent(): void {
 // ── Context detection ──
 
 export type NotificationContext =
-  | "outside-app"      // not on site → push notification
-  | "on-site"          // on site but not in messenger → in-app banner
+  | "outside-app" // not on site → push notification
+  | "on-site" // on site but not in messenger → in-app banner
   | "in-conversation"; // inside conversation thread → silent
 
 export function getNotificationContext(): NotificationContext {
@@ -102,7 +110,19 @@ export function getNotificationContext(): NotificationContext {
   return "outside-app";
 }
 
-// ── Push notification ──
+// ── Push permission + subscription ──
+
+export function getPermissionStatus(): NotificationPermission | "unsupported" {
+  if (!("Notification" in window)) return "unsupported";
+  return Notification.permission;
+}
+
+export function isPwaMode(): boolean {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (window.navigator as any).standalone === true
+  );
+}
 
 export async function requestPushPermission(): Promise<boolean> {
   if (!("Notification" in window)) return false;
@@ -111,6 +131,143 @@ export async function requestPushPermission(): Promise<boolean> {
   const result = await Notification.requestPermission();
   return result === "granted";
 }
+
+function base64urlToUint8Array(base64url: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64url.length % 4)) % 4);
+  const base64 = (base64url + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  return Uint8Array.from(rawData, (char) => char.charCodeAt(0));
+}
+
+/**
+ * Subscribe to push notifications via the service worker.
+ * Returns the subscription or null if failed.
+ */
+export async function subscribeToPush(token: string): Promise<PushSubscription | null> {
+  try {
+    const permissionGranted = await requestPushPermission();
+    if (!permissionGranted) return null;
+
+    const registration = await navigator.serviceWorker.ready;
+    if (!registration.pushManager) {
+      console.warn("Push manager not available");
+      return null;
+    }
+
+    // Check for existing subscription
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      const applicationServerKey = base64urlToUint8Array(VAPID_PUBLIC_KEY);
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: applicationServerKey.buffer as ArrayBuffer,
+      });
+    }
+
+    if (!subscription) return null;
+
+    // Send subscription to backend
+    const keys = subscription.toJSON().keys || {};
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+    const resp = await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey,
+      },
+      body: JSON.stringify({
+        action: "subscribe",
+        token,
+        endpoint: subscription.endpoint,
+        p256dh: keys.p256dh || "",
+        auth: keys.auth || "",
+      }),
+    });
+
+    if (resp.ok) {
+      localStorage.setItem(PUSH_SUB_KEY, "true");
+      return subscription;
+    }
+
+    console.error("Push subscribe API error:", await resp.text());
+    return null;
+  } catch (e) {
+    console.error("subscribeToPush error:", e);
+    return null;
+  }
+}
+
+/**
+ * Unsubscribe from push notifications.
+ */
+export async function unsubscribeFromPush(token: string): Promise<void> {
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager?.getSubscription();
+
+    if (subscription) {
+      const endpoint = subscription.endpoint;
+      await subscription.unsubscribe();
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey },
+        body: JSON.stringify({ action: "unsubscribe", token, endpoint }),
+      }).catch(() => {});
+    }
+
+    localStorage.removeItem(PUSH_SUB_KEY);
+  } catch (e) {
+    console.error("unsubscribeFromPush error:", e);
+  }
+}
+
+/**
+ * Check if there's an active push subscription.
+ */
+export async function getPushSubscriptionStatus(): Promise<{
+  subscribed: boolean;
+  endpoint?: string;
+}> {
+  try {
+    if (!("serviceWorker" in navigator)) return { subscribed: false };
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager?.getSubscription();
+    if (subscription) {
+      return { subscribed: true, endpoint: subscription.endpoint };
+    }
+    return { subscribed: false };
+  } catch {
+    return { subscribed: false };
+  }
+}
+
+/**
+ * Send a test push notification to the current user's devices.
+ */
+export async function sendTestPush(token: string): Promise<{ ok: boolean; sent: number; error?: string }> {
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+    const resp = await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey },
+      body: JSON.stringify({ action: "test-push", token }),
+    });
+
+    return await resp.json();
+  } catch (e) {
+    return { ok: false, sent: 0, error: String(e) };
+  }
+}
+
+// ── Legacy push notification (fallback for when SW push not available) ──
 
 export function sendPushNotification(body: string): void {
   if (!("Notification" in window)) return;
@@ -129,7 +286,6 @@ export function sendPushNotification(body: string): void {
     n.onclick = () => {
       window.focus();
       n.close();
-      // Routing handled by the app — login security is not bypassed
     };
   } catch {
     // Notification API may not be available in all contexts
