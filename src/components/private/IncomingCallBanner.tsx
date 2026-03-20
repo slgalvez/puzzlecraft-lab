@@ -3,6 +3,7 @@ import type { IncomingCallInfo } from "@/hooks/useVideoCall";
 
 interface IncomingCallBannerProps {
   call: IncomingCallInfo;
+  resolvedCallerName?: string;
   onAccept: (callId: string) => void;
   onDecline: (callId: string) => void;
 }
