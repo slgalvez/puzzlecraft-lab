@@ -180,6 +180,8 @@ export function MessageBubble({
                     skinTonesDisabled
                     previewConfig={{ showPreview: false }}
                     lazyLoadEmojis
+                    autoFocusSearch
+                    searchPlaceHolder="Search or type emoji…"
                   />
                 </div>
               </div>
