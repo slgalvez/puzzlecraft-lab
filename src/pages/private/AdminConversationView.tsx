@@ -221,6 +221,11 @@ const AdminConversationView = () => {
     return d.toLocaleDateString([], { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  const allImageUrls = useMemo(
+    () => messages.filter((m) => isGifMessage(m.body)).map((m) => getGifUrl(m.body)),
+    [messages]
+  );
+
   if (loading) {
     return (
       <PrivateLayout title="Conversation">
