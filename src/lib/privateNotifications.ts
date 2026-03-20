@@ -11,6 +11,7 @@ const LAST_MSG_NOTIFY_KEY = "private_last_msg_notify";
 const BATCH_WINDOW_MS = 8 * 60 * 1000; // 8 minutes
 const PHRASE_INDEX_KEY = "private_phrase_idx";
 const PUSH_SUB_KEY = "private_push_subscribed";
+const VAPID_KEY_HASH_KEY = "private_vapid_key_hash";
 
 // VAPID public key (matches the private key stored as a secret)
 export const VAPID_PUBLIC_KEY =
@@ -170,7 +171,27 @@ function getSubscriptionKeys(subscription: PushSubscription): {
 }
 
 /**
+ * Check if an existing push subscription was created with the current VAPID key.
+ * Compares the subscription's applicationServerKey against our VAPID_PUBLIC_KEY.
+ */
+function isSubscriptionKeyMatch(subscription: PushSubscription): boolean {
+  try {
+    const subKey = subscription.options?.applicationServerKey;
+    if (!subKey) return false; // can't verify → treat as mismatch
+
+    const currentKey = base64urlToUint8Array(VAPID_PUBLIC_KEY);
+    const existingKey = new Uint8Array(subKey);
+
+    if (currentKey.length !== existingKey.length) return false;
+    return currentKey.every((byte, i) => byte === existingKey[i]);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Subscribe to push notifications via the service worker.
+ * Detects VAPID key rotation and forces re-subscription when needed.
  * Returns the subscription or null if failed.
  */
 export async function subscribeToPush(token: string): Promise<PushSubscription | null> {
@@ -186,6 +207,14 @@ export async function subscribeToPush(token: string): Promise<PushSubscription |
 
     // Check for existing subscription
     let subscription = await registration.pushManager.getSubscription();
+
+    // Detect VAPID key rotation: if existing sub uses a different key, force re-subscribe
+    if (subscription && !isSubscriptionKeyMatch(subscription)) {
+      console.info("VAPID key mismatch detected — rotating push subscription");
+      await subscription.unsubscribe();
+      subscription = null;
+    }
+
     if (!subscription) {
       const applicationServerKey = base64urlToUint8Array(VAPID_PUBLIC_KEY);
       subscription = await registration.pushManager.subscribe({
@@ -196,7 +225,7 @@ export async function subscribeToPush(token: string): Promise<PushSubscription |
 
     if (!subscription) return null;
 
-    // Send subscription to backend
+    // Send subscription to backend (upserts by endpoint, replacing stale rows)
     const keys = getSubscriptionKeys(subscription);
     if (!keys.p256dh || !keys.auth) {
       console.error("Push subscription keys unavailable");
