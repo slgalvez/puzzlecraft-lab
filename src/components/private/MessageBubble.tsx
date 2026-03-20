@@ -22,6 +22,8 @@ interface MessageBubbleProps {
   onReact?: (messageId: string, reaction: string) => void;
   onStartEdit?: (messageId: string, body: string) => void;
   onUnsend?: (messageId: string) => void;
+  /** All image URLs in the conversation for gallery navigation */
+  allImageUrls?: string[];
 }
 
 export function MessageBubble({
