@@ -63,7 +63,6 @@ export default function HowToPlay({ type }: Props) {
       <PopoverTrigger
         onClick={(e) => {
           e.stopPropagation();
-          e.preventDefault();
         }}
         onPointerDown={(e) => {
           // Prevent the parent card's active/click from firing
