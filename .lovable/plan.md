@@ -1,42 +1,40 @@
 
 
-## GIF Search Picker — GIPHY Integration
+## Diagnosis
 
-### Step 0: Add GIPHY API Key Secret
-Prompt you to enter your GIPHY API key as a project secret (`GIPHY_API_KEY`).
+The edge function logs show the real error: **`403 BadJwtToken`** from Apple's push service. The subscription row **does exist** in the database (profile `3687afff...`, endpoint `web.push.apple.com/...`). The "No devices subscribed" message is a **client-side reporting bug**, not a missing subscription.
 
-### Step 1: Edge Function — `supabase/functions/gif-search/index.ts`
-- CORS headers + OPTIONS handler
-- Accepts `{ token, query?, offset? }` in POST body
-- Validates token via JWT check (reuse pattern from other functions)
-- If `query` → calls `https://api.giphy.com/v1/gifs/search`
-- If no query → calls `https://api.giphy.com/v1/gifs/trending`
-- Returns `{ results: [{ id, preview, full, title }] }` using `fixed_width_small` for previews, `original` for sending
-- 20 results per page, supports offset pagination
+Two distinct problems:
 
-### Step 2: Register in `supabase/config.toml`
-```toml
-[functions.gif-search]
-verify_jwt = false
+1. **VAPID JWT rejected by Apple** — The `BadJwtToken` response means Apple cannot verify the JWT signature. Most likely cause: the `VAPID_PRIVATE_KEY` secret is stored in standard base64 format (with `+`, `/`) instead of base64url (with `-`, `_`), causing `crypto.subtle.importKey("jwk", ...)` to silently produce the wrong key. The JWK `d` parameter requires strict base64url encoding.
+
+2. **Misleading error message** — When test-push finds subscriptions but delivery fails, the backend returns `{ ok: false, sent: 0, failed: 1, results: [...] }` with **no `error` field**. The client code (`result.error || "No devices subscribed"`) then falls through to the hardcoded fallback.
+
+## Plan
+
+### 1. Fix VAPID private key handling in edge function
+**File: `supabase/functions/send-push/index.ts`**
+
+In `createVapidJwt`, normalize the private key to base64url before passing to JWK:
+```
+let d = Deno.env.get("VAPID_PRIVATE_KEY")!;
+d = d.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 ```
 
-### Step 3: New Component — `src/components/private/GifPicker.tsx`
-- Panel (~300px tall) that slides up above the composer
-- Search input with 300ms debounce
-- Trending GIFs shown initially (no query)
-- Grid of GIF thumbnails using `fixed_width_small` URLs
-- Tap a GIF → calls `onSelect(fullUrl)` → closes picker
-- Close via X button
-- Loading and empty states
+Add a verification step: after importing the signing key, do a quick sign+verify round-trip to catch key pair mismatches early and log a clear error.
 
-### Step 4: Update `src/components/private/MessageComposer.tsx`
-- Add GIF button icon next to the existing image upload button
-- Toggle opens/closes `GifPicker` above the composer
-- On GIF select: call `onSend("__MEDIA__:{gif_url}")` — reuses existing media rendering
-- No file upload needed (GIPHY URLs are public CDN)
+### 2. Fix test-push error reporting in edge function
+**File: `supabase/functions/send-push/index.ts`**
 
-### What stays unchanged
-- `MessageBubble` already renders `__MEDIA__:` images
-- `ImageViewer` already handles tap-to-enlarge on any image
-- Database, messaging edge function, and other components untouched
+When `sent === 0` and `failed > 0`, include an `error` field in the response with the actual failure reason (e.g., `"Push delivery failed (403 BadJwtToken)"`).
+
+### 3. Fix client-side error display
+**File: `src/pages/private/PrivateSettings.tsx`**
+
+Update `handleTestPush` to show the backend's actual error message instead of the hardcoded "No devices subscribed" fallback. Show `result.error` when present, or compose a message from `result.failed`/`result.results` when available.
+
+### Summary
+- 2 files modified: `supabase/functions/send-push/index.ts`, `src/pages/private/PrivateSettings.tsx`
+- No changes to auth, routing, messaging logic, service worker, or notification phrasing
+- Fixes the actual push delivery failure and eliminates the misleading error message
 
