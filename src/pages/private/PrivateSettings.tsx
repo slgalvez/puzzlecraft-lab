@@ -43,6 +43,7 @@ const PrivateSettings = () => {
   const [activeTheme, setActiveTheme] = useState<ChatThemeId>(getChatTheme);
   const [customHex, setCustomHex] = useState(getCustomColor);
   const colorInputRef = useRef<HTMLInputElement>(null);
+  const [notificationsOn, setNotificationsOn] = useState(getNotificationsEnabled);
 
   const handleSessionExpired = useCallback(() => {
     signOut();
