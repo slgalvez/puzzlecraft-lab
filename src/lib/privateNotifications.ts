@@ -139,6 +139,36 @@ function base64urlToUint8Array(base64url: string): Uint8Array {
   return Uint8Array.from(rawData, (char) => char.charCodeAt(0));
 }
 
+function uint8ArrayToBase64url(bytes: Uint8Array): string {
+  const base64 = btoa(String.fromCharCode(...bytes));
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function getSubscriptionKeys(subscription: PushSubscription): {
+  p256dh: string;
+  auth: string;
+} {
+  const jsonKeys = subscription.toJSON().keys || {};
+
+  let p256dh = jsonKeys.p256dh || "";
+  let auth = jsonKeys.auth || "";
+
+  if ((!p256dh || !auth) && typeof subscription.getKey === "function") {
+    const p256dhKey = subscription.getKey("p256dh");
+    const authKey = subscription.getKey("auth");
+
+    if (!p256dh && p256dhKey) {
+      p256dh = uint8ArrayToBase64url(new Uint8Array(p256dhKey));
+    }
+
+    if (!auth && authKey) {
+      auth = uint8ArrayToBase64url(new Uint8Array(authKey));
+    }
+  }
+
+  return { p256dh, auth };
+}
+
 /**
  * Subscribe to push notifications via the service worker.
  * Returns the subscription or null if failed.
@@ -167,7 +197,12 @@ export async function subscribeToPush(token: string): Promise<PushSubscription |
     if (!subscription) return null;
 
     // Send subscription to backend
-    const keys = subscription.toJSON().keys || {};
+    const keys = getSubscriptionKeys(subscription);
+    if (!keys.p256dh || !keys.auth) {
+      console.error("Push subscription keys unavailable");
+      return null;
+    }
+
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
@@ -181,8 +216,8 @@ export async function subscribeToPush(token: string): Promise<PushSubscription |
         action: "subscribe",
         token,
         endpoint: subscription.endpoint,
-        p256dh: keys.p256dh || "",
-        auth: keys.auth || "",
+        p256dh: keys.p256dh,
+        auth: keys.auth,
       }),
     });
 
