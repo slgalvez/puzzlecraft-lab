@@ -291,7 +291,7 @@ const UserConversation = () => {
             <NicknameEditor
               contactProfileId={adminProfileId}
               currentNickname={nicknames[adminProfileId]}
-              defaultName="Conversation"
+              defaultName={adminName}
               onSave={setNickname}
               onRemove={removeNickname}
             />
