@@ -254,3 +254,16 @@ body:has(.private-app) [data-sidebar="sidebar"][data-mobile="true"] {
   border-color: hsl(var(--border));
   box-shadow: none;
 }
+
+/* Mobile keyboard: keep conversation stable when virtual keyboard opens */
+@supports (height: 1dvh) {
+  .private-app {
+    height: 100dvh;
+  }
+}
+
+/* Prevent layout thrash on iOS keyboard open/close */
+.private-app {
+  /* Ensure the flex container doesn't over-resize */
+  contain: layout style;
+}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useChatScroll } from "@/hooks/useChatScroll";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
@@ -44,11 +45,9 @@ const UserConversation = () => {
   const [togglingDisappearing, setTogglingDisappearing] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [editingMessage, setEditingMessage] = useState<EditingMessage | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messageIds = useMemo(() => messages.map((m) => m.id), [messages]);
+  const { containerRef: messagesContainerRef, bottomRef: messagesEndRef, markUserSent } = useChatScroll(messageIds);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
-  const initialScrollDone = useRef(false);
-  const prevMessageCount = useRef(0);
 
   const handleSessionExpired = useCallback(() => {
     signOut();
@@ -88,17 +87,7 @@ const UserConversation = () => {
     return () => clearInterval(pollRef.current);
   }, [fetchConversation]);
 
-  // Scroll to bottom: instant on first load, smooth on new messages
-  useEffect(() => {
-    if (messages.length === 0) return;
-    if (!initialScrollDone.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior });
-      initialScrollDone.current = true;
-    } else if (messages.length > prevMessageCount.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-    prevMessageCount.current = messages.length;
-  }, [messages.length]);
+  // (scroll handled by useChatScroll hook)
 
   useEffect(() => {
     if (!conversationId || !token) return;
@@ -111,6 +100,7 @@ const UserConversation = () => {
   const handleSend = async (body: string) => {
     if (!conversationId || !token) return;
     setSending(true);
+    markUserSent();
     try {
       const data = await invokeMessaging("send-message", token, {
         conversation_id: conversationId,
@@ -320,7 +310,7 @@ const UserConversation = () => {
         />
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 space-y-1">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 space-y-1 scroll-smooth">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <p className="text-[13px] text-muted-foreground/40">
