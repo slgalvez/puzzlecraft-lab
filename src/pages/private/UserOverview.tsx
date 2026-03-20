@@ -140,6 +140,8 @@ const UserOverview = () => {
 
   useEffect(() => {
     fetchData();
+    const interval = setInterval(fetchData, 5000);
+    return () => clearInterval(interval);
   }, [fetchData]);
 
   const handleClearActivity = async () => {
