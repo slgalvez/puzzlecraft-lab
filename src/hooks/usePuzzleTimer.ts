@@ -124,18 +124,36 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
   const pause = useCallback(() => setState((s) => ({ ...s, isRunning: false })), []);
   const resume = useCallback(() => setState((s) => (s.isSolved || s.countdown > 0 || s.expired ? s : { ...s, isRunning: true })), []);
 
-  const solve = useCallback((opts?: { assisted?: boolean }) => {
+  const solve = useCallback((opts?: { assisted?: boolean; hintsUsed?: number; mistakesCount?: number }) => {
     setState((s) => ({ ...s, isRunning: false, isSolved: true, countdown: 0 }));
     const assisted = opts?.assisted ?? false;
+    const hintsUsed = opts?.hintsUsed ?? 0;
+    const mistakesCount = opts?.mistakesCount ?? 0;
     const isNew = assisted ? false : saveBestTime(puzzleKey, state.elapsed, options?.category, options?.difficulty);
+
+    const isDailyChallenge = puzzleKey.startsWith("daily-");
+
     if (options?.category && options?.difficulty) {
       recordCompletion(puzzleKey, options.category, options.difficulty, state.elapsed, assisted);
-      if (puzzleKey.startsWith("daily-")) {
+      if (isDailyChallenge) {
         const challenge = getTodaysChallenge();
         if (puzzleKey === `daily-${challenge.dateStr}-${challenge.category}-${challenge.difficulty}`) {
           recordDailyCompletion(challenge.dateStr, state.elapsed, challenge.category, challenge.difficulty);
         }
       }
+
+      // Standardized solve record
+      recordSolve({
+        puzzleId: puzzleKey,
+        puzzleType: options.category,
+        difficulty: options.difficulty as import("@/lib/puzzleTypes").Difficulty,
+        solveTime: state.elapsed,
+        mistakesCount,
+        hintsUsed,
+        isDailyChallenge,
+        assisted,
+        origin: isDailyChallenge ? "daily" : undefined,
+      });
     }
     return { time: state.elapsed, isNewBest: isNew };
   }, [puzzleKey, state.elapsed, options?.category, options?.difficulty]);
