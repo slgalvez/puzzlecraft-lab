@@ -21,24 +21,34 @@ export function GifPicker({ token, onSelect, onClose }: GifPickerProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GifResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const activeQueryRef = useRef("");
 
   const fetchGifs = useCallback(
-    async (searchQuery: string) => {
-      setLoading(true);
+    async (searchQuery: string, offset = 0) => {
+      const isLoadMore = offset > 0;
+      if (isLoadMore) setLoadingMore(true); else setLoading(true);
       try {
         const { data, error } = await supabase.functions.invoke("gif-search", {
-          body: { token, query: searchQuery || undefined },
+          body: { token, query: searchQuery || undefined, offset },
         });
         if (!error && data?.results) {
-          setResults(data.results);
+          if (isLoadMore) {
+            setResults((prev) => [...prev, ...data.results]);
+          } else {
+            setResults(data.results);
+          }
+          setHasMore(data.results.length >= 20);
         }
       } catch {
         // silent
       } finally {
-        setLoading(false);
+        if (isLoadMore) setLoadingMore(false); else setLoading(false);
         setSearched(true);
       }
     },
@@ -51,14 +61,26 @@ export function GifPicker({ token, onSelect, onClose }: GifPickerProps) {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, [fetchGifs]);
 
-  // Debounced search
+  // Debounced search — reset results on new query
   useEffect(() => {
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
+      activeQueryRef.current = query;
+      setResults([]);
+      setHasMore(false);
       fetchGifs(query);
     }, 300);
     return () => clearTimeout(debounceRef.current);
   }, [query, fetchGifs]);
+
+  // Infinite scroll
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || loadingMore || !hasMore) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 80) {
+      fetchGifs(activeQueryRef.current, results.length);
+    }
+  }, [loadingMore, hasMore, results.length, fetchGifs]);
 
   return (
     <div className="border-t border-border bg-background animate-in slide-in-from-bottom-2 duration-200">
@@ -84,8 +106,8 @@ export function GifPicker({ token, onSelect, onClose }: GifPickerProps) {
       </div>
 
       {/* Grid */}
-      <div className="h-[260px] overflow-y-auto px-2 pb-2">
-        {loading && !searched ? (
+      <div ref={scrollRef} onScroll={handleScroll} className="h-[260px] overflow-y-auto px-2 pb-2">
+        {loading && results.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 size={24} className="animate-spin text-muted-foreground" />
           </div>
@@ -94,23 +116,30 @@ export function GifPicker({ token, onSelect, onClose }: GifPickerProps) {
             {searched ? "No GIFs found" : "Search for GIFs"}
           </div>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
-            {results.map((gif) => (
-              <button
-                key={gif.id}
-                onClick={() => onSelect(gif.full)}
-                className="relative overflow-hidden rounded-lg bg-secondary hover:ring-2 hover:ring-primary/40 transition-all active:scale-95"
-                style={{ aspectRatio: `${gif.width} / ${gif.height}` }}
-              >
-                <img
-                  src={gif.preview}
-                  alt={gif.title}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </button>
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
+              {results.map((gif) => (
+                <button
+                  key={gif.id}
+                  onClick={() => onSelect(gif.full)}
+                  className="relative overflow-hidden rounded-lg bg-secondary hover:ring-2 hover:ring-primary/40 transition-all active:scale-95"
+                  style={{ aspectRatio: `${gif.width} / ${gif.height}` }}
+                >
+                  <img
+                    src={gif.preview}
+                    alt={gif.title}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </button>
+              ))}
+            </div>
+            {loadingMore && (
+              <div className="flex justify-center py-3">
+                <Loader2 size={18} className="animate-spin text-muted-foreground" />
+              </div>
+            )}
+          </>
         )}
       </div>
 
