@@ -65,6 +65,7 @@ const UserConversation = () => {
   const fetchConversation = useCallback(async () => {
     if (!token) return;
     try {
+      console.debug("[conversation] fetching...");
       const data = await invokeMessaging("get-my-conversation", token);
       setConversationId(data.conversation.id);
       setAdminProfileId(data.conversation.admin_profile_id);
@@ -73,13 +74,28 @@ const UserConversation = () => {
       setDisappearingEnabled(data.conversation.disappearing_enabled);
       setDisappearingDuration(data.conversation.disappearing_duration);
       setError(null);
+      console.debug("[conversation] loaded successfully");
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
+      console.warn("[conversation] fetch error:", e);
       if (loading) setError("Unable to load conversation");
     } finally {
       setLoading(false);
     }
   }, [token, loading, handleSessionExpired]);
+
+  // Loading failsafe: if loading persists more than 20s, show error
+  useEffect(() => {
+    if (!loading) return;
+    const timer = setTimeout(() => {
+      if (loading) {
+        console.warn("[conversation] loading timed out after 20s");
+        setLoading(false);
+        setError("Connection timed out — please try again");
+      }
+    }, 20_000);
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   useEffect(() => {
     fetchConversation();
