@@ -305,8 +305,8 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
                 disabled={uploading || !conversationId}
                 className={`shrink-0 p-2 rounded-full transition-colors ${
                   uploading
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    ? "text-primary bg-primary/[0.08]"
+                    : "text-muted-foreground/50 hover:text-foreground hover:bg-secondary/30"
                 }`}
                 title="Send an image"
               >
