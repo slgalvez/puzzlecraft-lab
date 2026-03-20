@@ -143,7 +143,19 @@ export function MessageBubble({
               })}
               {/* Custom emoji via hidden input + native keyboard */}
               <button
-                onClick={() => hiddenEmojiRef.current?.focus()}
+                onClick={() => {
+                  const el = hiddenEmojiRef.current;
+                  if (el) {
+                    el.style.position = "absolute";
+                    el.style.opacity = "0.01";
+                    el.style.height = "1px";
+                    el.style.width = "1px";
+                    el.style.left = "0";
+                    el.style.top = "0";
+                    el.style.pointerEvents = "auto";
+                    el.focus();
+                  }
+                }}
                 className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
               >
                 <Plus size={16} />
@@ -153,8 +165,8 @@ export function MessageBubble({
                 type="text"
                 inputMode="text"
                 autoComplete="off"
-                className="absolute w-px h-px opacity-0 pointer-events-none"
-                style={{ left: -9999 }}
+                className="absolute opacity-[0.01] w-px h-px overflow-hidden"
+                style={{ left: 0, top: 0 }}
                 onInput={(e) => {
                   const val = (e.target as HTMLInputElement).value;
                   const emojiMatch = val.match(/(\p{Emoji_Presentation}|\p{Extended_Pictographic})/gu);
