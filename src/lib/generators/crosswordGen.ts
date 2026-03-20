@@ -1,6 +1,7 @@
 import { SeededRandom } from "../seededRandom";
 import type { Difficulty } from "../puzzleTypes";
 import { WORD_CLUES } from "../wordList";
+import { analyzeGrid, scoreGridLayout, selectBestCandidate } from "./layoutScoring";
 import type { CrosswordClue } from "@/data/puzzles";
 
 export interface GeneratedCrossword {
@@ -11,20 +12,51 @@ export interface GeneratedCrossword {
 
 const SIZES: Record<Difficulty, number> = { easy: 9, medium: 13, hard: 15, extreme: 19, insane: 21 };
 const TARGETS: Record<Difficulty, number> = { easy: 6, medium: 14, hard: 22, extreme: 34, insane: 46 };
-// Minimum placed words for the puzzle to be valid
 const MIN_PLACED: Record<Difficulty, number> = { easy: 4, medium: 8, hard: 14, extreme: 20, insane: 28 };
 
+// Candidate counts scale with difficulty (bigger grids benefit more from selection)
+const CANDIDATES: Record<Difficulty, number> = { easy: 3, medium: 4, hard: 5, extreme: 3, insane: 3 };
+
 export function generateCrossword(seed: number, difficulty: Difficulty): GeneratedCrossword {
-  const maxAttempts = difficulty === "insane" || difficulty === "extreme" ? 3 : 1;
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const result = tryGenerateCrossword(seed + attempt * 4219, difficulty);
-    if (result.clues.length >= MIN_PLACED[difficulty]) return result;
+  const candidates = CANDIDATES[difficulty];
+  const minPlaced = MIN_PLACED[difficulty];
+
+  return selectBestCandidate(
+    (s) => {
+      const result = tryGenerateCrossword(s, difficulty);
+      // If below minimum, penalize heavily
+      if (result.clues.length < minPlaced) {
+        return { data: result, score: result.clues.length * 2 };
+      }
+      // Score the layout quality
+      const grid = reconstructGrid(result);
+      const placed = result.clues.map(c => ({
+        row: c.row, col: c.col, dir: c.direction, word: c.answer,
+      }));
+      const stats = analyzeGrid(grid, result.gridSize, placed);
+      const score = scoreGridLayout(stats, result.clues.length, TARGETS[difficulty]);
+      return { data: result, score };
+    },
+    seed,
+    candidates,
+    2,
+    45
+  );
+}
+
+/** Reconstruct the letter grid from clues (for scoring). */
+function reconstructGrid(result: GeneratedCrossword): string[][] {
+  const grid: string[][] = Array.from({ length: result.gridSize }, () =>
+    Array(result.gridSize).fill("")
+  );
+  for (const clue of result.clues) {
+    const dr = clue.direction === "down" ? 1 : 0;
+    const dc = clue.direction === "across" ? 1 : 0;
+    for (let i = 0; i < clue.answer.length; i++) {
+      grid[clue.row + dr * i][clue.col + dc * i] = clue.answer[i];
+    }
   }
-  // Fallback to hard if insane/extreme can't meet minimum
-  if (difficulty === "insane" || difficulty === "extreme") {
-    return tryGenerateCrossword(seed, "hard");
-  }
-  return tryGenerateCrossword(seed, difficulty);
+  return grid;
 }
 
 function tryGenerateCrossword(seed: number, difficulty: Difficulty): GeneratedCrossword {

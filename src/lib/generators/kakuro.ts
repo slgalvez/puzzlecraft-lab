@@ -1,6 +1,7 @@
 import { SeededRandom } from "../seededRandom";
 import type { Difficulty } from "../puzzleTypes";
 import { getEffectiveDifficulty } from "../puzzleTypes";
+import { scoreKakuroLayout, selectBestCandidate } from "./layoutScoring";
 
 export interface KakuroClue {
   row: number;
@@ -18,7 +19,6 @@ export interface KakuroPuzzle {
 
 const SIZES: Record<Difficulty, number> = { easy: 5, medium: 7, hard: 9, extreme: 12, insane: 15 };
 const BLACK_PROB: Record<Difficulty, number> = { easy: 0.28, medium: 0.22, hard: 0.18, extreme: 0.14, insane: 0.10 };
-// Minimum white cells required for the puzzle to be considered valid
 const MIN_WHITE: Record<Difficulty, number> = { easy: 4, medium: 10, hard: 20, extreme: 35, insane: 55 };
 
 interface Run {
@@ -26,21 +26,37 @@ interface Run {
 }
 
 export function generateKakuro(seed: number, rawDifficulty: Difficulty): KakuroPuzzle {
-  // Safeguard: always downgrade unsupported difficulties (e.g. insane → extreme)
   const difficulty = getEffectiveDifficulty("kakuro", rawDifficulty);
-  const maxAttempts = difficulty === "insane" || difficulty === "extreme" ? 30 : 20;
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const result = tryGenerate(seed + attempt * 1000, difficulty);
-    if (result) {
-      // Validate minimum complexity for insane/extreme
+
+  // Use candidate selection: try multiple seeds and pick the best layout
+  const maxTries = difficulty === "insane" || difficulty === "extreme" ? 30 : 20;
+
+  return selectBestCandidate(
+    (s) => {
+      const result = tryGenerate(s, difficulty);
+      if (!result) return { data: fallbackPuzzle(seed, difficulty), score: 0 };
+
       let whiteCount = 0;
       for (let r = 1; r < result.size; r++)
         for (let c = 1; c < result.size; c++)
           if (!result.isBlack[r][c]) whiteCount++;
-      if (whiteCount >= MIN_WHITE[difficulty]) return result;
-    }
-  }
-  // Fallback: try hard if insane/extreme fails
+
+      if (whiteCount < MIN_WHITE[difficulty]) {
+        return { data: result, score: whiteCount };
+      }
+
+      const layoutScore = scoreKakuroLayout(result.isBlack, result.size, whiteCount);
+      return { data: result, score: layoutScore };
+    },
+    seed,
+    Math.min(maxTries, 8),
+    3,
+    40
+  );
+}
+
+function fallbackPuzzle(seed: number, difficulty: Difficulty): KakuroPuzzle {
+  // Fallback: try hard, then easy
   if (difficulty === "insane" || difficulty === "extreme") {
     for (let attempt = 0; attempt < 20; attempt++) {
       const result = tryGenerate(seed + attempt * 1000, "hard");
@@ -111,7 +127,6 @@ function tryGenerate(seed: number, difficulty: Difficulty): KakuroPuzzle | null 
 
   const grid = Array.from({ length: size }, () => Array(size).fill(0));
   let steps = 0;
-  // Larger grids need more steps
   const MAX = difficulty === "insane" ? 500000 : difficulty === "extreme" ? 300000 : 100000;
 
   function fill(idx: number): boolean {

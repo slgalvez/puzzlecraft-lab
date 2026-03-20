@@ -1,5 +1,6 @@
 import { SeededRandom } from "../seededRandom";
 import type { Difficulty } from "../puzzleTypes";
+import { scoreNonogramLayout, selectBestCandidate } from "./layoutScoring";
 
 export interface NonogramPuzzle {
   rows: number;
@@ -11,8 +12,23 @@ export interface NonogramPuzzle {
 
 const SIZES: Record<Difficulty, number> = { easy: 5, medium: 10, hard: 15, extreme: 20, insane: 25 };
 const DENSITY: Record<Difficulty, number> = { easy: 0.6, medium: 0.5, hard: 0.48, extreme: 0.45, insane: 0.42 };
+const CANDIDATES: Record<Difficulty, number> = { easy: 3, medium: 4, hard: 4, extreme: 3, insane: 3 };
 
 export function generateNonogram(seed: number, difficulty: Difficulty): NonogramPuzzle {
+  return selectBestCandidate(
+    (s) => {
+      const result = buildNonogram(s, difficulty);
+      const score = scoreNonogramLayout(result.solution, result.rows);
+      return { data: result, score };
+    },
+    seed,
+    CANDIDATES[difficulty],
+    2,
+    55
+  );
+}
+
+function buildNonogram(seed: number, difficulty: Difficulty): NonogramPuzzle {
   const rng = new SeededRandom(seed);
   const size = SIZES[difficulty];
   const dens = DENSITY[difficulty];
