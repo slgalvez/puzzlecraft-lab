@@ -278,7 +278,7 @@ const AdminConversationView = () => {
                   formatTime={formatTime}
                   showTail={showTail}
                   onReact={handleReact}
-                  onEdit={handleEdit}
+                  onStartEdit={handleStartEdit}
                 />
               );
             })
