@@ -302,15 +302,15 @@ export function MessageBubble({
                 <button
                   key={emoji}
                   onClick={() => handleReact(emoji)}
-                  className={`inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full border transition-colors ${
+                  className={`inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full border transition-all active:scale-95 ${
                     iReacted
-                      ? "border-primary/40 bg-primary/10"
-                      : "border-border bg-card hover:bg-secondary"
+                      ? "border-primary/30 bg-primary/[0.08]"
+                      : "border-border/30 bg-card/50 hover:bg-secondary/40"
                   }`}
                 >
                   <span className="text-[11px]">{emoji}</span>
                   {users.length > 1 && (
-                    <span className="text-[9px] text-muted-foreground">{users.length}</span>
+                    <span className="text-[9px] text-muted-foreground/60">{users.length}</span>
                   )}
                 </button>
               );
