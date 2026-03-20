@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { recordCompletion } from "@/lib/progressTracker";
 import { recordDailyCompletion, getTodaysChallenge } from "@/lib/dailyChallenge";
+import { recordSolve } from "@/lib/solveTracker";
 import type { PuzzleCategory } from "@/lib/puzzleTypes";
 
 interface TimerState {
