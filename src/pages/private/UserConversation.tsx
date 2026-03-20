@@ -310,7 +310,7 @@ const UserConversation = () => {
         />
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 space-y-1">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 space-y-1 scroll-smooth">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <p className="text-[13px] text-muted-foreground/40">
