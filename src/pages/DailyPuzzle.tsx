@@ -52,6 +52,8 @@ const DailyPuzzle = () => {
   // Memoize generated puzzles so heavy generators only run once (prevents mobile Safari crash)
   const generatedPuzzle = useMemo(() => {
     const { seed, difficulty, category, dateStr } = challenge;
+    console.log("[DailyPuzzle] generating puzzle:", category, difficulty, seed);
+    const startTime = performance.now();
     try {
       switch (category) {
         case "crossword": {
