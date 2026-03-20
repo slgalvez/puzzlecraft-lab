@@ -21,8 +21,18 @@ export function useChatScroll(messageIds: string[]) {
   const isNearBottom = useCallback(() => {
     const el = containerRef.current;
     if (!el) return true;
-    // Within 120px of the bottom = "near bottom"
     return el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+  }, []);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "instant") => {
+    // Use multiple strategies for reliability across browsers
+    const container = containerRef.current;
+    const bottom = bottomRef.current;
+    if (bottom) {
+      bottom.scrollIntoView({ behavior });
+    } else if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, []);
 
   useEffect(() => {
@@ -31,32 +41,49 @@ export function useChatScroll(messageIds: string[]) {
     const container = containerRef.current;
     if (!container) return;
 
-    // First load: instant scroll to bottom
+    // First load: instant scroll to bottom (with slight delay for DOM paint)
     if (!initialScrollDone.current) {
-      bottomRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior });
-      initialScrollDone.current = true;
+      // Double rAF ensures the browser has painted the messages
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          scrollToBottom("instant");
+          initialScrollDone.current = true;
+        });
+      });
       prevIdsRef.current = messageIds;
       return;
     }
 
     const prevIds = prevIdsRef.current;
-
-    // Detect what changed
-    const newAtEnd = messageIds.length > prevIds.length && messageIds[messageIds.length - 1] !== prevIds[prevIds.length - 1];
     const shouldForceScroll = userSentRef.current;
     userSentRef.current = false;
 
-    if (shouldForceScroll || (newAtEnd && isNearBottom())) {
-      // New message at bottom — smooth scroll if near bottom or user just sent
+    // Detect: new messages at the END (normal new message flow)
+    const newAtEnd = messageIds.length > prevIds.length &&
+      messageIds[messageIds.length - 1] !== prevIds[prevIds.length - 1];
+
+    // Detect: new messages prepended at START (older messages loaded)
+    const prependedAtStart = messageIds.length > prevIds.length &&
+      prevIds.length > 0 &&
+      messageIds[messageIds.length - 1] === prevIds[prevIds.length - 1] &&
+      messageIds[0] !== prevIds[0];
+
+    if (prependedAtStart) {
+      // Preserve scroll position: calculate how much height was added
+      const prevScrollHeight = container.scrollHeight;
       requestAnimationFrame(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+        const newScrollHeight = container.scrollHeight;
+        const addedHeight = newScrollHeight - prevScrollHeight;
+        container.scrollTop += addedHeight;
+      });
+    } else if (shouldForceScroll || (newAtEnd && isNearBottom())) {
+      requestAnimationFrame(() => {
+        scrollToBottom("smooth");
       });
     }
-    // If messages changed but no new ones at end (e.g. polling update, reactions, edits),
-    // or user scrolled up — do nothing, preserve position
 
     prevIdsRef.current = messageIds;
-  }, [messageIds, isNearBottom]);
+  }, [messageIds, isNearBottom, scrollToBottom]);
 
   return { containerRef, bottomRef, markUserSent };
 }
