@@ -84,11 +84,14 @@ const DailyPuzzle = () => {
           } satisfies FillInPuzzle;
         }
         default:
+          console.log("[DailyPuzzle] no generator needed for", category);
           return null;
       }
     } catch (e) {
       console.error("Daily puzzle generation failed:", e);
       return null;
+    } finally {
+      console.log("[DailyPuzzle] generation took", (performance.now() - startTime).toFixed(1), "ms");
     }
   }, [challenge]);
 
