@@ -293,8 +293,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
 
       <form
         onSubmit={handleSubmit}
-        className={`border-t border-border/20 px-2.5 sm:px-4 py-1.5 ${isEditing ? "border-t-0" : ""}`}
-        style={{ paddingBottom: "max(0.375rem, env(safe-area-inset-bottom, 0px))" }}
+        className={`border-t border-border/20 px-2.5 sm:px-4 py-1.5 composer-form ${isEditing ? "border-t-0" : ""}`}
       >
         <div className="flex items-end gap-2">
           {!hasVoiceOrMedia && !isEditing && (

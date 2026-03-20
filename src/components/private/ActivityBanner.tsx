@@ -79,12 +79,15 @@ export function ActivityBanner({ item, onDismiss }: ActivityBannerProps) {
 
   return (
     <div
-      className={`fixed top-0 left-0 right-0 z-[85] p-3 transition-all duration-300 ease-out ${
+      className={`fixed left-0 right-0 z-[85] px-3 pb-3 transition-all duration-300 ease-out ${
         visible
           ? "opacity-100 translate-y-0"
           : "opacity-0 -translate-y-full pointer-events-none"
       }`}
-      style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top, 0.75rem))" }}
+      style={{
+        top: "env(safe-area-inset-top, 0px)",
+        paddingTop: "0.75rem",
+      }}
     >
       <div
         className="max-w-sm mx-auto bg-card border border-border rounded-2xl shadow-2xl overflow-hidden cursor-pointer active:scale-[0.98] transition-transform duration-150"
