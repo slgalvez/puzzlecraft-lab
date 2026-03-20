@@ -70,7 +70,7 @@ const AdminConversationView = () => {
 
   useEffect(() => {
     fetchConversation();
-    pollRef.current = setInterval(fetchConversation, 5000);
+    pollRef.current = setInterval(fetchConversation, 3000);
     return () => clearInterval(pollRef.current);
   }, [fetchConversation]);
 
