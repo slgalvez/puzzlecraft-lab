@@ -190,7 +190,7 @@ export function MessageBubble({
             </div>
           </div>
         ) : isMedia ? (
-          <div className={`overflow-hidden ${bubbleClass} p-1`}>
+          <div className={`overflow-hidden ${bubbleClass} p-1 select-none`}>
             <img
               src={mediaUrl}
               alt="Image"
@@ -216,14 +216,14 @@ export function MessageBubble({
           </div>
         ) : (
           <div
-            className={`px-3.5 py-2 ${bubbleClass}`}
+            className={`px-3.5 py-2 ${bubbleClass} select-none`}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
             onTouchCancel={() => clearTimeout(longPressTimer.current)}
             onTouchMove={handleTouchMove}
             onContextMenu={(e) => { e.preventDefault(); setShowMenu(true); }}
           >
-            <p className="text-[15px] whitespace-pre-wrap break-words leading-[1.35]">{body}</p>
+            <p className="text-[15px] whitespace-pre-wrap break-words leading-[1.35] overflow-hidden">{body}</p>
             <div className={`flex items-center gap-1 mt-0.5 ${isMine ? "justify-end" : ""}`}>
               {isDisappearing && (
                 isViewOnce ? (

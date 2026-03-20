@@ -45,6 +45,8 @@ const AdminConversationView = () => {
   const [clearing, setClearing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
+  const initialScrollDone = useRef(false);
+  const prevMessageCount = useRef(0);
 
   const handleSessionExpired = useCallback(() => {
     signOut();
@@ -68,12 +70,20 @@ const AdminConversationView = () => {
 
   useEffect(() => {
     fetchConversation();
-    pollRef.current = setInterval(fetchConversation, 5000);
+    pollRef.current = setInterval(fetchConversation, 3000);
     return () => clearInterval(pollRef.current);
   }, [fetchConversation]);
 
+  // Scroll to bottom: instant on first load, smooth on new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length === 0) return;
+    if (!initialScrollDone.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior });
+      initialScrollDone.current = true;
+    } else if (messages.length > prevMessageCount.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    prevMessageCount.current = messages.length;
   }, [messages.length]);
 
   useEffect(() => {
