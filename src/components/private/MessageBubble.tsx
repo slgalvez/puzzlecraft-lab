@@ -20,6 +20,7 @@ interface MessageBubbleProps {
   showTail?: boolean;
   onReact?: (messageId: string, reaction: string) => void;
   onStartEdit?: (messageId: string, body: string) => void;
+  onUnsend?: (messageId: string) => void;
 }
 
 export function MessageBubble({
