@@ -82,19 +82,19 @@ export default function LoginPage() {
         new Promise<{ error: string }>((resolve) =>
           setTimeout(() => {
             console.warn("[login] signIn timed out after 20s");
-            resolve({ error: "Request timed out — please try again" });
+            resolve({ error: "Connection timed out — please try again" });
           }, 20_000)
         ),
       ]);
       if (result.error) {
         console.debug("[login] error:", result.error);
-        setError(result.error === "Request timed out — please try again" ? result.error : "Access unavailable");
+        setError(result.error);
       } else {
         console.debug("[login] success");
       }
-    } catch {
-      console.warn("[login] unexpected error");
-      setError("Access unavailable");
+    } catch (err) {
+      console.warn("[login] unexpected error", err);
+      setError("Something went wrong — please try again");
     } finally {
       setSubmitting(false);
     }
