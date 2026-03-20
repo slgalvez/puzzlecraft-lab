@@ -1,9 +1,11 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Timer, Check, CheckCheck, Eye, Pencil, Plus, Undo2 } from "lucide-react";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { isGifMessage, getGifUrl } from "@/components/private/MessageComposer";
 import { ImageViewer } from "@/components/private/ImageViewer";
 import { AudioBubble, isAudioMessage, getAudioData } from "@/components/private/AudioBubble";
+import { FeatureHint } from "@/components/private/FeatureHint";
+import { isHintSeen, markHintSeen } from "@/lib/featureHints";
 
 const REACTION_OPTIONS = ["❤️", "👍", "😂", "‼️", "❓", "😢"];
 
