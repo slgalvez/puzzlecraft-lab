@@ -641,26 +641,11 @@ export function generateCustomCrossword(entries: { answer: string; clue: string 
   const baseSize = Math.max(9, maxLen + padding);
   const targetInt = TARGET_INTERSECTION_XWORD[difficulty];
 
-  let bestResult: CustomCrosswordData | null = null;
-  let bestScore = -Infinity;
-
-  for (let attempt = 0; attempt < MAX_REGEN_ATTEMPTS; attempt++) {
-    const seed = (Date.now() + attempt * 4219) % 2147483646 || 1;
+  return selectBestLayout((seed) => {
     const { data, stats, placedCount } = buildCrossword(cleaned, baseSize, seed, difficulty);
-    const score = scoreLayout(stats, difficulty, placedCount, cleaned.length, targetInt);
-
-    // Extra crossword scoring: symmetry matters more
-    const adjustedScore = score + stats.symmetryScore * 8;
-
-    if (adjustedScore > bestScore) {
-      bestScore = adjustedScore;
-      bestResult = data;
-    }
-
-    if (placedCount === cleaned.length && passesQuality(stats, difficulty) && adjustedScore > 55) break;
-  }
-
-  return bestResult!;
+    const score = scoreLayout(stats, difficulty, placedCount, cleaned.length, targetInt) + stats.symmetryScore * 8;
+    return { data, score };
+  }, Date.now());
 }
 
 function buildCrossword(
