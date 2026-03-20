@@ -117,25 +117,25 @@ export function MessageBubble({
   return (
     <div className={`flex ${isMine ? "justify-end" : "justify-start"} px-1 relative`}>
       {showMenu && (
-        <div className="fixed inset-0 z-40" onClick={closeMenu} style={{ background: "transparent" }} />
+        <div className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1px]" onClick={closeMenu} />
       )}
-      <div className={`relative max-w-[82%] sm:max-w-[70%] transition-shadow duration-150 ${showMenu ? "z-50 ring-2 ring-primary/30 rounded-2xl" : ""}`}>
+      <div className={`relative max-w-[82%] sm:max-w-[70%] transition-all duration-150 ${showMenu ? "z-50 scale-[1.02]" : ""}`}>
         {showMenu && (
           <div
-            className={`absolute z-50 bottom-full mb-2 flex flex-col bg-card border border-border rounded-2xl shadow-xl overflow-hidden ${
+            className={`absolute z-50 bottom-full mb-2 flex flex-col bg-card/95 backdrop-blur-xl border border-border/40 rounded-2xl shadow-2xl overflow-hidden ${
               isMine ? "right-0" : "left-0"
             }`}
             style={{ minWidth: "180px" }}
           >
-            <div className="flex items-center gap-0.5 px-2 py-2 border-b border-border">
+            <div className="flex items-center gap-0.5 px-2 py-2 border-b border-border/30">
               {REACTION_OPTIONS.map((r) => {
                 const isActive = (reactions[r] || []).includes(currentUserId);
                 return (
                   <button
                     key={r}
                     onClick={() => handleReact(r)}
-                    className={`text-lg w-9 h-9 flex items-center justify-center rounded-full transition-transform hover:scale-125 active:scale-90 ${
-                      isActive ? "bg-primary/20" : "hover:bg-secondary"
+                    className={`text-lg w-9 h-9 flex items-center justify-center rounded-full transition-all active:scale-90 ${
+                      isActive ? "bg-primary/15 scale-110" : "hover:bg-secondary/60 hover:scale-110"
                     }`}
                   >
                     {r}
@@ -146,18 +146,18 @@ export function MessageBubble({
                 onClick={() => setShowEmojiPicker((prev) => !prev)}
                 className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${
                   showEmojiPicker
-                    ? "bg-primary/20 text-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    ? "bg-primary/15 text-foreground"
+                    : "text-muted-foreground/60 hover:text-foreground hover:bg-secondary/60"
                 }`}
                 aria-label="More emoji reactions"
               >
-                <Plus size={16} />
+                <Plus size={15} />
               </button>
             </div>
 
             {showEmojiPicker && (
-              <div className="border-b border-border p-2 bg-card">
-                <div className="overflow-hidden rounded-xl border border-border">
+              <div className="border-b border-border/30 p-2 bg-card/80">
+                <div className="overflow-hidden rounded-xl">
                   <EmojiPicker
                     onEmojiClick={(emojiData) => handleReact(emojiData.emoji)}
                     theme={Theme.DARK}
@@ -175,9 +175,9 @@ export function MessageBubble({
             {isMine && !isMedia && !isAudio && onStartEdit && (
               <button
                 onClick={handleStartEdit}
-                className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-foreground hover:bg-secondary/60 transition-colors"
+                className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-foreground/80 hover:bg-secondary/40 transition-colors"
               >
-                <Pencil size={14} className="text-muted-foreground" />
+                <Pencil size={13} className="text-muted-foreground/60" />
                 Edit
               </button>
             )}
@@ -188,17 +188,17 @@ export function MessageBubble({
                     onUnsend(id);
                     closeMenu();
                   }}
-                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-destructive hover:bg-destructive/[0.06] transition-colors"
                 >
-                  <Undo2 size={14} />
+                  <Undo2 size={13} />
                   Unsend?
                 </button>
               ) : (
                 <button
                   onClick={() => setConfirmUnsend(true)}
-                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:bg-secondary/60 transition-colors"
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-foreground/80 hover:bg-secondary/40 transition-colors"
                 >
-                  <Undo2 size={14} />
+                  <Undo2 size={13} className="text-muted-foreground/60" />
                   Unsend
                 </button>
               )
