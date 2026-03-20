@@ -192,6 +192,36 @@ export function MessageBubble({
               </button>
             </div>
           </div>
+        ) : isAudio && audioData ? (
+          <div
+            className={`px-3.5 py-2.5 ${bubbleClass} select-none`}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={() => clearTimeout(longPressTimer.current)}
+            onTouchMove={handleTouchMove}
+            onContextMenu={(e) => { e.preventDefault(); setShowMenu(true); }}
+          >
+            <AudioBubble src={audioData.url} isMine={isMine} duration={audioData.duration} />
+            <div className={`flex items-center gap-1 mt-1 ${isMine ? "justify-end" : ""}`}>
+              {isDisappearing && (
+                isViewOnce ? (
+                  <Eye size={8} className={iconColor} />
+                ) : (
+                  <Timer size={8} className={iconColor} />
+                )
+              )}
+              <span className={`text-[10px] leading-none ${timeColor}`}>
+                {formatTime(createdAt)}
+              </span>
+              {isMine && (
+                readAt ? (
+                  <CheckCheck size={10} className={timeColor} />
+                ) : (
+                  <Check size={10} className="text-primary-foreground/35" />
+                )
+              )}
+            </div>
+          </div>
         ) : isMedia ? (
           <div className={`overflow-hidden ${bubbleClass} p-1 select-none`}>
             <img
