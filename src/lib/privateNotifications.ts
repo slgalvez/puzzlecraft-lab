@@ -14,7 +14,7 @@ const PUSH_SUB_KEY = "private_push_subscribed";
 
 // VAPID public key (matches the private key stored as a secret)
 export const VAPID_PUBLIC_KEY =
-  "BJrEgKHA6zTGGE2HCv4B9Fr8zjBIP7ebEyR94U2YWbEA9iM0WYTCb2BbWDizAWbdFuEOV90FX11dMqOi1YkCcP0";
+  "BFkn49h7I0ULvu3Ta1UiFLMUsLW3JUNwD8yRQhIiV7AhncanXqPLiW4eu2rv7I6WmbFB67fX2kycpcHBvwk6k5g";
 
 // ── Phrase pools ──
 
