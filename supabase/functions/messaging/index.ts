@@ -1200,6 +1200,194 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // ─── START CALL ───
+    if (action === "start-call") {
+      const { conversation_id } = body;
+      if (!conversation_id) return err("Missing conversation_id", 400);
+
+      const { data: conv } = await sb.from("conversations").select("id, user_profile_id, admin_profile_id").eq("id", conversation_id).single();
+      if (!conv) return err("Conversation not found");
+      if (!isAdmin && conv.user_profile_id !== profileId) return err("Access denied");
+
+      const calleeId = profileId === conv.admin_profile_id ? conv.user_profile_id : conv.admin_profile_id;
+
+      // Check no active call already exists
+      const { data: existingCalls } = await sb.from("calls").select("id").eq("conversation_id", conversation_id).in("status", ["ringing", "connected"]);
+      if (existingCalls && existingCalls.length > 0) return err("A call is already active", 409);
+
+      const { data: call, error: callErr } = await sb.from("calls").insert({
+        conversation_id,
+        caller_profile_id: profileId,
+        callee_profile_id: calleeId,
+        status: "ringing",
+      }).select().single();
+      if (callErr || !call) return err("Could not start call");
+
+      // Get caller name for the callee
+      const { data: callerProfile } = await sb.from("profiles").select("first_name").eq("id", profileId).single();
+
+      return json({ call_id: call.id, callee_id: calleeId, caller_name: callerProfile?.first_name || "Someone" });
+    }
+
+    // ─── POLL CALL ───
+    if (action === "poll-call") {
+      const { call_id, last_signal_id } = body;
+      if (!call_id) return err("Missing call_id", 400);
+
+      const { data: call } = await sb.from("calls").select("*").eq("id", call_id).single();
+      if (!call) return err("Call not found");
+      if (call.caller_profile_id !== profileId && call.callee_profile_id !== profileId) return err("Access denied");
+
+      // Auto-timeout ringing calls after 30s
+      if (call.status === "ringing") {
+        const ringDuration = Date.now() - new Date(call.started_at).getTime();
+        if (ringDuration > 30000) {
+          await sb.from("calls").update({ status: "ended", ended_at: now, end_reason: "missed" }).eq("id", call_id);
+          // Insert system message
+          await sb.from("messages").insert({
+            conversation_id: call.conversation_id,
+            sender_profile_id: call.caller_profile_id,
+            body: "__CALL__:missed",
+          });
+          return json({ status: "ended", end_reason: "missed", signals: [] });
+        }
+      }
+
+      // Get signals since last check
+      let signalQuery = sb.from("call_signals").select("*").eq("call_id", call_id).neq("sender_profile_id", profileId).order("created_at", { ascending: true });
+      if (last_signal_id) {
+        signalQuery = signalQuery.gt("id", last_signal_id);
+      }
+      const { data: signals } = await signalQuery;
+
+      return json({ status: call.status, connected_at: call.connected_at, ended_at: call.ended_at, end_reason: call.end_reason, signals: signals || [] });
+    }
+
+    // ─── SEND SIGNAL ───
+    if (action === "send-signal") {
+      const { call_id, signal_type, payload } = body;
+      if (!call_id || !signal_type || !payload) return err("Missing params", 400);
+
+      const { data: call } = await sb.from("calls").select("caller_profile_id, callee_profile_id").eq("id", call_id).single();
+      if (!call) return err("Call not found");
+      if (call.caller_profile_id !== profileId && call.callee_profile_id !== profileId) return err("Access denied");
+
+      const { error: sigErr } = await sb.from("call_signals").insert({ call_id, sender_profile_id: profileId, signal_type, payload });
+      if (sigErr) return err("Could not send signal");
+
+      return json({ ok: true });
+    }
+
+    // ─── ANSWER CALL ───
+    if (action === "answer-call") {
+      const { call_id } = body;
+      if (!call_id) return err("Missing call_id", 400);
+
+      const { data: call } = await sb.from("calls").select("*").eq("id", call_id).single();
+      if (!call) return err("Call not found");
+      if (call.callee_profile_id !== profileId) return err("Only the callee can answer");
+      if (call.status !== "ringing") return err("Call is no longer ringing");
+
+      const { error: updateErr } = await sb.from("calls").update({ status: "connected", connected_at: now }).eq("id", call_id);
+      if (updateErr) return err("Could not answer call");
+
+      return json({ ok: true });
+    }
+
+    // ─── DECLINE CALL ───
+    if (action === "decline-call") {
+      const { call_id } = body;
+      if (!call_id) return err("Missing call_id", 400);
+
+      const { data: call } = await sb.from("calls").select("*").eq("id", call_id).single();
+      if (!call) return err("Call not found");
+      if (call.callee_profile_id !== profileId) return err("Only the callee can decline");
+      if (call.status !== "ringing") return err("Call is no longer ringing");
+
+      await sb.from("calls").update({ status: "ended", ended_at: now, end_reason: "declined" }).eq("id", call_id);
+
+      await sb.from("messages").insert({
+        conversation_id: call.conversation_id,
+        sender_profile_id: call.callee_profile_id,
+        body: "__CALL__:declined",
+      });
+
+      // Cleanup signals
+      await sb.from("call_signals").delete().eq("call_id", call_id);
+
+      return json({ ok: true });
+    }
+
+    // ─── END CALL ───
+    if (action === "end-call") {
+      const { call_id } = body;
+      if (!call_id) return err("Missing call_id", 400);
+
+      const { data: call } = await sb.from("calls").select("*").eq("id", call_id).single();
+      if (!call) return err("Call not found");
+      if (call.caller_profile_id !== profileId && call.callee_profile_id !== profileId) return err("Access denied");
+
+      // If still ringing (caller canceled), mark as canceled
+      const reason = call.status === "ringing" ? "canceled" : "normal";
+      let duration = 0;
+      if (call.connected_at) {
+        duration = Math.round((Date.now() - new Date(call.connected_at).getTime()) / 1000);
+      }
+
+      await sb.from("calls").update({ status: "ended", ended_at: now, end_reason: reason }).eq("id", call_id);
+
+      const callBody = reason === "canceled"
+        ? "__CALL__:canceled"
+        : `__CALL__:ended:${duration}`;
+
+      await sb.from("messages").insert({
+        conversation_id: call.conversation_id,
+        sender_profile_id: profileId,
+        body: callBody,
+      });
+
+      // Cleanup signals
+      await sb.from("call_signals").delete().eq("call_id", call_id);
+
+      return json({ ok: true, duration });
+    }
+
+    // ─── CHECK INCOMING CALL ───
+    if (action === "check-incoming-call") {
+      const { conversation_id } = body;
+      if (!conversation_id) return err("Missing conversation_id", 400);
+
+      // Find ringing calls where current user is the callee
+      const { data: calls } = await sb.from("calls")
+        .select("id, caller_profile_id, started_at")
+        .eq("conversation_id", conversation_id)
+        .eq("callee_profile_id", profileId)
+        .eq("status", "ringing")
+        .order("started_at", { ascending: false })
+        .limit(1);
+
+      if (!calls || calls.length === 0) return json({ call: null });
+
+      const call = calls[0];
+
+      // Auto-timeout
+      const ringDuration = Date.now() - new Date(call.started_at).getTime();
+      if (ringDuration > 30000) {
+        await sb.from("calls").update({ status: "ended", ended_at: now, end_reason: "missed" }).eq("id", call.id);
+        await sb.from("messages").insert({
+          conversation_id,
+          sender_profile_id: call.caller_profile_id,
+          body: "__CALL__:missed",
+        });
+        return json({ call: null });
+      }
+
+      // Get caller name
+      const { data: callerProfile } = await sb.from("profiles").select("first_name").eq("id", call.caller_profile_id).single();
+
+      return json({ call: { id: call.id, caller_name: callerProfile?.first_name || "Someone", caller_profile_id: call.caller_profile_id } });
+    }
+
     return err("Unknown action", 400);
   } catch (e) {
     console.error("Messaging error:", e);

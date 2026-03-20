@@ -5,11 +5,15 @@ import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Video } from "lucide-react";
 import { isPuzzleMessage, PuzzleMessageBubble } from "@/components/private/PuzzleMessageBubble";
 import { MessageBubble } from "@/components/private/MessageBubble";
 import { MessageComposer, type EditingMessage } from "@/components/private/MessageComposer";
 import { ConversationToolbar } from "@/components/private/ConversationToolbar";
+import { isCallMessage, CallSystemMessage } from "@/components/private/CallSystemMessage";
+import { useVideoCall } from "@/hooks/useVideoCall";
+import { VideoCallScreen } from "@/components/private/VideoCallScreen";
+import { IncomingCallBanner } from "@/components/private/IncomingCallBanner";
 
 interface Message {
   id: string;
@@ -53,6 +57,12 @@ const AdminConversationView = () => {
     signOut();
     navigate("/");
   }, [signOut, navigate]);
+
+  const videoCall = useVideoCall({
+    token: token || "",
+    conversationId: conversationId || null,
+    onSessionExpired: handleSessionExpired,
+  });
 
   const fetchConversation = useCallback(async () => {
     if (!token || !conversationId) return;
@@ -232,13 +242,60 @@ const AdminConversationView = () => {
 
   return (
     <PrivateLayout title={conversation?.user_name || "Conversation"} fullHeight>
+      {/* Video call overlays */}
+      {videoCall.callState !== "idle" && videoCall.callState !== "ended" && (
+        <VideoCallScreen
+          callState={videoCall.callState}
+          localStream={videoCall.localStream}
+          remoteStream={videoCall.remoteStream}
+          isMuted={videoCall.isMuted}
+          isCameraOff={videoCall.isCameraOff}
+          callDuration={videoCall.callDuration}
+          endReason={videoCall.endReason}
+          onEndCall={videoCall.endCall}
+          onToggleMute={videoCall.toggleMute}
+          onToggleCamera={videoCall.toggleCamera}
+          onDismiss={videoCall.dismissEnd}
+        />
+      )}
+      {videoCall.callState === "ended" && (
+        <VideoCallScreen
+          callState={videoCall.callState}
+          localStream={null}
+          remoteStream={null}
+          isMuted={false}
+          isCameraOff={false}
+          callDuration={videoCall.callDuration}
+          endReason={videoCall.endReason}
+          onEndCall={videoCall.endCall}
+          onToggleMute={videoCall.toggleMute}
+          onToggleCamera={videoCall.toggleCamera}
+          onDismiss={videoCall.dismissEnd}
+        />
+      )}
+      {videoCall.incomingCall && videoCall.callState === "idle" && (
+        <IncomingCallBanner
+          call={videoCall.incomingCall}
+          onAccept={videoCall.acceptCall}
+          onDecline={videoCall.declineCall}
+        />
+      )}
+
       <div className="flex flex-col h-full">
         {/* Back + name bar */}
         <div className="flex items-center gap-3 border-b border-border px-3 sm:px-4 py-2.5 shrink-0">
           <Link to="/p/conversations" className="text-muted-foreground hover:text-foreground transition-colors p-1">
             <ArrowLeft size={16} />
           </Link>
-          <span className="text-sm font-medium text-foreground">{conversation?.user_name || "Conversation"}</span>
+          <span className="text-sm font-medium text-foreground flex-1">{conversation?.user_name || "Conversation"}</span>
+          <button
+            onClick={videoCall.startCall}
+            disabled={videoCall.callState !== "idle"}
+            className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-40"
+            title="Start video call"
+          >
+            <Video size={16} />
+          </button>
         </div>
 
         <ConversationToolbar
@@ -259,6 +316,17 @@ const AdminConversationView = () => {
           ) : (
             messages.map((msg, i) => {
               const isMine = msg.sender_profile_id === user?.id;
+
+              if (isCallMessage(msg.body)) {
+                return (
+                  <CallSystemMessage
+                    key={msg.id}
+                    body={msg.body}
+                    formatTime={formatTime}
+                    createdAt={msg.created_at}
+                  />
+                );
+              }
 
               if (isPuzzleMessage(msg.body)) {
                 return (
