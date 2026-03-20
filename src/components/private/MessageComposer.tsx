@@ -255,7 +255,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
 
       {/* Media preview bar */}
       {mediaPreview && (
-        <div className="border-t border-border px-3 sm:px-4 py-2 bg-secondary/30">
+        <div className="border-t border-border/30 px-3 sm:px-4 py-2 bg-secondary/15">
           <div className="relative inline-block">
             <img
               src={mediaPreview.url}
