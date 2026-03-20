@@ -1,42 +1,19 @@
 
 
-## Fix VAPID Key Pair — Generate Fresh Matching Keys
+## Save Generated VAPID Private Key
 
-### Problem
-The current `VAPID_PRIVATE_KEY` secret does not correspond to the hardcoded `VAPID_PUBLIC_KEY`. You cannot derive the correct private key from the public key — the only fix is to generate a **new matching pair** and update both sides.
+### Steps
 
-### Plan
-
-**Step 1 — Generate a fresh VAPID key pair server-side**
-
-Add a temporary `generate-vapid` action to `supabase/functions/send-push/index.ts` that:
-- Generates a new P-256 key pair using `crypto.subtle.generateKey`
-- Exports and returns both the public key (uncompressed, base64url) and the private key (`d` coordinate, base64url)
-- This action requires no auth (temporary, removed after use)
-
-**Step 2 — Call the generator, capture both keys**
-
-Invoke the edge function to get the new pair. Then:
-- Update `VAPID_PUBLIC_KEY` constant in both:
-  - `src/lib/privateNotifications.ts`
-  - `supabase/functions/send-push/index.ts`
-- Update the `VAPID_PRIVATE_KEY` secret with the new private key value
-
-**Step 3 — Remove the temporary generator action**
-
-Delete the `generate-vapid` action from the edge function code after the keys are captured.
-
-**Step 4 — Redeploy and test**
-
-- Deploy the updated edge function
-- The client's existing VAPID rotation logic will detect the public key change and force re-subscription automatically
-- Send a test push to confirm end-to-end delivery
+1. **Call the `generate-vapid` action** on the deployed `send-push` edge function to produce a fresh P-256 key pair
+2. **Update the `VAPID_PRIVATE_KEY` secret** with the returned private key (`d` coordinate)
+3. **Update `VAPID_PUBLIC_KEY`** in both:
+   - `supabase/functions/send-push/index.ts`
+   - `src/lib/privateNotifications.ts`
+4. **Remove the `generate-vapid` action** from the edge function (cleanup)
+5. **Redeploy** — the client's existing rotation logic will detect the new public key and force re-subscription automatically
 
 ### Files changed
-- `supabase/functions/send-push/index.ts` — temporary keygen action, then updated public key
-- `src/lib/privateNotifications.ts` — updated public key
-- `VAPID_PRIVATE_KEY` secret — replaced with matching private key
-
-### What is NOT touched
-- Auth, routing, messaging, notification dispatch, service worker
+- `supabase/functions/send-push/index.ts` — new public key, remove temp action
+- `src/lib/privateNotifications.ts` — new public key
+- `VAPID_PRIVATE_KEY` secret — replaced via tool
 
