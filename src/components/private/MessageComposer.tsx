@@ -47,7 +47,7 @@ interface MediaPreview {
   type: "upload" | "gif";
 }
 
-export function MessageComposer({ onSend, sending, placeholder = "Message", token, conversationId }: MessageComposerProps) {
+export function MessageComposer({ onSend, sending, placeholder = "Message", token, conversationId, editingMessage, onCancelEdit, onSaveEdit }: MessageComposerProps) {
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [gifOpen, setGifOpen] = useState(false);
@@ -55,8 +55,28 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
   const [voicePreview, setVoicePreview] = useState<VoicePreview | null>(null);
   const [uploadingVoice, setUploadingVoice] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
 
+  // When entering edit mode, populate the textarea
+  useEffect(() => {
+    if (editingMessage) {
+      setMessage(editingMessage.body);
+      setTimeout(() => {
+        const ta = textareaRef.current;
+        if (ta) {
+          ta.focus();
+          ta.selectionStart = ta.selectionEnd = ta.value.length;
+          autoResize(ta);
+        }
+      }, 50);
+    }
+  }, [editingMessage]);
+
+  const autoResize = useCallback((el: HTMLTextAreaElement) => {
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  }, []);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
