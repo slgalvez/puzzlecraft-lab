@@ -4,6 +4,7 @@ import { LayoutDashboard, MessageSquare, Users, Settings, LogOut, Puzzle, Shield
 import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import { NavLink } from "@/components/NavLink";
+import { applyChatTheme } from "@/lib/chatTheme";
 import { usePrivateNotifications } from "@/hooks/usePrivateNotifications";
 import { NotificationBanner } from "@/components/private/NotificationBanner";
 import {
