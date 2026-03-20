@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { Timer, Check, CheckCheck, Eye, Pencil } from "lucide-react";
 import { isGifMessage, getGifUrl } from "@/components/private/MessageComposer";
 import { ImageViewer } from "@/components/private/ImageViewer";
+import { AudioBubble, isAudioMessage, getAudioData } from "@/components/private/AudioBubble";
 
 const REACTION_OPTIONS = ["❤️", "👍", "😂", "‼️", "❓", "😢"];
 
