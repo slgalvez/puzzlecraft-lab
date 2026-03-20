@@ -41,12 +41,11 @@ export function MessageBubble({
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
   const [viewerOpen, setViewerOpen] = useState(false);
-  const [showEmojiInput, setShowEmojiInput] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const didLongPress = useRef(false);
   const lastTapRef = useRef(0);
   const editInputRef = useRef<HTMLTextAreaElement>(null);
-  const emojiInputRef = useRef<HTMLInputElement>(null);
+  const hiddenEmojiRef = useRef<HTMLInputElement>(null);
 
   const isViewOnce =
     isDisappearing &&
@@ -57,7 +56,7 @@ export function MessageBubble({
   const reactionEntries = Object.entries(reactions || {}).filter(([, users]) => users.length > 0);
   const hasReactions = reactionEntries.length > 0;
 
-  const closeMenu = useCallback(() => { setShowMenu(false); setShowEmojiInput(false); }, []);
+  const closeMenu = useCallback(() => { setShowMenu(false); }, []);
 
   const handleTap = useCallback(() => {
     const now = Date.now();
@@ -156,45 +155,33 @@ export function MessageBubble({
                   </button>
                 );
               })}
-              {/* Custom emoji button */}
+              {/* Custom emoji via hidden input + native keyboard */}
               <button
-                onClick={() => {
-                  setShowEmojiInput(true);
-                  setTimeout(() => emojiInputRef.current?.focus(), 50);
-                }}
+                onClick={() => hiddenEmojiRef.current?.focus()}
                 className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
               >
                 <Plus size={16} />
               </button>
+              <input
+                ref={hiddenEmojiRef}
+                type="text"
+                inputMode="text"
+                autoComplete="off"
+                className="absolute w-px h-px opacity-0 pointer-events-none"
+                style={{ left: -9999 }}
+                onInput={(e) => {
+                  const val = (e.target as HTMLInputElement).value;
+                  const emojiMatch = val.match(/(\p{Emoji_Presentation}|\p{Extended_Pictographic})/gu);
+                  if (emojiMatch && emojiMatch.length > 0) {
+                    handleReact(emojiMatch[emojiMatch.length - 1]);
+                  }
+                  (e.target as HTMLInputElement).value = "";
+                }}
+                onBlur={() => {
+                  if (hiddenEmojiRef.current) hiddenEmojiRef.current.value = "";
+                }}
+              />
             </div>
-            {/* Custom emoji input */}
-            {showEmojiInput && (
-              <div className="px-3 py-2 border-b border-border">
-                <input
-                  ref={emojiInputRef}
-                  type="text"
-                  inputMode="text"
-                  autoComplete="off"
-                  placeholder="Type or pick an emoji"
-                  className="w-full text-center text-lg bg-secondary/50 rounded-lg py-1.5 px-2 outline-none focus:ring-1 focus:ring-ring text-foreground placeholder:text-muted-foreground/50"
-                  onInput={(e) => {
-                    const val = (e.target as HTMLInputElement).value;
-                    // Extract the last emoji character(s) entered
-                    const emojiMatch = val.match(/(\p{Emoji_Presentation}|\p{Extended_Pictographic})/gu);
-                    if (emojiMatch && emojiMatch.length > 0) {
-                      const emoji = emojiMatch[emojiMatch.length - 1];
-                      handleReact(emoji);
-                      (e.target as HTMLInputElement).value = "";
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape") {
-                      setShowEmojiInput(false);
-                    }
-                  }}
-                />
-              </div>
-            )}
             {/* Actions */}
             {isMine && !isMedia && !isAudio && onEdit && (
               <button
