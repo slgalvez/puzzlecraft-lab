@@ -106,8 +106,8 @@ export function GifPicker({ token, onSelect, onClose }: GifPickerProps) {
       </div>
 
       {/* Grid */}
-      <div className="h-[260px] overflow-y-auto px-2 pb-2">
-        {loading && !searched ? (
+      <div ref={scrollRef} onScroll={handleScroll} className="h-[260px] overflow-y-auto px-2 pb-2">
+        {loading && results.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 size={24} className="animate-spin text-muted-foreground" />
           </div>
@@ -116,23 +116,30 @@ export function GifPicker({ token, onSelect, onClose }: GifPickerProps) {
             {searched ? "No GIFs found" : "Search for GIFs"}
           </div>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
-            {results.map((gif) => (
-              <button
-                key={gif.id}
-                onClick={() => onSelect(gif.full)}
-                className="relative overflow-hidden rounded-lg bg-secondary hover:ring-2 hover:ring-primary/40 transition-all active:scale-95"
-                style={{ aspectRatio: `${gif.width} / ${gif.height}` }}
-              >
-                <img
-                  src={gif.preview}
-                  alt={gif.title}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </button>
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
+              {results.map((gif) => (
+                <button
+                  key={gif.id}
+                  onClick={() => onSelect(gif.full)}
+                  className="relative overflow-hidden rounded-lg bg-secondary hover:ring-2 hover:ring-primary/40 transition-all active:scale-95"
+                  style={{ aspectRatio: `${gif.width} / ${gif.height}` }}
+                >
+                  <img
+                    src={gif.preview}
+                    alt={gif.title}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </button>
+              ))}
+            </div>
+            {loadingMore && (
+              <div className="flex justify-center py-3">
+                <Loader2 size={18} className="animate-spin text-muted-foreground" />
+              </div>
+            )}
+          </>
         )}
       </div>
 
