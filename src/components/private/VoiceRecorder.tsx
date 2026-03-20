@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Mic, Square, Play, Pause, Trash2 } from "lucide-react";
+import { FeatureHint } from "@/components/private/FeatureHint";
 
 export interface VoicePreview {
   blob: Blob;
