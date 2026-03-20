@@ -519,10 +519,18 @@ export function CryptogramSolver({ data, onComplete, savedState, onSaveProgress,
   const inputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
 
   const encodedLetters = useMemo(() => [...new Set(data.encoded.split("").filter(ch => /[A-Z]/.test(ch)))], [data.encoded]);
-  const editableIndices = useMemo(() =>
-    data.encoded.split("").map((ch, i) => ({ ch, i })).filter(({ ch }) => /[A-Z]/.test(ch) && !(ch in data.hints)).map(({ i }) => i),
-    [data.encoded, data.hints]
-  );
+
+  // Build editable indices using the same counter as rendering (skips spaces)
+  const editableIndices = useMemo(() => {
+    const indices: number[] = [];
+    let idx = 0;
+    for (const ch of data.encoded) {
+      if (ch === " ") continue;
+      if (/[A-Z]/.test(ch) && !(ch in data.hints)) indices.push(idx);
+      idx++;
+    }
+    return indices;
+  }, [data.encoded, data.hints]);
 
   // Listen for save-progress event
   useEffect(() => {
