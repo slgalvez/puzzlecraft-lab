@@ -142,7 +142,7 @@ export function PrivateSidebar() {
         navigate("/");
       }
     }
-  }, [token, isAdmin, user, location.pathname, signOut, navigate]);
+  }, [token, isAdmin, user, location.pathname, signOut, navigate, checkUnread]);
 
   useEffect(() => {
     fetchCounts();
