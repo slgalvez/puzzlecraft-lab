@@ -265,7 +265,7 @@ const UserConversation = () => {
                   formatTime={formatTime}
                   showTail={showTail}
                   onReact={handleReact}
-                  onEdit={handleEdit}
+                  onStartEdit={handleStartEdit}
                 />
               );
             })
