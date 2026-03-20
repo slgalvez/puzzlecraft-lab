@@ -223,7 +223,7 @@ export function MessageBubble({
             onTouchMove={handleTouchMove}
             onContextMenu={(e) => { e.preventDefault(); setShowMenu(true); }}
           >
-            <p className="text-[15px] whitespace-pre-wrap break-words leading-[1.35]">{body}</p>
+            <p className="text-[15px] whitespace-pre-wrap break-words leading-[1.35] overflow-hidden">{body}</p>
             <div className={`flex items-center gap-1 mt-0.5 ${isMine ? "justify-end" : ""}`}>
               {isDisappearing && (
                 isViewOnce ? (
