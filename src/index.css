@@ -219,13 +219,16 @@ body:has(.private-app) #root {
   overflow-wrap: break-word;
 }
 
-/* Mobile sidebar portal inherits private-app dark theme */
+/* Mobile sidebar portal inherits private-app dark theme + dynamic chat theme vars from body */
 body:has(.private-app) [data-sidebar="sidebar"][data-mobile="true"] {
   --sidebar-background: 220 14% 8%;
   --sidebar-foreground: 220 10% 85%;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
   --sidebar-accent: 220 12% 15%;
   --sidebar-accent-foreground: 220 10% 85%;
   --sidebar-border: 220 12% 16%;
+  --sidebar-ring: var(--ring);
   --secondary: 220 12% 18%;
   --secondary-foreground: 220 10% 85%;
   --muted: 220 12% 18%;

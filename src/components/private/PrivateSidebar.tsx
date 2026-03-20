@@ -64,13 +64,9 @@ export function PrivateSidebar() {
   const isAdmin = user?.role === "admin";
   const navItems = isAdmin ? adminNav : userNav;
 
-  // Re-apply chat theme when sidebar opens (ensures mobile portal gets themed)
+  // Re-apply chat theme when sidebar opens (body-level vars ensure portals inherit)
   useEffect(() => {
-    if (open) {
-      // Small delay to let the mobile portal mount
-      const t = setTimeout(() => applyChatTheme(), 50);
-      return () => clearTimeout(t);
-    }
+    if (open) applyChatTheme();
   }, [open]);
 
   // Mark tabs as "seen" when user navigates to them
