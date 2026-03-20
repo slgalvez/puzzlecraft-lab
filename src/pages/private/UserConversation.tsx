@@ -87,17 +87,7 @@ const UserConversation = () => {
     return () => clearInterval(pollRef.current);
   }, [fetchConversation]);
 
-  // Scroll to bottom: instant on first load, smooth on new messages
-  useEffect(() => {
-    if (messages.length === 0) return;
-    if (!initialScrollDone.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior });
-      initialScrollDone.current = true;
-    } else if (messages.length > prevMessageCount.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-    prevMessageCount.current = messages.length;
-  }, [messages.length]);
+  // (scroll handled by useChatScroll hook)
 
   useEffect(() => {
     if (!conversationId || !token) return;
