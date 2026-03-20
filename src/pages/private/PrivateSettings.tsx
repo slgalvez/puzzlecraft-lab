@@ -343,6 +343,7 @@ const PrivateSettings = () => {
             />
           </div>
         </div>
+      </div>
     </PrivateLayout>
   );
 };
