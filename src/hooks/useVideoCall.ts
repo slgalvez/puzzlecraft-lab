@@ -48,15 +48,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
   const remoteDescSet = useRef(false);
   const isCallerRef = useRef(false);
   const cleaningUp = useRef(false);
-
-  const api = useCallback(async (action: string, data: Record<string, unknown> = {}) => {
-    try {
-      return await invokeMessaging(action, token, data);
-    } catch (e) {
-      if (e instanceof SessionExpiredError) onSessionExpired();
-      throw e;
-    }
-  }, [token, onSessionExpired]);
+  const sessionExpiredRef = useRef(false);
 
   const cleanup = useCallback(() => {
     if (cleaningUp.current) return;
@@ -82,6 +74,26 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     remoteDescSet.current = false;
     cleaningUp.current = false;
   }, [localStream]);
+
+  const handleSessionEnded = useCallback(() => {
+    if (sessionExpiredRef.current) return;
+    sessionExpiredRef.current = true;
+    clearInterval(pollTimerRef.current);
+    clearInterval(incomingPollRef.current);
+    clearInterval(durationTimerRef.current);
+    setIncomingCall(null);
+    cleanup();
+    onSessionExpired();
+  }, [cleanup, onSessionExpired]);
+
+  const api = useCallback(async (action: string, data: Record<string, unknown> = {}) => {
+    try {
+      return await invokeMessaging(action, token, data);
+    } catch (e) {
+      if (e instanceof SessionExpiredError) handleSessionEnded();
+      throw e;
+    }
+  }, [token, handleSessionEnded]);
 
   const getMedia = useCallback(async () => {
     try {
@@ -183,7 +195,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
   const startPolling = useCallback(() => {
     clearInterval(pollTimerRef.current);
     pollTimerRef.current = setInterval(async () => {
-      if (!callIdRef.current) return;
+      if (!callIdRef.current || sessionExpiredRef.current) return;
       try {
         const data = await api("poll-call", {
           call_id: callIdRef.current,
@@ -204,7 +216,8 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
         if (data.status === "connected" && callState === "outgoing-ringing") {
           setCallState("connecting");
         }
-      } catch {
+      } catch (e) {
+        if (e instanceof SessionExpiredError) return;
         // Ignore polling errors
       }
     }, 800);
@@ -237,6 +250,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
       startPolling();
     } catch (e) {
+      if (e instanceof SessionExpiredError) return;
       setEndReason((e as Error).message || "failed");
       setCallState("ended");
       cleanup();
@@ -259,6 +273,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       setIncomingCall(null);
       startPolling();
     } catch (e) {
+      if (e instanceof SessionExpiredError) return;
       setEndReason((e as Error).message || "failed");
       setCallState("ended");
       cleanup();
@@ -308,6 +323,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     }
 
     const check = async () => {
+      if (sessionExpiredRef.current) return;
       try {
         const data = await api("check-incoming-call", { conversation_id: conversationId });
         if (data.call) {
@@ -319,7 +335,8 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
         } else {
           setIncomingCall(null);
         }
-      } catch {
+      } catch (e) {
+        if (e instanceof SessionExpiredError) return;
         // Ignore
       }
     };
