@@ -20,7 +20,30 @@ const MAX_BLACK_DENSITY: Record<CraftDifficulty, number> = { easy: 0.15, medium:
 const TARGET_INTERSECTION_FILL: Record<CraftDifficulty, number> = { easy: 0.20, medium: 0.35, hard: 0.50 };
 const TARGET_INTERSECTION_XWORD: Record<CraftDifficulty, number> = { easy: 0.30, medium: 0.50, hard: 0.70 };
 
-const MAX_REGEN_ATTEMPTS = 20;
+/** Candidates per batch */
+const CANDIDATES_PER_BATCH = 5;
+/** Max batches before accepting best-so-far */
+const MAX_BATCHES = 3;
+/** Minimum acceptable score (0-100 scale) */
+const QUALITY_THRESHOLD = 40;
+
+// ═══════════════════════════════════════════════
+// Scoring weights by difficulty
+// ═══════════════════════════════════════════════
+
+interface ScoringWeights {
+  balance: number;     // Even distribution, centering
+  connectivity: number; // Strong interconnection
+  cleanliness: number;  // No noise, jagged edges, black clusters
+  intersection: number; // Natural word crossings
+  readability: number;  // Understandable at a glance
+}
+
+const SCORING_WEIGHTS: Record<CraftDifficulty, ScoringWeights> = {
+  easy:   { balance: 0.20, connectivity: 0.15, cleanliness: 0.20, intersection: 0.15, readability: 0.30 },
+  medium: { balance: 0.25, connectivity: 0.20, cleanliness: 0.20, intersection: 0.20, readability: 0.15 },
+  hard:   { balance: 0.20, connectivity: 0.25, cleanliness: 0.15, intersection: 0.30, readability: 0.10 },
+};
 
 // ═══════════════════════════════════════════════
 // Shared quality analysis
@@ -32,10 +55,13 @@ interface GridStats {
   blackCells: number;
   blackDensity: number;
   isolatedBlacks: number;
+  blackClusterMax: number;
   thinDeadZones: number;
   fullyConnected: boolean;
   intersectionRatio: number;
   symmetryScore: number;
+  balanceScore: number;   // 0-1: how centered/evenly distributed content is
+  jaggedEdges: number;    // count of jagged boundary transitions
 }
 
 function analyzeGrid(
@@ -54,16 +80,15 @@ function analyzeGrid(
   const totalCells = size * size;
   const blackDensity = totalCells > 0 ? blackCells / totalCells : 0;
 
-  // Isolated single black cells (all 4 neighbors are white or out of bounds but has content)
+  // Isolated single black cells
   let isolatedBlacks = 0;
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
       if (grid[r][c]) continue;
-      const adj = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
+      const adj: [number, number][] = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
       const blackNeighbors = adj.filter(([nr, nc]) =>
         nr >= 0 && nr < size && nc >= 0 && nc < size && !grid[nr][nc]
       ).length;
-      // Isolated = no adjacent black cells AND surrounded by white/border
       if (blackNeighbors === 0) {
         const whiteNeighbors = adj.filter(([nr, nc]) =>
           nr >= 0 && nr < size && nc >= 0 && nc < size && grid[nr][nc]
@@ -73,12 +98,35 @@ function analyzeGrid(
     }
   }
 
-  // Thin 1-cell-wide dead zones: white cells with only 1 white neighbor
+  // Largest black cell cluster (flood-fill)
+  let blackClusterMax = 0;
+  const visitedBlack = new Set<string>();
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (grid[r][c] || visitedBlack.has(`${r}-${c}`)) continue;
+      let clusterSize = 0;
+      const stack: [number, number][] = [[r, c]];
+      while (stack.length) {
+        const [cr, cc] = stack.pop()!;
+        const key = `${cr}-${cc}`;
+        if (visitedBlack.has(key)) continue;
+        visitedBlack.add(key);
+        clusterSize++;
+        for (const [nr, nc] of [[cr - 1, cc], [cr + 1, cc], [cr, cc - 1], [cr, cc + 1]] as [number, number][]) {
+          if (nr >= 0 && nr < size && nc >= 0 && nc < size && !grid[nr][nc] && !visitedBlack.has(`${nr}-${nc}`))
+            stack.push([nr, nc]);
+        }
+      }
+      blackClusterMax = Math.max(blackClusterMax, clusterSize);
+    }
+  }
+
+  // Thin 1-cell-wide dead zones
   let thinDeadZones = 0;
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
       if (!grid[r][c]) continue;
-      const adj = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
+      const adj: [number, number][] = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
       const whiteNeighbors = adj.filter(([nr, nc]) =>
         nr >= 0 && nr < size && nc >= 0 && nc < size && grid[nr][nc]
       ).length;
@@ -86,10 +134,20 @@ function analyzeGrid(
     }
   }
 
+  // Jagged edges: transitions at the white/black boundary
+  let jaggedEdges = 0;
+  for (let r = 0; r < size - 1; r++) {
+    for (let c = 0; c < size - 1; c++) {
+      const a = !!grid[r][c], b = !!grid[r][c + 1], d = !!grid[r + 1][c], e = !!grid[r + 1][c + 1];
+      const transitions = [a !== b, b !== e, e !== d, d !== a].filter(Boolean).length;
+      if (transitions >= 3) jaggedEdges++;
+    }
+  }
+
   // Connectivity via flood-fill
   const fullyConnected = checkConnectivity(grid, size);
 
-  // Intersection ratio: cells used by 2+ words / total white cells
+  // Intersection ratio
   const cellUsage = new Map<string, number>();
   for (const p of placed) {
     const dr = p.dir === "down" ? 1 : 0;
@@ -102,27 +160,37 @@ function analyzeGrid(
   const intersections = [...cellUsage.values()].filter(v => v >= 2).length;
   const intersectionRatio = whiteCells > 0 ? intersections / whiteCells : 0;
 
-  // Symmetry score (0-1): compare grid to its 180° rotation
-  let symmetricPairs = 0;
-  let totalPairs = 0;
+  // Symmetry score (0-1)
+  let symmetricPairs = 0, totalPairs = 0;
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
       const mr = size - 1 - r, mc = size - 1 - c;
       if (r * size + c >= mr * size + mc) continue;
       totalPairs++;
-      const a = !!grid[r][c];
-      const b = !!grid[mr][mc];
-      if (a === b) symmetricPairs++;
+      if (!!grid[r][c] === !!grid[mr][mc]) symmetricPairs++;
     }
   }
   const symmetryScore = totalPairs > 0 ? symmetricPairs / totalPairs : 1;
 
-  return { size, whiteCells, blackCells, blackDensity, isolatedBlacks, thinDeadZones, fullyConnected, intersectionRatio, symmetryScore };
+  // Balance score: how close is the center of mass to the grid center
+  let comR = 0, comC = 0;
+  for (let r = 0; r < size; r++)
+    for (let c = 0; c < size; c++)
+      if (grid[r][c]) { comR += r; comC += c; }
+  if (whiteCells > 0) { comR /= whiteCells; comC /= whiteCells; }
+  const center = (size - 1) / 2;
+  const maxDist = center * 2;
+  const dist = Math.abs(comR - center) + Math.abs(comC - center);
+  const balanceScore = maxDist > 0 ? Math.max(0, 1 - dist / maxDist) : 1;
+
+  return {
+    size, whiteCells, blackCells, blackDensity, isolatedBlacks, blackClusterMax,
+    thinDeadZones, fullyConnected, intersectionRatio, symmetryScore, balanceScore, jaggedEdges,
+  };
 }
 
 function checkConnectivity(grid: string[][], size: number): boolean {
-  let startR = -1, startC = -1;
-  let totalWhite = 0;
+  let startR = -1, startC = -1, totalWhite = 0;
   for (let r = 0; r < size; r++)
     for (let c = 0; c < size; c++)
       if (grid[r][c]) {
@@ -147,7 +215,14 @@ function checkConnectivity(grid: string[][], size: number): boolean {
   return visited.size === totalWhite;
 }
 
-/** Score a layout for quality ranking. Higher = better. */
+// ═══════════════════════════════════════════════
+// Visual scoring engine (0–100 scale)
+// ═══════════════════════════════════════════════
+
+/**
+ * Score a layout across 5 weighted dimensions.
+ * Returns 0–100 where higher = better visual quality.
+ */
 function scoreLayout(
   stats: GridStats,
   difficulty: CraftDifficulty,
@@ -155,44 +230,96 @@ function scoreLayout(
   totalWords: number,
   targetIntersection: number
 ): number {
-  let score = 0;
+  const w = SCORING_WEIGHTS[difficulty];
+  const placementRatio = totalWords > 0 ? placedCount / totalWords : 0;
 
-  // Placement ratio is critical
-  const placementRatio = placedCount / totalWords;
-  score += placementRatio * 40;
-  if (placementRatio >= 1) score += 15;
+  // ── A) Balance (0–100) ──
+  let balanceRaw = stats.balanceScore * 70 + stats.symmetryScore * 30;
+  // Penalty if content clusters in one quadrant
+  balanceRaw = Math.min(100, balanceRaw);
 
-  // Connectivity bonus
-  if (stats.fullyConnected) score += 10;
-  else score -= 30; // hard penalty
+  // ── B) Connectivity (0–100) ──
+  let connectRaw = stats.fullyConnected ? 80 : 0;
+  // Bonus for high placement ratio (more words = better connected)
+  connectRaw += placementRatio * 20;
+  connectRaw = Math.min(100, connectRaw);
 
-  // Black density within bounds
+  // ── C) Cleanliness (0–100) ──
+  let cleanRaw = 100;
+  // Isolated black cells: -15 each
+  cleanRaw -= stats.isolatedBlacks * 15;
+  // Large black clusters: -5 per cell above 3
+  cleanRaw -= Math.max(0, stats.blackClusterMax - 3) * 5;
+  // Thin dead zones: -8 each above 2
+  cleanRaw -= Math.max(0, stats.thinDeadZones - 2) * 8;
+  // Jagged edges: -4 each above 3
+  cleanRaw -= Math.max(0, stats.jaggedEdges - 3) * 4;
+  // Black density over limit
   const maxDensity = MAX_BLACK_DENSITY[difficulty];
-  if (stats.blackDensity <= maxDensity) score += 8;
-  else score -= (stats.blackDensity - maxDensity) * 100;
+  if (stats.blackDensity > maxDensity) cleanRaw -= (stats.blackDensity - maxDensity) * 200;
+  cleanRaw = Math.max(0, Math.min(100, cleanRaw));
 
-  // Isolated black cells penalty
-  score -= stats.isolatedBlacks * 3;
-
-  // Thin dead zones penalty
-  score -= Math.max(0, stats.thinDeadZones - 2) * 1.5;
-
-  // Intersection quality
+  // ── D) Intersection Quality (0–100) ──
   const intDiff = Math.abs(stats.intersectionRatio - targetIntersection);
-  score += Math.max(0, 10 - intDiff * 30);
+  let intRaw = Math.max(0, 100 - intDiff * 300);
+  // Bonus for exceeding target (better than missing)
+  if (stats.intersectionRatio >= targetIntersection) intRaw = Math.min(100, intRaw + 10);
+  intRaw = Math.min(100, intRaw);
 
-  // Symmetry bonus (more important for crosswords)
-  score += stats.symmetryScore * 5;
+  // ── E) Readability (0–100) ──
+  let readRaw = 100;
+  // Placement ratio is the biggest readability factor
+  readRaw *= placementRatio;
+  // Symmetry helps readability
+  readRaw = readRaw * 0.7 + stats.symmetryScore * 30;
+  // Jagged edges hurt readability
+  readRaw -= stats.jaggedEdges * 3;
+  readRaw = Math.max(0, Math.min(100, readRaw));
 
-  return score;
+  // ── Weighted total ──
+  const total =
+    balanceRaw * w.balance +
+    connectRaw * w.connectivity +
+    cleanRaw * w.cleanliness +
+    intRaw * w.intersection +
+    readRaw * w.readability;
+
+  // ── Hard penalties (applied after weighting) ──
+  let penalty = 0;
+  if (!stats.fullyConnected) penalty += 30;
+  if (stats.isolatedBlacks > 3) penalty += 15;
+  if (stats.blackClusterMax > 6) penalty += 10;
+  if (placementRatio < 0.5) penalty += 20;
+
+  return Math.max(0, Math.min(100, total - penalty));
 }
 
-/** Passes quality constraints? */
-function passesQuality(stats: GridStats, difficulty: CraftDifficulty): boolean {
-  if (!stats.fullyConnected) return false;
-  if (stats.blackDensity > MAX_BLACK_DENSITY[difficulty] + 0.05) return false;
-  if (stats.isolatedBlacks > 2) return false;
-  return true;
+/**
+ * Generate multiple candidates, score them all, and return the best.
+ * If no candidate meets the quality threshold after MAX_BATCHES,
+ * returns the highest-scoring candidate found.
+ */
+function selectBestLayout<T>(
+  buildFn: (seed: number) => { data: T; score: number },
+  baseSeed: number
+): T {
+  let bestData: T | null = null;
+  let bestScore = -Infinity;
+
+  for (let batch = 0; batch < MAX_BATCHES; batch++) {
+    for (let i = 0; i < CANDIDATES_PER_BATCH; i++) {
+      const seed = (baseSeed + batch * CANDIDATES_PER_BATCH * 7919 + i * 7919) % 2147483646 || 1;
+      const { data, score } = buildFn(seed);
+      if (score > bestScore) {
+        bestScore = score;
+        bestData = data;
+      }
+    }
+    // If we found a high-quality layout, stop early
+    if (bestScore >= QUALITY_THRESHOLD) break;
+  }
+
+  return bestData!;
 }
 
 // ═══════════════════════════════════════════════
