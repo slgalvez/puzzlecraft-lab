@@ -225,5 +225,6 @@ export function PrivateSidebar() {
         </div>
       </SidebarContent>
     </Sidebar>
+    </>
   );
 }
