@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { GifPicker } from "@/components/private/GifPicker";
+import { VoiceRecorder, VoicePreviewBar, type VoicePreview } from "@/components/private/VoiceRecorder";
 
 interface MessageComposerProps {
   onSend: (message: string) => Promise<void>;
@@ -43,20 +44,27 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
   const [uploading, setUploading] = useState(false);
   const [gifOpen, setGifOpen] = useState(false);
   const [mediaPreview, setMediaPreview] = useState<MediaPreview | null>(null);
+  const [voicePreview, setVoicePreview] = useState<VoicePreview | null>(null);
+  const [uploadingVoice, setUploadingVoice] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // If there's a media preview staged, send that
+    // Voice note staged — upload and send
+    if (voicePreview) {
+      await handleSendVoice();
+      return;
+    }
+
+    // Media preview staged — send
     if (mediaPreview) {
       const url = mediaPreview.url;
       setMediaPreview(null);
       try {
         await onSend(`__MEDIA__:${url}`);
       } catch {
-        // Restore preview on failure
         setMediaPreview({ url, type: mediaPreview.type });
       }
       return;
@@ -72,14 +80,53 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
     }
   };
 
+  const handleSendVoice = async () => {
+    if (!voicePreview || !conversationId || !token) return;
+    setUploadingVoice(true);
+    try {
+      const formData = new FormData();
+      formData.append("token", token);
+      formData.append("conversation_id", conversationId);
+
+      // Create a proper file from the blob
+      const ext = voicePreview.blob.type.includes("mp4") ? "mp4" : "webm";
+      const file = new File([voicePreview.blob], `voice.${ext}`, { type: voicePreview.blob.type });
+      formData.append("file", file);
+
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-media`,
+        {
+          method: "POST",
+          headers: {
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: formData,
+        }
+      );
+
+      const data = await resp.json();
+      if (!resp.ok || data.error) {
+        toast({ title: "Upload failed", description: data.error || "Please try again." });
+        return;
+      }
+
+      // Send as audio message with duration
+      const dur = Math.round(voicePreview.duration);
+      URL.revokeObjectURL(voicePreview.url);
+      setVoicePreview(null);
+      await onSend(`__AUDIO__:${data.url}|${dur}`);
+    } catch {
+      toast({ title: "Upload failed", description: "Please try again." });
+    } finally {
+      setUploadingVoice(false);
+    }
+  };
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !conversationId || !token) return;
-
-    // Reset input so same file can be selected again
     e.target.value = "";
 
-    // Validate client-side
     const allowed = ["image/gif", "image/png", "image/jpeg", "image/webp"];
     if (!allowed.includes(file.type)) {
       toast({ title: "Unsupported file type", description: "Use GIF, PNG, JPEG, or WebP." });
@@ -114,7 +161,6 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
         return;
       }
 
-      // Stage preview instead of auto-sending
       setMediaPreview({ url: data.url, type: "upload" });
     } catch {
       toast({ title: "Upload failed", description: "Please try again." });
@@ -125,15 +171,18 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
 
   const handleGifSelect = (gifUrl: string) => {
     setGifOpen(false);
-    // Stage preview instead of auto-sending
     setMediaPreview({ url: gifUrl, type: "gif" });
   };
 
-  const clearPreview = () => {
-    setMediaPreview(null);
+  const clearPreview = () => setMediaPreview(null);
+
+  const clearVoicePreview = () => {
+    if (voicePreview) URL.revokeObjectURL(voicePreview.url);
+    setVoicePreview(null);
   };
 
-  const canSend = mediaPreview || message.trim();
+  const canSend = voicePreview || mediaPreview || message.trim();
+  const hasVoiceOrMedia = !!voicePreview || !!mediaPreview;
 
   return (
     <div className="shrink-0">
@@ -171,55 +220,84 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
         </div>
       )}
 
+      {/* Voice preview bar */}
+      {voicePreview && (
+        <VoicePreviewBar preview={voicePreview} onDiscard={clearVoicePreview} />
+      )}
+
       <form
         onSubmit={handleSubmit}
         className="border-t border-border px-3 sm:px-4 py-2"
         style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom, 0px))" }}
       >
         <div className="flex items-end gap-2">
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading || !conversationId}
-            className={`shrink-0 p-2 rounded-full transition-colors ${
-              uploading
-                ? "text-primary bg-primary/10"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-            }`}
-            title="Send an image"
-          >
-            {uploading ? <Loader2 size={18} className="animate-spin" /> : <ImageIcon size={18} />}
-          </button>
-          <button
-            type="button"
-            onClick={() => setGifOpen((v) => !v)}
-            disabled={uploading || !conversationId}
-            className={`shrink-0 p-2 rounded-full transition-colors text-xs font-bold ${
-              gifOpen
-                ? "text-primary bg-primary/10"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-            }`}
-            title="Search GIFs"
-          >
-            GIF
-          </button>
-          <input
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder={mediaPreview ? "Add a caption or send" : placeholder}
-            className="msg-composer-input flex-1 text-[15px] py-2 border bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
-            maxLength={5000}
-            autoComplete="off"
-            disabled={uploading}
-          />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={sending || uploading || !canSend}
-            className="h-9 w-9 rounded-full shrink-0 transition-transform active:scale-95"
-          >
-            <Send size={15} className="-translate-x-[1px]" />
-          </Button>
+          {!hasVoiceOrMedia && (
+            <>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading || !conversationId}
+                className={`shrink-0 p-2 rounded-full transition-colors ${
+                  uploading
+                    ? "text-primary bg-primary/10"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                }`}
+                title="Send an image"
+              >
+                {uploading ? <Loader2 size={18} className="animate-spin" /> : <ImageIcon size={18} />}
+              </button>
+              <button
+                type="button"
+                onClick={() => setGifOpen((v) => !v)}
+                disabled={uploading || !conversationId}
+                className={`shrink-0 p-2 rounded-full transition-colors text-xs font-bold ${
+                  gifOpen
+                    ? "text-primary bg-primary/10"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                }`}
+                title="Search GIFs"
+              >
+                GIF
+              </button>
+            </>
+          )}
+
+          {/* Show voice recorder inline when recording, otherwise show text input */}
+          {!hasVoiceOrMedia && (
+            <input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder={placeholder}
+              className="msg-composer-input flex-1 text-[15px] py-2 border bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
+              maxLength={5000}
+              autoComplete="off"
+              disabled={uploading}
+            />
+          )}
+
+          {/* Voice recorder: show mic when no text, or inline recording UI */}
+          {!hasVoiceOrMedia && !message.trim() && (
+            <VoiceRecorder
+              disabled={uploading || !conversationId}
+              onPreviewReady={setVoicePreview}
+            />
+          )}
+
+          {/* Send button: show when there's content to send */}
+          {(canSend || hasVoiceOrMedia) && (
+            <Button
+              type="submit"
+              size="icon"
+              disabled={sending || uploading || uploadingVoice || !canSend}
+              className="h-9 w-9 rounded-full shrink-0 transition-transform active:scale-95"
+            >
+              {uploadingVoice ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <Send size={15} className="-translate-x-[1px]" />
+              )}
+            </Button>
+          )}
         </div>
       </form>
     </div>

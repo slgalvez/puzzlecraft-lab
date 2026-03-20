@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { Timer, Check, CheckCheck, Eye, Pencil } from "lucide-react";
 import { isGifMessage, getGifUrl } from "@/components/private/MessageComposer";
 import { ImageViewer } from "@/components/private/ImageViewer";
+import { AudioBubble, isAudioMessage, getAudioData } from "@/components/private/AudioBubble";
 
 const REACTION_OPTIONS = ["❤️", "👍", "😂", "‼️", "❓", "😢"];
 
@@ -110,7 +111,9 @@ export function MessageBubble({
     setEditing(false);
   };
 
-  const isMedia = isGifMessage(body);
+  const isAudio = isAudioMessage(body);
+  const audioData = isAudio ? getAudioData(body) : null;
+  const isMedia = !isAudio && isGifMessage(body);
   const mediaUrl = isMedia ? getGifUrl(body) : "";
 
   const bubbleClass = isMine
@@ -153,7 +156,7 @@ export function MessageBubble({
               })}
             </div>
             {/* Actions */}
-            {isMine && !isMedia && onEdit && (
+            {isMine && !isMedia && !isAudio && onEdit && (
               <button
                 onClick={handleStartEdit}
                 className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-foreground hover:bg-secondary/60 transition-colors"
@@ -187,6 +190,36 @@ export function MessageBubble({
               <button onClick={handleSaveEdit} className="text-[11px] text-primary font-medium px-2 py-0.5 rounded hover:bg-primary/10">
                 Save
               </button>
+            </div>
+          </div>
+        ) : isAudio && audioData ? (
+          <div
+            className={`px-3.5 py-2.5 ${bubbleClass} select-none`}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={() => clearTimeout(longPressTimer.current)}
+            onTouchMove={handleTouchMove}
+            onContextMenu={(e) => { e.preventDefault(); setShowMenu(true); }}
+          >
+            <AudioBubble src={audioData.url} isMine={isMine} duration={audioData.duration} />
+            <div className={`flex items-center gap-1 mt-1 ${isMine ? "justify-end" : ""}`}>
+              {isDisappearing && (
+                isViewOnce ? (
+                  <Eye size={8} className={iconColor} />
+                ) : (
+                  <Timer size={8} className={iconColor} />
+                )
+              )}
+              <span className={`text-[10px] leading-none ${timeColor}`}>
+                {formatTime(createdAt)}
+              </span>
+              {isMine && (
+                readAt ? (
+                  <CheckCheck size={10} className={timeColor} />
+                ) : (
+                  <Check size={10} className="text-primary-foreground/35" />
+                )
+              )}
             </div>
           </div>
         ) : isMedia ? (

@@ -22,7 +22,7 @@ async function verifyToken(token: string) {
   return payload as { sub: string; role: string; session_version?: number };
 }
 
-const ALLOWED_TYPES = ["image/gif", "image/png", "image/jpeg", "image/webp"];
+const ALLOWED_TYPES = ["image/gif", "image/png", "image/jpeg", "image/webp", "audio/webm", "audio/mp4", "audio/ogg", "audio/mpeg", "audio/wav"];
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 Deno.serve(async (req) => {
@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
 
     // Validate file
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return new Response(JSON.stringify({ error: "File type not allowed. Use GIF, PNG, JPEG, or WebP." }), {
+      return new Response(JSON.stringify({ error: "File type not allowed." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
