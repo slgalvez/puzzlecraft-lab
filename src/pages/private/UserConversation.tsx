@@ -282,8 +282,17 @@ const UserConversation = () => {
       )}
 
       <div className="flex flex-col h-full">
-        {/* Video call button */}
-        <div className="flex items-center justify-end px-3 sm:px-4 pt-1 shrink-0">
+        {/* Header with nickname + video call */}
+        <div className="flex items-center gap-2 px-3 sm:px-4 pt-1 shrink-0 justify-end">
+          {adminProfileId && (
+            <NicknameEditor
+              contactProfileId={adminProfileId}
+              currentNickname={nicknames[adminProfileId]}
+              defaultName="Conversation"
+              onSave={setNickname}
+              onRemove={removeNickname}
+            />
+          )}
           <button
             onClick={videoCall.startCall}
             disabled={videoCall.callState !== "idle"}
