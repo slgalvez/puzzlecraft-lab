@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     }
 
     // Validate file
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    if (!isAllowedType(file.type)) {
       return new Response(JSON.stringify({ error: "File type not allowed." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
