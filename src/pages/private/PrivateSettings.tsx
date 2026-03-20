@@ -191,7 +191,7 @@ const PrivateSettings = () => {
       if (result.ok) {
         setTestResult(`Sent to ${result.sent} device(s)`);
       } else {
-        setTestResult(result.error || "No devices subscribed");
+        setTestResult(result.error || "Delivery failed");
       }
     } catch {
       setTestResult("Failed to send");

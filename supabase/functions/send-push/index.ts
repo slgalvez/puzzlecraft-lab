@@ -72,7 +72,9 @@ const VAPID_PUBLIC_KEY =
   "BJrEgKHA6zTGGE2HCv4B9Fr8zjBIP7ebEyR94U2YWbEA9iM0WYTCb2BbWDizAWbdFuEOV90FX11dMqOi1YkCcP0";
 
 async function createVapidJwt(endpoint: string): Promise<string> {
-  const privateKeyB64url = Deno.env.get("VAPID_PRIVATE_KEY")!;
+  // Normalize private key to strict base64url (no +, /, or = padding)
+  const rawKey = Deno.env.get("VAPID_PRIVATE_KEY")!;
+  const privateKeyB64url = rawKey.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
   const audience = new URL(endpoint).origin;
 
   const header = { typ: "JWT", alg: "ES256" };
@@ -420,7 +422,14 @@ Deno.serve(async (req) => {
         }
       }
 
-      return json({ ok: sent > 0, sent, failed, results });
+      // Include explicit error when all deliveries failed
+      const firstFailure = results.find((r) => r.status !== 200 && r.status !== 201);
+      const errorMsg =
+        sent === 0 && failed > 0 && firstFailure
+          ? `Push delivery failed (${firstFailure.status} ${firstFailure.statusText})`
+          : undefined;
+
+      return json({ ok: sent > 0, sent, failed, results, ...(errorMsg ? { error: errorMsg } : {}) });
     }
 
     // ── SEND PUSH (internal) ──
