@@ -116,6 +116,7 @@ export function PrivateSidebar() {
 
       setUnreadCount(msgUnread);
       setUnsolvedPuzzles(unsolved);
+      checkUnread(msgUnread);
 
       const overviewSeen = getSeenTimestamp(SEEN_KEY_OVERVIEW);
       const isOnOverview = location.pathname === "/p";
