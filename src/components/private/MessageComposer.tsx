@@ -104,7 +104,14 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
     }
   };
 
-  return (
+  const handleGifSelect = async (gifUrl: string) => {
+    setGifOpen(false);
+    try {
+      await onSend(`__MEDIA__:${gifUrl}`);
+    } catch {
+      // silent
+    }
+  };
     <div className="shrink-0">
       <input
         ref={fileInputRef}
