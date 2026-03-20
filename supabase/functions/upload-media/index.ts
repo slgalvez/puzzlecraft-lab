@@ -109,12 +109,13 @@ Deno.serve(async (req) => {
     const ext = file.name.split(".").pop()?.toLowerCase() || "gif";
     const path = `${conversationId}/${crypto.randomUUID()}.${ext}`;
 
-    // Upload to storage
+    // Upload to storage — strip codec params from contentType (e.g. audio/webm;codecs=opus → audio/webm)
     const fileBuffer = await file.arrayBuffer();
+    const cleanContentType = file.type.split(";")[0].trim();
     const { error: uploadError } = await sb.storage
       .from("chat-media")
       .upload(path, fileBuffer, {
-        contentType: file.type,
+        contentType: cleanContentType,
         upsert: false,
       });
 
