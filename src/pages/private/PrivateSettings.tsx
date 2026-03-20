@@ -10,6 +10,11 @@ import { setFocusLossEnabled } from "@/lib/focusLossSettings";
 import { Plus } from "lucide-react";
 import { FeatureHint } from "@/components/private/FeatureHint";
 import {
+  getNotificationsEnabled,
+  setNotificationsEnabled,
+  requestPushPermission,
+} from "@/lib/privateNotifications";
+import {
   CHAT_THEMES,
   getChatTheme,
   setChatTheme,
