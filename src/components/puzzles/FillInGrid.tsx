@@ -334,7 +334,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
       }
 
       if (badSlots.length === 0) {
-        const { isNewBest } = timer.solve({ assisted: hintCount.current > 0 });
+        const { isNewBest } = timer.solve({ assisted: hintCount.current > 0, hintsUsed: hintCount.current, mistakesCount: errorCheckCount.current });
         clearProgress(timerKey);
         toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Puzzle solved correctly!" });
         onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });

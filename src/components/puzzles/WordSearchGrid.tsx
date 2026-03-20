@@ -130,7 +130,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
       setFoundWords(newFound);
       setFoundCells((prev) => { const next = new Set(prev); cells.forEach((c) => next.add(c)); return next; });
       if (newFound.size === puzzle.words.length) {
-        const { isNewBest } = timer.solve({ assisted: hintCount.current > 0 });
+        const { isNewBest } = timer.solve({ assisted: hintCount.current > 0, hintsUsed: hintCount.current, mistakesCount: errorCheckCount.current });
         clearProgress(timerKey);
         toast({
           title: "🎉 Congratulations!",

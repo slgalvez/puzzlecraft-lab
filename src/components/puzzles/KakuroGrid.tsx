@@ -274,7 +274,7 @@ const KakuroGrid = ({ seed, difficulty: rawDifficulty, onNewPuzzle, onSolve, tim
     setErrors(errs);
     if (errs.size > 0) errorCheckCount.current++;
     if (errs.size === 0 && filled) {
-      const { isNewBest } = timer.solve({ assisted: hintCount.current > 0 });
+      const { isNewBest } = timer.solve({ assisted: hintCount.current > 0, hintsUsed: hintCount.current, mistakesCount: errorCheckCount.current });
       clearProgress(timerKey);
       toast({ title: "🎉 Congratulations!", description: isNewBest ? "New best time! 🏆" : "Puzzle solved correctly!" });
       onSolve?.({ elapsed: timer.elapsed, completed: true, resets: resetCount.current, checks: checkCount.current, errorChecks: errorCheckCount.current });
