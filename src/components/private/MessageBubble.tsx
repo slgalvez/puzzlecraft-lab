@@ -6,6 +6,7 @@ import { ImageViewer } from "@/components/private/ImageViewer";
 import { AudioBubble, isAudioMessage, getAudioData } from "@/components/private/AudioBubble";
 import { FeatureHint } from "@/components/private/FeatureHint";
 import { isHintSeen, markHintSeen } from "@/lib/featureHints";
+import { hapticTap, hapticStrong } from "@/lib/haptic";
 
 const REACTION_OPTIONS = ["❤️", "👍", "😂", "‼️", "❓", "😢"];
 
