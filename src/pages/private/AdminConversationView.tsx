@@ -14,6 +14,8 @@ import { isCallMessage, CallSystemMessage } from "@/components/private/CallSyste
 import { useVideoCall } from "@/hooks/useVideoCall";
 import { VideoCallScreen } from "@/components/private/VideoCallScreen";
 import { IncomingCallBanner } from "@/components/private/IncomingCallBanner";
+import { useNicknames } from "@/hooks/useNicknames";
+import { NicknameEditor } from "@/components/private/NicknameEditor";
 
 interface Message {
   id: string;
@@ -57,6 +59,8 @@ const AdminConversationView = () => {
     signOut();
     navigate("/");
   }, [signOut, navigate]);
+
+  const { resolve, setNickname, removeNickname, nicknames } = useNicknames(token, handleSessionExpired);
 
   const videoCall = useVideoCall({
     token: token || "",
@@ -241,7 +245,7 @@ const AdminConversationView = () => {
   }
 
   return (
-    <PrivateLayout title={conversation?.user_name || "Conversation"} fullHeight>
+    <PrivateLayout title={conversation ? resolve(conversation.user_profile_id, conversation.user_name) : "Conversation"} fullHeight>
       {/* Video call overlays */}
       {videoCall.callState !== "idle" && videoCall.callState !== "ended" && (
         <VideoCallScreen
@@ -276,6 +280,7 @@ const AdminConversationView = () => {
       {videoCall.incomingCall && videoCall.callState === "idle" && (
         <IncomingCallBanner
           call={videoCall.incomingCall}
+          resolvedCallerName={resolve(videoCall.incomingCall.callerProfileId, videoCall.incomingCall.callerName)}
           onAccept={videoCall.acceptCall}
           onDecline={videoCall.declineCall}
         />
@@ -287,7 +292,18 @@ const AdminConversationView = () => {
           <Link to="/p/conversations" className="text-muted-foreground hover:text-foreground transition-colors p-1">
             <ArrowLeft size={16} />
           </Link>
-          <span className="text-sm font-medium text-foreground flex-1">{conversation?.user_name || "Conversation"}</span>
+          <span className="text-sm font-medium text-foreground flex-1">
+            {conversation ? resolve(conversation.user_profile_id, conversation.user_name) : "Conversation"}
+          </span>
+          {conversation && (
+            <NicknameEditor
+              contactProfileId={conversation.user_profile_id}
+              currentNickname={nicknames[conversation.user_profile_id]}
+              defaultName={conversation.user_name}
+              onSave={setNickname}
+              onRemove={removeNickname}
+            />
+          )}
           <button
             onClick={videoCall.startCall}
             disabled={videoCall.callState !== "idle"}

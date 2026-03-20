@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Timer, Trash2, MessageSquare, Puzzle, Plus, Check, Clock, Send } from "lucide-react";
+import { useNicknames } from "@/hooks/useNicknames";
 
 interface ConversationSummary {
   id: string;
@@ -64,6 +65,8 @@ const AdminDashboard = () => {
     signOut();
     navigate("/");
   }, [signOut, navigate]);
+
+  const { resolve } = useNicknames(token, handleSessionExpired);
 
   const fetchData = useCallback(async () => {
     if (!token || !user) return;
@@ -387,7 +390,7 @@ const AdminDashboard = () => {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <p className={`text-[13px] truncate ${isUnread ? "font-semibold text-foreground" : "font-medium text-foreground/80"}`}>
-                          {conv.user_name}
+                          {resolve(conv.user_profile_id, conv.user_name)}
                         </p>
                         {conv.disappearing_enabled && (
                           <Timer size={10} className="text-primary/60 shrink-0" />

@@ -1388,6 +1388,51 @@ Deno.serve(async (req) => {
       return json({ call: { id: call.id, caller_name: callerProfile?.first_name || "Someone", caller_profile_id: call.caller_profile_id } });
     }
 
+    // ─── SET NICKNAME ───
+    if (action === "set-nickname") {
+      const { contact_profile_id, nickname } = body;
+      if (!contact_profile_id || typeof nickname !== "string") return err("Invalid params", 400);
+      const trimmed = nickname.trim();
+      if (trimmed.length === 0 || trimmed.length > 100) return err("Nickname must be 1-100 characters", 400);
+
+      const { error: upsertErr } = await sb
+        .from("contact_nicknames")
+        .upsert(
+          { owner_profile_id: profileId, contact_profile_id, nickname: trimmed, updated_at: now },
+          { onConflict: "owner_profile_id,contact_profile_id" }
+        );
+      if (upsertErr) return err("Could not set nickname");
+      return json({ ok: true, nickname: trimmed });
+    }
+
+    // ─── REMOVE NICKNAME ───
+    if (action === "remove-nickname") {
+      const { contact_profile_id } = body;
+      if (!contact_profile_id) return err("Missing contact_profile_id", 400);
+
+      await sb
+        .from("contact_nicknames")
+        .delete()
+        .eq("owner_profile_id", profileId)
+        .eq("contact_profile_id", contact_profile_id);
+
+      return json({ ok: true });
+    }
+
+    // ─── GET NICKNAMES ───
+    if (action === "get-nicknames") {
+      const { data: nicknames } = await sb
+        .from("contact_nicknames")
+        .select("contact_profile_id, nickname")
+        .eq("owner_profile_id", profileId);
+
+      const map: Record<string, string> = {};
+      for (const n of nicknames || []) {
+        map[n.contact_profile_id] = n.nickname;
+      }
+      return json({ nicknames: map });
+    }
+
     return err("Unknown action", 400);
   } catch (e) {
     console.error("Messaging error:", e);

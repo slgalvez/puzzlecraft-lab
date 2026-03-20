@@ -14,6 +14,8 @@ import { isCallMessage, CallSystemMessage } from "@/components/private/CallSyste
 import { useVideoCall } from "@/hooks/useVideoCall";
 import { VideoCallScreen } from "@/components/private/VideoCallScreen";
 import { IncomingCallBanner } from "@/components/private/IncomingCallBanner";
+import { useNicknames } from "@/hooks/useNicknames";
+import { NicknameEditor } from "@/components/private/NicknameEditor";
 
 interface Message {
   id: string;
@@ -31,6 +33,7 @@ const UserConversation = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [adminProfileId, setAdminProfileId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -51,6 +54,8 @@ const UserConversation = () => {
     navigate("/");
   }, [signOut, navigate]);
 
+  const { resolve, setNickname, removeNickname, nicknames } = useNicknames(token, handleSessionExpired);
+
   const videoCall = useVideoCall({
     token: token || "",
     conversationId,
@@ -62,6 +67,7 @@ const UserConversation = () => {
     try {
       const data = await invokeMessaging("get-my-conversation", token);
       setConversationId(data.conversation.id);
+      setAdminProfileId(data.conversation.admin_profile_id);
       setMessages(data.messages);
       setDisappearingEnabled(data.conversation.disappearing_enabled);
       setDisappearingDuration(data.conversation.disappearing_duration);
@@ -270,14 +276,24 @@ const UserConversation = () => {
       {videoCall.incomingCall && videoCall.callState === "idle" && (
         <IncomingCallBanner
           call={videoCall.incomingCall}
+          resolvedCallerName={resolve(videoCall.incomingCall.callerProfileId, videoCall.incomingCall.callerName)}
           onAccept={videoCall.acceptCall}
           onDecline={videoCall.declineCall}
         />
       )}
 
       <div className="flex flex-col h-full">
-        {/* Video call button */}
-        <div className="flex items-center justify-end px-3 sm:px-4 pt-1 shrink-0">
+        {/* Header with nickname + video call */}
+        <div className="flex items-center gap-2 px-3 sm:px-4 pt-1 shrink-0 justify-end">
+          {adminProfileId && (
+            <NicknameEditor
+              contactProfileId={adminProfileId}
+              currentNickname={nicknames[adminProfileId]}
+              defaultName="Conversation"
+              onSave={setNickname}
+              onRemove={removeNickname}
+            />
+          )}
           <button
             onClick={videoCall.startCall}
             disabled={videoCall.callState !== "idle"}

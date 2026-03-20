@@ -173,6 +173,48 @@ export type Database = {
           },
         ]
       }
+      contact_nicknames: {
+        Row: {
+          contact_profile_id: string
+          created_at: string
+          id: string
+          nickname: string
+          owner_profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          contact_profile_id: string
+          created_at?: string
+          id?: string
+          nickname: string
+          owner_profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          contact_profile_id?: string
+          created_at?: string
+          id?: string
+          nickname?: string
+          owner_profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_nicknames_contact_profile_id_fkey"
+            columns: ["contact_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_nicknames_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           admin_profile_id: string
