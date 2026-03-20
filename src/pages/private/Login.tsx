@@ -74,9 +74,30 @@ export default function LoginPage() {
     }
 
     setSubmitting(true);
-    const { error: signInError } = await signIn(firstName, lastName, puzzleCode);
-    if (signInError) setError("Access unavailable");
-    setSubmitting(false);
+    console.debug("[login] submitting...");
+    try {
+      // Race signIn against a 20s timeout so "Entering" never hangs forever
+      const result = await Promise.race([
+        signIn(firstName, lastName, puzzleCode),
+        new Promise<{ error: string }>((resolve) =>
+          setTimeout(() => {
+            console.warn("[login] signIn timed out after 20s");
+            resolve({ error: "Request timed out — please try again" });
+          }, 20_000)
+        ),
+      ]);
+      if (result.error) {
+        console.debug("[login] error:", result.error);
+        setError(result.error === "Request timed out — please try again" ? result.error : "Access unavailable");
+      } else {
+        console.debug("[login] success");
+      }
+    } catch {
+      console.warn("[login] unexpected error");
+      setError("Access unavailable");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

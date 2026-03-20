@@ -61,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Periodic session validity check — detects if another login invalidated this session
+  // This runs in the background and must NEVER block app entry
   useEffect(() => {
     if (!token || !user) {
       if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
@@ -69,9 +70,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const checkSession = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke("messaging", {
+        console.debug("[auth] checking session validity...");
+        // 10s timeout so a slow network never blocks the UI
+        const timeoutPromise = new Promise<{ data: null; error: "timeout" }>((resolve) =>
+          setTimeout(() => resolve({ data: null, error: "timeout" }), 10_000)
+        );
+        const invokePromise = supabase.functions.invoke("messaging", {
           body: { action: "verify-session", token },
         });
+        const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
+
+        if (error === "timeout") {
+          console.warn("[auth] session check timed out — skipping");
+          return; // Don't invalidate session on timeout
+        }
 
         let sessionGone = false;
 
@@ -104,38 +116,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (sessionGone) {
+          console.debug("[auth] session invalidated remotely");
           if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
           localStorage.removeItem(SESSION_KEY);
           setUser(null);
           setToken(null);
           setSessionEnded(true);
+        } else {
+          console.debug("[auth] session valid");
         }
       } catch {
         // Network error — ignore, will retry
+        console.debug("[auth] session check network error — skipping");
       }
     };
 
-    checkSession();
+    // Delay first check so it doesn't race with initial page load
+    const initialTimer = setTimeout(checkSession, 3000);
 
     checkIntervalRef.current = setInterval(checkSession, SESSION_CHECK_INTERVAL);
     return () => {
+      clearTimeout(initialTimer);
       if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
     };
   }, [token, user]);
 
   const signIn = useCallback(async (firstName: string, lastName: string, password: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke("private-login", {
+      console.debug("[auth] signIn: calling private-login...");
+      const invokePromise = supabase.functions.invoke("private-login", {
         body: { first_name: firstName.trim(), last_name: lastName.trim(), password },
       });
-      if (error || !data?.token) return { error: "Access unavailable" };
+      // 15s timeout so signIn never hangs forever
+      const timeoutPromise = new Promise<{ data: null; error: string }>((resolve) =>
+        setTimeout(() => resolve({ data: null, error: "timeout" }), 15_000)
+      );
+      const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
+      if (error || !data?.token) {
+        console.debug("[auth] signIn: failed", error);
+        return { error: "Access unavailable" };
+      }
+      console.debug("[auth] signIn: success, setting session");
       localStorage.setItem(SESSION_KEY, JSON.stringify({ user: data.user, token: data.token }));
       localStorage.setItem("private_last_active", String(Date.now()));
       setUser(data.user);
       setToken(data.token);
       setSessionEnded(false);
       return { error: null };
-    } catch {
+    } catch (e) {
+      console.warn("[auth] signIn: exception", e);
       return { error: "Access unavailable" };
     }
   }, []);
