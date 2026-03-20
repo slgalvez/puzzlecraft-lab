@@ -120,6 +120,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
       textareaRef.current.style.height = "auto";
     }
     try {
+      hapticTap();
       await onSend(body);
     } catch {
       setMessage(body);
