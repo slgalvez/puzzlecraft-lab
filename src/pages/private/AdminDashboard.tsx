@@ -228,6 +228,8 @@ const AdminDashboard = () => {
   return (
     <PrivateLayout title="Overview">
       <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-10">
+        <WhatsNewBanner />
+
         {/* Welcome */}
         <div className="px-0.5">
           <h2 className="text-xl font-semibold text-foreground tracking-tight">

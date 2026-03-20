@@ -130,15 +130,18 @@ export function VoiceRecorder({ disabled, onPreviewReady }: VoiceRecorderProps) 
   }
 
   return (
-    <button
-      type="button"
-      onClick={startRecording}
-      disabled={disabled}
-      className="shrink-0 p-2 rounded-full transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary"
-      title="Record voice note"
-    >
-      <Mic size={18} />
-    </button>
+    <div className="relative">
+      <button
+        type="button"
+        onClick={startRecording}
+        disabled={disabled}
+        className="shrink-0 p-2 rounded-full transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary"
+        title="Record voice note"
+      >
+        <Mic size={18} />
+      </button>
+      <FeatureHint id="voice_record" text="Hold to record a voice message" position="above" />
+    </div>
   );
 }
 
