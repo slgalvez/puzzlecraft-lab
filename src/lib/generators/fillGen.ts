@@ -1,6 +1,7 @@
 import { SeededRandom } from "../seededRandom";
 import type { Difficulty } from "../puzzleTypes";
 import { WORDS } from "../wordList";
+import { analyzeGrid, scoreGridLayout, selectBestCandidate } from "./layoutScoring";
 
 export interface GeneratedFillIn {
   gridSize: number;
@@ -12,20 +13,102 @@ export interface GeneratedFillIn {
 const SIZES: Record<Difficulty, number> = { easy: 7, medium: 9, hard: 13, extreme: 15, insane: 19 };
 const TARGETS: Record<Difficulty, number> = { easy: 5, medium: 10, hard: 18, extreme: 28, insane: 40 };
 const MIN_PLACED: Record<Difficulty, number> = { easy: 3, medium: 6, hard: 10, extreme: 16, insane: 24 };
+const CANDIDATES: Record<Difficulty, number> = { easy: 3, medium: 4, hard: 5, extreme: 3, insane: 3 };
 
 export function generateWordFillIn(seed: number, difficulty: Difficulty): GeneratedFillIn {
-  const maxAttempts = difficulty === "insane" || difficulty === "extreme" ? 3 : 1;
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const result = tryGenerateWordFillIn(seed + attempt * 3571, difficulty);
-    if (result.entries.length >= MIN_PLACED[difficulty]) return result;
-  }
-  if (difficulty === "insane" || difficulty === "extreme") {
-    return tryGenerateWordFillIn(seed, "hard");
-  }
-  return tryGenerateWordFillIn(seed, difficulty);
+  const minPlaced = MIN_PLACED[difficulty];
+  const candidates = CANDIDATES[difficulty];
+
+  return selectBestCandidate(
+    (s) => {
+      const result = buildWordFillIn(s, difficulty);
+      if (result.entries.length < minPlaced) {
+        return { data: result, score: result.entries.length * 2 };
+      }
+      const grid = solutionToLetterGrid(result.solution, result.gridSize);
+      const placed = extractPlaced(grid, result.gridSize);
+      const stats = analyzeGrid(grid, result.gridSize, placed);
+      const score = scoreGridLayout(stats, result.entries.length, TARGETS[difficulty]);
+      return { data: result, score };
+    },
+    seed,
+    candidates,
+    2,
+    45
+  );
 }
 
-function tryGenerateWordFillIn(seed: number, difficulty: Difficulty): GeneratedFillIn {
+export function generateNumberFillIn(seed: number, difficulty: Difficulty): GeneratedFillIn {
+  const minPlaced = MIN_PLACED[difficulty];
+  const candidates = CANDIDATES[difficulty];
+
+  return selectBestCandidate(
+    (s) => {
+      const result = buildNumberFillIn(s, difficulty);
+      if (result.entries.length < minPlaced) {
+        return { data: result, score: result.entries.length * 2 };
+      }
+      const grid = solutionToLetterGrid(result.solution, result.gridSize);
+      const placed = extractPlaced(grid, result.gridSize);
+      const stats = analyzeGrid(grid, result.gridSize, placed);
+      const score = scoreGridLayout(stats, result.entries.length, TARGETS[difficulty]);
+      return { data: result, score };
+    },
+    seed,
+    candidates,
+    2,
+    45
+  );
+}
+
+// ── Helpers ──
+
+function solutionToLetterGrid(solution: (string | null)[][], size: number): string[][] {
+  return Array.from({ length: size }, (_, r) =>
+    Array.from({ length: size }, (_, c) => solution[r][c] || "")
+  );
+}
+
+/** Extract placed word entries from a filled grid for scoring purposes. */
+function extractPlaced(grid: string[][], size: number): { row: number; col: number; dir: "across" | "down"; word: string }[] {
+  const result: { row: number; col: number; dir: "across" | "down"; word: string }[] = [];
+  // Across
+  for (let r = 0; r < size; r++) {
+    let start = -1;
+    for (let c = 0; c <= size; c++) {
+      if (c < size && grid[r][c]) {
+        if (start === -1) start = c;
+      } else {
+        if (start !== -1 && c - start >= 2) {
+          const word = grid[r].slice(start, c).join("");
+          result.push({ row: r, col: start, dir: "across", word });
+        }
+        start = -1;
+      }
+    }
+  }
+  // Down
+  for (let c = 0; c < size; c++) {
+    let start = -1;
+    for (let r = 0; r <= size; r++) {
+      if (r < size && grid[r][c]) {
+        if (start === -1) start = r;
+      } else {
+        if (start !== -1 && r - start >= 2) {
+          let word = "";
+          for (let i = start; i < r; i++) word += grid[i][c];
+          result.push({ row: start, col: c, dir: "down", word });
+        }
+        start = -1;
+      }
+    }
+  }
+  return result;
+}
+
+// ── Core builders (unchanged logic) ──
+
+function buildWordFillIn(seed: number, difficulty: Difficulty): GeneratedFillIn {
   const rng = new SeededRandom(seed);
   const size = SIZES[difficulty];
   const target = TARGETS[difficulty];
@@ -35,7 +118,6 @@ function tryGenerateWordFillIn(seed: number, difficulty: Difficulty): GeneratedF
 
   const placed: { word: string; row: number; col: number; dir: "across" | "down" }[] = [];
 
-  // Place first word
   if (available.length > 0) {
     const word = available[0];
     const row = Math.floor(size / 2);
@@ -75,26 +157,13 @@ function tryGenerateWordFillIn(seed: number, difficulty: Difficulty): GeneratedF
   };
 }
 
-export function generateNumberFillIn(seed: number, difficulty: Difficulty): GeneratedFillIn {
-  const maxAttempts = difficulty === "insane" || difficulty === "extreme" ? 3 : 1;
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const result = tryGenerateNumberFillIn(seed + attempt * 2917, difficulty);
-    if (result.entries.length >= MIN_PLACED[difficulty]) return result;
-  }
-  if (difficulty === "insane" || difficulty === "extreme") {
-    return tryGenerateNumberFillIn(seed, "hard");
-  }
-  return tryGenerateNumberFillIn(seed, difficulty);
-}
-
-function tryGenerateNumberFillIn(seed: number, difficulty: Difficulty): GeneratedFillIn {
+function buildNumberFillIn(seed: number, difficulty: Difficulty): GeneratedFillIn {
   const rng = new SeededRandom(seed);
   const size = SIZES[difficulty];
   const target = TARGETS[difficulty];
 
   const grid: string[][] = Array.from({ length: size }, () => Array(size).fill(""));
 
-  // Generate number entries of various lengths
   const entries: string[] = [];
   for (let i = 0; i < target * 3; i++) {
     const len = rng.nextInt(3, Math.min(size - 2, 7));
@@ -104,7 +173,6 @@ function tryGenerateNumberFillIn(seed: number, difficulty: Difficulty): Generate
 
   const placed: { word: string; row: number; col: number; dir: "across" | "down" }[] = [];
 
-  // Place first
   if (entries.length > 0) {
     const word = entries[0];
     const row = Math.floor(size / 2);
