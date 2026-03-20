@@ -286,7 +286,16 @@ const AdminConversationView = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        <MessageComposer onSend={handleSend} sending={sending} placeholder="Reply" token={token || ""} conversationId={conversationId || null} />
+        <MessageComposer
+          onSend={handleSend}
+          sending={sending}
+          placeholder="Reply"
+          token={token || ""}
+          conversationId={conversationId || null}
+          editingMessage={editingMessage}
+          onCancelEdit={() => setEditingMessage(null)}
+          onSaveEdit={(id, body) => { handleEdit(id, body); setEditingMessage(null); }}
+        />
       </div>
     </PrivateLayout>
   );
