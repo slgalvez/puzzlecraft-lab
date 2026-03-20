@@ -219,16 +219,16 @@ body:has(.private-app) #root {
   overflow-wrap: break-word;
 }
 
-/* Mobile sidebar portal inherits private-app dark theme + dynamic chat theme vars from body */
+/* Mobile sidebar portal inherits private-app dark theme + scoped chat accent */
 body:has(.private-app) [data-sidebar="sidebar"][data-mobile="true"] {
   --sidebar-background: 220 14% 8%;
   --sidebar-foreground: 220 10% 85%;
-  --sidebar-primary: var(--primary);
-  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-primary: var(--chat-accent, 172 50% 45%);
+  --sidebar-primary-foreground: var(--chat-accent-foreground, 220 14% 10%);
   --sidebar-accent: 220 12% 15%;
   --sidebar-accent-foreground: 220 10% 85%;
   --sidebar-border: 220 12% 16%;
-  --sidebar-ring: var(--ring);
+  --sidebar-ring: var(--chat-accent, 172 50% 45%);
   --secondary: 220 12% 18%;
   --secondary-foreground: 220 10% 85%;
   --muted: 220 12% 18%;
