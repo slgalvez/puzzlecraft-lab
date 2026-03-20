@@ -62,6 +62,7 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, ca
   const shareData = buildShareData({ category, seed, difficulty, time, isDaily, dailyCode });
 
   useEffect(() => {
+    hapticSuccess();
     const id = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(id);
   }, []);
