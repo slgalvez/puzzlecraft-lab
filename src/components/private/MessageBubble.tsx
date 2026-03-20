@@ -41,6 +41,7 @@ export function MessageBubble({
   onReact,
   onStartEdit,
   onUnsend,
+  allImageUrls,
 }: MessageBubbleProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
