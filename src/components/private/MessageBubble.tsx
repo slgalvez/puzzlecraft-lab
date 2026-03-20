@@ -1,5 +1,6 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Timer, Check, CheckCheck, Eye, Pencil, Plus, Undo2 } from "lucide-react";
+import EmojiPicker, { Theme } from "emoji-picker-react";
 import { isGifMessage, getGifUrl } from "@/components/private/MessageComposer";
 import { ImageViewer } from "@/components/private/ImageViewer";
 import { AudioBubble, isAudioMessage, getAudioData } from "@/components/private/AudioBubble";
@@ -40,12 +41,12 @@ export function MessageBubble({
   onUnsend,
 }: MessageBubbleProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [confirmUnsend, setConfirmUnsend] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const didLongPress = useRef(false);
   const lastTapRef = useRef(0);
-  const hiddenEmojiRef = useRef<HTMLInputElement>(null);
 
   const isViewOnce =
     isDisappearing &&
@@ -56,12 +57,15 @@ export function MessageBubble({
   const reactionEntries = Object.entries(reactions || {}).filter(([, users]) => users.length > 0);
   const hasReactions = reactionEntries.length > 0;
 
-  const closeMenu = useCallback(() => { setShowMenu(false); setConfirmUnsend(false); }, []);
+  const closeMenu = useCallback(() => {
+    setShowMenu(false);
+    setShowEmojiPicker(false);
+    setConfirmUnsend(false);
+  }, []);
 
   const handleTap = useCallback(() => {
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
-      // Double-tap → heart
       onReact?.(id, "❤️");
       lastTapRef.current = 0;
     } else {
@@ -90,12 +94,12 @@ export function MessageBubble({
 
   const handleReact = (reaction: string) => {
     onReact?.(id, reaction);
-    setShowMenu(false);
+    closeMenu();
   };
 
   const handleStartEdit = () => {
     onStartEdit?.(id, body);
-    setShowMenu(false);
+    closeMenu();
   };
 
   const isAudio = isAudioMessage(body);
@@ -112,12 +116,10 @@ export function MessageBubble({
 
   return (
     <div className={`flex ${isMine ? "justify-end" : "justify-start"} px-1 relative`}>
-      {/* Invisible click-away layer — no visual overlay */}
       {showMenu && (
         <div className="fixed inset-0 z-40" onClick={closeMenu} style={{ background: "transparent" }} />
       )}
       <div className={`relative max-w-[82%] sm:max-w-[70%] transition-shadow duration-150 ${showMenu ? "z-50 ring-2 ring-primary/30 rounded-2xl" : ""}`}>
-        {/* Press-and-hold context menu */}
         {showMenu && (
           <div
             className={`absolute z-50 bottom-full mb-2 flex flex-col bg-card border border-border rounded-2xl shadow-xl overflow-hidden ${
@@ -125,7 +127,6 @@ export function MessageBubble({
             }`}
             style={{ minWidth: "180px" }}
           >
-            {/* Reaction row */}
             <div className="flex items-center gap-0.5 px-2 py-2 border-b border-border">
               {REACTION_OPTIONS.map((r) => {
                 const isActive = (reactions[r] || []).includes(currentUserId);
@@ -141,46 +142,36 @@ export function MessageBubble({
                   </button>
                 );
               })}
-              {/* Custom emoji via hidden input + native keyboard */}
               <button
-                onClick={() => {
-                  const el = hiddenEmojiRef.current;
-                  if (el) {
-                    el.style.position = "absolute";
-                    el.style.opacity = "0.01";
-                    el.style.height = "1px";
-                    el.style.width = "1px";
-                    el.style.left = "0";
-                    el.style.top = "0";
-                    el.style.pointerEvents = "auto";
-                    el.focus();
-                  }
-                }}
-                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+                onClick={() => setShowEmojiPicker((prev) => !prev)}
+                className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${
+                  showEmojiPicker
+                    ? "bg-primary/20 text-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                }`}
+                aria-label="More emoji reactions"
               >
                 <Plus size={16} />
               </button>
-              <input
-                ref={hiddenEmojiRef}
-                type="text"
-                inputMode="text"
-                autoComplete="off"
-                className="absolute opacity-[0.01] w-px h-px overflow-hidden"
-                style={{ left: 0, top: 0 }}
-                onInput={(e) => {
-                  const val = (e.target as HTMLInputElement).value;
-                  const emojiMatch = val.match(/(\p{Emoji_Presentation}|\p{Extended_Pictographic})/gu);
-                  if (emojiMatch && emojiMatch.length > 0) {
-                    handleReact(emojiMatch[emojiMatch.length - 1]);
-                  }
-                  (e.target as HTMLInputElement).value = "";
-                }}
-                onBlur={() => {
-                  if (hiddenEmojiRef.current) hiddenEmojiRef.current.value = "";
-                }}
-              />
             </div>
-            {/* Actions */}
+
+            {showEmojiPicker && (
+              <div className="border-b border-border p-2 bg-card">
+                <div className="overflow-hidden rounded-xl border border-border">
+                  <EmojiPicker
+                    onEmojiClick={(emojiData) => handleReact(emojiData.emoji)}
+                    theme={Theme.DARK}
+                    width="100%"
+                    height={320}
+                    searchDisabled={false}
+                    skinTonesDisabled
+                    previewConfig={{ showPreview: false }}
+                    lazyLoadEmojis
+                  />
+                </div>
+              </div>
+            )}
+
             {isMine && !isMedia && !isAudio && onStartEdit && (
               <button
                 onClick={handleStartEdit}
@@ -193,7 +184,10 @@ export function MessageBubble({
             {isMine && onUnsend && (
               confirmUnsend ? (
                 <button
-                  onClick={() => { onUnsend(id); setShowMenu(false); setConfirmUnsend(false); }}
+                  onClick={() => {
+                    onUnsend(id);
+                    closeMenu();
+                  }}
                   className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
                 >
                   <Undo2 size={14} />
@@ -211,7 +205,6 @@ export function MessageBubble({
             )}
           </div>
         )}
-
 
         {isAudio && audioData ? (
           <div
