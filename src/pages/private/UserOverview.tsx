@@ -5,6 +5,7 @@ import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Puzzle, Plus, Check, Clock, Send, Trash2 } from "lucide-react";
+import { WhatsNewBanner } from "@/components/private/WhatsNewBanner";
 
 interface PuzzleSummary {
   id: string;
