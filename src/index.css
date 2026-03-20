@@ -202,10 +202,10 @@ body:has(.private-app) #root {
   letter-spacing: -0.02em;
 }
 
-/* iPhone-like message bubbles */
+/* iPhone-like message bubbles — use --chat-accent (set by chatTheme.ts) */
 .private-app .msg-bubble-mine {
-  background: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
+  background: hsl(var(--chat-accent, var(--primary)));
+  color: hsl(var(--chat-accent-foreground, var(--primary-foreground)));
   border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
   word-break: break-word;
   overflow-wrap: break-word;
