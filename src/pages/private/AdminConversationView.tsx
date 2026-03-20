@@ -102,6 +102,7 @@ const AdminConversationView = () => {
   const handleSend = async (body: string) => {
     if (!conversationId || !token) return;
     setSending(true);
+    markUserSent();
     try {
       const data = await invokeMessaging("send-message", token, {
         conversation_id: conversationId,
