@@ -36,6 +36,7 @@ export function getGifUrl(body: string): string {
 export function MessageComposer({ onSend, sending, placeholder = "Message", token, conversationId }: MessageComposerProps) {
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [gifOpen, setGifOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
