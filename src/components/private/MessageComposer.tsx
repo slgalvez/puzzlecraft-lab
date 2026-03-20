@@ -98,9 +98,26 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
       return;
     }
 
+    // Edit mode — save edit
+    if (editingMessage) {
+      const trimmed = message.trim();
+      if (trimmed && trimmed !== editingMessage.body) {
+        onSaveEdit?.(editingMessage.id, trimmed);
+      }
+      setMessage("");
+      onCancelEdit?.();
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
+      return;
+    }
+
     const body = message.trim();
     if (!body || sending) return;
     setMessage("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
     try {
       await onSend(body);
     } catch {
