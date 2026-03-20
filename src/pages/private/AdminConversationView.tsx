@@ -381,6 +381,7 @@ const AdminConversationView = () => {
                   onReact={handleReact}
                   onStartEdit={handleStartEdit}
                   onUnsend={handleUnsend}
+                  allImageUrls={allImageUrls}
                 />
               );
             })

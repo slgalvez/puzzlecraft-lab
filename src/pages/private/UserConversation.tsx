@@ -374,6 +374,7 @@ const UserConversation = () => {
                   onReact={handleReact}
                   onStartEdit={handleStartEdit}
                   onUnsend={handleUnsend}
+                  allImageUrls={allImageUrls}
                 />
               );
             })
