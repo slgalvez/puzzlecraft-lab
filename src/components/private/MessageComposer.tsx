@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Send, ImageIcon, Loader2 } from "lucide-react";
+import { Send, ImageIcon, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -33,15 +33,35 @@ export function getGifUrl(body: string): string {
   return body.replace("__GIF__:", "");
 }
 
+interface MediaPreview {
+  url: string;
+  type: "upload" | "gif";
+}
+
 export function MessageComposer({ onSend, sending, placeholder = "Message", token, conversationId }: MessageComposerProps) {
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [gifOpen, setGifOpen] = useState(false);
+  const [mediaPreview, setMediaPreview] = useState<MediaPreview | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // If there's a media preview staged, send that
+    if (mediaPreview) {
+      const url = mediaPreview.url;
+      setMediaPreview(null);
+      try {
+        await onSend(`__MEDIA__:${url}`);
+      } catch {
+        // Restore preview on failure
+        setMediaPreview({ url, type: mediaPreview.type });
+      }
+      return;
+    }
+
     const body = message.trim();
     if (!body || sending) return;
     setMessage("");
@@ -77,7 +97,6 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
       formData.append("conversation_id", conversationId);
       formData.append("file", file);
 
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-media`,
         {
@@ -95,8 +114,8 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
         return;
       }
 
-      // Send as media message
-      await onSend(`__MEDIA__:${data.url}`);
+      // Stage preview instead of auto-sending
+      setMediaPreview({ url: data.url, type: "upload" });
     } catch {
       toast({ title: "Upload failed", description: "Please try again." });
     } finally {
@@ -104,14 +123,18 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
     }
   };
 
-  const handleGifSelect = async (gifUrl: string) => {
+  const handleGifSelect = (gifUrl: string) => {
     setGifOpen(false);
-    try {
-      await onSend(`__MEDIA__:${gifUrl}`);
-    } catch {
-      // silent
-    }
+    // Stage preview instead of auto-sending
+    setMediaPreview({ url: gifUrl, type: "gif" });
   };
+
+  const clearPreview = () => {
+    setMediaPreview(null);
+  };
+
+  const canSend = mediaPreview || message.trim();
+
   return (
     <div className="shrink-0">
       {gifOpen && (
@@ -128,6 +151,26 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
         className="hidden"
         onChange={handleFileSelect}
       />
+
+      {/* Media preview bar */}
+      {mediaPreview && (
+        <div className="border-t border-border px-3 sm:px-4 py-2 bg-secondary/30">
+          <div className="relative inline-block">
+            <img
+              src={mediaPreview.url}
+              alt="Media preview"
+              className="h-20 max-w-[160px] object-cover rounded-lg border border-border"
+            />
+            <button
+              onClick={clearPreview}
+              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-foreground/80 text-background flex items-center justify-center hover:bg-foreground transition-colors"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        </div>
+      )}
+
       <form
         onSubmit={handleSubmit}
         className="border-t border-border px-3 sm:px-4 py-2"
@@ -163,7 +206,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
           <input
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder={placeholder}
+            placeholder={mediaPreview ? "Add a caption or send" : placeholder}
             className="msg-composer-input flex-1 text-[15px] py-2 border bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
             maxLength={5000}
             autoComplete="off"
@@ -172,7 +215,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
           <Button
             type="submit"
             size="icon"
-            disabled={sending || uploading || !message.trim()}
+            disabled={sending || uploading || !canSend}
             className="h-9 w-9 rounded-full shrink-0 transition-transform active:scale-95"
           >
             <Send size={15} className="-translate-x-[1px]" />
