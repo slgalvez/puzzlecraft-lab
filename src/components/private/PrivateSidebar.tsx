@@ -7,6 +7,8 @@ import { NavLink } from "@/components/NavLink";
 import { applyChatTheme } from "@/lib/chatTheme";
 import { usePrivateNotifications } from "@/hooks/usePrivateNotifications";
 import { NotificationBanner } from "@/components/private/NotificationBanner";
+import { useActivityBanner } from "@/hooks/useActivityBanner";
+import { ActivityBanner } from "@/components/private/ActivityBanner";
 import {
   Sidebar,
   SidebarContent,
@@ -59,7 +61,13 @@ export function PrivateSidebar() {
   const [unsolvedPuzzles, setUnsolvedPuzzles] = useState(0);
   const [hasOverviewActivity, setHasOverviewActivity] = useState(false);
   const prevPathRef = useRef(location.pathname);
-  const { bannerPhrase, clearBanner, checkUnread, checkIncomingCall } = usePrivateNotifications(token);
+  const { checkUnread, checkIncomingCall } = usePrivateNotifications(token);
+  const { currentItem, dismiss, showBanner } = useActivityBanner();
+
+  // Track previous state for detecting new activity
+  const prevConvsRef = useRef<Record<string, { unread: number; lastMsg: string; lastMsgAt: string; senderName?: string }>>({});
+  const prevPuzzleIdsRef = useRef<Set<string>>(new Set());
+  const initialLoadRef = useRef(true);
 
   const isAdmin = user?.role === "admin";
   const navItems = isAdmin ? adminNav : userNav;
@@ -98,6 +106,38 @@ export function PrivateSidebar() {
           (sum: number, c: { unread_count: number }) => sum + c.unread_count,
           0
         );
+
+        // Detect new messages per conversation
+        if (!initialLoadRef.current) {
+          for (const c of convs) {
+            const prev = prevConvsRef.current[c.id];
+            if (prev && c.unread_count > prev.unread && c.last_message_at !== prev.lastMsgAt) {
+              // Clean preview from system prefixes
+              let preview = c.last_message || "";
+              if (preview.startsWith("__")) preview = "";
+              if (preview.length > 50) preview = preview.slice(0, 47) + "…";
+
+              showBanner({
+                type: "message",
+                senderName: c.user_name || "Someone",
+                preview: preview || "New message",
+                navigateTo: `/p/conversations/${c.id}`,
+              });
+            }
+          }
+        }
+
+        // Update tracking map
+        const newMap: typeof prevConvsRef.current = {};
+        for (const c of convs) {
+          newMap[c.id] = {
+            unread: c.unread_count,
+            lastMsg: c.last_message || "",
+            lastMsgAt: c.last_message_at || "",
+          };
+        }
+        prevConvsRef.current = newMap;
+
         for (const c of convs) {
           if (c.last_message_at) {
             const t = new Date(c.last_message_at).getTime();
@@ -108,6 +148,33 @@ export function PrivateSidebar() {
         const data = await invokeMessaging("get-my-conversation", token);
         msgUnread = data.unread_count || 0;
         const msgs = data.messages || [];
+
+        // Detect new messages for user role
+        if (!initialLoadRef.current && msgs.length > 0) {
+          const lastMsg = msgs[msgs.length - 1];
+          const prevAny = Object.values(prevConvsRef.current)[0];
+          if (prevAny && msgUnread > prevAny.unread && lastMsg.created_at !== prevAny.lastMsgAt) {
+            let preview = lastMsg.body || "";
+            if (preview.startsWith("__")) preview = "";
+            if (preview.length > 50) preview = preview.slice(0, 47) + "…";
+
+            showBanner({
+              type: "message",
+              senderName: data.admin_name || "Someone",
+              preview: preview || "New message",
+              navigateTo: "/p/conversation",
+            });
+          }
+        }
+
+        prevConvsRef.current = {
+          user: {
+            unread: msgUnread,
+            lastMsg: msgs.length > 0 ? msgs[msgs.length - 1].body : "",
+            lastMsgAt: msgs.length > 0 ? msgs[msgs.length - 1].created_at : "",
+          },
+        };
+
         if (msgs.length > 0) {
           const t = new Date(msgs[msgs.length - 1].created_at).getTime();
           if (t > latestMessageTime) latestMessageTime = t;
@@ -119,6 +186,32 @@ export function PrivateSidebar() {
       const unsolved = allPuzzles.filter(
         (p: { sent_to: string; solved_by: string | null }) => p.sent_to === user.id && !p.solved_by
       ).length;
+
+      // Detect new puzzles received
+      if (!initialLoadRef.current) {
+        for (const p of allPuzzles) {
+          if (p.sent_to === user.id && !p.solved_by && !prevPuzzleIdsRef.current.has(p.id)) {
+            const puzzleTypeLabel = (p.puzzle_type || "puzzle")
+              .replace(/-/g, " ")
+              .replace(/\b\w/g, (c: string) => c.toUpperCase());
+            showBanner({
+              type: "puzzle",
+              senderName: p.creator_name || "Someone",
+              preview: puzzleTypeLabel,
+              navigateTo: "/p/for-you",
+            });
+          }
+        }
+      }
+
+      // Track known puzzle IDs
+      prevPuzzleIdsRef.current = new Set(
+        allPuzzles
+          .filter((p: { sent_to: string; solved_by: string | null }) => p.sent_to === user.id && !p.solved_by)
+          .map((p: { id: string }) => p.id)
+      );
+
+      initialLoadRef.current = false;
 
       setUnreadCount(msgUnread);
       setUnsolvedPuzzles(unsolved);
@@ -151,7 +244,7 @@ export function PrivateSidebar() {
         console.warn("[sidebar] fetchCounts error", e);
       }
     }
-  }, [token, isAdmin, user, location.pathname, signOut, navigate, checkUnread]);
+  }, [token, isAdmin, user, location.pathname, signOut, navigate, checkUnread, showBanner]);
 
   useEffect(() => {
     fetchCounts();
@@ -166,7 +259,7 @@ export function PrivateSidebar() {
 
   return (
     <>
-      <NotificationBanner phrase={bannerPhrase} onDismissed={clearBanner} />
+      <ActivityBanner item={currentItem} onDismiss={dismiss} />
       <Sidebar collapsible="icon" className="border-r border-border">
       <SidebarContent className="pt-4 flex flex-col h-full">
         <div className="px-4 pb-4">
