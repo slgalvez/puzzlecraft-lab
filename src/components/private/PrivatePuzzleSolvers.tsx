@@ -589,45 +589,85 @@ export function CryptogramSolver({ data, onComplete, savedState, onSaveProgress,
     }
   };
 
+  const words = data.encoded.split(" ");
+
   return (
     <div className="space-y-4">
-      <div className="font-mono text-sm leading-loose flex flex-wrap gap-x-0.5 gap-y-3">
-        {data.encoded.split("").map((ch, i) => {
-          if (ch === " ") return <span key={i} className="w-3" />;
-          if (!/[A-Z]/.test(ch)) return <span key={i} className="px-0.5 text-muted-foreground">{ch}</span>;
-          const isHint = ch in data.hints;
-          return (
-            <span key={i} className="inline-flex flex-col items-center">
-              <input
-                ref={el => { if (el) inputRefs.current.set(i, el); }}
-                className={cn(
-                  "w-7 h-8 text-center text-sm border-b-2 bg-transparent outline-none font-semibold",
-                  isHint && "border-primary text-primary",
-                  !isHint && !completed && "border-puzzle-border focus:border-primary text-foreground",
-                  completed && "border-primary text-primary"
-                )}
-                maxLength={1}
-                value={guesses[ch] || ""}
-                onChange={e => !isHint && !completed && handleInput(ch, e.target.value, i)}
-                onKeyDown={e => !isHint && !completed && handleKeyDown(e, ch, i)}
-                readOnly={isHint || completed}
-              />
-              <span className="text-[9px] text-muted-foreground mt-0.5">{ch}</span>
-            </span>
-          );
-        })}
+      <div className="flex flex-wrap gap-x-4 gap-y-4 mb-4">
+        {(() => {
+          let globalIdx = 0;
+          return words.map((word, wi) => (
+            <div key={wi} className="flex gap-0.5">
+              {word.split("").map((ch, ci) => {
+                const isLetter = /[A-Z]/.test(ch);
+                const idx = globalIdx++;
+                const isHint = isLetter && ch in data.hints;
+
+                if (!isLetter) {
+                  return (
+                    <div key={ci} className="w-6 flex flex-col items-center justify-end">
+                      <span className="text-lg text-muted-foreground">{ch}</span>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={ci} className="flex flex-col items-center">
+                    <input
+                      ref={el => { if (el) inputRefs.current.set(idx, el); }}
+                      className={cn(
+                        "w-8 h-10 sm:h-9 text-center text-lg font-semibold outline-none border-b-2 bg-transparent uppercase touch-manipulation",
+                        isHint && "text-primary border-primary/50",
+                        !isHint && !completed && "text-foreground border-border focus:border-primary",
+                        completed && "text-primary border-primary/50"
+                      )}
+                      maxLength={1}
+                      inputMode="text"
+                      autoCapitalize="characters"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      value={guesses[ch] || ""}
+                      onChange={e => !isHint && !completed && handleInput(ch, e.target.value, idx)}
+                      onKeyDown={e => !isHint && !completed && handleKeyDown(e, ch, idx)}
+                      readOnly={isHint || completed}
+                    />
+                    <span className="mt-1 text-xs font-medium text-muted-foreground">{ch}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ));
+        })()}
       </div>
+
+      {/* Letter frequency */}
+      <details className="text-sm text-muted-foreground">
+        <summary className="cursor-pointer hover:text-foreground transition-colors">Letter frequency</summary>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {[...new Set(data.encoded.split("").filter(ch => /[A-Z]/.test(ch)))]
+            .sort((a, b) => {
+              const countA = data.encoded.split("").filter(c => c === a).length;
+              const countB = data.encoded.split("").filter(c => c === b).length;
+              return countB - countA;
+            })
+            .map(letter => {
+              const count = data.encoded.split("").filter(c => c === letter).length;
+              return (
+                <span key={letter} className="rounded border border-border px-2 py-0.5 text-xs bg-card">{letter}: {count}</span>
+              );
+            })}
+        </div>
+      </details>
+
       <div className="flex flex-wrap gap-2">
         {showHints && !completed && (
           <Button variant="outline" size="sm" onClick={() => {
-            // Reveal one random unsolved letter
             const unsolved = encodedLetters.filter(ch => !(ch in data.hints) && guesses[ch] !== data.reverseCipher[ch]);
             if (unsolved.length === 0) return;
             const pick = unsolved[Math.floor(Math.random() * unsolved.length)];
             const newGuesses = { ...guesses, [pick]: data.reverseCipher[pick] };
             setGuesses(newGuesses);
             toast({ title: "Hint revealed" });
-            // Check completion
             const allFilled = encodedLetters.every(ch => newGuesses[ch]);
             if (allFilled) {
               const decoded = data.encoded.split("").map(ch => /[A-Z]/.test(ch) ? (newGuesses[ch] || "") : ch).join("");
