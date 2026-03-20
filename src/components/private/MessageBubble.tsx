@@ -35,16 +35,13 @@ export function MessageBubble({
   formatTime,
   showTail = true,
   onReact,
-  onEdit,
+  onStartEdit,
 }: MessageBubbleProps) {
   const [showMenu, setShowMenu] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [editText, setEditText] = useState("");
   const [viewerOpen, setViewerOpen] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const didLongPress = useRef(false);
   const lastTapRef = useRef(0);
-  const editInputRef = useRef<HTMLTextAreaElement>(null);
   const hiddenEmojiRef = useRef<HTMLInputElement>(null);
 
   const isViewOnce =
