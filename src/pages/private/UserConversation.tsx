@@ -33,6 +33,7 @@ const UserConversation = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [adminProfileId, setAdminProfileId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -52,6 +53,8 @@ const UserConversation = () => {
     signOut();
     navigate("/");
   }, [signOut, navigate]);
+
+  const { resolve, setNickname, removeNickname, nicknames } = useNicknames(token, handleSessionExpired);
 
   const videoCall = useVideoCall({
     token: token || "",
