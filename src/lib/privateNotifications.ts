@@ -118,13 +118,13 @@ export function sendPushNotification(body: string): void {
   if (!getNotificationsEnabled()) return;
 
   try {
-    const n = new Notification("Puzzlecraft", {
+    const opts: NotificationOptions & Record<string, unknown> = {
       body,
       icon: "/pwa-icon-192.png",
       tag: "private-notification",
-      renotify: true,
       silent: false,
-    });
+    };
+    const n = new Notification("Puzzlecraft", opts);
 
     n.onclick = () => {
       window.focus();
