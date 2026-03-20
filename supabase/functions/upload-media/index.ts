@@ -25,6 +25,12 @@ async function verifyToken(token: string) {
 const ALLOWED_TYPES = ["image/gif", "image/png", "image/jpeg", "image/webp", "audio/webm", "audio/mp4", "audio/ogg", "audio/mpeg", "audio/wav"];
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
+/** Check if a MIME type is allowed — strips codec params (e.g. audio/webm;codecs=opus → audio/webm) */
+function isAllowedType(mime: string): boolean {
+  const base = mime.split(";")[0].trim().toLowerCase();
+  return ALLOWED_TYPES.includes(base);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -53,7 +59,7 @@ Deno.serve(async (req) => {
     }
 
     // Validate file
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    if (!isAllowedType(file.type)) {
       return new Response(JSON.stringify({ error: "File type not allowed." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
