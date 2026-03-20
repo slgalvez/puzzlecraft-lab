@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
@@ -7,12 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { setFocusLossEnabled } from "@/lib/focusLossSettings";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { FeatureHint } from "@/components/private/FeatureHint";
 import {
   getNotificationsEnabled,
   setNotificationsEnabled,
-  requestPushPermission,
+  subscribeToPush,
+  unsubscribeFromPush,
+  getPermissionStatus,
+  getPushSubscriptionStatus,
+  isPwaMode,
+  sendTestPush,
 } from "@/lib/privateNotifications";
 import {
   CHAT_THEMES,
@@ -44,6 +49,19 @@ const PrivateSettings = () => {
   const [customHex, setCustomHex] = useState(getCustomColor);
   const colorInputRef = useRef<HTMLInputElement>(null);
   const [notificationsOn, setNotificationsOn] = useState(getNotificationsEnabled);
+
+  // Push debug state
+  const [permissionStatus, setPermissionStatus] = useState<string>("");
+  const [pushSubscribed, setPushSubscribed] = useState<boolean>(false);
+  const [pwaActive, setPwaActive] = useState<boolean>(false);
+  const [testSending, setTestSending] = useState(false);
+  const [testResult, setTestResult] = useState<string>("");
+
+  useEffect(() => {
+    setPermissionStatus(getPermissionStatus());
+    setPwaActive(isPwaMode());
+    getPushSubscriptionStatus().then((s) => setPushSubscribed(s.subscribed));
+  }, []);
 
   const handleSessionExpired = useCallback(() => {
     signOut();
@@ -119,10 +137,8 @@ const PrivateSettings = () => {
 
   const handleCustomClick = () => {
     if (activeTheme === "custom") {
-      // Already custom — open picker again
       colorInputRef.current?.click();
     } else {
-      // Switch to custom with current color
       setCustomColor(customHex);
       setActiveTheme("custom");
       colorInputRef.current?.click();
@@ -135,6 +151,46 @@ const PrivateSettings = () => {
     setCustomColor(hex);
     setActiveTheme("custom");
   };
+
+  const handleNotificationToggle = async (val: boolean) => {
+    setNotificationsOn(val);
+    setNotificationsEnabled(val);
+
+    if (val && token) {
+      const sub = await subscribeToPush(token);
+      setPushSubscribed(!!sub);
+      setPermissionStatus(getPermissionStatus());
+    } else if (!val && token) {
+      await unsubscribeFromPush(token);
+      setPushSubscribed(false);
+    }
+  };
+
+  const handleTestPush = async () => {
+    if (!token) return;
+    setTestSending(true);
+    setTestResult("");
+    try {
+      const result = await sendTestPush(token);
+      if (result.ok) {
+        setTestResult(`Sent to ${result.sent} device(s)`);
+      } else {
+        setTestResult(result.error || "No devices subscribed");
+      }
+    } catch {
+      setTestResult("Failed to send");
+    } finally {
+      setTestSending(false);
+      setTimeout(() => setTestResult(""), 5000);
+    }
+  };
+
+  const permissionColor =
+    permissionStatus === "granted"
+      ? "text-green-400"
+      : permissionStatus === "denied"
+      ? "text-destructive"
+      : "text-muted-foreground";
 
   return (
     <PrivateLayout title="Settings">
@@ -333,15 +389,68 @@ const PrivateSettings = () => {
             </div>
             <Switch
               checked={notificationsOn}
-              onCheckedChange={(val) => {
-                setNotificationsOn(val);
-                setNotificationsEnabled(val);
-                if (val) {
-                  requestPushPermission();
-                }
-              }}
+              onCheckedChange={handleNotificationToggle}
             />
           </div>
+
+          {/* Push status debug info */}
+          {notificationsOn && (
+            <div className="space-y-2 pl-0.5">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground/60">Permission:</span>
+                <span className={`text-[11px] font-medium ${permissionColor}`}>
+                  {permissionStatus === "unsupported" ? "Not supported" : permissionStatus}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground/60">Push subscription:</span>
+                <span className={`text-[11px] font-medium ${pushSubscribed ? "text-green-400" : "text-muted-foreground"}`}>
+                  {pushSubscribed ? "Active" : "Inactive"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground/60">Installed app:</span>
+                <span className={`text-[11px] font-medium ${pwaActive ? "text-green-400" : "text-muted-foreground"}`}>
+                  {pwaActive ? "Yes" : "No (browser tab)"}
+                </span>
+              </div>
+
+              {permissionStatus === "denied" && (
+                <p className="text-[11px] text-destructive/80">
+                  Notification permission was denied. Reset it in your browser/device settings.
+                </p>
+              )}
+
+              {!pwaActive && permissionStatus !== "denied" && (
+                <p className="text-[11px] text-muted-foreground/50">
+                  For best results, add this app to your Home Screen and open it from there.
+                </p>
+              )}
+
+              {/* Test push button */}
+              <div className="flex items-center gap-2 pt-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTestPush}
+                  disabled={testSending || !pushSubscribed}
+                  className="text-xs h-7 px-3"
+                >
+                  {testSending ? (
+                    <>
+                      <Loader2 size={12} className="animate-spin mr-1.5" />
+                      Sending…
+                    </>
+                  ) : (
+                    "Send test notification"
+                  )}
+                </Button>
+                {testResult && (
+                  <span className="text-[11px] text-muted-foreground">{testResult}</span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </PrivateLayout>
