@@ -279,12 +279,12 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
 
       {/* Edit mode banner */}
       {isEditing && (
-        <div className="border-t border-border px-3 sm:px-4 py-1.5 bg-secondary/40 flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Editing message</span>
+        <div className="border-t border-border/30 px-3 sm:px-4 py-1.5 bg-secondary/20 flex items-center justify-between">
+          <span className="text-[11px] text-muted-foreground/60">Editing message</span>
           <button
             type="button"
             onClick={handleCancelEdit}
-            className="text-xs text-primary hover:text-primary/80 font-medium"
+            className="text-[11px] text-primary/70 hover:text-primary font-medium transition-colors"
           >
             Cancel
           </button>
