@@ -216,7 +216,7 @@ export function MessageBubble({
           </div>
         ) : (
           <div
-            className={`px-3.5 py-2 ${bubbleClass}`}
+            className={`px-3.5 py-2 ${bubbleClass} select-none`}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
             onTouchCancel={() => clearTimeout(longPressTimer.current)}
