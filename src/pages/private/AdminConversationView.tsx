@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Video } from "lucide-react";
 import { isPuzzleMessage, PuzzleMessageBubble } from "@/components/private/PuzzleMessageBubble";
 import { MessageBubble } from "@/components/private/MessageBubble";
-import { MessageComposer, type EditingMessage } from "@/components/private/MessageComposer";
+import { MessageComposer, type EditingMessage, isGifMessage, getGifUrl } from "@/components/private/MessageComposer";
 import { ConversationToolbar } from "@/components/private/ConversationToolbar";
 import { isCallMessage, CallSystemMessage } from "@/components/private/CallSystemMessage";
 import { useVideoCall } from "@/hooks/useVideoCall";
