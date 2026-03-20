@@ -108,11 +108,11 @@ export function MessageBubble({
   const mediaUrl = isMedia ? getGifUrl(body) : "";
 
   const bubbleClass = isMine
-    ? showTail ? "msg-bubble-mine" : "msg-bubble-mine rounded-br-[1.125rem]"
-    : showTail ? "msg-bubble-theirs" : "msg-bubble-theirs rounded-bl-[1.125rem]";
+    ? showTail ? "msg-bubble-mine" : "msg-bubble-mine rounded-br-[1.25rem]"
+    : showTail ? "msg-bubble-theirs" : "msg-bubble-theirs rounded-bl-[1.25rem]";
 
-  const timeColor = isMine ? "text-primary-foreground/55" : "text-muted-foreground/70";
-  const iconColor = isMine ? "text-primary-foreground/40" : "text-muted-foreground/50";
+  const timeColor = isMine ? "text-primary-foreground/45" : "text-muted-foreground/50";
+  const iconColor = isMine ? "text-primary-foreground/30" : "text-muted-foreground/40";
 
   return (
     <div className={`flex ${isMine ? "justify-end" : "justify-start"} px-1 relative`}>
