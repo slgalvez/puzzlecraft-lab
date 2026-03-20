@@ -66,6 +66,8 @@ const AdminDashboard = () => {
     navigate("/");
   }, [signOut, navigate]);
 
+  const { resolve } = useNicknames(token, handleSessionExpired);
+
   const fetchData = useCallback(async () => {
     if (!token || !user) return;
     try {
