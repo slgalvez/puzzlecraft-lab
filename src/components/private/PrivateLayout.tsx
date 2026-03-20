@@ -139,6 +139,18 @@ export default function PrivateLayout({ children, title, fullHeight }: PrivateLa
 
   return (
     <div className="private-app">
+      {/* Global incoming call banner — visible on ALL Secret Lab pages */}
+      {globalCall.incomingCall && !isOnConversationPage && (
+        <IncomingCallBanner
+          call={{
+            callId: globalCall.incomingCall.callId,
+            callerName: globalCall.incomingCall.callerName,
+            callerProfileId: globalCall.incomingCall.callerProfileId,
+          }}
+          onAccept={handleAcceptGlobalCall}
+          onDecline={globalCall.declineCall}
+        />
+      )}
       <SidebarProvider className="h-full min-h-0">
         <div className="flex h-full min-h-0 w-full overflow-hidden">
           <PrivateSidebar />
