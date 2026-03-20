@@ -132,6 +132,14 @@ Deno.serve(async (req) => {
         conv = newConv;
       }
 
+      // Fetch admin display name
+      const { data: adminProfile } = await sb
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("id", conv.admin_profile_id)
+        .single();
+      const adminName = adminProfile ? `${adminProfile.first_name} ${adminProfile.last_name}`.trim() : "Admin";
+
       const clearedAt = conv.cleared_at_user;
 
       // Clean up read view-once messages (only when view-once mode is active)
@@ -165,6 +173,7 @@ Deno.serve(async (req) => {
         conversation: {
           id: conv.id,
           admin_profile_id: conv.admin_profile_id,
+          admin_name: adminName,
           disappearing_enabled: conv.disappearing_enabled,
           disappearing_duration: conv.disappearing_duration,
         },

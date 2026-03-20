@@ -34,6 +34,7 @@ const UserConversation = () => {
   const { toast } = useToast();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [adminProfileId, setAdminProfileId] = useState<string | null>(null);
+  const [adminName, setAdminName] = useState<string>("Conversation");
   const [messages, setMessages] = useState<Message[]>([]);
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -68,6 +69,7 @@ const UserConversation = () => {
       const data = await invokeMessaging("get-my-conversation", token);
       setConversationId(data.conversation.id);
       setAdminProfileId(data.conversation.admin_profile_id);
+      setAdminName(data.conversation.admin_name || "Conversation");
       setMessages(data.messages);
       setDisappearingEnabled(data.conversation.disappearing_enabled);
       setDisappearingDuration(data.conversation.disappearing_duration);
@@ -241,7 +243,7 @@ const UserConversation = () => {
   }
 
   return (
-    <PrivateLayout title="Conversation" fullHeight>
+    <PrivateLayout title={adminProfileId ? resolve(adminProfileId, adminName) : "Conversation"} fullHeight>
       {/* Video call overlays */}
       {videoCall.callState !== "idle" && videoCall.callState !== "ended" && (
         <VideoCallScreen
@@ -289,7 +291,7 @@ const UserConversation = () => {
             <NicknameEditor
               contactProfileId={adminProfileId}
               currentNickname={nicknames[adminProfileId]}
-              defaultName="Conversation"
+              defaultName={adminName}
               onSave={setNickname}
               onRemove={removeNickname}
             />
