@@ -103,6 +103,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
     if (editingMessage) {
       const trimmed = message.trim();
       if (trimmed && trimmed !== editingMessage.body) {
+        hapticTap();
         onSaveEdit?.(editingMessage.id, trimmed);
       }
       setMessage("");
