@@ -58,6 +58,7 @@ export function PrivateSidebar() {
   const [unsolvedPuzzles, setUnsolvedPuzzles] = useState(0);
   const [hasOverviewActivity, setHasOverviewActivity] = useState(false);
   const prevPathRef = useRef(location.pathname);
+  const { bannerPhrase, clearBanner, checkUnread, checkIncomingCall } = usePrivateNotifications();
 
   const isAdmin = user?.role === "admin";
   const navItems = isAdmin ? adminNav : userNav;
