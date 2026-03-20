@@ -1437,6 +1437,44 @@ Deno.serve(async (req) => {
       return json({ call: { id: call.id, caller_name: callerProfile?.first_name || "Someone", caller_profile_id: call.caller_profile_id } });
     }
 
+    // ─── CHECK INCOMING CALL (GLOBAL — no conversation filter) ───
+    if (action === "check-incoming-call-global") {
+      // Find ANY ringing call where current user is the callee
+      const { data: calls } = await sb.from("calls")
+        .select("id, caller_profile_id, conversation_id, started_at")
+        .eq("callee_profile_id", profileId)
+        .eq("status", "ringing")
+        .order("started_at", { ascending: false })
+        .limit(1);
+
+      if (!calls || calls.length === 0) return json({ call: null });
+
+      const call = calls[0];
+
+      // Auto-timeout after 30s
+      const ringDuration = Date.now() - new Date(call.started_at).getTime();
+      if (ringDuration > 30000) {
+        await sb.from("calls").update({ status: "ended", ended_at: now, end_reason: "missed" }).eq("id", call.id);
+        await sb.from("messages").insert({
+          conversation_id: call.conversation_id,
+          sender_profile_id: call.caller_profile_id,
+          body: "__CALL__:missed",
+        });
+        return json({ call: null });
+      }
+
+      const { data: callerProfile } = await sb.from("profiles").select("first_name").eq("id", call.caller_profile_id).single();
+
+      return json({
+        call: {
+          id: call.id,
+          caller_name: callerProfile?.first_name || "Someone",
+          caller_profile_id: call.caller_profile_id,
+          conversation_id: call.conversation_id,
+        },
+      });
+    }
+
     // ─── SET NICKNAME ───
     if (action === "set-nickname") {
       const { contact_profile_id, nickname } = body;

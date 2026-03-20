@@ -3,9 +3,11 @@ import { getFocusLossEnabled } from "@/lib/focusLossSettings";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PrivateSidebar } from "@/components/private/PrivateSidebar";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { LogOut, Puzzle } from "lucide-react";
 import { applyChatTheme } from "@/lib/chatTheme";
+import { useGlobalIncomingCall } from "@/hooks/useGlobalIncomingCall";
+import { IncomingCallBanner } from "@/components/private/IncomingCallBanner";
 
 const LAST_ACTIVE_KEY = "private_last_active";
 const GRACE_PERIOD_MS = 5 * 60 * 1000; // 5 minutes
@@ -22,10 +24,36 @@ interface PrivateLayoutProps {
 }
 
 export default function PrivateLayout({ children, title, fullHeight }: PrivateLayoutProps) {
-  const { signOut, user } = useAuth();
+  const { signOut, user, token } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const escCountRef = useRef(0);
   const escTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const handleSessionExpired = useCallback(() => {
+    signOut();
+    navigate("/");
+  }, [signOut, navigate]);
+
+  // Global incoming call detection (shows banner on ALL Secret Lab pages)
+  const isOnConversationPage = location.pathname.startsWith("/p/conversation");
+  const globalCall = useGlobalIncomingCall(
+    isOnConversationPage ? null : token, // Don't poll globally when already in a conversation (that page has its own polling)
+    handleSessionExpired,
+  );
+
+  const handleAcceptGlobalCall = useCallback((callId: string) => {
+    const convId = globalCall.incomingCall?.conversationId;
+    globalCall.acceptCall(callId);
+    // Navigate to the conversation so the user can handle the call
+    if (convId) {
+      if (user?.role === "admin") {
+        navigate(`/p/conversations/${convId}`);
+      } else {
+        navigate("/p/conversation");
+      }
+    }
+  }, [globalCall, user, navigate]);
 
   const quickExit = useCallback(() => {
     sessionStorage.removeItem("private_view_state");
@@ -111,6 +139,18 @@ export default function PrivateLayout({ children, title, fullHeight }: PrivateLa
 
   return (
     <div className="private-app">
+      {/* Global incoming call banner — visible on ALL Secret Lab pages */}
+      {globalCall.incomingCall && !isOnConversationPage && (
+        <IncomingCallBanner
+          call={{
+            callId: globalCall.incomingCall.callId,
+            callerName: globalCall.incomingCall.callerName,
+            callerProfileId: globalCall.incomingCall.callerProfileId,
+          }}
+          onAccept={handleAcceptGlobalCall}
+          onDecline={globalCall.declineCall}
+        />
+      )}
       <SidebarProvider className="h-full min-h-0">
         <div className="flex h-full min-h-0 w-full overflow-hidden">
           <PrivateSidebar />
