@@ -72,7 +72,9 @@ const VAPID_PUBLIC_KEY =
   "BJrEgKHA6zTGGE2HCv4B9Fr8zjBIP7ebEyR94U2YWbEA9iM0WYTCb2BbWDizAWbdFuEOV90FX11dMqOi1YkCcP0";
 
 async function createVapidJwt(endpoint: string): Promise<string> {
-  const privateKeyB64url = Deno.env.get("VAPID_PRIVATE_KEY")!;
+  // Normalize private key to strict base64url (no +, /, or = padding)
+  const rawKey = Deno.env.get("VAPID_PRIVATE_KEY")!;
+  const privateKeyB64url = rawKey.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
   const audience = new URL(endpoint).origin;
 
   const header = { typ: "JWT", alg: "ES256" };
