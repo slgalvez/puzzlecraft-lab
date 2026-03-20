@@ -207,12 +207,16 @@ body:has(.private-app) #root {
   background: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
   border-radius: 1.125rem 1.125rem 0.25rem 1.125rem;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .private-app .msg-bubble-theirs {
   background: hsl(var(--secondary));
   color: hsl(var(--foreground));
   border-radius: 1.125rem 1.125rem 1.125rem 0.25rem;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Mobile sidebar portal inherits private-app dark theme */
