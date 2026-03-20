@@ -50,15 +50,6 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
   const cleaningUp = useRef(false);
   const sessionExpiredRef = useRef(false);
 
-  const api = useCallback(async (action: string, data: Record<string, unknown> = {}) => {
-    try {
-      return await invokeMessaging(action, token, data);
-    } catch (e) {
-      if (e instanceof SessionExpiredError) handleSessionEnded();
-      throw e;
-    }
-  }, [token, handleSessionEnded]);
-
   const cleanup = useCallback(() => {
     if (cleaningUp.current) return;
     cleaningUp.current = true;
@@ -94,6 +85,15 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     cleanup();
     onSessionExpired();
   }, [cleanup, onSessionExpired]);
+
+  const api = useCallback(async (action: string, data: Record<string, unknown> = {}) => {
+    try {
+      return await invokeMessaging(action, token, data);
+    } catch (e) {
+      if (e instanceof SessionExpiredError) handleSessionEnded();
+      throw e;
+    }
+  }, [token, handleSessionEnded]);
 
   const getMedia = useCallback(async () => {
     try {
