@@ -4,6 +4,7 @@ import { LayoutDashboard, MessageSquare, Users, Settings, LogOut, Puzzle, Shield
 import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import { NavLink } from "@/components/NavLink";
+import { applyChatTheme } from "@/lib/chatTheme";
 import { usePrivateNotifications } from "@/hooks/usePrivateNotifications";
 import { NotificationBanner } from "@/components/private/NotificationBanner";
 import {
@@ -49,7 +50,7 @@ function setSeenTimestamp(key: string) {
 }
 
 export function PrivateSidebar() {
-  const { state } = useSidebar();
+  const { state, open } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
@@ -62,6 +63,15 @@ export function PrivateSidebar() {
 
   const isAdmin = user?.role === "admin";
   const navItems = isAdmin ? adminNav : userNav;
+
+  // Re-apply chat theme when sidebar opens (ensures mobile portal gets themed)
+  useEffect(() => {
+    if (open) {
+      // Small delay to let the mobile portal mount
+      const t = setTimeout(() => applyChatTheme(), 50);
+      return () => clearTimeout(t);
+    }
+  }, [open]);
 
   // Mark tabs as "seen" when user navigates to them
   useEffect(() => {
