@@ -143,9 +143,12 @@ export function PrivateSidebar() {
         setHasOverviewActivity(false);
       }
     } catch (e) {
+      // Session expiry is handled by AuthContext's periodic check — don't
+      // sign out here to avoid races with in-flight requests after login.
       if (e instanceof SessionExpiredError) {
-        signOut();
-        navigate("/");
+        console.debug("[sidebar] session expired signal — deferring to auth context");
+      } else {
+        console.warn("[sidebar] fetchCounts error", e);
       }
     }
   }, [token, isAdmin, user, location.pathname, signOut, navigate, checkUnread]);
