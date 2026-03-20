@@ -61,6 +61,8 @@ const AdminConversations = () => {
     navigate("/");
   }, [signOut, navigate]);
 
+  const { resolve } = useNicknames(token, handleSessionExpired);
+
   const fetchConversations = useCallback(async () => {
     if (!token) return;
     try {
