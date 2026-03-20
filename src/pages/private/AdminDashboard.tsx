@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Timer, Trash2, MessageSquare, Puzzle, Plus, Check, Clock, Send } from "lucide-react";
 import { useNicknames } from "@/hooks/useNicknames";
+import { WhatsNewBanner } from "@/components/private/WhatsNewBanner";
 
 interface ConversationSummary {
   id: string;
@@ -227,6 +228,8 @@ const AdminDashboard = () => {
   return (
     <PrivateLayout title="Overview">
       <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-10">
+        <WhatsNewBanner />
+
         {/* Welcome */}
         <div className="px-0.5">
           <h2 className="text-xl font-semibold text-foreground tracking-tight">

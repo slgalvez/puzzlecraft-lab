@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { setFocusLossEnabled } from "@/lib/focusLossSettings";
 import { Plus } from "lucide-react";
+import { FeatureHint } from "@/components/private/FeatureHint";
 import {
   CHAT_THEMES,
   getChatTheme,
@@ -231,7 +232,10 @@ const PrivateSettings = () => {
 
         {/* Chat Theme */}
         <div className="space-y-4">
-          <h2 className="text-sm font-semibold text-foreground">Chat Theme</h2>
+          <div className="relative inline-block">
+            <h2 className="text-sm font-semibold text-foreground">Chat Theme</h2>
+            <FeatureHint id="custom_color" text="Try a custom accent color" position="below" />
+          </div>
           <p className="text-xs text-muted-foreground">Choose an accent color for your message bubbles.</p>
           <div className="flex items-center gap-2 flex-wrap">
             {CHAT_THEMES.map((theme) => (

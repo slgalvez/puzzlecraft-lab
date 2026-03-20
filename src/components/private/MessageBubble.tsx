@@ -1,9 +1,11 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Timer, Check, CheckCheck, Eye, Pencil, Plus, Undo2 } from "lucide-react";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { isGifMessage, getGifUrl } from "@/components/private/MessageComposer";
 import { ImageViewer } from "@/components/private/ImageViewer";
 import { AudioBubble, isAudioMessage, getAudioData } from "@/components/private/AudioBubble";
+import { FeatureHint } from "@/components/private/FeatureHint";
+import { isHintSeen, markHintSeen } from "@/lib/featureHints";
 
 const REACTION_OPTIONS = ["❤️", "👍", "😂", "‼️", "❓", "😢"];
 
@@ -145,17 +147,25 @@ export function MessageBubble({
                   </button>
                 );
               })}
-              <button
-                onClick={() => setShowEmojiPicker((prev) => !prev)}
-                className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${
-                  showEmojiPicker
-                    ? "bg-primary/15 text-foreground"
-                    : "text-muted-foreground/60 hover:text-foreground hover:bg-secondary/60"
-                }`}
-                aria-label="More emoji reactions"
-              >
-                <Plus size={15} />
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    markHintSeen("emoji_reaction");
+                    setShowEmojiPicker((prev) => !prev);
+                  }}
+                  className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${
+                    showEmojiPicker
+                      ? "bg-primary/15 text-foreground"
+                      : "text-muted-foreground/60 hover:text-foreground hover:bg-secondary/60"
+                  }`}
+                  aria-label="More emoji reactions"
+                >
+                  <Plus size={15} />
+                </button>
+                {!isHintSeen("emoji_reaction") && (
+                  <FeatureHint id="emoji_reaction" text="Tap + to use any emoji" position="above" delay={600} />
+                )}
+              </div>
             </div>
 
             {showEmojiPicker && (
