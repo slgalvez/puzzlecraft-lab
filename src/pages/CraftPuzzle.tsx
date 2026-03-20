@@ -133,48 +133,38 @@ const CraftPuzzle = () => {
     setStep("content");
   };
 
+  /** Pure generation — builds puzzle data without any DB/share/sent logic */
+  const buildPuzzleData = useCallback((): Record<string, unknown> | null => {
+    if (!selectedType) return null;
+    switch (selectedType) {
+      case "word-fill": {
+        const words = wordInput.split(/[,\n]+/).map((w) => w.trim()).filter(Boolean);
+        if (words.length < 2) { toast({ title: "Enter at least 2 words" }); return null; }
+        return generateCustomFillIn(words, craftSettings.difficulty) as unknown as Record<string, unknown>;
+      }
+      case "word-search": {
+        const words = wordInput.split(/[,\n]+/).map((w) => w.trim()).filter(Boolean);
+        if (words.length < 2) { toast({ title: "Enter at least 2 words" }); return null; }
+        return generateCustomWordSearch(words, craftSettings.difficulty) as unknown as Record<string, unknown>;
+      }
+      case "cryptogram": {
+        if (phraseInput.trim().length < 3) { toast({ title: "Enter a longer phrase" }); return null; }
+        return generateCustomCryptogram(phraseInput.trim(), craftSettings.difficulty) as unknown as Record<string, unknown>;
+      }
+      case "crossword": {
+        const valid = clueEntries.filter((entry) => entry.answer.trim() && entry.clue.trim());
+        if (valid.length < 2) { toast({ title: "Enter at least 2 answer/clue pairs" }); return null; }
+        return generateCustomCrossword(valid, craftSettings.difficulty) as unknown as Record<string, unknown>;
+      }
+    }
+  }, [selectedType, wordInput, phraseInput, clueEntries, craftSettings.difficulty, toast]);
+
+  /** Generate + save to DB + create share URL (first time only) */
   const handleGenerate = useCallback(async () => {
     if (!selectedType) return;
-
     try {
-      let data: Record<string, unknown>;
-      switch (selectedType) {
-        case "word-fill": {
-          const words = wordInput.split(/[,\n]+/).map((w) => w.trim()).filter(Boolean);
-          if (words.length < 2) {
-            toast({ title: "Enter at least 2 words" });
-            return;
-          }
-          data = generateCustomFillIn(words, craftSettings.difficulty) as unknown as Record<string, unknown>;
-          break;
-        }
-        case "word-search": {
-          const words = wordInput.split(/[,\n]+/).map((w) => w.trim()).filter(Boolean);
-          if (words.length < 2) {
-            toast({ title: "Enter at least 2 words" });
-            return;
-          }
-          data = generateCustomWordSearch(words, craftSettings.difficulty) as unknown as Record<string, unknown>;
-          break;
-        }
-        case "cryptogram": {
-          if (phraseInput.trim().length < 3) {
-            toast({ title: "Enter a longer phrase" });
-            return;
-          }
-          data = generateCustomCryptogram(phraseInput.trim(), craftSettings.difficulty) as unknown as Record<string, unknown>;
-          break;
-        }
-        case "crossword": {
-          const valid = clueEntries.filter((entry) => entry.answer.trim() && entry.clue.trim());
-          if (valid.length < 2) {
-            toast({ title: "Enter at least 2 answer/clue pairs" });
-            return;
-          }
-          data = generateCustomCrossword(valid, craftSettings.difficulty) as unknown as Record<string, unknown>;
-          break;
-        }
-      }
+      const data = buildPuzzleData();
+      if (!data) return;
 
       setGeneratedData(data);
 
@@ -189,7 +179,6 @@ const CraftPuzzle = () => {
           checkEnabled: craftSettings.checkEnabled,
         },
       };
-
       if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
       if (puzzleFrom.trim()) payload.from = puzzleFrom.trim();
 
@@ -206,25 +195,54 @@ const CraftPuzzle = () => {
 
       const url = buildCraftShareUrl(shortId);
       setShareUrl(url);
-
-      // Keep draft alive until actual send; just clear the draft ID so
-      // auto-save won't overwrite the generated state, but do NOT record sent yet.
       sentRecorded.current = false;
 
-      toast({ title: "Puzzle sent ✨" });
+      toast({ title: "Puzzle ready ✨" });
       setStep("preview");
     } catch (err) {
       toast({ title: "Generation failed", description: err instanceof Error ? err.message : "Please try different input" });
     } finally {
       setSaving(false);
     }
-  }, [selectedType, wordInput, phraseInput, clueEntries, revealMessage, puzzleTitle, puzzleFrom, toast, refreshDraftCount]);
+  }, [selectedType, buildPuzzleData, revealMessage, puzzleTitle, puzzleFrom, craftSettings, toast]);
 
-  const handleRegenerate = () => {
-    setGeneratedData(null);
-    setShareUrl(null);
-    handleGenerate();
-  };
+  /** Regenerate — only refreshes puzzle data + updates DB, stays in draft */
+  const handleRegenerate = useCallback(async () => {
+    if (!selectedType) return;
+    try {
+      const data = buildPuzzleData();
+      if (!data) return;
+
+      setGeneratedData(data);
+
+      // Update the existing share record with new puzzle data
+      if (shareUrl) {
+        const shareId = shareUrl.split("/s/")[1] || shareUrl;
+        const payload: CraftPayload = {
+          type: selectedType,
+          puzzleData: data,
+          revealMessage,
+          settings: {
+            difficulty: craftSettings.difficulty,
+            hintsEnabled: craftSettings.hintsEnabled,
+            revealEnabled: craftSettings.revealEnabled,
+            checkEnabled: craftSettings.checkEnabled,
+          },
+        };
+        if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
+        if (puzzleFrom.trim()) payload.from = puzzleFrom.trim();
+
+        await supabase
+          .from("shared_puzzles" as any)
+          .update({ payload } as any)
+          .eq("id", shareId);
+      }
+
+      toast({ title: "Puzzle refreshed" });
+    } catch (err) {
+      toast({ title: "Regeneration failed", description: err instanceof Error ? err.message : "Please try different input" });
+    }
+  }, [selectedType, buildPuzzleData, shareUrl, revealMessage, puzzleTitle, puzzleFrom, craftSettings, toast]);
 
   /** Record the puzzle as "Sent" exactly once, on actual share/copy */
   const recordSent = useCallback(() => {
