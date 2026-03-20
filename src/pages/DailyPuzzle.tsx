@@ -30,10 +30,16 @@ import { generateWordFillIn, generateNumberFillIn } from "@/lib/generators/fillG
 import type { CrosswordPuzzle, FillInPuzzle } from "@/data/puzzles";
 
 const DailyPuzzle = () => {
-  const challenge = useMemo(() => getTodaysChallenge(), []);
+  console.log("[DailyPuzzle] mount");
+  const challenge = useMemo(() => {
+    const c = getTodaysChallenge();
+    console.log("[DailyPuzzle] challenge:", c.category, c.difficulty, c.dateStr, "seed:", c.seed);
+    return c;
+  }, []);
   const [completion, setCompletion] = useState(() => getDailyCompletion(challenge.dateStr));
   const streak = useMemo(() => getDailyStreak(), []);
   const info = CATEGORY_INFO[challenge.category];
+  console.log("[DailyPuzzle] info:", info?.name, "completion:", !!completion);
 
   useEffect(() => { setPuzzleOrigin("daily"); }, []);
 
