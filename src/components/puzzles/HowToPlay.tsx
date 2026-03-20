@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Info } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { PuzzleAnimation } from "./HowToPlayAnimations";
+import { hapticLight } from "@/lib/haptic";
 import type { PuzzleCategory } from "@/lib/puzzleTypes";
 
 const instructions: Record<PuzzleCategory, string[]> = {
@@ -55,22 +56,31 @@ export default function HowToPlay({ type }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={(val) => {
+      if (val) hapticLight();
+      setOpen(val);
+    }}>
       <PopoverTrigger
         onClick={(e) => {
           e.stopPropagation();
+          e.preventDefault();
         }}
-        className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground/40 transition-all hover:text-muted-foreground hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+        onPointerDown={(e) => {
+          // Prevent the parent card's active/click from firing
+          e.stopPropagation();
+        }}
+        className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground/40 transition-all hover:text-muted-foreground hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 -m-2"
         aria-label={`How to play ${type}`}
       >
-        <Info size={14} strokeWidth={2.2} />
+        <Info size={15} strokeWidth={2.2} />
       </PopoverTrigger>
       <PopoverContent
         side="bottom"
         align="end"
-        sideOffset={6}
+        sideOffset={2}
         className="w-[240px] p-0 shadow-lg border border-border/80 rounded-xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
       >
         {/* Animation */}
         <div className="flex items-center justify-center bg-muted/40 px-4 py-3 border-b border-border/50">
