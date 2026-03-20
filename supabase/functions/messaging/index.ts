@@ -173,6 +173,7 @@ Deno.serve(async (req) => {
         conversation: {
           id: conv.id,
           admin_profile_id: conv.admin_profile_id,
+          admin_name: adminName,
           disappearing_enabled: conv.disappearing_enabled,
           disappearing_duration: conv.disappearing_duration,
         },
