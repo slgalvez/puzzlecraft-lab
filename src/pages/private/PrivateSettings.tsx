@@ -318,7 +318,31 @@ const PrivateSettings = () => {
             />
           </div>
         </div>
-      </div>
+
+        <div className="border-t border-border" />
+
+        {/* Notifications */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-semibold text-foreground">Notifications</h2>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm text-foreground">Stealth notifications</p>
+              <p className="text-xs text-muted-foreground">
+                Subtle, coded alerts that blend into normal app behavior
+              </p>
+            </div>
+            <Switch
+              checked={notificationsOn}
+              onCheckedChange={(val) => {
+                setNotificationsOn(val);
+                setNotificationsEnabled(val);
+                if (val) {
+                  requestPushPermission();
+                }
+              }}
+            />
+          </div>
+        </div>
     </PrivateLayout>
   );
 };
