@@ -156,7 +156,9 @@ export function PrivateSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
+    <>
+      <NotificationBanner phrase={bannerPhrase} onDismissed={clearBanner} />
+      <Sidebar collapsible="icon" className="border-r border-border">
       <SidebarContent className="pt-4 flex flex-col h-full">
         <div className="px-4 pb-4">
           {!collapsed && (
