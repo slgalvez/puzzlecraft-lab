@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.upload-media]
 verify_jwt = false
+
+[functions.gif-search]
+verify_jwt = false
