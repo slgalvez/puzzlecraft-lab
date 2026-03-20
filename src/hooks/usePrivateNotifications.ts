@@ -17,15 +17,17 @@ export function usePrivateNotifications(token?: string | null) {
   const location = useLocation();
   const prevUnreadRef = useRef<number>(0);
   const prevIncomingCallRef = useRef<boolean>(false);
-  const subscribeAttempted = useRef(false);
+  const lastSubscribedTokenRef = useRef<string | null>(null);
 
   // Auto-subscribe to push when notifications are enabled
+  // Re-runs when token changes (new login) to resync device with backend
   useEffect(() => {
-    if (!token || subscribeAttempted.current) return;
+    if (!token) return;
+    if (token === lastSubscribedTokenRef.current) return;
     if (!getNotificationsEnabled()) return;
     if (!("serviceWorker" in navigator)) return;
 
-    subscribeAttempted.current = true;
+    lastSubscribedTokenRef.current = token;
     // Delay subscription to not block initial load
     const timer = setTimeout(() => {
       subscribeToPush(token).catch(() => {});

@@ -60,8 +60,14 @@ const PrivateSettings = () => {
   useEffect(() => {
     setPermissionStatus(getPermissionStatus());
     setPwaActive(isPwaMode());
-    getPushSubscriptionStatus().then((s) => setPushSubscribed(s.subscribed));
-  }, []);
+    getPushSubscriptionStatus().then((s) => {
+      setPushSubscribed(s.subscribed);
+      // If local subscription exists but backend might be stale, resync
+      if (s.subscribed && token && getNotificationsEnabled()) {
+        subscribeToPush(token).catch(() => {});
+      }
+    });
+  }, [token]);
 
   const handleSessionExpired = useCallback(() => {
     signOut();
@@ -171,6 +177,8 @@ const PrivateSettings = () => {
     setTestSending(true);
     setTestResult("");
     try {
+      // Resync subscription with backend before testing
+      await subscribeToPush(token);
       const result = await sendTestPush(token);
       if (result.ok) {
         setTestResult(`Sent to ${result.sent} device(s)`);
