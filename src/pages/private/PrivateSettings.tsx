@@ -178,7 +178,15 @@ const PrivateSettings = () => {
     setTestResult("");
     try {
       // Resync subscription with backend before testing
-      await subscribeToPush(token);
+      const sub = await subscribeToPush(token);
+      setPushSubscribed(!!sub);
+      setPermissionStatus(getPermissionStatus());
+
+      if (!sub) {
+        setTestResult("Push subscription unavailable on this device");
+        return;
+      }
+
       const result = await sendTestPush(token);
       if (result.ok) {
         setTestResult(`Sent to ${result.sent} device(s)`);
