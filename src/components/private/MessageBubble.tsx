@@ -261,7 +261,11 @@ export function MessageBubble({
               )}
             </div>
             {viewerOpen && (
-              <ImageViewer src={mediaUrl} onClose={() => setViewerOpen(false)} />
+              <ImageViewer
+                src={mediaUrl}
+                images={allImageUrls}
+                onClose={() => setViewerOpen(false)}
+              />
             )}
           </div>
         ) : (
