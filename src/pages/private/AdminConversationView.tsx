@@ -324,10 +324,10 @@ const AdminConversationView = () => {
         />
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-2 sm:px-3 py-3 space-y-1">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 space-y-1">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
-              <p className="text-sm text-muted-foreground">No messages in this conversation yet.</p>
+              <p className="text-[13px] text-muted-foreground/40">No messages in this conversation yet</p>
             </div>
           ) : (
             messages.map((msg, i) => {
