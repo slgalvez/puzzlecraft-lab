@@ -189,120 +189,104 @@ const UserOverview = () => {
 
   return (
     <PrivateLayout title="Overview">
-      <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-8">
+      <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-10">
         {/* Welcome */}
-        <div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+        <div className="px-0.5">
+          <h2 className="text-xl font-semibold text-foreground tracking-tight">
             Hi, {user?.first_name}
           </h2>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-[13px] text-muted-foreground/70 mt-0.5">
             Here's what's happening
           </p>
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-3 gap-3">
-          <Button
-            variant="outline"
-            className="h-auto py-3 flex flex-col gap-1.5 text-xs"
+        <div className="grid grid-cols-3 gap-2.5">
+          <button
+            className="flex flex-col items-center gap-2 py-4 px-2 rounded-xl border border-border/40 bg-secondary/20 text-xs text-foreground hover:bg-secondary/40 active:scale-[0.97] transition-all"
             onClick={() => navigate("/p/conversation")}
           >
-            <MessageSquare size={16} className="text-primary" />
-            <span>Conversation</span>
+            <MessageSquare size={18} className="text-primary" />
+            <span className="font-medium">Conversation</span>
             {unreadCount > 0 && (
               <span className="text-[10px] text-primary font-medium">{unreadCount} new</span>
             )}
-          </Button>
-          <Button
-            variant="outline"
-            className="h-auto py-3 flex flex-col gap-1.5 text-xs"
+          </button>
+          <button
+            className="flex flex-col items-center gap-2 py-4 px-2 rounded-xl border border-border/40 bg-secondary/20 text-xs text-foreground hover:bg-secondary/40 active:scale-[0.97] transition-all"
             onClick={() => navigate("/p/for-you")}
           >
-            <Puzzle size={16} className="text-primary" />
-            <span>Puzzles for You</span>
+            <Puzzle size={18} className="text-primary" />
+            <span className="font-medium">Puzzles for You</span>
             {unsolved.length > 0 && (
               <span className="text-[10px] text-primary font-medium">{unsolved.length} unsolved</span>
             )}
-          </Button>
-          <Button
-            variant="outline"
-            className="h-auto py-3 flex flex-col gap-1.5 text-xs"
+          </button>
+          <button
+            className="flex flex-col items-center gap-2 py-4 px-2 rounded-xl border border-border/40 bg-secondary/20 text-xs text-foreground hover:bg-secondary/40 active:scale-[0.97] transition-all"
             onClick={() => navigate("/p/for-you")}
           >
-            <Plus size={16} className="text-primary" />
-            <span>Create Puzzle</span>
-          </Button>
+            <Plus size={18} className="text-primary" />
+            <span className="font-medium">Create Puzzle</span>
+          </button>
         </div>
 
-        {/* Compact stats — 2 key metrics */}
-        <div className="flex items-center gap-6 px-1">
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-semibold text-foreground">{unreadCount}</span>
-            <span className="text-xs text-muted-foreground">unread</span>
+        {/* Compact stats */}
+        <div className="flex items-center gap-6 px-0.5">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg font-semibold text-foreground tabular-nums">{unreadCount}</span>
+            <span className="text-[11px] text-muted-foreground/60">unread</span>
             {unreadCount > 0 && (
-              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse ml-0.5" />
             )}
           </div>
-          <span className="w-px h-4 bg-border" />
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-semibold text-foreground">{unsolved.length}</span>
-            <span className="text-xs text-muted-foreground">unsolved puzzles</span>
+          <span className="w-px h-3.5 bg-border/50" />
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg font-semibold text-foreground tabular-nums">{unsolved.length}</span>
+            <span className="text-[11px] text-muted-foreground/60">unsolved</span>
           </div>
         </div>
 
-        {/* Recent Activity — compact */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Recent Activity</h3>
+        {/* Recent Activity */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between px-0.5">
+            <h3 className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-widest">Activity</h3>
             {activities.length > 0 && !showClearConfirm && (
               <button
                 onClick={() => setShowClearConfirm(true)}
-                className="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] text-muted-foreground/50 hover:text-muted-foreground hover:bg-secondary/30 transition-colors"
               >
-                <Trash2 size={12} />
+                <Trash2 size={11} />
                 <span>Clear</span>
               </button>
             )}
           </div>
           {showClearConfirm && (
-            <div className="rounded-lg border border-border bg-destructive/5 p-3 space-y-2">
+            <div className="rounded-xl bg-destructive/5 p-3 space-y-2">
               <p className="text-xs text-muted-foreground">Clear all recent activity?</p>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="h-7 text-xs"
-                  disabled={clearing}
-                  onClick={handleClearActivity}
-                >
+                <Button variant="destructive" size="sm" className="h-7 text-xs" disabled={clearing} onClick={handleClearActivity}>
                   {clearing ? "Clearing..." : "Clear All"}
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs border-border"
-                  onClick={() => setShowClearConfirm(false)}
-                >
+                <Button variant="outline" size="sm" className="h-7 text-xs border-border/50" onClick={() => setShowClearConfirm(false)}>
                   Cancel
                 </Button>
               </div>
             </div>
           )}
           {loading ? (
-            <p className="text-xs text-muted-foreground animate-pulse py-3 text-center">Loading…</p>
+            <p className="text-[11px] text-muted-foreground/40 animate-pulse py-3 text-center">Loading…</p>
           ) : activities.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-2">No recent activity</p>
+            <p className="text-[11px] text-muted-foreground/40 py-1 px-0.5">Nothing new</p>
           ) : (
-            <div className="space-y-0.5">
+            <div className="space-y-px">
               {activities.map((a) => (
-                <div key={a.id} className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-secondary/30 transition-colors">
-                  <div className="flex items-center justify-center w-5 h-5 rounded-full bg-muted shrink-0">
+                <div key={a.id} className="flex items-center gap-3 px-1.5 py-2 rounded-lg hover:bg-secondary/20 transition-colors">
+                  <div className="flex items-center justify-center w-5 h-5 rounded-full bg-muted/50 shrink-0">
                     {activityIcon(a.type)}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-foreground truncate">{a.description}</p>
-                  </div>
-                  <span className="text-[10px] text-muted-foreground shrink-0">
+                  <p className="flex-1 min-w-0 text-xs text-foreground/80 truncate">{a.description}</p>
+                  <span className="text-[10px] text-muted-foreground/40 shrink-0 tabular-nums">
                     {formatTime(a.timestamp)}
                   </span>
                 </div>
