@@ -223,13 +223,13 @@ const AdminDashboard = () => {
 
   return (
     <PrivateLayout title="Overview">
-      <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-6">
+      <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-8">
         {/* Welcome */}
         <div>
-          <h2 className="text-base font-semibold text-foreground">
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
             Hi, {user?.first_name}
           </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-1">
             Here's what's happening
           </p>
         </div>
@@ -268,33 +268,26 @@ const AdminDashboard = () => {
           </Button>
         </div>
 
-        {/* Stats row */}
-        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
-          <div className="rounded-lg border border-border bg-card p-3 text-center">
-            <p className="text-lg font-semibold text-foreground">{conversations.length}</p>
-            <p className="text-[11px] text-muted-foreground">Conversations</p>
-          </div>
-          <div className="rounded-lg border border-border bg-card p-3 text-center relative">
-            <p className="text-lg font-semibold text-foreground">{totalUnread}</p>
-            <p className="text-[11px] text-muted-foreground">Unread</p>
+        {/* Compact stats — 2 key metrics */}
+        <div className="flex items-center gap-6 px-1">
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-semibold text-foreground">{totalUnread}</span>
+            <span className="text-xs text-muted-foreground">unread</span>
             {totalUnread > 0 && (
-              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
             )}
           </div>
-          <div className="rounded-lg border border-border bg-card p-3 text-center">
-            <p className="text-lg font-semibold text-foreground">{received.length}</p>
-            <p className="text-[11px] text-muted-foreground">Puzzles In</p>
-          </div>
-          <div className="rounded-lg border border-border bg-card p-3 text-center">
-            <p className="text-lg font-semibold text-foreground">{sent.length}</p>
-            <p className="text-[11px] text-muted-foreground">Puzzles Out</p>
+          <span className="w-px h-4 bg-border" />
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-semibold text-foreground">{unsolved.length}</span>
+            <span className="text-xs text-muted-foreground">unsolved puzzles</span>
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* Recent Activity — compact */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-foreground">Recent Activity</h3>
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Recent Activity</h3>
             {activities.length > 0 && !showClearActivity && (
               <button
                 onClick={() => setShowClearActivity(true)}
@@ -330,17 +323,14 @@ const AdminDashboard = () => {
             </div>
           )}
           {loading ? (
-            <p className="text-xs text-muted-foreground animate-pulse py-4 text-center">Loading…</p>
+            <p className="text-xs text-muted-foreground animate-pulse py-3 text-center">Loading…</p>
           ) : activities.length === 0 ? (
-            <div className="rounded-lg border border-border bg-card p-6 text-center">
-              <Clock size={20} className="mx-auto text-muted-foreground/40 mb-2" />
-              <p className="text-xs text-muted-foreground">No recent activity</p>
-            </div>
+            <p className="text-xs text-muted-foreground py-2">No recent activity</p>
           ) : (
-            <div className="rounded-lg border border-border bg-card divide-y divide-border">
+            <div className="space-y-0.5">
               {activities.map((a) => (
-                <div key={a.id} className="flex items-center gap-3 px-4 py-3">
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-muted shrink-0">
+                <div key={a.id} className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-secondary/30 transition-colors">
+                  <div className="flex items-center justify-center w-5 h-5 rounded-full bg-muted shrink-0">
                     {activityIcon(a.type)}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -355,9 +345,9 @@ const AdminDashboard = () => {
           )}
         </div>
 
-        {/* Conversation list */}
-        <div className="rounded-lg border border-border bg-card">
-          <div className="px-4 sm:px-5 py-3 border-b border-border flex items-center justify-between">
+        {/* Conversations — dominant section, minimal chrome */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between px-1">
             <h3 className="text-sm font-medium text-foreground">Conversations</h3>
             {conversations.length > 0 && (
               <button
@@ -372,7 +362,7 @@ const AdminDashboard = () => {
           </div>
 
           {showClearAll && (
-            <div className="px-4 sm:px-5 py-3 bg-destructive/5 border-b border-border space-y-2">
+            <div className="px-3 py-3 bg-destructive/5 border border-border rounded-lg space-y-2">
               <p className="text-xs text-destructive">
                 Clear your message history across all conversations? Users will still see their copies until they clear them.
               </p>
@@ -399,20 +389,20 @@ const AdminDashboard = () => {
           )}
 
           {loading ? (
-            <div className="px-5 py-8 text-center text-sm text-muted-foreground animate-pulse">Loading...</div>
+            <div className="py-8 text-center text-sm text-muted-foreground animate-pulse">Loading...</div>
           ) : error ? (
-            <div className="px-5 py-8 text-center space-y-3">
+            <div className="py-8 text-center space-y-3">
               <p className="text-sm text-muted-foreground">{error}</p>
               <Button variant="outline" size="sm" onClick={() => { setLoading(true); setError(null); fetchData(); }}>
                 Retry
               </Button>
             </div>
           ) : conversations.length === 0 ? (
-            <div className="px-5 py-8 text-center text-sm text-muted-foreground">
+            <div className="py-6 text-center text-sm text-muted-foreground">
               No conversations yet.
             </div>
           ) : (
-            <div className="divide-y divide-border">
+            <div className="rounded-lg border border-border/50 divide-y divide-border/50 overflow-hidden">
               {conversations.map((conv) => (
                 <Link
                   key={conv.id}

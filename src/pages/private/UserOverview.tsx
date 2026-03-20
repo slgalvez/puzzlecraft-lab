@@ -189,13 +189,13 @@ const UserOverview = () => {
 
   return (
     <PrivateLayout title="Overview">
-      <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-6">
+      <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-8">
         {/* Welcome */}
         <div>
-          <h2 className="text-base font-semibold text-foreground">
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
             Hi, {user?.first_name}
           </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-1">
             Here's what's happening
           </p>
         </div>
@@ -234,29 +234,26 @@ const UserOverview = () => {
           </Button>
         </div>
 
-        {/* Puzzle Summary */}
-        <div className="rounded-lg border border-border bg-card p-4">
-          <h3 className="text-sm font-medium text-foreground mb-3">Puzzles</h3>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-lg font-semibold text-foreground">{received.length}</p>
-              <p className="text-[11px] text-muted-foreground">Received</p>
-            </div>
-            <div>
-              <p className="text-lg font-semibold text-foreground">{solved.length}</p>
-              <p className="text-[11px] text-muted-foreground">Solved</p>
-            </div>
-            <div>
-              <p className="text-lg font-semibold text-foreground">{sent.length}</p>
-              <p className="text-[11px] text-muted-foreground">Sent</p>
-            </div>
+        {/* Compact stats — 2 key metrics */}
+        <div className="flex items-center gap-6 px-1">
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-semibold text-foreground">{unreadCount}</span>
+            <span className="text-xs text-muted-foreground">unread</span>
+            {unreadCount > 0 && (
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+            )}
+          </div>
+          <span className="w-px h-4 bg-border" />
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-semibold text-foreground">{unsolved.length}</span>
+            <span className="text-xs text-muted-foreground">unsolved puzzles</span>
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* Recent Activity — compact */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-foreground">Recent Activity</h3>
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Recent Activity</h3>
             {activities.length > 0 && !showClearConfirm && (
               <button
                 onClick={() => setShowClearConfirm(true)}
@@ -292,17 +289,14 @@ const UserOverview = () => {
             </div>
           )}
           {loading ? (
-            <p className="text-xs text-muted-foreground animate-pulse py-4 text-center">Loading…</p>
+            <p className="text-xs text-muted-foreground animate-pulse py-3 text-center">Loading…</p>
           ) : activities.length === 0 ? (
-            <div className="rounded-lg border border-border bg-card p-6 text-center">
-              <Clock size={20} className="mx-auto text-muted-foreground/40 mb-2" />
-              <p className="text-xs text-muted-foreground">No recent activity</p>
-            </div>
+            <p className="text-xs text-muted-foreground py-2">No recent activity</p>
           ) : (
-            <div className="rounded-lg border border-border bg-card divide-y divide-border">
+            <div className="space-y-0.5">
               {activities.map((a) => (
-                <div key={a.id} className="flex items-center gap-3 px-4 py-3">
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-muted shrink-0">
+                <div key={a.id} className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-secondary/30 transition-colors">
+                  <div className="flex items-center justify-center w-5 h-5 rounded-full bg-muted shrink-0">
                     {activityIcon(a.type)}
                   </div>
                   <div className="flex-1 min-w-0">
