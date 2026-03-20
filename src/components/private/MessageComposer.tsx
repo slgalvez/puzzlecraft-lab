@@ -112,7 +112,15 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
       // silent
     }
   };
+  return (
     <div className="shrink-0">
+      {gifOpen && (
+        <GifPicker
+          token={token}
+          onSelect={handleGifSelect}
+          onClose={() => setGifOpen(false)}
+        />
+      )}
       <input
         ref={fileInputRef}
         type="file"
@@ -135,9 +143,22 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
                 ? "text-primary bg-primary/10"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary"
             }`}
-            title="Send an image or GIF"
+            title="Send an image"
           >
             {uploading ? <Loader2 size={18} className="animate-spin" /> : <ImageIcon size={18} />}
+          </button>
+          <button
+            type="button"
+            onClick={() => setGifOpen((v) => !v)}
+            disabled={uploading || !conversationId}
+            className={`shrink-0 p-2 rounded-full transition-colors text-xs font-bold ${
+              gifOpen
+                ? "text-primary bg-primary/10"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+            }`}
+            title="Search GIFs"
+          >
+            GIF
           </button>
           <input
             value={message}
