@@ -21,24 +21,34 @@ export function GifPicker({ token, onSelect, onClose }: GifPickerProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GifResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const activeQueryRef = useRef("");
 
   const fetchGifs = useCallback(
-    async (searchQuery: string) => {
-      setLoading(true);
+    async (searchQuery: string, offset = 0) => {
+      const isLoadMore = offset > 0;
+      if (isLoadMore) setLoadingMore(true); else setLoading(true);
       try {
         const { data, error } = await supabase.functions.invoke("gif-search", {
-          body: { token, query: searchQuery || undefined },
+          body: { token, query: searchQuery || undefined, offset },
         });
         if (!error && data?.results) {
-          setResults(data.results);
+          if (isLoadMore) {
+            setResults((prev) => [...prev, ...data.results]);
+          } else {
+            setResults(data.results);
+          }
+          setHasMore(data.results.length >= 20);
         }
       } catch {
         // silent
       } finally {
-        setLoading(false);
+        if (isLoadMore) setLoadingMore(false); else setLoading(false);
         setSearched(true);
       }
     },
@@ -51,14 +61,26 @@ export function GifPicker({ token, onSelect, onClose }: GifPickerProps) {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, [fetchGifs]);
 
-  // Debounced search
+  // Debounced search — reset results on new query
   useEffect(() => {
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
+      activeQueryRef.current = query;
+      setResults([]);
+      setHasMore(false);
       fetchGifs(query);
     }, 300);
     return () => clearTimeout(debounceRef.current);
   }, [query, fetchGifs]);
+
+  // Infinite scroll
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || loadingMore || !hasMore) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 80) {
+      fetchGifs(activeQueryRef.current, results.length);
+    }
+  }, [loadingMore, hasMore, results.length, fetchGifs]);
 
   return (
     <div className="border-t border-border bg-background animate-in slide-in-from-bottom-2 duration-200">
