@@ -308,6 +308,17 @@ const UserConversation = () => {
             messages.map((msg, i) => {
               const isMine = msg.sender_profile_id === user?.id;
 
+              if (isCallMessage(msg.body)) {
+                return (
+                  <CallSystemMessage
+                    key={msg.id}
+                    body={msg.body}
+                    formatTime={formatTime}
+                    createdAt={msg.created_at}
+                  />
+                );
+              }
+
               if (isPuzzleMessage(msg.body)) {
                 return (
                   <PuzzleMessageBubble
