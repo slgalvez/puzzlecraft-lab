@@ -171,6 +171,8 @@ const PrivateSettings = () => {
     setTestSending(true);
     setTestResult("");
     try {
+      // Resync subscription with backend before testing
+      await subscribeToPush(token);
       const result = await sendTestPush(token);
       if (result.ok) {
         setTestResult(`Sent to ${result.sent} device(s)`);
