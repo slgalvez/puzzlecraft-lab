@@ -132,16 +132,19 @@ const UserConversation = () => {
 
   const handleEdit = async (messageId: string, newBody: string) => {
     if (!token) return;
-    // Optimistic update
     setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, body: newBody } : m));
     try {
       await invokeMessaging("edit-message", token, { message_id: messageId, body: newBody });
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
       toast({ title: "Could not edit message", description: "Please try again." });
-      fetchConversation(); // revert
+      fetchConversation();
     }
   };
+
+  const handleStartEdit = useCallback((messageId: string, body: string) => {
+    setEditingMessage({ id: messageId, body });
+  }, []);
 
   const handleToggleDisappearing = async (enabled: boolean, duration?: string) => {
     if (!conversationId || !token) return;
