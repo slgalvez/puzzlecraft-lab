@@ -229,6 +229,8 @@ body:has(.private-app) [data-sidebar="sidebar"][data-mobile="true"] {
   --sidebar-accent-foreground: 220 10% 85%;
   --sidebar-border: 220 12% 16%;
   --sidebar-ring: var(--chat-accent, 172 50% 45%);
+  --primary: var(--chat-accent, 172 50% 45%);
+  --primary-foreground: var(--chat-accent-foreground, 220 14% 10%);
   --secondary: 220 12% 18%;
   --secondary-foreground: 220 10% 85%;
   --muted: 220 12% 18%;
