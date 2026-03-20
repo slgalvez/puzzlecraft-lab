@@ -504,24 +504,11 @@ export function generateCustomFillIn(words: string[], difficulty: CraftDifficult
   const baseSize = Math.max(9, maxLen + padding);
   const targetInt = TARGET_INTERSECTION_FILL[difficulty];
 
-  let bestResult: CustomFillInData | null = null;
-  let bestScore = -Infinity;
-
-  for (let attempt = 0; attempt < MAX_REGEN_ATTEMPTS; attempt++) {
-    const seed = (Date.now() + attempt * 7919) % 2147483646 || 1;
+  return selectBestLayout((seed) => {
     const { data, stats, placedCount } = buildFillIn(cleaned, baseSize, seed);
     const score = scoreLayout(stats, difficulty, placedCount, cleaned.length, targetInt);
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestResult = data;
-    }
-
-    // Accept early if quality passes and all words placed
-    if (placedCount === cleaned.length && passesQuality(stats, difficulty) && score > 50) break;
-  }
-
-  return bestResult!;
+    return { data, score };
+  }, Date.now());
 }
 
 function buildFillIn(words: string[], size: number, seed: number) {
