@@ -91,22 +91,8 @@ export function MessageBubble({
   };
 
   const handleStartEdit = () => {
-    setEditText(body);
-    setEditing(true);
+    onStartEdit?.(id, body);
     setShowMenu(false);
-    setTimeout(() => editInputRef.current?.focus(), 50);
-  };
-
-  const handleSaveEdit = () => {
-    const trimmed = editText.trim();
-    if (trimmed && trimmed !== body) {
-      onEdit?.(id, trimmed);
-    }
-    setEditing(false);
-  };
-
-  const handleCancelEdit = () => {
-    setEditing(false);
   };
 
   const isAudio = isAudioMessage(body);
