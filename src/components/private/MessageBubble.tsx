@@ -111,7 +111,9 @@ export function MessageBubble({
     setEditing(false);
   };
 
-  const isMedia = isGifMessage(body);
+  const isAudio = isAudioMessage(body);
+  const audioData = isAudio ? getAudioData(body) : null;
+  const isMedia = !isAudio && isGifMessage(body);
   const mediaUrl = isMedia ? getGifUrl(body) : "";
 
   const bubbleClass = isMine
