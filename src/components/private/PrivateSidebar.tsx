@@ -6,7 +6,6 @@ import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import { NavLink } from "@/components/NavLink";
 import { applyChatTheme } from "@/lib/chatTheme";
 import { usePrivateNotifications } from "@/hooks/usePrivateNotifications";
-import { NotificationBanner } from "@/components/private/NotificationBanner";
 import { useActivityBanner } from "@/hooks/useActivityBanner";
 import { ActivityBanner } from "@/components/private/ActivityBanner";
 import {
