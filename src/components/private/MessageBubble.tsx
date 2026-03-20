@@ -190,7 +190,7 @@ export function MessageBubble({
             </div>
           </div>
         ) : isMedia ? (
-          <div className={`overflow-hidden ${bubbleClass} p-1`}>
+          <div className={`overflow-hidden ${bubbleClass} p-1 select-none`}>
             <img
               src={mediaUrl}
               alt="Image"
