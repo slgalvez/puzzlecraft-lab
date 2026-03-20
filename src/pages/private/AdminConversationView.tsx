@@ -280,6 +280,7 @@ const AdminConversationView = () => {
       {videoCall.incomingCall && videoCall.callState === "idle" && (
         <IncomingCallBanner
           call={videoCall.incomingCall}
+          resolvedCallerName={resolve(videoCall.incomingCall.callerProfileId, videoCall.incomingCall.callerName)}
           onAccept={videoCall.acceptCall}
           onDecline={videoCall.declineCall}
         />
