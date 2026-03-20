@@ -316,10 +316,10 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
                 type="button"
                 onClick={() => setGifOpen((v) => !v)}
                 disabled={uploading || !conversationId}
-                className={`shrink-0 p-2 rounded-full transition-colors text-xs font-bold ${
+                className={`shrink-0 p-2 rounded-full transition-colors text-[11px] font-bold tracking-tight ${
                   gifOpen
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    ? "text-primary bg-primary/[0.08]"
+                    : "text-muted-foreground/50 hover:text-foreground hover:bg-secondary/30"
                 }`}
                 title="Search GIFs"
               >
