@@ -72,6 +72,7 @@ export function MessageBubble({
   const handleTap = useCallback(() => {
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
+      hapticTap();
       onReact?.(id, "❤️");
       lastTapRef.current = 0;
     } else {
