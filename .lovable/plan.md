@@ -1,40 +1,59 @@
 
+Goal: fix the stealth notification test flow so mobile Safari and the installed PWA can actually receive the test push, while keeping the rest of the app untouched.
 
-## Diagnosis
+What I found
 
-The edge function logs show the real error: **`403 BadJwtToken`** from Apple's push service. The subscription row **does exist** in the database (profile `3687afff...`, endpoint `web.push.apple.com/...`). The "No devices subscribed" message is a **client-side reporting bug**, not a missing subscription.
+- The device is subscribing successfully: permission is granted, push subscription is active, and the app knows it is installed.
+- The remaining failure is server-side delivery, not client-side subscription.
+- The backend logs still show `403 BadJwtToken` from Apple’s push service.
+- That means Apple is rejecting the VAPID JWT itself, so the issue is now narrowed to VAPID auth details, not the Settings UI.
 
-Two distinct problems:
+Implementation plan
 
-1. **VAPID JWT rejected by Apple** — The `BadJwtToken` response means Apple cannot verify the JWT signature. Most likely cause: the `VAPID_PRIVATE_KEY` secret is stored in standard base64 format (with `+`, `/`) instead of base64url (with `-`, `_`), causing `crypto.subtle.importKey("jwk", ...)` to silently produce the wrong key. The JWK `d` parameter requires strict base64url encoding.
+1. Harden VAPID JWT generation in `supabase/functions/send-push/index.ts`
+   - Replace the current hardcoded JWT `sub` claim with a safer subject that Apple accepts reliably:
+     - use the published site URL as an `https://...` subject, or
+     - support a configurable subject value if needed.
+   - Keep `aud` exactly equal to the endpoint origin and keep `exp` safely under Apple’s 1-day limit.
+   - Add a startup/self-check that signs a token with the stored private key and verifies it against the shipped public key.
+   - If that verification fails, return a clear configuration error instead of attempting delivery.
 
-2. **Misleading error message** — When test-push finds subscriptions but delivery fails, the backend returns `{ ok: false, sent: 0, failed: 1, results: [...] }` with **no `error` field**. The client code (`result.error || "No devices subscribed"`) then falls through to the hardcoded fallback.
+2. Detect the real remaining config issue instead of masking it
+   - Parse Apple’s JSON error response body, not just the HTTP status.
+   - Surface reasons like:
+     - `BadJwtToken`
+     - `VapidPkHashMismatch`
+     - `BadAuthorizationHeader`
+   - Return these reasons from `test-push` so the UI can distinguish:
+     - no device subscribed
+     - device subscribed but Apple rejected auth
+     - public/private VAPID key mismatch
 
-## Plan
+3. Improve the Settings test result message in `src/pages/private/PrivateSettings.tsx`
+   - Keep the current subscription flow.
+   - Update the “Send test notification” result text so it shows the backend’s exact reason.
+   - If the backend reports a VAPID mismatch/config problem, show that explicitly instead of generic `403 Forbidden`.
 
-### 1. Fix VAPID private key handling in edge function
-**File: `supabase/functions/send-push/index.ts`**
+4. Keep scope tight
+   - Only touch:
+     - `supabase/functions/send-push/index.ts`
+     - `src/pages/private/PrivateSettings.tsx`
+   - Do not change:
+     - puzzle flows
+     - daily challenge
+     - messaging behavior
+     - login/auth flows
+     - unrelated routing/UI
 
-In `createVapidJwt`, normalize the private key to base64url before passing to JWK:
-```
-let d = Deno.env.get("VAPID_PRIVATE_KEY")!;
-d = d.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-```
+Expected outcome
 
-Add a verification step: after importing the signing key, do a quick sign+verify round-trip to catch key pair mismatches early and log a clear error.
+- If the issue is the JWT subject format, test notifications will start delivering on iPhone/PWA after the code fix.
+- If the issue is actually a mismatched VAPID key pair, the app will stop failing ambiguously and will report that exact problem so the backend key can be corrected cleanly.
 
-### 2. Fix test-push error reporting in edge function
-**File: `supabase/functions/send-push/index.ts`**
+Technical details
 
-When `sent === 0` and `failed > 0`, include an `error` field in the response with the actual failure reason (e.g., `"Push delivery failed (403 BadJwtToken)"`).
-
-### 3. Fix client-side error display
-**File: `src/pages/private/PrivateSettings.tsx`**
-
-Update `handleTestPush` to show the backend's actual error message instead of the hardcoded "No devices subscribed" fallback. Show `result.error` when present, or compose a message from `result.failed`/`result.results` when available.
-
-### Summary
-- 2 files modified: `supabase/functions/send-push/index.ts`, `src/pages/private/PrivateSettings.tsx`
-- No changes to auth, routing, messaging logic, service worker, or notification phrasing
-- Fixes the actual push delivery failure and eliminates the misleading error message
-
+- Apple’s own error docs say `BadJwtToken` happens when the JWT is missing, signed with the wrong private key, uses an invalid subject, has the wrong audience, or expires too far in the future.
+- Since base64url normalization was already added and the error persists, the most likely remaining causes are:
+  1. invalid/unacceptable `sub`
+  2. private key not matching the hardcoded public key used in subscriptions
+- I’ll implement the code changes so the system both fixes the likely cause and positively identifies whether a secret/key-pair update is still required.
