@@ -51,10 +51,9 @@ const AdminConversationView = () => {
   const [togglingDisappearing, setTogglingDisappearing] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [editingMessage, setEditingMessage] = useState<EditingMessage | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageIds = useMemo(() => messages.map((m) => m.id), [messages]);
+  const { containerRef: messagesContainerRef, bottomRef: messagesEndRef, markUserSent } = useChatScroll(messageIds);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
-  const initialScrollDone = useRef(false);
-  const prevMessageCount = useRef(0);
 
   const handleSessionExpired = useCallback(() => {
     signOut();
