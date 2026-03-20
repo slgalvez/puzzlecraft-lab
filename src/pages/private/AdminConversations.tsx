@@ -242,7 +242,7 @@ const AdminConversations = () => {
                           <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
                         )}
                         <p className={`text-sm font-medium text-foreground truncate ${conv.unread_count > 0 ? "font-semibold" : ""}`}>
-                          {conv.user_name}
+                          {resolve(conv.user_profile_id, conv.user_name)}
                         </p>
                         {conv.unread_count > 0 && (
                           <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 min-w-0">
