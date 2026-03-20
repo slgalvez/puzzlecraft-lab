@@ -212,6 +212,46 @@ Deno.serve(async (req) => {
         .single();
 
       if (msgErr) return err("Could not send message");
+
+      // Fire-and-forget: send push notification to the other party
+      const recipientProfileId = profileId === conv.admin_profile_id
+        ? conv.user_profile_id
+        : conv.admin_profile_id;
+
+      // Use coded phrases for stealth
+      const MESSAGE_PHRASES = [
+        "New challenge available",
+        "Your next puzzle is ready",
+        "Time for a quick brain break",
+        "Daily puzzle refreshed",
+        "You've got a new challenge",
+        "Jump back in",
+        "Ready when you are",
+      ];
+      const phraseIdx = Math.floor(Math.random() * MESSAGE_PHRASES.length);
+
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${serviceRoleKey}`,
+            apikey: serviceRoleKey,
+          },
+          body: JSON.stringify({
+            action: "send-push",
+            target_profile_id: recipientProfileId,
+            title: "Puzzlecraft",
+            body: MESSAGE_PHRASES[phraseIdx],
+            tag: "private-notification",
+            url: "/p",
+          }),
+        });
+      } catch (pushErr) {
+        // Non-blocking — don't fail the send-message action
+        console.error("Push notification error:", pushErr);
+      }
+
       return json({ message: msg });
     }
 
