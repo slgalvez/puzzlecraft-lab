@@ -153,12 +153,12 @@ html {
   --ring: 172 50% 45%;
   --sidebar-background: 220 14% 8%;
   --sidebar-foreground: 220 10% 85%;
-  --sidebar-primary: var(--chat-accent, 172 50% 45%);
-  --sidebar-primary-foreground: var(--chat-accent-foreground, 220 14% 10%);
+  --sidebar-primary: 172 50% 45%;
+  --sidebar-primary-foreground: 220 14% 10%;
   --sidebar-accent: 220 12% 15%;
   --sidebar-accent-foreground: 220 10% 85%;
   --sidebar-border: 220 12% 16%;
-  --sidebar-ring: var(--chat-accent, 172 50% 45%);
+  --sidebar-ring: 172 50% 45%;
 
   --puzzle-cell: 220 14% 18%;
   --puzzle-cell-active: 172 40% 22%;
