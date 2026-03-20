@@ -24,10 +24,36 @@ interface PrivateLayoutProps {
 }
 
 export default function PrivateLayout({ children, title, fullHeight }: PrivateLayoutProps) {
-  const { signOut, user } = useAuth();
+  const { signOut, user, token } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const escCountRef = useRef(0);
   const escTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const handleSessionExpired = useCallback(() => {
+    signOut();
+    navigate("/");
+  }, [signOut, navigate]);
+
+  // Global incoming call detection (shows banner on ALL Secret Lab pages)
+  const isOnConversationPage = location.pathname.startsWith("/p/conversation");
+  const globalCall = useGlobalIncomingCall(
+    isOnConversationPage ? null : token, // Don't poll globally when already in a conversation (that page has its own polling)
+    handleSessionExpired,
+  );
+
+  const handleAcceptGlobalCall = useCallback((callId: string) => {
+    const convId = globalCall.incomingCall?.conversationId;
+    globalCall.acceptCall(callId);
+    // Navigate to the conversation so the user can handle the call
+    if (convId) {
+      if (user?.role === "admin") {
+        navigate(`/p/conversations/${convId}`);
+      } else {
+        navigate("/p/conversation");
+      }
+    }
+  }, [globalCall, user, navigate]);
 
   const quickExit = useCallback(() => {
     sessionStorage.removeItem("private_view_state");
