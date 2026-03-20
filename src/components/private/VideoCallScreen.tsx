@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Video, VideoOff, Mic, MicOff, PhoneOff } from "lucide-react";
 import type { CallState } from "@/hooks/useVideoCall";
+import { hapticTap } from "@/lib/haptic";
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
