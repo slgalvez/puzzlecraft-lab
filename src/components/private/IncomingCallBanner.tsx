@@ -11,7 +11,10 @@ interface IncomingCallBannerProps {
 export function IncomingCallBanner({ call, resolvedCallerName, onAccept, onDecline }: IncomingCallBannerProps) {
   const displayName = resolvedCallerName || call.callerName;
   return (
-    <div className="fixed top-0 left-0 right-0 z-[90] p-3 animate-in slide-in-from-top duration-300">
+    <div
+      className="fixed left-0 right-0 z-[90] px-3 pb-3 pt-3 animate-in slide-in-from-top duration-300"
+      style={{ top: "env(safe-area-inset-top, 0px)" }}
+    >
       <div className="max-w-sm mx-auto bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
         <div className="px-4 py-3 flex items-center gap-3">
           {/* Icon */}
