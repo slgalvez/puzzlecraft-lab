@@ -279,6 +279,7 @@ const AdminConversationView = () => {
                   showTail={showTail}
                   onReact={handleReact}
                   onStartEdit={handleStartEdit}
+                  onUnsend={handleUnsend}
                 />
               );
             })
