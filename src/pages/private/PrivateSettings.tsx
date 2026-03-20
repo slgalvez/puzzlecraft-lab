@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { setFocusLossEnabled } from "@/lib/focusLossSettings";
 import { Plus } from "lucide-react";
+import { FeatureHint } from "@/components/private/FeatureHint";
 import {
   CHAT_THEMES,
   getChatTheme,
