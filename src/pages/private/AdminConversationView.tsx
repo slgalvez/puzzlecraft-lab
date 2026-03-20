@@ -58,6 +58,12 @@ const AdminConversationView = () => {
     navigate("/");
   }, [signOut, navigate]);
 
+  const videoCall = useVideoCall({
+    token: token || "",
+    conversationId: conversationId || null,
+    onSessionExpired: handleSessionExpired,
+  });
+
   const fetchConversation = useCallback(async () => {
     if (!token || !conversationId) return;
     try {
