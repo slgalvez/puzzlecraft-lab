@@ -30,10 +30,16 @@ import { generateWordFillIn, generateNumberFillIn } from "@/lib/generators/fillG
 import type { CrosswordPuzzle, FillInPuzzle } from "@/data/puzzles";
 
 const DailyPuzzle = () => {
-  const challenge = useMemo(() => getTodaysChallenge(), []);
+  console.log("[DailyPuzzle] mount");
+  const challenge = useMemo(() => {
+    const c = getTodaysChallenge();
+    console.log("[DailyPuzzle] challenge:", c.category, c.difficulty, c.dateStr, "seed:", c.seed);
+    return c;
+  }, []);
   const [completion, setCompletion] = useState(() => getDailyCompletion(challenge.dateStr));
   const streak = useMemo(() => getDailyStreak(), []);
   const info = CATEGORY_INFO[challenge.category];
+  console.log("[DailyPuzzle] info:", info?.name, "completion:", !!completion);
 
   useEffect(() => { setPuzzleOrigin("daily"); }, []);
 
@@ -46,6 +52,8 @@ const DailyPuzzle = () => {
   // Memoize generated puzzles so heavy generators only run once (prevents mobile Safari crash)
   const generatedPuzzle = useMemo(() => {
     const { seed, difficulty, category, dateStr } = challenge;
+    console.log("[DailyPuzzle] generating puzzle:", category, difficulty, seed);
+    const startTime = performance.now();
     try {
       switch (category) {
         case "crossword": {
@@ -76,11 +84,14 @@ const DailyPuzzle = () => {
           } satisfies FillInPuzzle;
         }
         default:
+          console.log("[DailyPuzzle] no generator needed for", category);
           return null;
       }
     } catch (e) {
       console.error("Daily puzzle generation failed:", e);
       return null;
+    } finally {
+      console.log("[DailyPuzzle] generation took", (performance.now() - startTime).toFixed(1), "ms");
     }
   }, [challenge]);
 
