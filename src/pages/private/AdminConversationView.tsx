@@ -148,6 +148,10 @@ const AdminConversationView = () => {
     }
   };
 
+  const handleStartEdit = useCallback((messageId: string, body: string) => {
+    setEditingMessage({ id: messageId, body });
+  }, []);
+
   const handleToggleDisappearing = async (enabled: boolean, duration?: string) => {
     if (!conversationId || !token) return;
     setTogglingDisappearing(true);
