@@ -159,7 +159,7 @@ export default function PrivateLayout({ children, title, fullHeight }: PrivateLa
               <div className="flex items-center gap-3">
                 <SidebarTrigger />
                 {title && (
-                  <h1 className="text-base font-semibold text-foreground tracking-tight">
+                  <h1 className="text-base font-semibold text-primary tracking-tight">
                     {title}
                   </h1>
                 )}
