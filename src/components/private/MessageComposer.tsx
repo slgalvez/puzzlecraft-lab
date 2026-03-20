@@ -162,6 +162,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
       const dur = Math.round(voicePreview.duration);
       URL.revokeObjectURL(voicePreview.url);
       setVoicePreview(null);
+      hapticTap();
       await onSend(`__AUDIO__:${data.url}|${dur}`);
     } catch {
       toast({ title: "Upload failed", description: "Please try again." });

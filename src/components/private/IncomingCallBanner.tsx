@@ -12,6 +12,10 @@ interface IncomingCallBannerProps {
 
 export function IncomingCallBanner({ call, resolvedCallerName, onAccept, onDecline }: IncomingCallBannerProps) {
   const displayName = resolvedCallerName || call.callerName;
+
+  // Haptic on banner appearance
+  useEffect(() => { hapticMedium(); }, [call.callId]);
+
   return (
     <div
       className="fixed left-0 right-0 z-[90] px-3 pb-3 pt-3 animate-in slide-in-from-top duration-300"

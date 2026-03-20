@@ -148,7 +148,7 @@ export function VideoCallScreen({
           </button>
 
           <button
-            onClick={onEndCall}
+            onClick={() => { hapticTap(); onEndCall(); }}
             className="w-14 h-14 rounded-full bg-destructive flex items-center justify-center text-white hover:bg-destructive/90 transition-colors"
             aria-label="End call"
           >

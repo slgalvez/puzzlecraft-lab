@@ -52,6 +52,7 @@ export function ActivityBanner({ item, onDismiss }: ActivityBannerProps) {
 
     if (item) {
       setCurrent(item);
+      hapticTap();
       requestAnimationFrame(() => setVisible(true));
       dismissTimerRef.current = setTimeout(dismiss, AUTO_DISMISS_MS);
     } else {

@@ -101,11 +101,13 @@ export function MessageBubble({
   }, []);
 
   const handleReact = (reaction: string) => {
+    hapticTap();
     onReact?.(id, reaction);
     closeMenu();
   };
 
   const handleStartEdit = () => {
+    hapticTap();
     onStartEdit?.(id, body);
     closeMenu();
   };
