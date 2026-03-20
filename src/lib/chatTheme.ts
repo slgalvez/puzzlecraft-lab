@@ -59,10 +59,20 @@ export function foregroundForHsl(hsl: string): string {
   const parts = hsl.match(/[\d.]+/g);
   if (!parts || parts.length < 3) return "0 0% 100%";
   const l = parseFloat(parts[2]);
-  // Light backgrounds get dark text, dark backgrounds get light text
   return l > 55 ? "220 14% 10%" : "0 0% 100%";
 }
 
+/**
+ * Apply the user's chat theme.
+ *
+ * Scoping strategy:
+ *  - Override --primary/--accent/--ring/--sidebar-* on the .private-app element
+ *    so ALL Tailwind utilities (bg-primary, text-primary, etc.) within the
+ *    messenger pick up the themed color automatically.
+ *  - Set --chat-accent on <body> so portals rendered OUTSIDE .private-app
+ *    (e.g. mobile sidebar sheet) can reference it via CSS fallback vars.
+ *  - NEVER set --primary on <body> — that would leak into the global site.
+ */
 export function applyChatTheme(id?: ChatThemeId) {
   const themeId = id || getChatTheme();
   let hsl: string;
@@ -77,26 +87,27 @@ export function applyChatTheme(id?: ChatThemeId) {
 
   const fg = foregroundForHsl(hsl);
 
-  // Apply to .private-app (desktop sidebar lives here)
+  // Apply scoped --chat-accent vars to .private-app only
   const el = document.querySelector(".private-app") as HTMLElement | null;
   if (el) {
-    applyVarsToElement(el, hsl, fg);
+    el.style.setProperty("--primary", hsl);
+    el.style.setProperty("--primary-foreground", fg);
+    el.style.setProperty("--accent", hsl);
+    el.style.setProperty("--ring", hsl);
+    el.style.setProperty("--sidebar-primary", hsl);
+    el.style.setProperty("--sidebar-primary-foreground", fg);
+    el.style.setProperty("--sidebar-ring", hsl);
   }
 
-  // Apply to <body> so ALL portals (mobile sidebar sheet, dialogs, etc.)
-  // rendered outside .private-app inherit the themed vars.
-  // Scoped via the CSS selector `body:has(.private-app)` so public pages are unaffected.
+  // Set body-level --chat-accent for portals (mobile sidebar) — NOT --primary
   if (document.querySelector(".private-app")) {
-    applyVarsToElement(document.body, hsl, fg);
+    document.body.style.setProperty("--chat-accent", hsl);
+    document.body.style.setProperty("--chat-accent-foreground", fg);
   }
 }
 
-function applyVarsToElement(el: HTMLElement, hsl: string, fg: string) {
-  el.style.setProperty("--primary", hsl);
-  el.style.setProperty("--primary-foreground", fg);
-  el.style.setProperty("--accent", hsl);
-  el.style.setProperty("--ring", hsl);
-  el.style.setProperty("--sidebar-primary", hsl);
-  el.style.setProperty("--sidebar-primary-foreground", fg);
-  el.style.setProperty("--sidebar-ring", hsl);
+/** Remove chat theme vars from body when leaving private app */
+export function clearChatTheme() {
+  document.body.style.removeProperty("--chat-accent");
+  document.body.style.removeProperty("--chat-accent-foreground");
 }
