@@ -20,12 +20,20 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.png", "apple-touch-icon.png", "pwa-icon-192.png", "pwa-icon-512.png"],
       workbox: {
+        navigateFallback: "index.html",
         navigateFallbackDenylist: [/^\/~oauth/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
         importScripts: ["/push-sw.js"],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/,
+            handler: "NetworkFirst",
+            options: { cacheName: "api-cache", expiration: { maxEntries: 50, maxAgeSeconds: 300 } },
+          },
+        ],
       },
       manifest: {
         name: "Puzzlecraft",
