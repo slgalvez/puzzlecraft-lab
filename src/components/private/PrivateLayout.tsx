@@ -157,7 +157,7 @@ export default function PrivateLayout({ children, title, fullHeight }: PrivateLa
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             <header className="pwa-safe-top flex items-center justify-between border-b border-primary/20 px-4 shrink-0" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', minHeight: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}>
               <div className="flex items-center gap-3">
-                <SidebarTrigger />
+                <SidebarTrigger className="text-primary" />
                 {title && (
                   <h1 className="text-base font-semibold text-primary tracking-tight">
                     {title}
