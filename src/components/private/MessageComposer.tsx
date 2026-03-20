@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, ImageIcon, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,12 +6,20 @@ import { useToast } from "@/hooks/use-toast";
 import { GifPicker } from "@/components/private/GifPicker";
 import { VoiceRecorder, VoicePreviewBar, type VoicePreview } from "@/components/private/VoiceRecorder";
 
+export interface EditingMessage {
+  id: string;
+  body: string;
+}
+
 interface MessageComposerProps {
   onSend: (message: string) => Promise<void>;
   sending: boolean;
   placeholder?: string;
   token: string;
   conversationId: string | null;
+  editingMessage?: EditingMessage | null;
+  onCancelEdit?: () => void;
+  onSaveEdit?: (messageId: string, newBody: string) => void;
 }
 
 /** Detect media message format */
@@ -39,7 +47,7 @@ interface MediaPreview {
   type: "upload" | "gif";
 }
 
-export function MessageComposer({ onSend, sending, placeholder = "Message", token, conversationId }: MessageComposerProps) {
+export function MessageComposer({ onSend, sending, placeholder = "Message", token, conversationId, editingMessage, onCancelEdit, onSaveEdit }: MessageComposerProps) {
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [gifOpen, setGifOpen] = useState(false);
@@ -47,8 +55,28 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
   const [voicePreview, setVoicePreview] = useState<VoicePreview | null>(null);
   const [uploadingVoice, setUploadingVoice] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
 
+  // When entering edit mode, populate the textarea
+  useEffect(() => {
+    if (editingMessage) {
+      setMessage(editingMessage.body);
+      setTimeout(() => {
+        const ta = textareaRef.current;
+        if (ta) {
+          ta.focus();
+          ta.selectionStart = ta.selectionEnd = ta.value.length;
+          autoResize(ta);
+        }
+      }, 50);
+    }
+  }, [editingMessage]);
+
+  const autoResize = useCallback((el: HTMLTextAreaElement) => {
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  }, []);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -70,9 +98,26 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
       return;
     }
 
+    // Edit mode — save edit
+    if (editingMessage) {
+      const trimmed = message.trim();
+      if (trimmed && trimmed !== editingMessage.body) {
+        onSaveEdit?.(editingMessage.id, trimmed);
+      }
+      setMessage("");
+      onCancelEdit?.();
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
+      return;
+    }
+
     const body = message.trim();
     if (!body || sending) return;
     setMessage("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
     try {
       await onSend(body);
     } catch {
@@ -183,6 +228,13 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
 
   const canSend = voicePreview || mediaPreview || message.trim();
   const hasVoiceOrMedia = !!voicePreview || !!mediaPreview;
+  const isEditing = !!editingMessage;
+
+  const handleCancelEdit = () => {
+    setMessage("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+    onCancelEdit?.();
+  };
 
   return (
     <div className="shrink-0">
@@ -225,13 +277,27 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
         <VoicePreviewBar preview={voicePreview} onDiscard={clearVoicePreview} />
       )}
 
+      {/* Edit mode banner */}
+      {isEditing && (
+        <div className="border-t border-border px-3 sm:px-4 py-1.5 bg-secondary/40 flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Editing message</span>
+          <button
+            type="button"
+            onClick={handleCancelEdit}
+            className="text-xs text-primary hover:text-primary/80 font-medium"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
       <form
         onSubmit={handleSubmit}
-        className="border-t border-border px-3 sm:px-4 py-2"
+        className={`border-t border-border px-3 sm:px-4 py-2 ${isEditing ? "border-t-0" : ""}`}
         style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom, 0px))" }}
       >
         <div className="flex items-end gap-2">
-          {!hasVoiceOrMedia && (
+          {!hasVoiceOrMedia && !isEditing && (
             <>
               <button
                 type="button"
@@ -262,28 +328,43 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
             </>
           )}
 
-          {/* Show voice recorder inline when recording, otherwise show text input */}
+          {/* Auto-expanding textarea */}
           {!hasVoiceOrMedia && (
-            <input
+            <textarea
+              ref={textareaRef}
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder={placeholder}
-              className="msg-composer-input flex-1 text-[15px] py-2 border bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
+              onChange={(e) => {
+                setMessage(e.target.value);
+                autoResize(e.target);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }
+                if (e.key === "Escape" && isEditing) {
+                  handleCancelEdit();
+                }
+              }}
+              placeholder={isEditing ? "Edit message…" : placeholder}
+              className="msg-composer-input flex-1 text-[15px] py-2 border bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-colors resize-none overflow-hidden"
+              style={{ minHeight: "36px", maxHeight: "120px" }}
+              rows={1}
               maxLength={5000}
               autoComplete="off"
               disabled={uploading}
             />
           )}
 
-          {/* Voice recorder: show mic when no text, or inline recording UI */}
-          {!hasVoiceOrMedia && !message.trim() && (
+          {/* Voice recorder: show mic when no text and not editing */}
+          {!hasVoiceOrMedia && !message.trim() && !isEditing && (
             <VoiceRecorder
               disabled={uploading || !conversationId}
               onPreviewReady={setVoicePreview}
             />
           )}
 
-          {/* Send button: show when there's content to send */}
+          {/* Send button */}
           {(canSend || hasVoiceOrMedia) && (
             <Button
               type="submit"

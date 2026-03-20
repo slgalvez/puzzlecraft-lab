@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { isPuzzleMessage, PuzzleMessageBubble } from "@/components/private/PuzzleMessageBubble";
 import { MessageBubble } from "@/components/private/MessageBubble";
-import { MessageComposer } from "@/components/private/MessageComposer";
+import { MessageComposer, type EditingMessage } from "@/components/private/MessageComposer";
 import { ConversationToolbar } from "@/components/private/ConversationToolbar";
 
 interface Message {
@@ -34,6 +34,7 @@ const UserConversation = () => {
   const [disappearingDuration, setDisappearingDuration] = useState("24h");
   const [togglingDisappearing, setTogglingDisappearing] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<EditingMessage | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
@@ -131,16 +132,19 @@ const UserConversation = () => {
 
   const handleEdit = async (messageId: string, newBody: string) => {
     if (!token) return;
-    // Optimistic update
     setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, body: newBody } : m));
     try {
       await invokeMessaging("edit-message", token, { message_id: messageId, body: newBody });
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
       toast({ title: "Could not edit message", description: "Please try again." });
-      fetchConversation(); // revert
+      fetchConversation();
     }
   };
+
+  const handleStartEdit = useCallback((messageId: string, body: string) => {
+    setEditingMessage({ id: messageId, body });
+  }, []);
 
   const handleToggleDisappearing = async (enabled: boolean, duration?: string) => {
     if (!conversationId || !token) return;
@@ -261,7 +265,7 @@ const UserConversation = () => {
                   formatTime={formatTime}
                   showTail={showTail}
                   onReact={handleReact}
-                  onEdit={handleEdit}
+                  onStartEdit={handleStartEdit}
                 />
               );
             })
@@ -269,7 +273,16 @@ const UserConversation = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        <MessageComposer onSend={handleSend} sending={sending} placeholder="Message" token={token || ""} conversationId={conversationId} />
+        <MessageComposer
+          onSend={handleSend}
+          sending={sending}
+          placeholder="Message"
+          token={token || ""}
+          conversationId={conversationId}
+          editingMessage={editingMessage}
+          onCancelEdit={() => setEditingMessage(null)}
+          onSaveEdit={(id, body) => { handleEdit(id, body); setEditingMessage(null); }}
+        />
       </div>
     </PrivateLayout>
   );

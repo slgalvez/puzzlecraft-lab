@@ -19,7 +19,7 @@ interface MessageBubbleProps {
   formatTime: (iso: string) => string;
   showTail?: boolean;
   onReact?: (messageId: string, reaction: string) => void;
-  onEdit?: (messageId: string, newBody: string) => void;
+  onStartEdit?: (messageId: string, body: string) => void;
 }
 
 export function MessageBubble({
@@ -35,16 +35,13 @@ export function MessageBubble({
   formatTime,
   showTail = true,
   onReact,
-  onEdit,
+  onStartEdit,
 }: MessageBubbleProps) {
   const [showMenu, setShowMenu] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [editText, setEditText] = useState("");
   const [viewerOpen, setViewerOpen] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const didLongPress = useRef(false);
   const lastTapRef = useRef(0);
-  const editInputRef = useRef<HTMLTextAreaElement>(null);
   const hiddenEmojiRef = useRef<HTMLInputElement>(null);
 
   const isViewOnce =
@@ -94,22 +91,8 @@ export function MessageBubble({
   };
 
   const handleStartEdit = () => {
-    setEditText(body);
-    setEditing(true);
+    onStartEdit?.(id, body);
     setShowMenu(false);
-    setTimeout(() => editInputRef.current?.focus(), 50);
-  };
-
-  const handleSaveEdit = () => {
-    const trimmed = editText.trim();
-    if (trimmed && trimmed !== body) {
-      onEdit?.(id, trimmed);
-    }
-    setEditing(false);
-  };
-
-  const handleCancelEdit = () => {
-    setEditing(false);
   };
 
   const isAudio = isAudioMessage(body);
@@ -183,7 +166,7 @@ export function MessageBubble({
               />
             </div>
             {/* Actions */}
-            {isMine && !isMedia && !isAudio && onEdit && (
+            {isMine && !isMedia && !isAudio && onStartEdit && (
               <button
                 onClick={handleStartEdit}
                 className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-foreground hover:bg-secondary/60 transition-colors"
@@ -196,30 +179,7 @@ export function MessageBubble({
         )}
 
 
-        {/* Edit mode */}
-        {editing ? (
-          <div className={`${bubbleClass} px-3 py-2`}>
-            <textarea
-              ref={editInputRef}
-              value={editText}
-              onChange={(e) => setEditText(e.target.value)}
-              className="w-full bg-transparent text-[15px] leading-[1.35] resize-none outline-none min-h-[2.5rem]"
-              rows={Math.min(editText.split("\n").length + 1, 6)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSaveEdit(); }
-                if (e.key === "Escape") handleCancelEdit();
-              }}
-            />
-            <div className="flex items-center gap-2 mt-1 justify-end">
-              <button onClick={handleCancelEdit} className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-0.5 rounded">
-                Cancel
-              </button>
-              <button onClick={handleSaveEdit} className="text-[11px] text-primary font-medium px-2 py-0.5 rounded hover:bg-primary/10">
-                Save
-              </button>
-            </div>
-          </div>
-        ) : isAudio && audioData ? (
+        {isAudio && audioData ? (
           <div
             className={`px-3.5 py-2.5 ${bubbleClass} select-none`}
             onTouchStart={handleTouchStart}

@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { isPuzzleMessage, PuzzleMessageBubble } from "@/components/private/PuzzleMessageBubble";
 import { MessageBubble } from "@/components/private/MessageBubble";
-import { MessageComposer } from "@/components/private/MessageComposer";
+import { MessageComposer, type EditingMessage } from "@/components/private/MessageComposer";
 import { ConversationToolbar } from "@/components/private/ConversationToolbar";
 
 interface Message {
@@ -43,6 +43,7 @@ const AdminConversationView = () => {
   const [error, setError] = useState<string | null>(null);
   const [togglingDisappearing, setTogglingDisappearing] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<EditingMessage | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
   const initialScrollDone = useRef(false);
@@ -146,6 +147,10 @@ const AdminConversationView = () => {
       fetchConversation();
     }
   };
+
+  const handleStartEdit = useCallback((messageId: string, body: string) => {
+    setEditingMessage({ id: messageId, body });
+  }, []);
 
   const handleToggleDisappearing = async (enabled: boolean, duration?: string) => {
     if (!conversationId || !token) return;
@@ -273,7 +278,7 @@ const AdminConversationView = () => {
                   formatTime={formatTime}
                   showTail={showTail}
                   onReact={handleReact}
-                  onEdit={handleEdit}
+                  onStartEdit={handleStartEdit}
                 />
               );
             })
@@ -281,7 +286,16 @@ const AdminConversationView = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        <MessageComposer onSend={handleSend} sending={sending} placeholder="Reply" token={token || ""} conversationId={conversationId || null} />
+        <MessageComposer
+          onSend={handleSend}
+          sending={sending}
+          placeholder="Reply"
+          token={token || ""}
+          conversationId={conversationId || null}
+          editingMessage={editingMessage}
+          onCancelEdit={() => setEditingMessage(null)}
+          onSaveEdit={(id, body) => { handleEdit(id, body); setEditingMessage(null); }}
+        />
       </div>
     </PrivateLayout>
   );
