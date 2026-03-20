@@ -62,6 +62,17 @@ export function foregroundForHsl(hsl: string): string {
   return l > 55 ? "220 14% 10%" : "0 0% 100%";
 }
 
+/**
+ * Apply the user's chat theme.
+ *
+ * Scoping strategy:
+ *  - Override --primary/--accent/--ring/--sidebar-* on the .private-app element
+ *    so ALL Tailwind utilities (bg-primary, text-primary, etc.) within the
+ *    messenger pick up the themed color automatically.
+ *  - Set --chat-accent on <body> so portals rendered OUTSIDE .private-app
+ *    (e.g. mobile sidebar sheet) can reference it via CSS fallback vars.
+ *  - NEVER set --primary on <body> — that would leak into the global site.
+ */
 export function applyChatTheme(id?: ChatThemeId) {
   const themeId = id || getChatTheme();
   let hsl: string;
@@ -79,11 +90,16 @@ export function applyChatTheme(id?: ChatThemeId) {
   // Apply scoped --chat-accent vars to .private-app only
   const el = document.querySelector(".private-app") as HTMLElement | null;
   if (el) {
-    el.style.setProperty("--chat-accent", hsl);
-    el.style.setProperty("--chat-accent-foreground", fg);
+    el.style.setProperty("--primary", hsl);
+    el.style.setProperty("--primary-foreground", fg);
+    el.style.setProperty("--accent", hsl);
+    el.style.setProperty("--ring", hsl);
+    el.style.setProperty("--sidebar-primary", hsl);
+    el.style.setProperty("--sidebar-primary-foreground", fg);
+    el.style.setProperty("--sidebar-ring", hsl);
   }
 
-  // Also set on body so portals (mobile sidebar sheet) can inherit
+  // Set body-level --chat-accent for portals (mobile sidebar) — NOT --primary
   if (document.querySelector(".private-app")) {
     document.body.style.setProperty("--chat-accent", hsl);
     document.body.style.setProperty("--chat-accent-foreground", fg);
