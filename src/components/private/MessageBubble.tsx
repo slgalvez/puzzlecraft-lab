@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Timer, Check, CheckCheck, Eye, Pencil, Plus } from "lucide-react";
+import { Timer, Check, CheckCheck, Eye, Pencil, Plus, Undo2 } from "lucide-react";
 import { isGifMessage, getGifUrl } from "@/components/private/MessageComposer";
 import { ImageViewer } from "@/components/private/ImageViewer";
 import { AudioBubble, isAudioMessage, getAudioData } from "@/components/private/AudioBubble";
