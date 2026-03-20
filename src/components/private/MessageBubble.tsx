@@ -37,8 +37,10 @@ export function MessageBubble({
   showTail = true,
   onReact,
   onStartEdit,
+  onUnsend,
 }: MessageBubbleProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const [confirmUnsend, setConfirmUnsend] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const didLongPress = useRef(false);
