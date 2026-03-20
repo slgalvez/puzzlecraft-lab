@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Timer, Plus, Eye, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useNicknames } from "@/hooks/useNicknames";
 import {
   Dialog,
   DialogContent,
