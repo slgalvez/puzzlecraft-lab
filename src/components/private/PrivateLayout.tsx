@@ -3,9 +3,11 @@ import { getFocusLossEnabled } from "@/lib/focusLossSettings";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PrivateSidebar } from "@/components/private/PrivateSidebar";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { LogOut, Puzzle } from "lucide-react";
 import { applyChatTheme } from "@/lib/chatTheme";
+import { useGlobalIncomingCall } from "@/hooks/useGlobalIncomingCall";
+import { IncomingCallBanner } from "@/components/private/IncomingCallBanner";
 
 const LAST_ACTIVE_KEY = "private_last_active";
 const GRACE_PERIOD_MS = 5 * 60 * 1000; // 5 minutes
