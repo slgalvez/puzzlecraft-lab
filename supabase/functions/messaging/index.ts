@@ -258,7 +258,24 @@ Deno.serve(async (req) => {
       return json({ ok: true, body: newBody.trim() });
     }
 
-    // ─── MARK READ ───
+    // ─── UNSEND MESSAGE ───
+    if (action === "unsend-message") {
+      const { message_id } = body;
+      if (!message_id) return err("Missing message_id", 400);
+
+      const { data: msg } = await sb.from("messages").select("id, sender_profile_id, conversation_id").eq("id", message_id).single();
+      if (!msg) return err("Message not found");
+      if (msg.sender_profile_id !== profileId) return err("Can only unsend your own messages");
+
+      const { data: conv } = await sb.from("conversations").select("id, user_profile_id, admin_profile_id").eq("id", msg.conversation_id).single();
+      if (!conv) return err("Conversation not found");
+      if (!isAdmin && conv.user_profile_id !== profileId) return err("Access denied");
+
+      const { error: delErr } = await sb.from("messages").delete().eq("id", message_id);
+      if (delErr) return err("Could not unsend message");
+
+      return json({ ok: true });
+    }
     if (action === "mark-read") {
       const { conversation_id } = body;
       if (!conversation_id) return err("Missing conversation_id", 400);

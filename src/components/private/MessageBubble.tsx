@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Timer, Check, CheckCheck, Eye, Pencil, Plus } from "lucide-react";
+import { Timer, Check, CheckCheck, Eye, Pencil, Plus, Undo2 } from "lucide-react";
 import { isGifMessage, getGifUrl } from "@/components/private/MessageComposer";
 import { ImageViewer } from "@/components/private/ImageViewer";
 import { AudioBubble, isAudioMessage, getAudioData } from "@/components/private/AudioBubble";
@@ -20,6 +20,7 @@ interface MessageBubbleProps {
   showTail?: boolean;
   onReact?: (messageId: string, reaction: string) => void;
   onStartEdit?: (messageId: string, body: string) => void;
+  onUnsend?: (messageId: string) => void;
 }
 
 export function MessageBubble({
@@ -36,8 +37,10 @@ export function MessageBubble({
   showTail = true,
   onReact,
   onStartEdit,
+  onUnsend,
 }: MessageBubbleProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const [confirmUnsend, setConfirmUnsend] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const didLongPress = useRef(false);
@@ -53,7 +56,7 @@ export function MessageBubble({
   const reactionEntries = Object.entries(reactions || {}).filter(([, users]) => users.length > 0);
   const hasReactions = reactionEntries.length > 0;
 
-  const closeMenu = useCallback(() => { setShowMenu(false); }, []);
+  const closeMenu = useCallback(() => { setShowMenu(false); setConfirmUnsend(false); }, []);
 
   const handleTap = useCallback(() => {
     const now = Date.now();
@@ -174,6 +177,25 @@ export function MessageBubble({
                 <Pencil size={14} className="text-muted-foreground" />
                 Edit
               </button>
+            )}
+            {isMine && onUnsend && (
+              confirmUnsend ? (
+                <button
+                  onClick={() => { onUnsend(id); setShowMenu(false); setConfirmUnsend(false); }}
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <Undo2 size={14} />
+                  Unsend?
+                </button>
+              ) : (
+                <button
+                  onClick={() => setConfirmUnsend(true)}
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:bg-secondary/60 transition-colors"
+                >
+                  <Undo2 size={14} />
+                  Unsend
+                </button>
+              )
             )}
           </div>
         )}

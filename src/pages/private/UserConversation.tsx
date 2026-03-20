@@ -146,6 +146,18 @@ const UserConversation = () => {
     setEditingMessage({ id: messageId, body });
   }, []);
 
+  const handleUnsend = async (messageId: string) => {
+    if (!token) return;
+    setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    try {
+      await invokeMessaging("unsend-message", token, { message_id: messageId });
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Could not unsend message", description: "Please try again." });
+      fetchConversation();
+    }
+  };
+
   const handleToggleDisappearing = async (enabled: boolean, duration?: string) => {
     if (!conversationId || !token) return;
     setTogglingDisappearing(true);
@@ -266,6 +278,7 @@ const UserConversation = () => {
                   showTail={showTail}
                   onReact={handleReact}
                   onStartEdit={handleStartEdit}
+                  onUnsend={handleUnsend}
                 />
               );
             })
