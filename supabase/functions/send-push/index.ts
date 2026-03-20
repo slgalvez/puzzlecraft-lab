@@ -71,6 +71,57 @@ function b64urlDecode(s: string): Uint8Array {
 const VAPID_PUBLIC_KEY =
   "BJrEgKHA6zTGGE2HCv4B9Fr8zjBIP7ebEyR94U2YWbEA9iM0WYTCb2BbWDizAWbdFuEOV90FX11dMqOi1YkCcP0";
 
+/** Verify the private key matches the public key at startup */
+async function verifyVapidKeyPair(): Promise<{ valid: boolean; error?: string }> {
+  try {
+    const rawKey = Deno.env.get("VAPID_PRIVATE_KEY");
+    if (!rawKey) return { valid: false, error: "VAPID_PRIVATE_KEY secret is not set" };
+
+    const d = rawKey.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    const pubKeyBytes = b64urlDecode(VAPID_PUBLIC_KEY);
+    const x = b64url(pubKeyBytes.slice(1, 33));
+    const y = b64url(pubKeyBytes.slice(33, 65));
+
+    // Import as key pair
+    const keyPair = await crypto.subtle.importKey(
+      "jwk",
+      { kty: "EC", crv: "P-256", x, y, d },
+      { name: "ECDSA", namedCurve: "P-256" },
+      true,
+      ["sign"]
+    );
+
+    // Sign test data
+    const testData = new TextEncoder().encode("vapid-key-check");
+    const sig = await crypto.subtle.sign(
+      { name: "ECDSA", hash: "SHA-256" },
+      keyPair,
+      testData
+    );
+
+    // Import public key only for verification
+    const pubKey = await crypto.subtle.importKey(
+      "jwk",
+      { kty: "EC", crv: "P-256", x, y },
+      { name: "ECDSA", namedCurve: "P-256" },
+      false,
+      ["verify"]
+    );
+
+    const ok = await crypto.subtle.verify(
+      { name: "ECDSA", hash: "SHA-256" },
+      pubKey,
+      sig,
+      testData
+    );
+
+    if (!ok) return { valid: false, error: "VAPID private key does not match the public key — keys need to be regenerated" };
+    return { valid: true };
+  } catch (e) {
+    return { valid: false, error: `VAPID key import failed: ${e}` };
+  }
+}
+
 async function createVapidJwt(endpoint: string): Promise<string> {
   // Normalize private key to strict base64url (no +, /, or = padding)
   const rawKey = Deno.env.get("VAPID_PRIVATE_KEY")!;
@@ -81,7 +132,8 @@ async function createVapidJwt(endpoint: string): Promise<string> {
   const payload = {
     aud: audience,
     exp: Math.floor(Date.now() / 1000) + 12 * 60 * 60,
-    sub: "mailto:noreply@puzzlecraft-lab.lovable.app",
+    // Apple requires mailto: or https: — use https published URL
+    sub: "https://puzzlecraft-lab.lovable.app",
   };
 
   const enc = new TextEncoder();
@@ -166,13 +218,6 @@ function buildInfo(
   serverPub: Uint8Array
 ): Uint8Array {
   const enc = new TextEncoder();
-  // "WebPush: info\0" + client_public(65) + server_public(65)
-  // Then wrapped: "Content-Encoding: <type>\0" + \0 + context
-  // RFC 8291 §3.4 info for key/nonce derivation:
-  // info = "Content-Encoding: " + type + \0 + "P-256" + \0 +
-  //        len(client_public) as 2 bytes + client_public +
-  //        len(server_public) as 2 bytes + server_public
-
   const label = enc.encode(`Content-Encoding: ${type}\0P-256\0`);
   const clientLen = new Uint8Array(2);
   clientLen[0] = (clientPub.length >> 8) & 0xff;
@@ -190,10 +235,9 @@ async function encryptPayload(
   authB64url: string
 ): Promise<Uint8Array> {
   const enc = new TextEncoder();
-  const userPubBytes = b64urlDecode(p256dhB64url); // 65 bytes uncompressed
-  const authSecret = b64urlDecode(authB64url); // 16 bytes
+  const userPubBytes = b64urlDecode(p256dhB64url);
+  const authSecret = b64urlDecode(authB64url);
 
-  // 1. Generate ephemeral ECDH key pair
   const localKP = await crypto.subtle.generateKey(
     { name: "ECDH", namedCurve: "P-256" },
     true,
@@ -201,9 +245,8 @@ async function encryptPayload(
   );
   const localPubRaw = new Uint8Array(
     await crypto.subtle.exportKey("raw", localKP.publicKey)
-  ); // 65 bytes
+  );
 
-  // 2. ECDH shared secret
   const userPubKey = await crypto.subtle.importKey(
     "raw",
     userPubBytes,
@@ -219,8 +262,6 @@ async function encryptPayload(
     )
   );
 
-  // 3. RFC 8291 §3.3 — IKM from auth secret
-  // ikm = HKDF(auth_secret, ecdh_secret, "WebPush: info\0" + ua_public + as_public, 32)
   const ikmInfo = concatBytes(
     enc.encode("WebPush: info\0"),
     userPubBytes,
@@ -228,29 +269,19 @@ async function encryptPayload(
   );
   const ikm = await hkdfDerive(authSecret, ecdhSecret, ikmInfo, 32);
 
-  // 4. Generate 16-byte salt
   const salt = crypto.getRandomValues(new Uint8Array(16));
 
-  // 5. Derive CEK (16 bytes) and nonce (12 bytes) per RFC 8291 §3.4
-  const cekInfo = buildInfo("aesgcm128", userPubBytes, localPubRaw);
-  const nonceInfo = buildInfo("nonce", userPubBytes, localPubRaw);
-
-  // Actually RFC 8291 with aes128gcm uses simpler info strings:
-  // CEK info  = "Content-Encoding: aes128gcm\0"
-  // Nonce info = "Content-Encoding: nonce\0"
   const cekInfoFinal = enc.encode("Content-Encoding: aes128gcm\0");
   const nonceInfoFinal = enc.encode("Content-Encoding: nonce\0");
 
   const cek = await hkdfDerive(salt, ikm, cekInfoFinal, 16);
   const nonce = await hkdfDerive(salt, ikm, nonceInfoFinal, 12);
 
-  // 6. Pad plaintext: payload + delimiter 0x02 (final record)
   const plaintext = enc.encode(payloadText);
   const padded = new Uint8Array(plaintext.length + 1);
   padded.set(plaintext);
-  padded[plaintext.length] = 2; // delimiter for final record
+  padded[plaintext.length] = 2;
 
-  // 7. Encrypt with AES-128-GCM
   const aesKey = await crypto.subtle.importKey("raw", cek, "AES-GCM", false, [
     "encrypt",
   ]);
@@ -262,15 +293,13 @@ async function encryptPayload(
     )
   );
 
-  // 8. Build RFC 8188 aes128gcm body:
-  //    salt(16) + rs(4, big-endian) + idlen(1) + keyid(65 = server pub) + ciphertext
-  const rs = plaintext.length + 1 + 16; // record size = padded plaintext + tag(16)
+  const rs = plaintext.length + 1 + 16;
   const rsBytes = new Uint8Array(4);
   rsBytes[0] = (rs >> 24) & 0xff;
   rsBytes[1] = (rs >> 16) & 0xff;
   rsBytes[2] = (rs >> 8) & 0xff;
   rsBytes[3] = rs & 0xff;
-  const idLen = new Uint8Array([localPubRaw.length]); // 65
+  const idLen = new Uint8Array([localPubRaw.length]);
 
   return concatBytes(salt, rsBytes, idLen, localPubRaw, ciphertext);
 }
@@ -282,7 +311,7 @@ async function sendWebPush(
   p256dh: string,
   auth: string,
   payloadJson: string
-): Promise<{ ok: boolean; status: number; statusText: string }> {
+): Promise<{ ok: boolean; status: number; statusText: string; reason?: string }> {
   try {
     const jwt = await createVapidJwt(endpoint);
     const body = await encryptPayload(payloadJson, p256dh, auth);
@@ -299,12 +328,20 @@ async function sendWebPush(
       body,
     });
 
+    let reason: string | undefined;
     if (!resp.ok) {
       const text = await resp.text().catch(() => "");
       console.error(`Push delivery failed: ${resp.status} ${resp.statusText} — ${text}`);
+      // Try to parse JSON reason from push service
+      try {
+        const parsed = JSON.parse(text);
+        reason = parsed.reason || undefined;
+      } catch {
+        if (text) reason = text;
+      }
     }
 
-    return { ok: resp.ok, status: resp.status, statusText: resp.statusText };
+    return { ok: resp.ok, status: resp.status, statusText: resp.statusText, reason };
   } catch (e) {
     console.error("sendWebPush error:", e);
     return { ok: false, status: 0, statusText: String(e) };
@@ -376,6 +413,17 @@ Deno.serve(async (req) => {
       const user = await verifyToken(token);
       if (!user) return err("Unauthorized", 401);
 
+      // Verify VAPID key pair before attempting delivery
+      const keyCheck = await verifyVapidKeyPair();
+      if (!keyCheck.valid) {
+        console.error("VAPID key check failed:", keyCheck.error);
+        return json({
+          ok: false,
+          error: `Configuration error: ${keyCheck.error}`,
+          sent: 0,
+        });
+      }
+
       const { data: subs } = await sb
         .from("push_subscriptions")
         .select("endpoint, p256dh, auth")
@@ -398,7 +446,7 @@ Deno.serve(async (req) => {
 
       let sent = 0;
       let failed = 0;
-      const results: Array<{ status: number; statusText: string }> = [];
+      const results: Array<{ status: number; statusText: string; reason?: string }> = [];
 
       for (const sub of subs) {
         const result = await sendWebPush(
@@ -407,7 +455,7 @@ Deno.serve(async (req) => {
           sub.auth,
           payload
         );
-        results.push({ status: result.status, statusText: result.statusText });
+        results.push({ status: result.status, statusText: result.statusText, reason: result.reason });
         if (result.ok) {
           sent++;
         } else {
@@ -422,12 +470,19 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Include explicit error when all deliveries failed
-      const firstFailure = results.find((r) => r.status !== 200 && r.status !== 201);
-      const errorMsg =
-        sent === 0 && failed > 0 && firstFailure
-          ? `Push delivery failed (${firstFailure.status} ${firstFailure.statusText})`
-          : undefined;
+      // Build detailed error message when delivery failed
+      let errorMsg: string | undefined;
+      if (sent === 0 && failed > 0) {
+        const firstFailure = results.find((r) => r.status !== 200 && r.status !== 201);
+        if (firstFailure) {
+          const detail = firstFailure.reason || firstFailure.statusText;
+          errorMsg = `Push delivery failed: ${firstFailure.status} ${detail}`;
+          // Add specific guidance for known issues
+          if (firstFailure.reason === "BadJwtToken") {
+            errorMsg += " — VAPID key pair may not match. Regenerate both keys.";
+          }
+        }
+      }
 
       return json({ ok: sent > 0, sent, failed, results, ...(errorMsg ? { error: errorMsg } : {}) });
     }
