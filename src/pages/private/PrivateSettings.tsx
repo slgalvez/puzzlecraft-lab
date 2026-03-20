@@ -191,7 +191,9 @@ const PrivateSettings = () => {
       if (result.ok) {
         setTestResult(`Sent to ${result.sent} device(s)`);
       } else {
-        setTestResult(result.error || "Delivery failed");
+        // Show the backend's specific error reason
+        const msg = result.error || "Delivery failed — unknown error";
+        setTestResult(msg);
       }
     } catch {
       setTestResult("Failed to send");
