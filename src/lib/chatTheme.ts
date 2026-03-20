@@ -83,12 +83,11 @@ export function applyChatTheme(id?: ChatThemeId) {
     applyVarsToElement(el, hsl, fg);
   }
 
-  // Apply to mobile sidebar portal (rendered outside .private-app)
-  const mobileSidebar = document.querySelector(
-    '[data-sidebar="sidebar"][data-mobile="true"]'
-  ) as HTMLElement | null;
-  if (mobileSidebar) {
-    applyVarsToElement(mobileSidebar, hsl, fg);
+  // Apply to <body> so ALL portals (mobile sidebar sheet, dialogs, etc.)
+  // rendered outside .private-app inherit the themed vars.
+  // Scoped via the CSS selector `body:has(.private-app)` so public pages are unaffected.
+  if (document.querySelector(".private-app")) {
+    applyVarsToElement(document.body, hsl, fg);
   }
 }
 
