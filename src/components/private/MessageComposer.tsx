@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, ImageIcon, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,12 +6,20 @@ import { useToast } from "@/hooks/use-toast";
 import { GifPicker } from "@/components/private/GifPicker";
 import { VoiceRecorder, VoicePreviewBar, type VoicePreview } from "@/components/private/VoiceRecorder";
 
+export interface EditingMessage {
+  id: string;
+  body: string;
+}
+
 interface MessageComposerProps {
   onSend: (message: string) => Promise<void>;
   sending: boolean;
   placeholder?: string;
   token: string;
   conversationId: string | null;
+  editingMessage?: EditingMessage | null;
+  onCancelEdit?: () => void;
+  onSaveEdit?: (messageId: string, newBody: string) => void;
 }
 
 /** Detect media message format */
