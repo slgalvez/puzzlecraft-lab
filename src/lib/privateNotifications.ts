@@ -11,6 +11,7 @@ const LAST_MSG_NOTIFY_KEY = "private_last_msg_notify";
 const BATCH_WINDOW_MS = 8 * 60 * 1000; // 8 minutes
 const PHRASE_INDEX_KEY = "private_phrase_idx";
 const PUSH_SUB_KEY = "private_push_subscribed";
+const VAPID_KEY_HASH_KEY = "private_vapid_key_hash";
 
 // VAPID public key (matches the private key stored as a secret)
 export const VAPID_PUBLIC_KEY =
