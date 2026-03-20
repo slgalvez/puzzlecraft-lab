@@ -181,6 +181,7 @@ export function MessageBubble({
                   if (hiddenEmojiRef.current) hiddenEmojiRef.current.value = "";
                 }}
               />
+            </div>
             {/* Actions */}
             {isMine && !isMedia && !isAudio && onEdit && (
               <button
