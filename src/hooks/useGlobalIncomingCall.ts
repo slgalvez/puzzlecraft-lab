@@ -15,15 +15,24 @@ export interface GlobalIncomingCall {
 export function useGlobalIncomingCall(token: string | null, onSessionExpired: () => void) {
   const [incomingCall, setIncomingCall] = useState<GlobalIncomingCall | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
+  const sessionExpiredRef = useRef(false);
+
+  const handleExpired = useCallback(() => {
+    if (sessionExpiredRef.current) return;
+    sessionExpiredRef.current = true;
+    clearInterval(pollRef.current);
+    setIncomingCall(null);
+    onSessionExpired();
+  }, [onSessionExpired]);
 
   const api = useCallback(async (action: string, data: Record<string, unknown> = {}) => {
     try {
       return await invokeMessaging(action, token!, data);
     } catch (e) {
-      if (e instanceof SessionExpiredError) onSessionExpired();
+      if (e instanceof SessionExpiredError) handleExpired();
       throw e;
     }
-  }, [token, onSessionExpired]);
+  }, [token, handleExpired]);
 
   const acceptCall = useCallback(async (callId: string) => {
     // Navigate handled by consumer — just clear state
@@ -41,13 +50,15 @@ export function useGlobalIncomingCall(token: string | null, onSessionExpired: ()
 
   useEffect(() => {
     if (!token) {
+      sessionExpiredRef.current = false;
       clearInterval(pollRef.current);
       return;
     }
 
     const check = async () => {
+      if (sessionExpiredRef.current) return;
       try {
-        const data = await invokeMessaging("check-incoming-call-global", token);
+        const data = await api("check-incoming-call-global");
         if (data.call) {
           setIncomingCall({
             callId: data.call.id,
@@ -58,7 +69,8 @@ export function useGlobalIncomingCall(token: string | null, onSessionExpired: ()
         } else {
           setIncomingCall(null);
         }
-      } catch {
+      } catch (e) {
+        if (e instanceof SessionExpiredError) return;
         // Ignore polling errors
       }
     };
@@ -71,7 +83,7 @@ export function useGlobalIncomingCall(token: string | null, onSessionExpired: ()
       clearTimeout(timer);
       clearInterval(pollRef.current);
     };
-  }, [token]);
+  }, [token, api]);
 
   return { incomingCall, acceptCall, declineCall };
 }

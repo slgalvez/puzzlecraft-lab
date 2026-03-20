@@ -67,9 +67,17 @@ export function PrivateSidebar() {
   const prevConvsRef = useRef<Record<string, { unread: number; lastMsg: string; lastMsgAt: string; senderName?: string }>>({});
   const prevPuzzleIdsRef = useRef<Set<string>>(new Set());
   const initialLoadRef = useRef(true);
+  const pollingStoppedRef = useRef(false);
 
   const isAdmin = user?.role === "admin";
   const navItems = isAdmin ? adminNav : userNav;
+
+  const handleSessionExpired = useCallback(async () => {
+    if (pollingStoppedRef.current) return;
+    pollingStoppedRef.current = true;
+    await signOut();
+    navigate("/");
+  }, [navigate, signOut]);
 
   // Re-apply chat theme when sidebar opens (body-level vars ensure portals inherit)
   useEffect(() => {
@@ -93,7 +101,7 @@ export function PrivateSidebar() {
   }, [location.pathname]);
 
   const fetchCounts = useCallback(async () => {
-    if (!token || !user) return;
+    if (!token || !user || pollingStoppedRef.current) return;
     try {
       let msgUnread = 0;
       let latestMessageTime = 0;
@@ -235,15 +243,14 @@ export function PrivateSidebar() {
         setHasOverviewActivity(false);
       }
     } catch (e) {
-      // Session expiry is handled by AuthContext's periodic check — don't
-      // sign out here to avoid races with in-flight requests after login.
       if (e instanceof SessionExpiredError) {
-        console.debug("[sidebar] session expired signal — deferring to auth context");
+        console.debug("[sidebar] session expired — stopping sidebar polling");
+        await handleSessionExpired();
       } else {
         console.warn("[sidebar] fetchCounts error", e);
       }
     }
-  }, [token, isAdmin, user, location.pathname, signOut, navigate, checkUnread, showBanner]);
+  }, [token, isAdmin, user, location.pathname, checkUnread, showBanner, handleSessionExpired]);
 
   useEffect(() => {
     fetchCounts();
