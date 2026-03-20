@@ -19,7 +19,7 @@ interface MessageBubbleProps {
   formatTime: (iso: string) => string;
   showTail?: boolean;
   onReact?: (messageId: string, reaction: string) => void;
-  onEdit?: (messageId: string, newBody: string) => void;
+  onStartEdit?: (messageId: string, body: string) => void;
 }
 
 export function MessageBubble({
