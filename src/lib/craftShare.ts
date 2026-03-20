@@ -28,10 +28,14 @@ function decodeBase64Url(value: string): string {
 export function buildCraftShareText(title?: string, from?: string, url?: string): string {
   const lines: string[] = [];
 
-  if (title) lines.push(title);
+  if (title) lines.push(`For ${title}`);
   if (from) lines.push(`From — ${from}`);
-  lines.push("", "I made you a puzzle 🧩", "", "Solve it here:");
-  if (url) lines.push(url);
+  if (lines.length > 0) lines.push("");
+  lines.push("I made you a puzzle 🧩");
+  if (url) {
+    lines.push("Solve it here:");
+    lines.push(url);
+  }
 
   return lines.join("\n");
 }
