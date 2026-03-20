@@ -7,6 +7,7 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory 
 import { getPuzzleOrigin, getBackPath, getBackLabel } from "@/lib/puzzleOrigin";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { hapticSuccess } from "@/lib/haptic";
 
 interface Props {
   time: number;
