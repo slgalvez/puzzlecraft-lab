@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { Phone, PhoneOff, Video } from "lucide-react";
 import type { IncomingCallInfo } from "@/hooks/useVideoCall";
+import { hapticMedium } from "@/lib/haptic";
 
 interface IncomingCallBannerProps {
   call: IncomingCallInfo;
