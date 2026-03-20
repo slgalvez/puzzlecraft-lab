@@ -273,7 +273,16 @@ const UserConversation = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        <MessageComposer onSend={handleSend} sending={sending} placeholder="Message" token={token || ""} conversationId={conversationId} />
+        <MessageComposer
+          onSend={handleSend}
+          sending={sending}
+          placeholder="Message"
+          token={token || ""}
+          conversationId={conversationId}
+          editingMessage={editingMessage}
+          onCancelEdit={() => setEditingMessage(null)}
+          onSaveEdit={(id, body) => { handleEdit(id, body); setEditingMessage(null); }}
+        />
       </div>
     </PrivateLayout>
   );
