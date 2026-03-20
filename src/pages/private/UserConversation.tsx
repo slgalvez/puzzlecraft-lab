@@ -236,7 +236,57 @@ const UserConversation = () => {
 
   return (
     <PrivateLayout title="Conversation" fullHeight>
+      {/* Video call overlays */}
+      {videoCall.callState !== "idle" && videoCall.callState !== "ended" && (
+        <VideoCallScreen
+          callState={videoCall.callState}
+          localStream={videoCall.localStream}
+          remoteStream={videoCall.remoteStream}
+          isMuted={videoCall.isMuted}
+          isCameraOff={videoCall.isCameraOff}
+          callDuration={videoCall.callDuration}
+          endReason={videoCall.endReason}
+          onEndCall={videoCall.endCall}
+          onToggleMute={videoCall.toggleMute}
+          onToggleCamera={videoCall.toggleCamera}
+          onDismiss={videoCall.dismissEnd}
+        />
+      )}
+      {videoCall.callState === "ended" && (
+        <VideoCallScreen
+          callState={videoCall.callState}
+          localStream={null}
+          remoteStream={null}
+          isMuted={false}
+          isCameraOff={false}
+          callDuration={videoCall.callDuration}
+          endReason={videoCall.endReason}
+          onEndCall={videoCall.endCall}
+          onToggleMute={videoCall.toggleMute}
+          onToggleCamera={videoCall.toggleCamera}
+          onDismiss={videoCall.dismissEnd}
+        />
+      )}
+      {videoCall.incomingCall && videoCall.callState === "idle" && (
+        <IncomingCallBanner
+          call={videoCall.incomingCall}
+          onAccept={videoCall.acceptCall}
+          onDecline={videoCall.declineCall}
+        />
+      )}
+
       <div className="flex flex-col h-full">
+        {/* Video call button */}
+        <div className="flex items-center justify-end px-3 sm:px-4 pt-1 shrink-0">
+          <button
+            onClick={videoCall.startCall}
+            disabled={videoCall.callState !== "idle"}
+            className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-40"
+            title="Start video call"
+          >
+            <Video size={16} />
+          </button>
+        </div>
         <ConversationToolbar
           disappearingEnabled={disappearingEnabled}
           disappearingDuration={disappearingDuration}

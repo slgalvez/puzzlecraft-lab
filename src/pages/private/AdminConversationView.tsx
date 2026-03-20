@@ -242,13 +242,60 @@ const AdminConversationView = () => {
 
   return (
     <PrivateLayout title={conversation?.user_name || "Conversation"} fullHeight>
+      {/* Video call overlays */}
+      {videoCall.callState !== "idle" && videoCall.callState !== "ended" && (
+        <VideoCallScreen
+          callState={videoCall.callState}
+          localStream={videoCall.localStream}
+          remoteStream={videoCall.remoteStream}
+          isMuted={videoCall.isMuted}
+          isCameraOff={videoCall.isCameraOff}
+          callDuration={videoCall.callDuration}
+          endReason={videoCall.endReason}
+          onEndCall={videoCall.endCall}
+          onToggleMute={videoCall.toggleMute}
+          onToggleCamera={videoCall.toggleCamera}
+          onDismiss={videoCall.dismissEnd}
+        />
+      )}
+      {videoCall.callState === "ended" && (
+        <VideoCallScreen
+          callState={videoCall.callState}
+          localStream={null}
+          remoteStream={null}
+          isMuted={false}
+          isCameraOff={false}
+          callDuration={videoCall.callDuration}
+          endReason={videoCall.endReason}
+          onEndCall={videoCall.endCall}
+          onToggleMute={videoCall.toggleMute}
+          onToggleCamera={videoCall.toggleCamera}
+          onDismiss={videoCall.dismissEnd}
+        />
+      )}
+      {videoCall.incomingCall && videoCall.callState === "idle" && (
+        <IncomingCallBanner
+          call={videoCall.incomingCall}
+          onAccept={videoCall.acceptCall}
+          onDecline={videoCall.declineCall}
+        />
+      )}
+
       <div className="flex flex-col h-full">
         {/* Back + name bar */}
         <div className="flex items-center gap-3 border-b border-border px-3 sm:px-4 py-2.5 shrink-0">
           <Link to="/p/conversations" className="text-muted-foreground hover:text-foreground transition-colors p-1">
             <ArrowLeft size={16} />
           </Link>
-          <span className="text-sm font-medium text-foreground">{conversation?.user_name || "Conversation"}</span>
+          <span className="text-sm font-medium text-foreground flex-1">{conversation?.user_name || "Conversation"}</span>
+          <button
+            onClick={videoCall.startCall}
+            disabled={videoCall.callState !== "idle"}
+            className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-40"
+            title="Start video call"
+          >
+            <Video size={16} />
+          </button>
         </div>
 
         <ConversationToolbar
