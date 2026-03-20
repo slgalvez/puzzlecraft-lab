@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
@@ -7,7 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { setFocusLossEnabled } from "@/lib/focusLossSettings";
-import { CHAT_THEMES, getChatTheme, setChatTheme, type ChatThemeId } from "@/lib/chatTheme";
+import { Plus } from "lucide-react";
+import {
+  CHAT_THEMES,
+  getChatTheme,
+  setChatTheme,
+  setCustomColor,
+  getCustomColor,
+  type ChatThemeId,
+} from "@/lib/chatTheme";
 
 const PrivateSettings = () => {
   const { user, token, updateUser, signOut } = useAuth();
@@ -27,6 +35,8 @@ const PrivateSettings = () => {
   const [pwMsg, setPwMsg] = useState("");
   const [focusLossOn, setFocusLossOn] = useState(() => user?.focus_loss_protection !== false);
   const [activeTheme, setActiveTheme] = useState<ChatThemeId>(getChatTheme);
+  const [customHex, setCustomHex] = useState(getCustomColor);
+  const colorInputRef = useRef<HTMLInputElement>(null);
 
   const handleSessionExpired = useCallback(() => {
     signOut();
@@ -93,6 +103,30 @@ const PrivateSettings = () => {
     } finally {
       setPwSaving(false);
     }
+  };
+
+  const handlePresetClick = (id: ChatThemeId) => {
+    setChatTheme(id);
+    setActiveTheme(id);
+  };
+
+  const handleCustomClick = () => {
+    if (activeTheme === "custom") {
+      // Already custom — open picker again
+      colorInputRef.current?.click();
+    } else {
+      // Switch to custom with current color
+      setCustomColor(customHex);
+      setActiveTheme("custom");
+      colorInputRef.current?.click();
+    }
+  };
+
+  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const hex = e.target.value;
+    setCustomHex(hex);
+    setCustomColor(hex);
+    setActiveTheme("custom");
   };
 
   return (
@@ -203,7 +237,7 @@ const PrivateSettings = () => {
             {CHAT_THEMES.map((theme) => (
               <button
                 key={theme.id}
-                onClick={() => { setChatTheme(theme.id); setActiveTheme(theme.id); }}
+                onClick={() => handlePresetClick(theme.id)}
                 className={`w-9 h-9 rounded-full border-2 transition-all ${
                   activeTheme === theme.id
                     ? "border-foreground scale-110"
@@ -213,6 +247,35 @@ const PrivateSettings = () => {
                 title={theme.label}
               />
             ))}
+            {/* Custom color option */}
+            <div className="relative">
+              <button
+                onClick={handleCustomClick}
+                className={`w-9 h-9 rounded-full border-2 transition-all flex items-center justify-center ${
+                  activeTheme === "custom"
+                    ? "border-foreground scale-110"
+                    : "border-muted-foreground/30 hover:border-muted-foreground/60"
+                }`}
+                style={
+                  activeTheme === "custom"
+                    ? { background: customHex }
+                    : { background: "hsl(var(--secondary))" }
+                }
+                title="Custom color"
+              >
+                {activeTheme !== "custom" && (
+                  <Plus size={14} className="text-muted-foreground" />
+                )}
+              </button>
+              <input
+                ref={colorInputRef}
+                type="color"
+                value={customHex}
+                onChange={handleColorChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                tabIndex={-1}
+              />
+            </div>
           </div>
         </div>
 
