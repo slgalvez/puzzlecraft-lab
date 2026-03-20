@@ -34,6 +34,7 @@ const UserConversation = () => {
   const [disappearingDuration, setDisappearingDuration] = useState("24h");
   const [togglingDisappearing, setTogglingDisappearing] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<EditingMessage | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
