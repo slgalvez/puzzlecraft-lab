@@ -155,45 +155,32 @@ export function MessageBubble({
                   </button>
                 );
               })}
-              {/* Custom emoji button */}
+              {/* Custom emoji via hidden input + native keyboard */}
               <button
-                onClick={() => {
-                  setShowEmojiInput(true);
-                  setTimeout(() => emojiInputRef.current?.focus(), 50);
-                }}
+                onClick={() => hiddenEmojiRef.current?.focus()}
                 className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
               >
                 <Plus size={16} />
               </button>
-            </div>
-            {/* Custom emoji input */}
-            {showEmojiInput && (
-              <div className="px-3 py-2 border-b border-border">
-                <input
-                  ref={emojiInputRef}
-                  type="text"
-                  inputMode="text"
-                  autoComplete="off"
-                  placeholder="Type or pick an emoji"
-                  className="w-full text-center text-lg bg-secondary/50 rounded-lg py-1.5 px-2 outline-none focus:ring-1 focus:ring-ring text-foreground placeholder:text-muted-foreground/50"
-                  onInput={(e) => {
-                    const val = (e.target as HTMLInputElement).value;
-                    // Extract the last emoji character(s) entered
-                    const emojiMatch = val.match(/(\p{Emoji_Presentation}|\p{Extended_Pictographic})/gu);
-                    if (emojiMatch && emojiMatch.length > 0) {
-                      const emoji = emojiMatch[emojiMatch.length - 1];
-                      handleReact(emoji);
-                      (e.target as HTMLInputElement).value = "";
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape") {
-                      setShowEmojiInput(false);
-                    }
-                  }}
-                />
-              </div>
-            )}
+              <input
+                ref={hiddenEmojiRef}
+                type="text"
+                inputMode="text"
+                autoComplete="off"
+                className="absolute w-px h-px opacity-0 pointer-events-none"
+                style={{ left: -9999 }}
+                onInput={(e) => {
+                  const val = (e.target as HTMLInputElement).value;
+                  const emojiMatch = val.match(/(\p{Emoji_Presentation}|\p{Extended_Pictographic})/gu);
+                  if (emojiMatch && emojiMatch.length > 0) {
+                    handleReact(emojiMatch[emojiMatch.length - 1]);
+                  }
+                  (e.target as HTMLInputElement).value = "";
+                }}
+                onBlur={() => {
+                  if (hiddenEmojiRef.current) hiddenEmojiRef.current.value = "";
+                }}
+              />
             {/* Actions */}
             {isMine && !isMedia && !isAudio && onEdit && (
               <button
