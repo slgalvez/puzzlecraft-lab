@@ -69,6 +69,7 @@ const UserConversation = () => {
       const data = await invokeMessaging("get-my-conversation", token);
       setConversationId(data.conversation.id);
       setAdminProfileId(data.conversation.admin_profile_id);
+      setAdminName(data.conversation.admin_name || "Conversation");
       setMessages(data.messages);
       setDisappearingEnabled(data.conversation.disappearing_enabled);
       setDisappearingDuration(data.conversation.disappearing_duration);
