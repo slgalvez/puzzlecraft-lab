@@ -14,6 +14,8 @@ import { isCallMessage, CallSystemMessage } from "@/components/private/CallSyste
 import { useVideoCall } from "@/hooks/useVideoCall";
 import { VideoCallScreen } from "@/components/private/VideoCallScreen";
 import { IncomingCallBanner } from "@/components/private/IncomingCallBanner";
+import { useNicknames } from "@/hooks/useNicknames";
+import { NicknameEditor } from "@/components/private/NicknameEditor";
 
 interface Message {
   id: string;
