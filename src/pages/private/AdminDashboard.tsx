@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Timer, Trash2, MessageSquare, Puzzle, Plus, Check, Clock, Send } from "lucide-react";
 import { useNicknames } from "@/hooks/useNicknames";
+import { WhatsNewBanner } from "@/components/private/WhatsNewBanner";
 
 interface ConversationSummary {
   id: string;
