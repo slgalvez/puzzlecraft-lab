@@ -157,9 +157,10 @@ export async function subscribeToPush(token: string): Promise<PushSubscription |
     // Check for existing subscription
     let subscription = await registration.pushManager.getSubscription();
     if (!subscription) {
+      const applicationServerKey = base64urlToUint8Array(VAPID_PUBLIC_KEY);
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: base64urlToUint8Array(VAPID_PUBLIC_KEY),
+        applicationServerKey: applicationServerKey.buffer as ArrayBuffer,
       });
     }
 
