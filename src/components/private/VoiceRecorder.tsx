@@ -1,49 +1,47 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Mic, Square, Play, Pause, Trash2 } from "lucide-react";
 
-interface VoiceRecorderProps {
-  onRecorded: (blob: Blob, duration: number) => void;
+export interface VoicePreview {
+  blob: Blob;
+  duration: number;
+  url: string;
 }
 
-/** Inline voice recorder: hold mic to record, preview before sending */
-export function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
-  const [state, setState] = useState<"idle" | "recording" | "preview">("idle");
+interface VoiceRecorderProps {
+  disabled?: boolean;
+  onPreviewReady: (preview: VoicePreview) => void;
+}
+
+const formatDur = (s: number) => {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+};
+
+/** Mic button that becomes a recording indicator while held/active */
+export function VoiceRecorder({ disabled, onPreviewReady }: VoiceRecorderProps) {
+  const [recording, setRecording] = useState(false);
   const [duration, setDuration] = useState(0);
-  const [previewPlaying, setPreviewPlaying] = useState(false);
-  const [previewTime, setPreviewTime] = useState(0);
+  const [waveHeights, setWaveHeights] = useState<number[]>(Array(20).fill(30));
 
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const chunks = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval>>();
+  const waveRef = useRef<ReturnType<typeof setInterval>>();
   const startTimeRef = useRef(0);
-  const recordedBlob = useRef<Blob | null>(null);
-  const recordedDuration = useRef(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioUrlRef = useRef<string>("");
+  const streamRef = useRef<MediaStream | null>(null);
 
-  const cleanup = useCallback(() => {
+  useEffect(() => () => {
     clearInterval(timerRef.current);
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-    if (audioUrlRef.current) {
-      URL.revokeObjectURL(audioUrlRef.current);
-      audioUrlRef.current = "";
-    }
-    recordedBlob.current = null;
-    chunks.current = [];
-    setDuration(0);
-    setPreviewTime(0);
-    setPreviewPlaying(false);
+    clearInterval(waveRef.current);
+    streamRef.current?.getTracks().forEach((t) => t.stop());
   }, []);
-
-  // Cleanup on unmount
-  useEffect(() => () => cleanup(), [cleanup]);
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
         : MediaRecorder.isTypeSupported("audio/mp4")
@@ -59,169 +57,161 @@ export function VoiceRecorder({ onRecorded }: VoiceRecorderProps) {
 
       recorder.onstop = () => {
         stream.getTracks().forEach((t) => t.stop());
+        clearInterval(timerRef.current);
+        clearInterval(waveRef.current);
+
         const blob = new Blob(chunks.current, { type: mimeType });
         const dur = (Date.now() - startTimeRef.current) / 1000;
-        recordedBlob.current = blob;
-        recordedDuration.current = dur;
 
-        // Create preview audio
-        audioUrlRef.current = URL.createObjectURL(blob);
-        const audio = new Audio(audioUrlRef.current);
-        audio.onended = () => {
-          setPreviewPlaying(false);
-          setPreviewTime(0);
-        };
-        audio.ontimeupdate = () => {
-          setPreviewTime(audio.currentTime);
-        };
-        audioRef.current = audio;
+        if (dur < 0.5) {
+          // Too short, discard
+          setRecording(false);
+          setDuration(0);
+          return;
+        }
 
-        setDuration(dur);
-        setState("preview");
+        const url = URL.createObjectURL(blob);
+        onPreviewReady({ blob, duration: dur, url });
+        setRecording(false);
+        setDuration(0);
       };
 
       mediaRecorder.current = recorder;
       recorder.start(100);
       startTimeRef.current = Date.now();
-      setState("recording");
+      setRecording(true);
 
       timerRef.current = setInterval(() => {
         setDuration((Date.now() - startTimeRef.current) / 1000);
       }, 100);
+
+      // Animate waveform
+      waveRef.current = setInterval(() => {
+        setWaveHeights(Array.from({ length: 20 }, () => 20 + Math.random() * 80));
+      }, 120);
     } catch {
-      // Permission denied or no mic
+      // Permission denied
     }
   };
 
   const stopRecording = () => {
-    clearInterval(timerRef.current);
     if (mediaRecorder.current && mediaRecorder.current.state !== "inactive") {
       mediaRecorder.current.stop();
     }
   };
 
-  const togglePreviewPlayback = () => {
-    if (!audioRef.current) return;
-    if (previewPlaying) {
-      audioRef.current.pause();
-      setPreviewPlaying(false);
-    } else {
-      audioRef.current.play();
-      setPreviewPlaying(true);
-    }
-  };
-
-  const handleDiscard = () => {
-    cleanup();
-    setState("idle");
-  };
-
-  const handleConfirm = () => {
-    if (recordedBlob.current) {
-      onRecorded(recordedBlob.current, recordedDuration.current);
-    }
-    cleanup();
-    setState("idle");
-  };
-
-  const formatDur = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${m}:${sec.toString().padStart(2, "0")}`;
-  };
-
-  if (state === "idle") {
-    return (
-      <button
-        type="button"
-        onPointerDown={(e) => {
-          e.preventDefault();
-          startRecording();
-        }}
-        className="shrink-0 p-2 rounded-full transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary"
-        title="Hold to record voice note"
-      >
-        <Mic size={18} />
-      </button>
-    );
-  }
-
-  if (state === "recording") {
+  if (recording) {
     return (
       <div className="flex items-center gap-2 flex-1 min-w-0">
-        {/* Pulsing indicator */}
-        <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse" />
-          <span className="text-xs font-medium text-destructive tabular-nums">
-            {formatDur(duration)}
-          </span>
-        </div>
+        <span className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse shrink-0" />
+        <span className="text-xs font-medium text-destructive tabular-nums shrink-0">
+          {formatDur(duration)}
+        </span>
 
-        {/* Waveform animation */}
-        <div className="flex items-center gap-[2px] flex-1 h-6 overflow-hidden">
-          {Array.from({ length: 24 }).map((_, i) => (
+        <div className="flex items-center gap-[2px] flex-1 h-7 overflow-hidden">
+          {waveHeights.map((h, i) => (
             <div
               key={i}
-              className="w-[3px] rounded-full bg-destructive/60"
-              style={{
-                height: `${30 + Math.sin(Date.now() / 150 + i * 0.7) * 70}%`,
-                transition: "height 0.1s ease",
-                animationDelay: `${i * 40}ms`,
-              }}
+              className="w-[3px] rounded-full bg-destructive/50 transition-[height] duration-100"
+              style={{ height: `${h}%` }}
             />
           ))}
         </div>
 
-        {/* Stop button */}
         <button
           type="button"
           onClick={stopRecording}
-          className="shrink-0 p-2 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
         >
-          <Square size={14} />
+          <Square size={12} fill="currentColor" />
         </button>
       </div>
     );
   }
 
-  // Preview state
-  return {
-    blob: recordedBlob.current,
-    duration: recordedDuration.current,
-    previewElement: (
-      <div className="flex items-center gap-2 flex-1 min-w-0">
-        {/* Play/pause */}
+  return (
+    <button
+      type="button"
+      onClick={startRecording}
+      disabled={disabled}
+      className="shrink-0 p-2 rounded-full transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary"
+      title="Record voice note"
+    >
+      <Mic size={18} />
+    </button>
+  );
+}
+
+/** Preview bar for a recorded voice note — shown in composer area */
+interface VoicePreviewBarProps {
+  preview: VoicePreview;
+  onDiscard: () => void;
+}
+
+export function VoicePreviewBar({ preview, onDiscard }: VoicePreviewBarProps) {
+  const [playing, setPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const audio = new Audio(preview.url);
+    audio.onended = () => { setPlaying(false); setCurrentTime(0); };
+    audio.ontimeupdate = () => setCurrentTime(audio.currentTime);
+    audioRef.current = audio;
+    return () => { audio.pause(); audio.src = ""; };
+  }, [preview.url]);
+
+  const toggle = () => {
+    if (!audioRef.current) return;
+    if (playing) {
+      audioRef.current.pause();
+      setPlaying(false);
+    } else {
+      audioRef.current.play();
+      setPlaying(true);
+    }
+  };
+
+  const progress = preview.duration > 0 ? (currentTime / preview.duration) * 100 : 0;
+
+  return (
+    <div className="border-t border-border px-3 sm:px-4 py-2 bg-secondary/30">
+      <div className="flex items-center gap-2.5">
         <button
           type="button"
-          onClick={togglePreviewPlayback}
-          className="shrink-0 p-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+          onClick={toggle}
+          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
         >
-          {previewPlaying ? <Pause size={14} /> : <Play size={14} className="ml-[1px]" />}
+          {playing ? <Pause size={14} /> : <Play size={14} className="ml-[1px]" />}
         </button>
 
-        {/* Progress bar */}
-        <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+        <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden cursor-pointer"
+          onClick={(e) => {
+            if (!audioRef.current) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const pct = (e.clientX - rect.left) / rect.width;
+            audioRef.current.currentTime = pct * preview.duration;
+            setCurrentTime(audioRef.current.currentTime);
+          }}
+        >
           <div
             className="h-full bg-primary rounded-full transition-all duration-100"
-            style={{ width: `${duration > 0 ? (previewTime / duration) * 100 : 0}%` }}
+            style={{ width: `${progress}%` }}
           />
         </div>
 
-        {/* Duration */}
         <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
-          {formatDur(previewPlaying ? previewTime : duration)}
+          {formatDur(playing ? currentTime : preview.duration)}
         </span>
 
-        {/* Delete */}
         <button
           type="button"
-          onClick={handleDiscard}
+          onClick={onDiscard}
           className="shrink-0 p-1.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
         >
           <Trash2 size={14} />
         </button>
       </div>
-    ),
-    onConfirm: handleConfirm,
-  } as never; // This will be reworked — let me use a proper pattern
+    </div>
+  );
 }
