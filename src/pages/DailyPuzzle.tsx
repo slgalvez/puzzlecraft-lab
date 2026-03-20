@@ -43,6 +43,47 @@ const DailyPuzzle = () => {
     setCompletion(getDailyCompletion(challenge.dateStr));
   }, [challenge.dateStr]);
 
+  // Memoize generated puzzles so heavy generators only run once (prevents mobile Safari crash)
+  const generatedPuzzle = useMemo(() => {
+    const { seed, difficulty, category, dateStr } = challenge;
+    try {
+      switch (category) {
+        case "crossword": {
+          const gen = generateCrossword(seed, difficulty);
+          return {
+            id: `daily-${dateStr}`, title: "Daily Crossword", type: "crossword" as const,
+            difficulty: difficulty as CrosswordPuzzle["difficulty"],
+            size: `${gen.gridSize}×${gen.gridSize}`,
+            gridSize: gen.gridSize, blackCells: gen.blackCells, clues: gen.clues,
+          } satisfies CrosswordPuzzle;
+        }
+        case "word-fill": {
+          const gen = generateWordFillIn(seed, difficulty);
+          return {
+            id: `daily-${dateStr}`, title: "Daily Word Fill-In", type: "word-fill" as const,
+            difficulty: difficulty as FillInPuzzle["difficulty"],
+            size: `${gen.gridSize}×${gen.gridSize}`,
+            gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
+          } satisfies FillInPuzzle;
+        }
+        case "number-fill": {
+          const gen = generateNumberFillIn(seed, difficulty);
+          return {
+            id: `daily-${dateStr}`, title: "Daily Number Fill-In", type: "number-fill" as const,
+            difficulty: difficulty as FillInPuzzle["difficulty"],
+            size: `${gen.gridSize}×${gen.gridSize}`,
+            gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
+          } satisfies FillInPuzzle;
+        }
+        default:
+          return null;
+      }
+    } catch (e) {
+      console.error("Daily puzzle generation failed:", e);
+      return null;
+    }
+  }, [challenge]);
+
   const renderPuzzle = () => {
     const { seed, difficulty, category } = challenge;
     const key = `daily-${challenge.dateStr}`;
@@ -59,36 +100,15 @@ const DailyPuzzle = () => {
         return <NonogramGrid key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} dailyCode={dailyCode} />;
       case "cryptogram":
         return <CryptogramPuzzle key={key} seed={seed} difficulty={difficulty} onNewPuzzle={handleNewPuzzle} dailyCode={dailyCode} />;
-      case "crossword": {
-        const gen = generateCrossword(seed, difficulty);
-        const puzzle: CrosswordPuzzle = {
-          id: `daily-${challenge.dateStr}`, title: "Daily Crossword", type: "crossword",
-          difficulty: difficulty as CrosswordPuzzle["difficulty"],
-          size: `${gen.gridSize}×${gen.gridSize}`,
-          gridSize: gen.gridSize, blackCells: gen.blackCells, clues: gen.clues,
-        };
-        return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} dailyCode={dailyCode} />;
-      }
-      case "word-fill": {
-        const gen = generateWordFillIn(seed, difficulty);
-        const puzzle: FillInPuzzle = {
-          id: `daily-${challenge.dateStr}`, title: "Daily Word Fill-In", type: "word-fill",
-          difficulty: difficulty as FillInPuzzle["difficulty"],
-          size: `${gen.gridSize}×${gen.gridSize}`,
-          gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
-        };
-        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} dailyCode={dailyCode} />;
-      }
-      case "number-fill": {
-        const gen = generateNumberFillIn(seed, difficulty);
-        const puzzle: FillInPuzzle = {
-          id: `daily-${challenge.dateStr}`, title: "Daily Number Fill-In", type: "number-fill",
-          difficulty: difficulty as FillInPuzzle["difficulty"],
-          size: `${gen.gridSize}×${gen.gridSize}`,
-          gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
-        };
-        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} dailyCode={dailyCode} />;
-      }
+      case "crossword":
+        return generatedPuzzle ? (
+          <CrosswordGrid key={key} puzzle={generatedPuzzle as CrosswordPuzzle} showControls onNewPuzzle={handleNewPuzzle} dailyCode={dailyCode} />
+        ) : null;
+      case "word-fill":
+      case "number-fill":
+        return generatedPuzzle ? (
+          <FillInGrid key={key} puzzle={generatedPuzzle as FillInPuzzle} showControls onNewPuzzle={handleNewPuzzle} dailyCode={dailyCode} />
+        ) : null;
       default:
         return null;
     }
@@ -179,7 +199,18 @@ const DailyPuzzle = () => {
         )}
 
         {/* Puzzle */}
-        <div className="min-h-[300px]">{renderPuzzle()}</div>
+        <div className="min-h-[300px]">
+          {(challenge.category === "crossword" || challenge.category === "word-fill" || challenge.category === "number-fill") && !generatedPuzzle ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <p className="text-muted-foreground mb-4">Puzzle generation failed. Please try refreshing the page.</p>
+              <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                Refresh
+              </Button>
+            </div>
+          ) : (
+            renderPuzzle()
+          )}
+        </div>
       </div>
     </Layout>
   );

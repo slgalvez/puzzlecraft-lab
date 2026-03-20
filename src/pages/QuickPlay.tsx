@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { goBackOrFallback } from "@/lib/navigation";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -68,6 +68,43 @@ const QuickPlay = () => {
   const activeDifficulty = mode === "endless" ? endlessDiffMap[currentType] : difficulty;
   // For generation: downgrade unsupported difficulties (e.g. kakuro insane → extreme)
   const effectiveDifficulty = getEffectiveDifficulty(currentType, activeDifficulty);
+
+  // Memoize heavy generators to prevent re-running on every render (mobile Safari crash fix)
+  const generatedPuzzle = useMemo(() => {
+    try {
+      switch (currentType) {
+        case "crossword": {
+          const gen = generateCrossword(seed, effectiveDifficulty);
+          return {
+            id: `gen-${seed}`, title: "Generated Crossword", type: "crossword" as const,
+            difficulty: effectiveDifficulty as CrosswordPuzzle["difficulty"],
+            size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, clues: gen.clues,
+          } satisfies CrosswordPuzzle;
+        }
+        case "word-fill": {
+          const gen = generateWordFillIn(seed, effectiveDifficulty);
+          return {
+            id: `gen-${seed}`, title: "Generated Word Fill-In", type: "word-fill" as const,
+            difficulty: effectiveDifficulty as FillInPuzzle["difficulty"],
+            size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
+          } satisfies FillInPuzzle;
+        }
+        case "number-fill": {
+          const gen = generateNumberFillIn(seed, effectiveDifficulty);
+          return {
+            id: `gen-${seed}`, title: "Generated Number Fill-In", type: "number-fill" as const,
+            difficulty: effectiveDifficulty as FillInPuzzle["difficulty"],
+            size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
+          } satisfies FillInPuzzle;
+        }
+        default:
+          return null;
+      }
+    } catch (e) {
+      console.error("Puzzle generation failed:", e);
+      return null;
+    }
+  }, [currentType, seed, effectiveDifficulty]);
 
   const handleNewPuzzle = useCallback(() => {
     if (mode === "surprise") {
@@ -189,6 +226,7 @@ const QuickPlay = () => {
   const onSolveHandler = mode === "endless" ? handleEndlessSolve : undefined;
   const isEndless = mode === "endless";
 
+
   const renderPuzzle = () => {
     const key = `${seed}-${effectiveDifficulty}-${puzzleKey}`;
     switch (activeType) {
@@ -197,33 +235,15 @@ const QuickPlay = () => {
       case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={effectiveDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
       case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={effectiveDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
       case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={effectiveDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
-      case "crossword": {
-        const gen = generateCrossword(seed, effectiveDifficulty);
-        const puzzle: CrosswordPuzzle = {
-          id: `gen-${seed}`, title: "Generated Crossword", type: "crossword",
-          difficulty: effectiveDifficulty as CrosswordPuzzle["difficulty"],
-          size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, clues: gen.clues,
-        };
-        return <CrosswordGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
-      }
-      case "word-fill": {
-        const gen = generateWordFillIn(seed, effectiveDifficulty);
-        const puzzle: FillInPuzzle = {
-          id: `gen-${seed}`, title: "Generated Word Fill-In", type: "word-fill",
-          difficulty: effectiveDifficulty as FillInPuzzle["difficulty"],
-          size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
-        };
-        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
-      }
-      case "number-fill": {
-        const gen = generateNumberFillIn(seed, effectiveDifficulty);
-        const puzzle: FillInPuzzle = {
-          id: `gen-${seed}`, title: "Generated Number Fill-In", type: "number-fill",
-          difficulty: effectiveDifficulty as FillInPuzzle["difficulty"],
-          size: `${gen.gridSize}×${gen.gridSize}`, gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
-        };
-        return <FillInGrid key={key} puzzle={puzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
-      }
+      case "crossword":
+        return generatedPuzzle ? (
+          <CrosswordGrid key={key} puzzle={generatedPuzzle as CrosswordPuzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />
+        ) : null;
+      case "word-fill":
+      case "number-fill":
+        return generatedPuzzle ? (
+          <FillInGrid key={key} puzzle={generatedPuzzle as FillInPuzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />
+        ) : null;
       default: return null;
     }
   };
