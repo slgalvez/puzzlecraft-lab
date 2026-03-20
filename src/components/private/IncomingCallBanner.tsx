@@ -8,7 +8,8 @@ interface IncomingCallBannerProps {
   onDecline: (callId: string) => void;
 }
 
-export function IncomingCallBanner({ call, onAccept, onDecline }: IncomingCallBannerProps) {
+export function IncomingCallBanner({ call, resolvedCallerName, onAccept, onDecline }: IncomingCallBannerProps) {
+  const displayName = resolvedCallerName || call.callerName;
   return (
     <div className="fixed top-0 left-0 right-0 z-[90] p-3 animate-in slide-in-from-top duration-300">
       <div className="max-w-sm mx-auto bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
@@ -20,7 +21,7 @@ export function IncomingCallBanner({ call, onAccept, onDecline }: IncomingCallBa
 
           {/* Info */}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">{call.callerName}</p>
+            <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
             <p className="text-xs text-muted-foreground">Video Call</p>
           </div>
 
