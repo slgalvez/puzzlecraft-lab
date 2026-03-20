@@ -10,6 +10,11 @@ import { setFocusLossEnabled } from "@/lib/focusLossSettings";
 import { Plus } from "lucide-react";
 import { FeatureHint } from "@/components/private/FeatureHint";
 import {
+  getNotificationsEnabled,
+  setNotificationsEnabled,
+  requestPushPermission,
+} from "@/lib/privateNotifications";
+import {
   CHAT_THEMES,
   getChatTheme,
   setChatTheme,
@@ -38,6 +43,7 @@ const PrivateSettings = () => {
   const [activeTheme, setActiveTheme] = useState<ChatThemeId>(getChatTheme);
   const [customHex, setCustomHex] = useState(getCustomColor);
   const colorInputRef = useRef<HTMLInputElement>(null);
+  const [notificationsOn, setNotificationsOn] = useState(getNotificationsEnabled);
 
   const handleSessionExpired = useCallback(() => {
     signOut();
@@ -307,6 +313,31 @@ const PrivateSettings = () => {
                   if (e instanceof SessionExpiredError) return handleSessionExpired();
                   setFocusLossOn(!val);
                   if (updateUser) updateUser({ focus_loss_protection: !val } as any);
+                }
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="border-t border-border" />
+
+        {/* Notifications */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-semibold text-foreground">Notifications</h2>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm text-foreground">Stealth notifications</p>
+              <p className="text-xs text-muted-foreground">
+                Subtle, coded alerts that blend into normal app behavior
+              </p>
+            </div>
+            <Switch
+              checked={notificationsOn}
+              onCheckedChange={(val) => {
+                setNotificationsOn(val);
+                setNotificationsEnabled(val);
+                if (val) {
+                  requestPushPermission();
                 }
               }}
             />

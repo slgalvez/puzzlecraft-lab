@@ -4,13 +4,14 @@ const BANNER_KEY = "private_whats_new_dismissed";
 const HINT_KEY_PREFIX = "private_hint_seen_";
 
 // Bump this version string when new features are added to the banner
-export const WHATS_NEW_VERSION = "2026-03-v1";
+export const WHATS_NEW_VERSION = "2026-03-v2";
 
 export const WHATS_NEW_FEATURES = [
   "Voice messages",
   "Video calls",
   "GIFs",
   "Custom colors",
+  "Stealth notifications",
 ];
 
 // ── Banner ──

@@ -4,6 +4,8 @@ import { LayoutDashboard, MessageSquare, Users, Settings, LogOut, Puzzle, Shield
 import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import { NavLink } from "@/components/NavLink";
+import { usePrivateNotifications } from "@/hooks/usePrivateNotifications";
+import { NotificationBanner } from "@/components/private/NotificationBanner";
 import {
   Sidebar,
   SidebarContent,
@@ -56,6 +58,7 @@ export function PrivateSidebar() {
   const [unsolvedPuzzles, setUnsolvedPuzzles] = useState(0);
   const [hasOverviewActivity, setHasOverviewActivity] = useState(false);
   const prevPathRef = useRef(location.pathname);
+  const { bannerPhrase, clearBanner, checkUnread, checkIncomingCall } = usePrivateNotifications();
 
   const isAdmin = user?.role === "admin";
   const navItems = isAdmin ? adminNav : userNav;
@@ -113,6 +116,7 @@ export function PrivateSidebar() {
 
       setUnreadCount(msgUnread);
       setUnsolvedPuzzles(unsolved);
+      checkUnread(msgUnread);
 
       const overviewSeen = getSeenTimestamp(SEEN_KEY_OVERVIEW);
       const isOnOverview = location.pathname === "/p";
@@ -138,7 +142,7 @@ export function PrivateSidebar() {
         navigate("/");
       }
     }
-  }, [token, isAdmin, user, location.pathname, signOut, navigate]);
+  }, [token, isAdmin, user, location.pathname, signOut, navigate, checkUnread]);
 
   useEffect(() => {
     fetchCounts();
@@ -152,7 +156,9 @@ export function PrivateSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
+    <>
+      <NotificationBanner phrase={bannerPhrase} onDismissed={clearBanner} />
+      <Sidebar collapsible="icon" className="border-r border-border">
       <SidebarContent className="pt-4 flex flex-col h-full">
         <div className="px-4 pb-4">
           {!collapsed && (
@@ -219,5 +225,6 @@ export function PrivateSidebar() {
         </div>
       </SidebarContent>
     </Sidebar>
+    </>
   );
 }
