@@ -57,7 +57,7 @@ export function MessageBubble({
   const reactionEntries = Object.entries(reactions || {}).filter(([, users]) => users.length > 0);
   const hasReactions = reactionEntries.length > 0;
 
-  const closeMenu = useCallback(() => setShowMenu(false), []);
+  const closeMenu = useCallback(() => { setShowMenu(false); setShowEmojiInput(false); }, []);
 
   const handleTap = useCallback(() => {
     const now = Date.now();
