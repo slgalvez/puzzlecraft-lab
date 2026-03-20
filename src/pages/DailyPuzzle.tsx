@@ -199,7 +199,18 @@ const DailyPuzzle = () => {
         )}
 
         {/* Puzzle */}
-        <div className="min-h-[300px]">{renderPuzzle()}</div>
+        <div className="min-h-[300px]">
+          {(challenge.category === "crossword" || challenge.category === "word-fill" || challenge.category === "number-fill") && !generatedPuzzle ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <p className="text-muted-foreground mb-4">Puzzle generation failed. Please try refreshing the page.</p>
+              <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                Refresh
+              </Button>
+            </div>
+          ) : (
+            renderPuzzle()
+          )}
+        </div>
       </div>
     </Layout>
   );
