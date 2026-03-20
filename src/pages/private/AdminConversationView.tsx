@@ -288,11 +288,11 @@ const AdminConversationView = () => {
 
       <div className="flex flex-col h-full">
         {/* Back + name bar */}
-        <div className="flex items-center gap-3 border-b border-border px-3 sm:px-4 py-2.5 shrink-0">
-          <Link to="/p/conversations" className="text-muted-foreground hover:text-foreground transition-colors p-1">
-            <ArrowLeft size={16} />
+        <div className="flex items-center gap-3 px-3 sm:px-4 py-2.5 shrink-0">
+          <Link to="/p/conversations" className="text-muted-foreground/60 hover:text-foreground transition-colors p-1 -ml-1">
+            <ArrowLeft size={18} />
           </Link>
-          <span className="text-sm font-medium text-foreground flex-1">
+          <span className="text-[15px] font-semibold text-foreground flex-1 tracking-tight">
             {conversation ? resolve(conversation.user_profile_id, conversation.user_name) : "Conversation"}
           </span>
           {conversation && (
@@ -307,10 +307,10 @@ const AdminConversationView = () => {
           <button
             onClick={videoCall.startCall}
             disabled={videoCall.callState !== "idle"}
-            className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-40"
+            className="p-2 rounded-full text-muted-foreground/50 hover:text-foreground hover:bg-secondary/30 transition-colors disabled:opacity-30"
             title="Start video call"
           >
-            <Video size={16} />
+            <Video size={18} />
           </button>
         </div>
 
@@ -324,10 +324,10 @@ const AdminConversationView = () => {
         />
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-2 sm:px-3 py-3 space-y-1">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 space-y-1">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
-              <p className="text-sm text-muted-foreground">No messages in this conversation yet.</p>
+              <p className="text-[13px] text-muted-foreground/40">No messages in this conversation yet</p>
             </div>
           ) : (
             messages.map((msg, i) => {

@@ -284,7 +284,7 @@ const UserConversation = () => {
 
       <div className="flex flex-col h-full">
         {/* Header with nickname + video call */}
-        <div className="flex items-center gap-2 px-3 sm:px-4 pt-1 shrink-0 justify-end">
+        <div className="flex items-center gap-2 px-3 sm:px-4 py-1.5 shrink-0 justify-end">
           {adminProfileId && (
             <NicknameEditor
               contactProfileId={adminProfileId}
@@ -297,10 +297,10 @@ const UserConversation = () => {
           <button
             onClick={videoCall.startCall}
             disabled={videoCall.callState !== "idle"}
-            className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-40"
+            className="p-2 rounded-full text-muted-foreground/50 hover:text-foreground hover:bg-secondary/30 transition-colors disabled:opacity-30"
             title="Start video call"
           >
-            <Video size={16} />
+            <Video size={18} />
           </button>
         </div>
         <ConversationToolbar
@@ -313,11 +313,11 @@ const UserConversation = () => {
         />
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-2 sm:px-3 py-3 space-y-1">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 space-y-1">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
-              <p className="text-sm text-muted-foreground">
-                Send a message to start the conversation.
+              <p className="text-[13px] text-muted-foreground/40">
+                Send a message to start the conversation
               </p>
             </div>
           ) : (

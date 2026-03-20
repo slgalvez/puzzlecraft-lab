@@ -255,7 +255,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
 
       {/* Media preview bar */}
       {mediaPreview && (
-        <div className="border-t border-border px-3 sm:px-4 py-2 bg-secondary/30">
+        <div className="border-t border-border/30 px-3 sm:px-4 py-2 bg-secondary/15">
           <div className="relative inline-block">
             <img
               src={mediaPreview.url}
@@ -279,12 +279,12 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
 
       {/* Edit mode banner */}
       {isEditing && (
-        <div className="border-t border-border px-3 sm:px-4 py-1.5 bg-secondary/40 flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Editing message</span>
+        <div className="border-t border-border/30 px-3 sm:px-4 py-1.5 bg-secondary/20 flex items-center justify-between">
+          <span className="text-[11px] text-muted-foreground/60">Editing message</span>
           <button
             type="button"
             onClick={handleCancelEdit}
-            className="text-xs text-primary hover:text-primary/80 font-medium"
+            className="text-[11px] text-primary/70 hover:text-primary font-medium transition-colors"
           >
             Cancel
           </button>
@@ -293,8 +293,8 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
 
       <form
         onSubmit={handleSubmit}
-        className={`border-t border-border px-3 sm:px-4 py-2 ${isEditing ? "border-t-0" : ""}`}
-        style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom, 0px))" }}
+        className={`border-t border-border/20 px-3 sm:px-4 py-2.5 ${isEditing ? "border-t-0" : ""}`}
+        style={{ paddingBottom: "max(0.625rem, env(safe-area-inset-bottom, 0px))" }}
       >
         <div className="flex items-end gap-2">
           {!hasVoiceOrMedia && !isEditing && (
@@ -305,8 +305,8 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
                 disabled={uploading || !conversationId}
                 className={`shrink-0 p-2 rounded-full transition-colors ${
                   uploading
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    ? "text-primary bg-primary/[0.08]"
+                    : "text-muted-foreground/50 hover:text-foreground hover:bg-secondary/30"
                 }`}
                 title="Send an image"
               >
@@ -316,10 +316,10 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
                 type="button"
                 onClick={() => setGifOpen((v) => !v)}
                 disabled={uploading || !conversationId}
-                className={`shrink-0 p-2 rounded-full transition-colors text-xs font-bold ${
+                className={`shrink-0 p-2 rounded-full transition-colors text-[11px] font-bold tracking-tight ${
                   gifOpen
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    ? "text-primary bg-primary/[0.08]"
+                    : "text-muted-foreground/50 hover:text-foreground hover:bg-secondary/30"
                 }`}
                 title="Search GIFs"
               >

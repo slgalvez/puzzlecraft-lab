@@ -206,7 +206,7 @@ body:has(.private-app) #root {
 .private-app .msg-bubble-mine {
   background: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
-  border-radius: 1.125rem 1.125rem 0.25rem 1.125rem;
+  border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
   word-break: break-word;
   overflow-wrap: break-word;
 }
@@ -214,7 +214,7 @@ body:has(.private-app) #root {
 .private-app .msg-bubble-theirs {
   background: hsl(var(--secondary));
   color: hsl(var(--foreground));
-  border-radius: 1.125rem 1.125rem 1.125rem 0.25rem;
+  border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
   word-break: break-word;
   overflow-wrap: break-word;
 }
@@ -246,10 +246,16 @@ body:has(.private-app) [data-sidebar="sidebar"][data-mobile="true"] {
 
 /* Composer pill style */
 .private-app .msg-composer-input {
-  border-radius: 1.25rem;
+  border-radius: 1.375rem;
   padding-left: 1rem;
   padding-right: 1rem;
   min-height: 2.25rem;
   background: hsl(var(--secondary));
+  border-color: transparent;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.private-app .msg-composer-input:focus {
   border-color: hsl(var(--border));
+  box-shadow: none;
 }
