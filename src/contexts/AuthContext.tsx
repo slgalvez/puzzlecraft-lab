@@ -125,17 +125,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = useCallback(async (firstName: string, lastName: string, password: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke("private-login", {
+      console.debug("[auth] signIn: calling private-login...");
+      const invokePromise = supabase.functions.invoke("private-login", {
         body: { first_name: firstName.trim(), last_name: lastName.trim(), password },
       });
-      if (error || !data?.token) return { error: "Access unavailable" };
+      // 15s timeout so signIn never hangs forever
+      const timeoutPromise = new Promise<{ data: null; error: string }>((resolve) =>
+        setTimeout(() => resolve({ data: null, error: "timeout" }), 15_000)
+      );
+      const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
+      if (error || !data?.token) {
+        console.debug("[auth] signIn: failed", error);
+        return { error: "Access unavailable" };
+      }
+      console.debug("[auth] signIn: success, setting session");
       localStorage.setItem(SESSION_KEY, JSON.stringify({ user: data.user, token: data.token }));
       localStorage.setItem("private_last_active", String(Date.now()));
       setUser(data.user);
       setToken(data.token);
       setSessionEnded(false);
       return { error: null };
-    } catch {
+    } catch (e) {
+      console.warn("[auth] signIn: exception", e);
       return { error: "Access unavailable" };
     }
   }, []);

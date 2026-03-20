@@ -7,6 +7,22 @@ export class SessionExpiredError extends Error {
   }
 }
 
+/** Wrap a promise with a timeout so it never hangs forever */
+function withTimeout<T>(promise: Promise<T>, ms: number, label?: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      console.warn(`[private-api] ${label ?? "call"} timed out after ${ms}ms`);
+      reject(new Error("Request timed out"));
+    }, ms);
+    promise.then(
+      (v) => { clearTimeout(timer); resolve(v); },
+      (e) => { clearTimeout(timer); reject(e); },
+    );
+  });
+}
+
+const DEFAULT_TIMEOUT_MS = 15_000; // 15s max per edge function call
+
 async function getFunctionErrorBody(error: unknown): Promise<{ error?: string } | null> {
   if (!error || typeof error !== "object") return null;
 
@@ -94,9 +110,15 @@ export async function invokeMessaging(action: string, token: string, extra: Reco
     if (e instanceof SessionExpiredError) throw e;
   }
 
-  const { data, error } = await supabase.functions.invoke("messaging", {
-    body: { action, token, ...extra },
-  });
+  console.debug(`[private-api] invokeMessaging: ${action}`);
+
+  const { data, error } = await withTimeout(
+    supabase.functions.invoke("messaging", {
+      body: { action, token, ...extra },
+    }),
+    DEFAULT_TIMEOUT_MS,
+    `messaging/${action}`,
+  );
 
   if (error) {
     const errBody = await getFunctionErrorBody(error);
