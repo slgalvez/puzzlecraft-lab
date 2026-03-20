@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Video } from "lucide-react";
 import { isPuzzleMessage, PuzzleMessageBubble } from "@/components/private/PuzzleMessageBubble";
 import { MessageBubble } from "@/components/private/MessageBubble";
-import { MessageComposer, type EditingMessage } from "@/components/private/MessageComposer";
+import { MessageComposer, type EditingMessage, isGifMessage, getGifUrl } from "@/components/private/MessageComposer";
 import { ConversationToolbar } from "@/components/private/ConversationToolbar";
 import { isCallMessage, CallSystemMessage } from "@/components/private/CallSystemMessage";
 import { useVideoCall } from "@/hooks/useVideoCall";
@@ -221,6 +221,11 @@ const AdminConversationView = () => {
     return d.toLocaleDateString([], { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  const allImageUrls = useMemo(
+    () => messages.filter((m) => isGifMessage(m.body)).map((m) => getGifUrl(m.body)),
+    [messages]
+  );
+
   if (loading) {
     return (
       <PrivateLayout title="Conversation">
@@ -376,6 +381,7 @@ const AdminConversationView = () => {
                   onReact={handleReact}
                   onStartEdit={handleStartEdit}
                   onUnsend={handleUnsend}
+                  allImageUrls={allImageUrls}
                 />
               );
             })

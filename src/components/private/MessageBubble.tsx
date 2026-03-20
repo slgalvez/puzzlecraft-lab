@@ -22,6 +22,8 @@ interface MessageBubbleProps {
   onReact?: (messageId: string, reaction: string) => void;
   onStartEdit?: (messageId: string, body: string) => void;
   onUnsend?: (messageId: string) => void;
+  /** All image URLs in the conversation for gallery navigation */
+  allImageUrls?: string[];
 }
 
 export function MessageBubble({
@@ -39,6 +41,7 @@ export function MessageBubble({
   onReact,
   onStartEdit,
   onUnsend,
+  allImageUrls,
 }: MessageBubbleProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -258,7 +261,11 @@ export function MessageBubble({
               )}
             </div>
             {viewerOpen && (
-              <ImageViewer src={mediaUrl} onClose={() => setViewerOpen(false)} />
+              <ImageViewer
+                src={mediaUrl}
+                images={allImageUrls}
+                onClose={() => setViewerOpen(false)}
+              />
             )}
           </div>
         ) : (
