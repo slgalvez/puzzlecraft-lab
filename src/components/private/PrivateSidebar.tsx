@@ -50,7 +50,7 @@ function setSeenTimestamp(key: string) {
 }
 
 export function PrivateSidebar() {
-  const { state } = useSidebar();
+  const { state, open } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
@@ -63,6 +63,15 @@ export function PrivateSidebar() {
 
   const isAdmin = user?.role === "admin";
   const navItems = isAdmin ? adminNav : userNav;
+
+  // Re-apply chat theme when sidebar opens (ensures mobile portal gets themed)
+  useEffect(() => {
+    if (open) {
+      // Small delay to let the mobile portal mount
+      const t = setTimeout(() => applyChatTheme(), 50);
+      return () => clearTimeout(t);
+    }
+  }, [open]);
 
   // Mark tabs as "seen" when user navigates to them
   useEffect(() => {
