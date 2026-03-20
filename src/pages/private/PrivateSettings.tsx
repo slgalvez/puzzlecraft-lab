@@ -138,7 +138,7 @@ const PrivateSettings = () => {
 
   return (
     <PrivateLayout title="Settings">
-      <div className="p-4 sm:p-6 max-w-lg space-y-8">
+      <div className="p-4 sm:p-6 pb-16 max-w-lg space-y-8">
         {/* Display Name */}
         <form onSubmit={handleNameSave} className="space-y-4">
           <h2 className="text-sm font-semibold text-foreground">Display Name</h2>
