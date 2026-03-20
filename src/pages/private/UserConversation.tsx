@@ -51,6 +51,12 @@ const UserConversation = () => {
     navigate("/");
   }, [signOut, navigate]);
 
+  const videoCall = useVideoCall({
+    token: token || "",
+    conversationId,
+    onSessionExpired: handleSessionExpired,
+  });
+
   const fetchConversation = useCallback(async () => {
     if (!token) return;
     try {
