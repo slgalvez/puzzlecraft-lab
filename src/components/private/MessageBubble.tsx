@@ -84,6 +84,7 @@ export function MessageBubble({
     didLongPress.current = false;
     longPressTimer.current = setTimeout(() => {
       didLongPress.current = true;
+      hapticStrong();
       setShowMenu(true);
     }, 500);
   }, []);
