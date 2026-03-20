@@ -751,23 +751,11 @@ export function generateCustomWordSearch(words: string[], difficulty: CraftDiffi
   const dirs = difficulty === "easy" ? DIRS_EASY : difficulty === "medium" ? DIRS_MEDIUM : DIRS_HARD;
   const maxOverlap = WS_MAX_OVERLAP[difficulty];
 
-  let bestResult: CustomWordSearchData | null = null;
-  let bestScore = -Infinity;
-
-  for (let attempt = 0; attempt < MAX_REGEN_ATTEMPTS; attempt++) {
-    const seed = (Date.now() + attempt * 3571) % 2147483646 || 1;
+  return selectBestLayout((seed) => {
     const result = buildWordSearch(cleaned, size, dirs, maxOverlap, seed, difficulty);
     const score = result.placedCount * 10 + result.distributionScore;
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestResult = result.data;
-    }
-
-    if (result.placedCount === cleaned.length && result.distributionScore > 5) break;
-  }
-
-  return bestResult!;
+    return { data: result.data, score };
+  }, Date.now());
 }
 
 function buildWordSearch(
