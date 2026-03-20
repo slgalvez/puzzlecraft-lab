@@ -243,7 +243,7 @@ const UserConversation = () => {
   }
 
   return (
-    <PrivateLayout title="Conversation" fullHeight>
+    <PrivateLayout title={adminProfileId ? resolve(adminProfileId, adminName) : "Conversation"} fullHeight>
       {/* Video call overlays */}
       {videoCall.callState !== "idle" && videoCall.callState !== "ended" && (
         <VideoCallScreen
