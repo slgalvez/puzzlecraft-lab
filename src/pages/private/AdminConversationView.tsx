@@ -291,7 +291,18 @@ const AdminConversationView = () => {
           <Link to="/p/conversations" className="text-muted-foreground hover:text-foreground transition-colors p-1">
             <ArrowLeft size={16} />
           </Link>
-          <span className="text-sm font-medium text-foreground flex-1">{conversation?.user_name || "Conversation"}</span>
+          <span className="text-sm font-medium text-foreground flex-1">
+            {conversation ? resolve(conversation.user_profile_id, conversation.user_name) : "Conversation"}
+          </span>
+          {conversation && (
+            <NicknameEditor
+              contactProfileId={conversation.user_profile_id}
+              currentNickname={nicknames[conversation.user_profile_id]}
+              defaultName={conversation.user_name}
+              onSave={setNickname}
+              onRemove={removeNickname}
+            />
+          )}
           <button
             onClick={videoCall.startCall}
             disabled={videoCall.callState !== "idle"}
