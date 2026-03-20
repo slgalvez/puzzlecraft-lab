@@ -34,6 +34,7 @@ const UserConversation = () => {
   const { toast } = useToast();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [adminProfileId, setAdminProfileId] = useState<string | null>(null);
+  const [adminName, setAdminName] = useState<string>("Conversation");
   const [messages, setMessages] = useState<Message[]>([]);
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
