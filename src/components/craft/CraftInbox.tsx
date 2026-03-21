@@ -50,24 +50,47 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [solveStatuses, setSolveStatuses] = useState<Record<string, "sent" | "in_progress" | "completed">>({});
+  // Per-recipient statuses keyed by puzzle shareId → array of { name, status }
+  const [recipientStatuses, setRecipientStatuses] = useState<Record<string, { name: string; status: "sent" | "in_progress" | "completed" }[]>>({});
 
   // Fetch solve statuses for sent items from DB
   useEffect(() => {
     if (sent.length === 0) return;
     const shareIds = sent.map((s) => s.shareId);
+    const hasRecipients = sent.some((s) => s.recipients && s.recipients.length > 0);
+
     (async () => {
+      // Fetch puzzle-level statuses
       const { data } = await supabase
         .from("shared_puzzles" as any)
         .select("id, started_at, completed_at")
         .in("id", shareIds);
-      if (!data) return;
-      const map: Record<string, "sent" | "in_progress" | "completed"> = {};
-      for (const row of data as any[]) {
-        if (row.completed_at) map[row.id] = "completed";
-        else if (row.started_at) map[row.id] = "in_progress";
-        else map[row.id] = "sent";
+      if (data) {
+        const map: Record<string, "sent" | "in_progress" | "completed"> = {};
+        for (const row of data as any[]) {
+          if (row.completed_at) map[row.id] = "completed";
+          else if (row.started_at) map[row.id] = "in_progress";
+          else map[row.id] = "sent";
+        }
+        setSolveStatuses(map);
       }
-      setSolveStatuses(map);
+
+      // Fetch per-recipient statuses
+      if (hasRecipients) {
+        const { data: recData } = await supabase
+          .from("craft_recipients" as any)
+          .select("puzzle_id, recipient_name, started_at, completed_at")
+          .in("puzzle_id", shareIds);
+        if (recData) {
+          const rMap: Record<string, { name: string; status: "sent" | "in_progress" | "completed" }[]> = {};
+          for (const row of recData as any[]) {
+            const status: "sent" | "in_progress" | "completed" = row.completed_at ? "completed" : row.started_at ? "in_progress" : "sent";
+            if (!rMap[row.puzzle_id]) rMap[row.puzzle_id] = [];
+            rMap[row.puzzle_id].push({ name: row.recipient_name, status });
+          }
+          setRecipientStatuses(rMap);
+        }
+      }
     })();
   }, [sent]);
 
@@ -204,47 +227,64 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
             <EmptyState icon={<Send className="h-5 w-5" />} text="No sent puzzles yet" sub="Puzzles you share will appear here" />
           ) : (
             <div className="space-y-2.5">
-              {sent.map((s) => (
+              {sent.map((s) => {
+                const recs = recipientStatuses[s.shareId];
+                const hasRecipients = recs && recs.length > 0;
+                return (
                 <div
                   key={s.id}
-                  className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-border/60 bg-muted/30"
+                  className="p-3.5 rounded-xl border border-border/60 bg-muted/30"
                 >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">{typeLabel(s.type)}</Badge>
-                      <SolveStatusBadge status={solveStatuses[s.shareId] ?? "sent"} />
-                      <span className="text-[10px] text-muted-foreground/60">{relativeTime(s.sentAt)}</span>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">{typeLabel(s.type)}</Badge>
+                        {!hasRecipients && <SolveStatusBadge status={solveStatuses[s.shareId] ?? "sent"} />}
+                        <span className="text-[10px] text-muted-foreground/60">{relativeTime(s.sentAt)}</span>
+                      </div>
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {displayTitle(s.title, s.type)}
+                      </p>
                     </div>
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {displayTitle(s.title, s.type)}
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-7 gap-1 px-3"
+                        onClick={() => navigate(`/s/${s.shareId}`, { state: { fromInbox: "sent" } })}
+                      >
+                        <Eye className="h-3 w-3" /> View
+                      </Button>
+                      <button
+                        className="p-1.5 rounded-md opacity-40 hover:opacity-100 hover:bg-muted transition-all text-muted-foreground"
+                        onClick={() => handleCopyLink(s.id, s.shareUrl)}
+                        aria-label="Copy link"
+                      >
+                        {copiedId === s.id ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
+                      </button>
+                      <button
+                        className="p-1.5 rounded-md opacity-30 hover:opacity-100 hover:bg-destructive/10 transition-all"
+                        onClick={() => handleDeleteSent(s.id)}
+                        aria-label="Delete sent item"
+                      >
+                        <Trash2 className={`h-3 w-3 ${confirmDeleteId === s.id ? "text-destructive opacity-100" : "text-muted-foreground"}`} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs h-7 gap-1 px-3"
-                      onClick={() => navigate(`/s/${s.shareId}`, { state: { fromInbox: "sent" } })}
-                    >
-                      <Eye className="h-3 w-3" /> View
-                    </Button>
-                    <button
-                      className="p-1.5 rounded-md opacity-40 hover:opacity-100 hover:bg-muted transition-all text-muted-foreground"
-                      onClick={() => handleCopyLink(s.id, s.shareUrl)}
-                      aria-label="Copy link"
-                    >
-                      {copiedId === s.id ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
-                    </button>
-                    <button
-                      className="p-1.5 rounded-md opacity-30 hover:opacity-100 hover:bg-destructive/10 transition-all"
-                      onClick={() => handleDeleteSent(s.id)}
-                      aria-label="Delete sent item"
-                    >
-                      <Trash2 className={`h-3 w-3 ${confirmDeleteId === s.id ? "text-destructive opacity-100" : "text-muted-foreground"}`} />
-                    </button>
-                  </div>
+                  {/* Per-recipient status rows */}
+                  {hasRecipients && (
+                    <div className="mt-2.5 pt-2.5 border-t border-border/40 space-y-1.5">
+                      {recs.map((r, i) => (
+                        <div key={i} className="flex items-center justify-between text-[11px]">
+                          <span className="text-foreground/80 truncate">{r.name}</span>
+                          <SolveStatusBadge status={r.status} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </TabsContent>
