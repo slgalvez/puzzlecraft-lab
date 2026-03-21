@@ -232,9 +232,10 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    // Push final progress before signing out
     if (account) {
       await pushProgressToDb(account.id);
+      // Clear merge-handled flag so a future login can re-prompt if new local data appears
+      localStorage.removeItem(`${MERGE_HANDLED_KEY}-${account.id}`);
     }
     await supabase.auth.signOut();
     setAccount(null);
