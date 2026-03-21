@@ -367,6 +367,36 @@ export type Database = {
           },
         ]
       }
+      leaderboard_entries: {
+        Row: {
+          display_name: string
+          id: string
+          rating: number
+          skill_tier: string
+          solve_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          display_name?: string
+          id?: string
+          rating?: number
+          skill_tier?: string
+          solve_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          display_name?: string
+          id?: string
+          rating?: number
+          skill_tier?: string
+          solve_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           body: string
