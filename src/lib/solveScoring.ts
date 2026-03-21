@@ -24,14 +24,14 @@ const DIFFICULTY_MULT: Record<Difficulty, number> = {
 // ── Expected solve times (seconds) per type × difficulty ──
 
 const EXPECTED_TIMES: Record<PuzzleCategory, Record<Difficulty, number>> = {
-  crossword:    { easy: 180, medium: 300, hard: 480, extreme: 720, insane: 1000 },
-  "word-fill":  { easy: 120, medium: 210, hard: 360, extreme: 540, insane: 780 },
-  "number-fill":{ easy: 120, medium: 210, hard: 360, extreme: 540, insane: 780 },
+  crossword:    { easy: 180, medium: 300, hard: 480, extreme: 840, insane: 1150 },
+  "word-fill":  { easy: 120, medium: 210, hard: 360, extreme: 420, insane: 560 },
+  "number-fill":{ easy: 120, medium: 210, hard: 360, extreme: 400, insane: 520 },
   sudoku:       { easy: 180, medium: 360, hard: 600, extreme: 900, insane: 1200 },
-  "word-search":{ easy: 60,  medium: 120, hard: 210, extreme: 330, insane: 480 },
+  "word-search":{ easy: 60,  medium: 120, hard: 210, extreme: 240, insane: 340 },
   kakuro:       { easy: 180, medium: 300, hard: 480, extreme: 720, insane: 1000 },
   nonogram:     { easy: 120, medium: 240, hard: 420, extreme: 660, insane: 900 },
-  cryptogram:   { easy: 90,  medium: 180, hard: 300, extreme: 480, insane: 660 },
+  cryptogram:   { easy: 90,  medium: 180, hard: 300, extreme: 420, insane: 560 },
 };
 
 // ── Mistake forgiveness ──
