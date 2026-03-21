@@ -158,13 +158,6 @@ const CraftPuzzle = () => {
     }
   }, [selectedType, wordInput, phraseInput, clueEntries, craftSettings.difficulty, toast]);
 
-  /** Parse recipient names from comma/newline input */
-  const parseRecipients = useCallback((): string[] => {
-    return recipientInput
-      .split(/[,\n]+/)
-      .map((n) => n.trim())
-      .filter(Boolean);
-  }, [recipientInput]);
 
   /** Generate + save to DB + create share URL (first time only) */
   const handleGenerate = useCallback(async () => {
