@@ -155,6 +155,9 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
         assisted,
         origin: isDailyChallenge ? "daily" : undefined,
       });
+
+      // Check milestones after recording
+      setTimeout(() => checkMilestones(), 1500);
     }
     return { time: state.elapsed, isNewBest: isNew };
   }, [puzzleKey, state.elapsed, options?.category, options?.difficulty]);
