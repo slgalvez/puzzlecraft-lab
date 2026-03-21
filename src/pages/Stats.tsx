@@ -371,6 +371,22 @@ const Stats = () => {
 
         {/* Recent completions removed — Solve History lives in PremiumStats */}
 
+        {/* Lifetime Stats (lower priority) */}
+        {showGeneral && lifetimeCards.length > 0 && stats.totalSolved > 0 && (
+          <div className="mt-8">
+            <h2 className="font-display text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Lifetime</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {lifetimeCards.map(({ icon: Icon, label, value }) => (
+                <div key={label} className="rounded-xl border bg-card p-4 text-center">
+                  <Icon className="mx-auto h-4 w-4 text-muted-foreground mb-2" />
+                  <p className="font-mono text-lg font-bold text-foreground">{value}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {stats.totalSolved === 0 && (
           <div className="mt-16 text-center">
             <p className="text-lg text-muted-foreground">No puzzles solved yet!</p>
