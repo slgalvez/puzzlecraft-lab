@@ -54,12 +54,12 @@ function getNextTier(currentTier: string): { name: string; threshold: number } |
 
 type TimeFilter = "all" | "week";
 
-function RankBadge({ rank }: { rank: number }) {
+const RankBadge = ({ rank }: { rank: number }) => {
   if (rank === 1) return <Trophy size={16} className="text-amber-500" />;
   if (rank === 2) return <Medal size={16} className="text-slate-400" />;
   if (rank === 3) return <Medal size={16} className="text-amber-700" />;
   return <span className="text-xs font-mono text-muted-foreground w-4 text-center">{rank}</span>;
-}
+};
 
 function RatingChange({ current, previous }: { current: number; previous: number }) {
   const diff = current - previous;
