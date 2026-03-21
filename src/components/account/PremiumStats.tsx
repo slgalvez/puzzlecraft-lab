@@ -18,7 +18,7 @@ import { getBestInsight } from "@/lib/solveInsights";
 import { getAllMilestones, getUncelebratedIds, markCelebrated, type MilestoneIcon, type MilestoneState } from "@/lib/milestones";
 import { Clock, Trophy, Target, BarChart3, Zap, CheckCircle, FlaskConical, Trash2, TrendingUp, TrendingDown, ShieldCheck, ChevronDown, ChevronUp, Award, Puzzle, Flame, Crown, Medal, Bolt, Star, Gauge, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { generateDemoSolves, clearDemoSolves, hasDemoData } from "@/lib/demoStats";
+import { generateDemoSolves, clearDemoSolves, hasDemoData, generateDemoLeaderboard, clearDemoLeaderboard, hasDemoLeaderboard } from "@/lib/demoStats";
 import { useUserAccount } from "@/contexts/UserAccountContext";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -46,16 +46,22 @@ function computeTrend(records: SolveRecord[], getValue: (r: SolveRecord) => numb
   return diff > 0 ? "up" : "down";
 }
 
-function TrendBadge({ trend, invertColor }: { trend: "up" | "down" | "flat"; invertColor?: boolean }) {
+function TrendBadge({ trend, invertColor, label }: { trend: "up" | "down" | "flat"; invertColor?: boolean; label?: string }) {
   if (trend === "flat") return null;
   const isGood = invertColor ? trend === "down" : trend === "up";
+  const tooltipText = label || (isGood ? "Above your recent average" : "Below your recent average");
   return (
-    <span className={cn(
-      "inline-flex items-center gap-0.5 text-[10px] font-medium ml-1",
-      isGood ? "text-primary" : "text-destructive"
-    )}>
-      {trend === "up" ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-    </span>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className={cn(
+          "inline-flex items-center gap-0.5 text-[10px] font-medium ml-1 cursor-default",
+          isGood ? "text-primary" : "text-destructive"
+        )}>
+          {trend === "up" ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="text-xs">{tooltipText}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -79,6 +85,7 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
   const records = useMemo(() => getSolveRecords(), [refreshKey]);
   const summary = useMemo(() => getSolveSummary(), [refreshKey]);
   const demoActive = useMemo(() => hasDemoData(), [refreshKey]);
+  const demoLeaderboardActive = useMemo(() => hasDemoLeaderboard(), [refreshKey]);
   const [historyExpanded, setHistoryExpanded] = useState(false);
 
   const handleGenerate = useCallback(() => {
@@ -93,16 +100,34 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
     onDataChange?.();
   }, [onDataChange]);
 
+  const handleGenerateLeaderboard = useCallback(async () => {
+    await generateDemoLeaderboard();
+    setRefreshKey((k) => k + 1);
+  }, []);
+
+  const handleClearLeaderboard = useCallback(async () => {
+    await clearDemoLeaderboard();
+    setRefreshKey((k) => k + 1);
+  }, []);
+
   const adminControls = isAdmin && (
-    <div className="flex items-center gap-2 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2">
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2">
       <FlaskConical size={14} className="text-primary" />
       <span className="text-xs font-medium text-primary">Admin</span>
       <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleGenerate}>
-        Generate Demo Data
+        Generate Stats Demo
       </Button>
       {demoActive && (
         <Button size="sm" variant="outline" className="h-7 text-xs text-destructive border-destructive/30 hover:bg-destructive/10" onClick={handleClear}>
-          <Trash2 size={12} className="mr-1" /> Clear Demo
+          <Trash2 size={12} className="mr-1" /> Clear Stats
+        </Button>
+      )}
+      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleGenerateLeaderboard}>
+        Generate Leaderboard Demo
+      </Button>
+      {demoLeaderboardActive && (
+        <Button size="sm" variant="outline" className="h-7 text-xs text-destructive border-destructive/30 hover:bg-destructive/10" onClick={handleClearLeaderboard}>
+          <Trash2 size={12} className="mr-1" /> Clear Leaderboard
         </Button>
       )}
     </div>
@@ -131,14 +156,11 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
   const timeTrend = computeTrend(records, (r) => r.solveTime);
   const accuracyTrend = computeTrend(records, (r) => trueMistakes(r));
 
-  // Data-driven insight
   const insight = getBestInsight(records);
 
-  // No-hint rate
   const noHintSolves = records.filter((r) => r.hintsUsed === 0 && !r.assisted);
   const noHintRate = Math.round((noHintSolves.length / records.length) * 100);
 
-  // Accuracy
   const totalTrueMistakes = records.reduce((s, r) => s + trueMistakes(r), 0);
   const avgMistakes = Math.round((totalTrueMistakes / records.length) * 10) / 10;
   const noHintPercent = Math.round((noHintSolves.length / records.length) * 100);
@@ -150,7 +172,6 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
       ? "Solid accuracy — room to tighten up on harder puzzles."
       : "Try slowing down on tricky sections to reduce mistakes.";
 
-  // Personal bests & averages
   const bestByType: { type: PuzzleCategory; time: number; difficulty: string; score: number }[] = [];
   const avgByType: { type: PuzzleCategory; avg: number; count: number; avgScore: number }[] = [];
 
@@ -174,7 +195,6 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
     ? `Your consistency is ${timeTrend === "down" ? "improving" : timeTrend === "up" ? "worth watching" : "holding steady"} over recent solves.`
     : "Play more to track your average performance.";
 
-  // History with performance badges
   const recent20 = records.slice(0, 20);
   const historyVisible = historyExpanded ? recent20 : recent20.slice(0, HISTORY_PREVIEW);
 
@@ -192,23 +212,19 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
 
   function getSolveBadges(r: SolveRecord): { icon: typeof Star; label: string }[] {
     const badges: { icon: typeof Star; label: string }[] = [];
-    // Personal Best
     if (bestTimeByType[r.puzzleType] === r.solveTime) {
       badges.push({ icon: Trophy, label: "Personal Best" });
     }
-    // High Difficulty
     if (r.difficulty === "extreme" || r.difficulty === "insane") {
       badges.push({ icon: Gauge, label: "High Difficulty" });
     }
-    // Clean Solve
     if (r.hintsUsed === 0 && trueMistakes(r) === 0 && !r.assisted) {
       badges.push({ icon: Sparkles, label: "Clean Solve" });
     }
-    // Improvement (faster than recent avg)
     if (recentAvgByType[r.puzzleType] && r.solveTime < recentAvgByType[r.puzzleType] * 0.9) {
       badges.push({ icon: TrendingUp, label: "Faster than average" });
     }
-    return badges.slice(0, 2); // max 2
+    return badges.slice(0, 2);
   }
 
   return (
@@ -224,7 +240,7 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
         {/* ── HEADER ── */}
         <div className="flex items-center gap-2">
           <h2 className="font-display text-xl font-semibold text-foreground">
-            Advanced Analytics
+            Performance Breakdown
           </h2>
           <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
             Puzzlecraft+
@@ -234,7 +250,6 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
         {/* ── HERO SECTION ── */}
         <div className="rounded-2xl border bg-card p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-            {/* Rating block */}
             <div className="text-center sm:text-left">
               <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
                 <Zap size={18} className="text-primary" />
@@ -242,16 +257,15 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
               </div>
               <p className="font-mono text-5xl font-bold text-foreground leading-none">
                 {playerRating}
-                <TrendBadge trend={scoreTrend} />
+                <TrendBadge trend={scoreTrend} label="Rating trend vs. recent solves" />
               </p>
               <p className={cn("mt-2 text-sm font-semibold", tierColor)}>{skillTier}</p>
               <div className="mt-3 max-w-48">
-                <Progress value={tierProgress} className="h-2" />
+                <Progress value={tierProgress} className="h-2 group cursor-default [&:hover_.h-full]:shadow-[0_0_8px_hsl(var(--primary)/0.5)] [&:active_.h-full]:shadow-[0_0_8px_hsl(var(--primary)/0.5)]" />
                 <p className="mt-1 text-[10px] text-muted-foreground">Progress to next rank</p>
               </div>
             </div>
 
-            {/* Insight + quick stats */}
             <div className="flex-1 space-y-4">
               <p className="text-sm text-muted-foreground italic leading-relaxed">
                 "{insight}"
@@ -278,13 +292,11 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
           const achievedCount = milestones.filter((m) => m.state === "achieved").length;
           if (achievedCount === 0 && records.length < 5) return null;
 
-          // Detect newly achieved milestones for celebration animation
           const uncelebrated = getUncelebratedIds();
           const newlyAchieved = milestones
             .filter((m) => m.state === "achieved" && uncelebrated.has(m.id))
             .map((m) => m.id);
 
-          // Mark as celebrated after render so animation plays once
           if (newlyAchieved.length > 0) {
             setTimeout(() => markCelebrated(newlyAchieved), 2000);
           }
@@ -309,14 +321,12 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
                     <div
                       key={m.id}
                       className={cn(
-                        "rounded-lg border p-3 transition-all relative overflow-hidden",
+                        "rounded-lg border p-3 transition-all relative",
                         isAchieved && "bg-primary/5 border-primary/25",
                         isInProgress && "bg-card border-border",
-                        isLocked && "opacity-35",
-                        m.isNext && !isAchieved && "ring-1 ring-primary/30",
+                        isLocked && "opacity-40",
                         isCelebrating && "animate-milestone-glow"
                       )}
-                      title={m.label}
                     >
                       {/* Sparkle overlay for celebration */}
                       {isCelebrating && (
@@ -337,26 +347,31 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
                           style={isCelebrating ? { animationDelay: "0.2s" } : undefined}
                         />
                         <div className="flex-1 min-w-0">
-                          <p className={cn(
-                            "text-xs leading-tight truncate",
-                            isAchieved ? "text-foreground font-medium" : "text-muted-foreground"
-                          )}>{m.label}</p>
+                          <div className="flex items-start justify-between gap-1">
+                            <p className={cn(
+                              "text-xs leading-tight",
+                              isAchieved ? "text-foreground font-medium" : "text-muted-foreground"
+                            )}>{m.label}</p>
+                            {m.isNext && !isAchieved && (
+                              <span className="shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-[8px] font-bold text-primary uppercase tracking-wider">
+                                Next
+                              </span>
+                            )}
+                          </div>
                           {isInProgress && (
                             <div className="mt-1.5 space-y-1">
-                              <Progress value={progressPercent} className="h-1.5" />
+                              <Progress value={progressPercent} className="h-1.5 [&:hover_.h-full]:shadow-[0_0_6px_hsl(var(--primary)/0.4)] [&:active_.h-full]:shadow-[0_0_6px_hsl(var(--primary)/0.4)]" />
                               <p className="text-[10px] text-muted-foreground">{m.progressText}</p>
                             </div>
                           )}
                           {isAchieved && (
                             <p className="text-[10px] text-primary/70 mt-0.5">Achieved</p>
                           )}
+                          {isLocked && (
+                            <p className="text-[10px] text-muted-foreground/60 mt-0.5">Upcoming</p>
+                          )}
                         </div>
                       </div>
-                      {m.isNext && !isAchieved && (
-                        <span className="absolute -top-1.5 -right-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[8px] font-bold text-primary-foreground uppercase tracking-wider">
-                          Next
-                        </span>
-                      )}
                     </div>
                   );
                 })}
@@ -370,7 +385,7 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
           <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
             <CheckCircle size={15} className="text-primary" />
             Accuracy Insights
-            <TrendBadge trend={accuracyTrend} invertColor />
+            <TrendBadge trend={accuracyTrend} invertColor label="Accuracy trend vs. recent solves" />
           </h3>
           <p className="text-xs text-muted-foreground mb-3">{accuracyInsight}</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
@@ -406,12 +421,10 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {bestByType.map(({ type, time, difficulty, score }) => (
                 <div key={type} className="rounded-lg border bg-secondary/30 p-3 text-center">
-                  <div className="flex items-center justify-center gap-1.5 mb-1">
-                    <span className="text-xs font-medium text-foreground">
-                      {CATEGORY_INFO[type]?.name}
-                    </span>
-                  </div>
-                  <p className="font-mono text-lg font-bold text-primary">{formatTime(time)}</p>
+                  <span className="text-xs font-medium text-foreground">
+                    {CATEGORY_INFO[type]?.name}
+                  </span>
+                  <p className="font-mono text-lg font-bold text-primary mt-1">{formatTime(time)}</p>
                   <p className="text-[10px] text-muted-foreground capitalize">
                     {DIFFICULTY_LABELS[difficulty as keyof typeof DIFFICULTY_LABELS] ?? difficulty}
                     {" · "}{score} pts
@@ -428,18 +441,16 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
             <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
               <BarChart3 size={15} className="text-primary" />
               Average Performance
-              <TrendBadge trend={timeTrend} invertColor />
+              <TrendBadge trend={timeTrend} invertColor label="Speed trend vs. recent solves" />
             </h3>
             <p className="text-xs text-muted-foreground mb-3">{avgInsight}</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {avgByType.map(({ type, avg, count, avgScore }) => (
                 <div key={type} className="rounded-lg border bg-secondary/30 p-3 text-center">
-                  <div className="flex items-center justify-center gap-1.5 mb-1">
-                    <span className="text-xs font-medium text-foreground">
-                      {CATEGORY_INFO[type]?.name}
-                    </span>
-                  </div>
-                  <p className="font-mono text-lg font-bold text-foreground">{formatTime(avg)}</p>
+                  <span className="text-xs font-medium text-foreground">
+                    {CATEGORY_INFO[type]?.name}
+                  </span>
+                  <p className="font-mono text-lg font-bold text-foreground mt-1">{formatTime(avg)}</p>
                   <p className="text-[10px] text-muted-foreground">{count} solves · {avgScore} avg pts</p>
                 </div>
               ))}
@@ -482,9 +493,7 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
                   return (
                     <tr key={r.id} className="border-b last:border-0">
                       <td className="px-3 py-2 text-foreground whitespace-nowrap">
-                        <span className="flex items-center gap-1.5">
-                          {info?.name ?? r.puzzleType}
-                        </span>
+                        {info?.name ?? r.puzzleType}
                       </td>
                       <td className="px-3 py-2 font-mono font-medium text-foreground">{formatTime(r.solveTime)}</td>
                       <td className="px-3 py-2 capitalize text-muted-foreground hidden sm:table-cell">

@@ -59,7 +59,6 @@ const Stats = () => {
     queryKey: ["my-leaderboard-entry", account?.id, dataVersion],
     queryFn: async () => {
       if (!account) return null;
-      // Get rank by counting entries with higher rating
       const { data: entry } = await supabase
         .from("leaderboard_entries")
         .select("rating, previous_rating, skill_tier, solve_count")
@@ -112,7 +111,6 @@ const Stats = () => {
     setCategoryFilter(value === "all" ? null : (value as PuzzleCategory));
   };
 
-  // Derive filtered completions based on all active filters
   const filteredCompletions = useMemo(() => {
     let results = stats.recentCompletions;
     if (categoryFilter) {
@@ -124,7 +122,6 @@ const Stats = () => {
     return results;
   }, [stats.recentCompletions, categoryFilter, dateFilter]);
 
-  // Derive filtered stat cards when date filter is active
   const filteredStatCards = useMemo(() => {
     if (!dateFilter) return null;
     const dayCompletions = stats.recentCompletions.filter(
@@ -152,10 +149,8 @@ const Stats = () => {
   const showEndless = viewFilter === null || viewFilter === "endless";
   const showGeneral = viewFilter === null;
 
-  // Stat cards use filtered data when date filter is active
   const displayStats = filteredStatCards ?? stats;
 
-  // Top row: 4 key metrics
   const statCards = [
     { icon: Target, label: "Puzzles Solved", value: displayStats.totalSolved.toString() },
     ...(!dateFilter ? [
@@ -165,7 +160,6 @@ const Stats = () => {
     { icon: Trophy, label: "Fastest Solve", value: displayStats.bestTime !== null ? formatTime(displayStats.bestTime) : "—" },
   ];
 
-  // Lifetime stats (lower priority)
   const lifetimeCards = !dateFilter ? [
     { icon: Flame, label: "Longest Streak", value: `${stats.longestStreak} day${stats.longestStreak !== 1 ? "s" : ""}` },
     { icon: BarChart3, label: "Total Time", value: stats.totalSolved > 0 ? formatTime(stats.totalTime) : "—" },
@@ -182,9 +176,6 @@ const Stats = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
           <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Your Progress</h1>
           <div className="flex gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link to="/leaderboard"><Shield size={14} /> Leaderboard</Link>
-            </Button>
             <Button
               variant={viewFilter === "daily" ? "default" : "outline"}
               size="sm"
@@ -245,7 +236,7 @@ const Stats = () => {
                 </div>
                 {nextTierInfo && (
                   <div className="mt-3 max-w-56">
-                    <Progress value={getTierProgress(localRating.rating)} className="h-2" />
+                    <Progress value={getTierProgress(localRating.rating)} className="h-2 group cursor-default [&:hover_.h-full]:shadow-[0_0_8px_hsl(var(--primary)/0.5)] [&:active_.h-full]:shadow-[0_0_8px_hsl(var(--primary)/0.5)]" />
                     <p className="mt-1 text-[10px] text-muted-foreground">
                       Next: {nextTierInfo.name} ({nextTierInfo.threshold})
                     </p>
@@ -443,7 +434,7 @@ const Stats = () => {
           </div>
         )}
 
-        {/* Activity calendar (last 30 days) — clickable day cells */}
+        {/* Activity calendar (last 30 days) */}
         {showGeneral && (
           <div className="mt-12">
             <h2 className="font-display text-xl font-semibold text-foreground mb-4">
@@ -491,9 +482,7 @@ const Stats = () => {
           </div>
         )}
 
-        {/* Recent completions removed — Solve History lives in PremiumStats */}
-
-        {/* Lifetime Stats (lower priority) */}
+        {/* Lifetime Stats */}
         {showGeneral && lifetimeCards.length > 0 && stats.totalSolved > 0 && (
           <div className="mt-8">
             <h2 className="font-display text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Lifetime</h2>
