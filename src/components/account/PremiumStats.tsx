@@ -15,9 +15,8 @@ import {
   trueMistakes,
 } from "@/lib/solveScoring";
 import { getBestInsight } from "@/lib/solveInsights";
-import { getAllMilestones } from "@/lib/milestones";
-import { Clock, Trophy, Target, BarChart3, Zap, CheckCircle, FlaskConical, Trash2, TrendingUp, TrendingDown, ShieldCheck, ChevronDown, ChevronUp, Award } from "lucide-react";
-import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
+import { getAllMilestones, type MilestoneIcon } from "@/lib/milestones";
+import { Clock, Trophy, Target, BarChart3, Zap, CheckCircle, FlaskConical, Trash2, TrendingUp, TrendingDown, ShieldCheck, ChevronDown, ChevronUp, Award, Puzzle, Flame, Crown, Medal, Bolt } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateDemoSolves, clearDemoSolves, hasDemoData } from "@/lib/demoStats";
 import { useUserAccount } from "@/contexts/UserAccountContext";
@@ -58,6 +57,19 @@ function TrendBadge({ trend, invertColor }: { trend: "up" | "down" | "flat"; inv
     </span>
   );
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const MILESTONE_ICONS: Record<MilestoneIcon, any> = {
+  puzzle: Puzzle,
+  flame: Flame,
+  trophy: Trophy,
+  medal: Medal,
+  zap: Zap,
+  crown: Crown,
+  target: Target,
+  award: Award,
+  bolt: Bolt,
+};
 
 export default function PremiumStats({ onDataChange }: { onDataChange?: () => void }) {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -237,20 +249,32 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
               Milestones
               <span className="text-xs text-muted-foreground font-normal">{unlockedCount}/{milestones.length}</span>
             </h3>
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-              {milestones.map((m) => (
-                <div
-                  key={m.id}
-                  className={cn(
-                    "rounded-lg border p-2 text-center transition-opacity",
-                    m.unlocked ? "bg-primary/5 border-primary/20" : "opacity-30"
-                  )}
-                  title={m.label}
-                >
-                  <span className="text-lg">{m.emoji}</span>
-                  <p className="text-[9px] text-muted-foreground mt-0.5 leading-tight truncate">{m.label}</p>
-                </div>
-              ))}
+             <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+              {milestones.map((m) => {
+                const IconComp = MILESTONE_ICONS[m.icon] ?? Target;
+                return (
+                  <div
+                    key={m.id}
+                    className={cn(
+                      "rounded-lg border p-2 text-center transition-opacity",
+                      m.unlocked ? "bg-primary/5 border-primary/20" : "opacity-40"
+                    )}
+                    title={m.label}
+                  >
+                    <IconComp
+                      size={18}
+                      className={cn(
+                        "mx-auto mb-0.5",
+                        m.unlocked ? "text-primary" : "text-muted-foreground"
+                      )}
+                    />
+                    <p className={cn(
+                      "text-[9px] mt-0.5 leading-tight truncate",
+                      m.unlocked ? "text-foreground/80 font-medium" : "text-muted-foreground"
+                    )}>{m.label}</p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
@@ -296,9 +320,8 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
           <p className="text-xs text-muted-foreground mb-3">{bestInsight}</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {bestByType.map(({ type, time, difficulty, score }) => (
-              <div key={type} className="rounded-lg border bg-secondary/30 p-3 text-center">
+               <div key={type} className="rounded-lg border bg-secondary/30 p-3 text-center">
                 <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <PuzzleIcon type={type} size={14} className="text-muted-foreground" />
                   <span className="text-xs font-medium text-foreground">
                     {CATEGORY_INFO[type]?.name}
                   </span>
@@ -325,9 +348,8 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
           <p className="text-xs text-muted-foreground mb-3">{avgInsight}</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {avgByType.map(({ type, avg, count, avgScore }) => (
-              <div key={type} className="rounded-lg border bg-secondary/30 p-3 text-center">
+               <div key={type} className="rounded-lg border bg-secondary/30 p-3 text-center">
                 <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <PuzzleIcon type={type} size={14} className="text-muted-foreground" />
                   <span className="text-xs font-medium text-foreground">
                     {CATEGORY_INFO[type]?.name}
                   </span>
@@ -372,9 +394,8 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
                 const score = computeSolveScore(r);
                 return (
                   <tr key={r.id} className="border-b last:border-0">
-                    <td className="px-3 py-2 text-foreground whitespace-nowrap">
+                     <td className="px-3 py-2 text-foreground whitespace-nowrap">
                       <span className="flex items-center gap-1.5">
-                        <PuzzleIcon type={r.puzzleType} size={13} className="text-muted-foreground" />
                         {info?.name ?? r.puzzleType}
                       </span>
                     </td>

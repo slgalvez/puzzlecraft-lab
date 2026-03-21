@@ -10,7 +10,6 @@ import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight
 import PremiumStats from "@/components/account/PremiumStats";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
 import { useUserAccount } from "@/contexts/UserAccountContext";
 import UpgradeModal from "@/components/account/UpgradeModal";
@@ -249,17 +248,17 @@ const Stats = () => {
                             {session.totalSolved} solved · {formatTime(session.totalTime)}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {typesUnique.map((t) => (
-                            <div key={t} className="flex items-center gap-1">
-                              <PuzzleIcon type={t} size={12} className="text-muted-foreground" />
-                              <span className="text-[10px] text-muted-foreground">{CATEGORY_INFO[t]?.name}</span>
+                        <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
+                          {typesUnique.map((t, idx) => (
+                            <span key={t} className="inline-flex items-center gap-0.5">
+                              {idx > 0 && <span className="text-muted-foreground/40 mx-0.5">|</span>}
+                              <span className="text-muted-foreground">{CATEGORY_INFO[t]?.name}</span>
                               {session.finalDifficulties[t] && session.finalDifficulties[t] !== "medium" && (
-                                <span className="text-[10px] font-medium text-foreground capitalize">
-                                  {DIFFICULTY_LABELS[session.finalDifficulties[t]!]}
+                                <span className="text-muted-foreground/60 text-[10px]">
+                                  ({DIFFICULTY_LABELS[session.finalDifficulties[t]!]})
                                 </span>
                               )}
-                            </div>
+                            </span>
                           ))}
                           {ups > 0 && (
                             <span className="flex items-center gap-0.5 text-[10px] text-primary">
@@ -304,9 +303,8 @@ const Stats = () => {
 
             {/* Show category stats card when a type is selected */}
             {categoryFilter && stats.byCategory[categoryFilter] && (
-              <div className="mt-4 rounded-xl border bg-card p-4">
+               <div className="mt-4 rounded-xl border bg-card p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-lg">{CATEGORY_INFO[categoryFilter]?.icon}</span>
                   <span className="font-display text-sm font-semibold text-primary">
                     {CATEGORY_INFO[categoryFilter]?.name}
                   </span>
