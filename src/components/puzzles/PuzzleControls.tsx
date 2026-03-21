@@ -240,6 +240,7 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
                 <Bookmark className="h-3.5 w-3.5" fill={saved ? "currentColor" : "none"} />
               </Button>
             )}
+            <SaveIndicator status={saveStatus} />
           </div>
 
           {puzzleCode && (
