@@ -102,7 +102,7 @@ function MilestonesCard() {
         <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Insights</span>
       </div>
       <div className="space-y-1.5">
-        {["First 10 Solves", "7-Day Streak", "Speed Demon"].map((m) => (
+        {["Accuracy trend", "Speed analysis", "Strengths"].map((m) => (
           <div key={m} className="flex items-center gap-2 text-xs text-muted-foreground">
             <div className="w-3 h-3 rounded-full bg-primary/30" />
             {m}

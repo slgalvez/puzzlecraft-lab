@@ -64,8 +64,7 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
               Sign in to your account first to upgrade.
             </p>
           ) : (
-            <Button onClick={handleUpgrade} disabled={loading} className="w-full gap-2">
-              <Sparkles size={14} />
+            <Button onClick={handleUpgrade} disabled={loading} className="w-full">
               {loading ? "Opening checkout..." : "Upgrade – $2.99/month"}
             </Button>
           )}
