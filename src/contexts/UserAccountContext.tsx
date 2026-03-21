@@ -38,6 +38,7 @@ const COMPLETIONS_KEY = "puzzlecraft-completions";
 const SOLVES_KEY = "puzzlecraft-solves";
 const ENDLESS_KEY = "puzzlecraft_endless_sessions";
 const DAILY_KEY = "puzzlecraft-daily-completions";
+const MERGE_HANDLED_KEY = "puzzlecraft-merge-handled";
 
 function hasLocalData(): boolean {
   try {
@@ -163,7 +164,7 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
   const [pendingMerge, setPendingMerge] = useState(false);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 
-  const handleSession = useCallback(async (session: Session | null) => {
+  const handleSession = useCallback(async (session: Session | null, event?: string) => {
     if (!session?.user) {
       setAccount(null);
       setLoading(false);
@@ -172,27 +173,31 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
     const profile = await fetchProfile(session.user.id);
     setAccount(profile);
 
-    // Check if local data exists and needs merging
-    if (hasLocalData()) {
+    // Only prompt merge on a fresh sign-in, not on token refreshes or initial session restore.
+    // Use a localStorage flag keyed to the user ID so it's only shown once per account.
+    const mergeKey = `${MERGE_HANDLED_KEY}-${session.user.id}`;
+    const alreadyHandled = localStorage.getItem(mergeKey) === "1";
+
+    if (!alreadyHandled && (event === "SIGNED_IN") && hasLocalData()) {
       setPendingMerge(true);
       setPendingUserId(session.user.id);
-    } else {
-      // No local data — pull from DB
+    } else if (!alreadyHandled && !hasLocalData()) {
+      // No local data and first time — pull from DB and mark handled
       await pullProgressFromDb(session.user.id);
+      localStorage.setItem(mergeKey, "1");
     }
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    // Set up auth listener BEFORE getSession
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        handleSession(session);
+      (event, session) => {
+        handleSession(session, event);
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      handleSession(session);
+      handleSession(session, "INITIAL_SESSION");
     });
 
     return () => subscription.unsubscribe();
@@ -227,9 +232,10 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    // Push final progress before signing out
     if (account) {
       await pushProgressToDb(account.id);
+      // Clear merge-handled flag so a future login can re-prompt if new local data appears
+      localStorage.removeItem(`${MERGE_HANDLED_KEY}-${account.id}`);
     }
     await supabase.auth.signOut();
     setAccount(null);
@@ -240,9 +246,10 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
     if (strategy === "merge") {
       await mergeProgressToDb(pendingUserId);
     } else {
-      // Keep account data only — overwrite local with remote
       await pullProgressFromDb(pendingUserId);
     }
+    // Mark as handled so modal never reopens for this account
+    localStorage.setItem(`${MERGE_HANDLED_KEY}-${pendingUserId}`, "1");
     setPendingMerge(false);
     setPendingUserId(null);
   }, [pendingUserId]);
