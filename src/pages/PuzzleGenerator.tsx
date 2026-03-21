@@ -335,19 +335,33 @@ const PuzzleGenerator = () => {
     const allTypeKeys = allTypes.map(([t]) => t);
     const chosenType = allTypeKeys[Math.floor(Math.random() * allTypeKeys.length)];
     const newSeed = randomSeed();
-    const validDiffs = difficulties.filter(([val]) => !isDifficultyDisabled(chosenType, val));
-    const diff = validDiffs[Math.floor(Math.random() * validDiffs.length)][0];
-    setDifficulty(diff);
+    // Use adaptive difficulty from the persisted map
+    const adaptiveDiff = surpriseDiffMap[chosenType];
+    const effectiveDiff = getEffectiveDifficulty(chosenType, adaptiveDiff);
+    setDifficulty(effectiveDiff);
     setMode("random");
     setSeed(newSeed);
     setPuzzleGenerated(true);
     setRandomPool(allTypeKeys);
     setPuzzleKey((k) => k + 1);
+    surpriseStartTime.current = Date.now();
     navigate(`/generate/${chosenType}?seed=${newSeed}`, {
-      state: { randomPool: allTypeKeys, randomDifficulty: diff },
+      state: { randomPool: allTypeKeys, randomDifficulty: effectiveDiff },
       replace: true,
     });
   };
+
+  // Called when a Surprise Me puzzle is completed — updates adaptive difficulty
+  const handleSurpriseComplete = useCallback((perf: PuzzlePerformance) => {
+    if (mode !== "random" || !category) return;
+    const current = surpriseDiffMap[category];
+    const { next } = computeNextDifficulty(current, perf);
+    setSurpriseDiffMap((prev) => {
+      const updated = { ...prev, [category]: next };
+      localStorage.setItem(SURPRISE_DIFF_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, [mode, category, surpriseDiffMap, SURPRISE_DIFF_KEY]);
 
   const activeTimeLimit = timeLimitEnabled ? (timeLimitMinutes * 60 + timeLimitSeconds) : undefined;
 
