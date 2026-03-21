@@ -909,7 +909,7 @@ const PuzzleGenerator = () => {
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            Random
+            Surprise Me
           </button>
         </div>
 
