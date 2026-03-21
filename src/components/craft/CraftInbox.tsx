@@ -292,15 +292,24 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
                       <p className="text-[10px] text-muted-foreground/60 italic mt-0.5">from {r.from}</p>
                     )}
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7 gap-1 px-3"
-                    onClick={() => navigate(`/s/${r.shareId}`, { state: { fromInbox: "received" } })}
-                  >
-                    <Play className="h-3 w-3" />
-                    {r.status === "in_progress" ? "Continue" : r.status === "completed" ? "View" : "Play"}
-                  </Button>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-7 gap-1 px-3"
+                      onClick={() => navigate(`/s/${r.shareId}`, { state: { fromInbox: "received" } })}
+                    >
+                      <Play className="h-3 w-3" />
+                      {r.status === "in_progress" ? "Continue" : r.status === "completed" ? "View" : "Play"}
+                    </Button>
+                    <button
+                      className="p-1.5 rounded-md opacity-30 hover:opacity-100 hover:bg-destructive/10 transition-all"
+                      onClick={() => handleDeleteReceived(r.id)}
+                      aria-label="Delete received item"
+                    >
+                      <Trash2 className={`h-3 w-3 ${confirmDeleteId === r.id ? "text-destructive opacity-100" : "text-muted-foreground"}`} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
