@@ -18,42 +18,44 @@ const DIR_COUNTS: Record<Difficulty, number> = { easy: 2, medium: 4, hard: 6, ex
 const MIN_WORD_LEN: Record<Difficulty, number> = { easy: 3, medium: 4, hard: 5, extreme: 5, insane: 5 };
 const MIN_PLACED: Record<Difficulty, number> = { easy: 3, medium: 6, hard: 10, extreme: 14, insane: 18 };
 
+const MAX_ATTEMPTS = 15;
+
 export function generateWordSearch(
   seed: number,
   difficulty: Difficulty,
   wordList: string[]
 ): WordSearchPuzzle {
-  const maxAttempts = 5;
   let bestResult: WordSearchPuzzle | null = null;
   let bestScore = -Infinity;
 
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const result = tryGenerate(seed + attempt * 7919, difficulty, wordList);
     if (result.words.length < MIN_PLACED[difficulty]) continue;
     if (!validateGrid(result)) continue;
 
-    const score = scorePuzzle(result);
+    const score = scorePuzzle(result, difficulty);
     if (score > bestScore) {
       bestScore = score;
       bestResult = result;
     }
-    if (result.words.length >= WORD_COUNTS[difficulty] && score > 0) break;
+    // Accept early if we hit target count with a good distribution score
+    if (result.words.length >= WORD_COUNTS[difficulty] && score > 60) break;
   }
 
   if (bestResult) return bestResult;
 
-  // Fallback for extreme/insane → hard
   if (difficulty === "insane" || difficulty === "extreme") {
     return generateWordSearch(seed, "hard", wordList);
   }
   return tryGenerate(seed, difficulty, wordList);
 }
 
-/** Score spatial distribution — penalise clustering */
-function scorePuzzle(puzzle: WordSearchPuzzle): number {
+/** Score layout quality — penalise clustering, reward even distribution */
+function scorePuzzle(puzzle: WordSearchPuzzle, difficulty: Difficulty): number {
   const { size, wordPositions } = puzzle;
   if (wordPositions.length === 0) return -100;
 
+  // --- Quadrant balance ---
   const quads = [0, 0, 0, 0];
   for (const wp of wordPositions) {
     const midR = wp.row + wp.dr * (wp.word.length - 1) / 2;
@@ -63,8 +65,54 @@ function scorePuzzle(puzzle: WordSearchPuzzle): number {
   }
   const avg = wordPositions.length / 4;
   const imbalance = quads.reduce((s, q) => s + Math.abs(q - avg), 0);
+  const emptyQuads = quads.filter(q => q === 0).length;
 
-  return wordPositions.length * 10 - imbalance * 3;
+  // --- Clustering penalty: measure pairwise distances between word midpoints ---
+  const midpoints = wordPositions.map(wp => ({
+    r: wp.row + wp.dr * (wp.word.length - 1) / 2,
+    c: wp.col + wp.dc * (wp.word.length - 1) / 2,
+  }));
+
+  let tooCloseCount = 0;
+  const clusterThreshold = size * 0.2; // words closer than 20% of grid size
+  for (let i = 0; i < midpoints.length; i++) {
+    for (let j = i + 1; j < midpoints.length; j++) {
+      const dist = Math.abs(midpoints[i].r - midpoints[j].r) + Math.abs(midpoints[i].c - midpoints[j].c);
+      if (dist < clusterThreshold) tooCloseCount++;
+    }
+  }
+
+  // --- Cell density per region (3x3 grid of regions) ---
+  const regionSize = Math.ceil(size / 3);
+  const regionCounts = Array(9).fill(0);
+  for (const wp of wordPositions) {
+    for (let i = 0; i < wp.word.length; i++) {
+      const r = wp.row + wp.dr * i;
+      const c = wp.col + wp.dc * i;
+      const ri = Math.min(2, Math.floor(r / regionSize));
+      const ci = Math.min(2, Math.floor(c / regionSize));
+      regionCounts[ri * 3 + ci]++;
+    }
+  }
+  const maxRegion = Math.max(...regionCounts);
+  const totalCells = wordPositions.reduce((s, w) => s + w.word.length, 0);
+  const avgRegion = totalCells / 9;
+  const regionImbalance = regionCounts.reduce((s, r) => s + Math.abs(r - avgRegion), 0);
+
+  // --- Direction diversity ---
+  const dirSet = new Set(wordPositions.map(w => `${w.dr},${w.dc}`));
+
+  // Scoring
+  let score = 0;
+  score += wordPositions.length * 8;              // reward word count
+  score -= imbalance * 4;                          // penalise quadrant imbalance
+  score -= emptyQuads * 15;                        // penalise empty quadrants
+  score -= tooCloseCount * 5;                      // penalise clustered midpoints
+  score -= (maxRegion / Math.max(1, avgRegion)) * 8; // penalise hotspot regions
+  score -= regionImbalance * 0.3;                  // penalise uneven region density
+  score += dirSet.size * 3;                        // reward direction variety
+
+  return score;
 }
 
 /** Verify every placed word exists intact at its recorded position */
@@ -96,12 +144,32 @@ function tryGenerate(
   const dirs = DIRECTIONS.slice(0, dirCount);
 
   const grid: string[][] = Array.from({ length: size }, () => Array(size).fill(""));
-  const available = rng.shuffle(wordList.filter((w) => w.length >= minLen && w.length <= size));
+
+  // Sort words longest-first for better placement
+  const filtered = wordList.filter(w => w.length >= minLen && w.length <= size);
+  const shuffled = rng.shuffle(filtered);
+  shuffled.sort((a, b) => b.length - a.length);
+
   const placed: WordSearchPuzzle["wordPositions"] = [];
   const placedWords = new Set<string>();
-  const cellUsed = new Map<string, number>();
 
-  for (const word of available) {
+  // Track cell usage density per region (3x3)
+  const regionSize = Math.ceil(size / 3);
+  const regionLoad = Array(9).fill(0);
+
+  function getRegion(r: number, c: number): number {
+    return Math.min(2, Math.floor(r / regionSize)) * 3 + Math.min(2, Math.floor(c / regionSize));
+  }
+
+  function wordRegionLoad(row: number, col: number, dr: number, dc: number, len: number): number {
+    let load = 0;
+    for (let i = 0; i < len; i++) {
+      load += regionLoad[getRegion(row + dr * i, col + dc * i)];
+    }
+    return load;
+  }
+
+  for (const word of shuffled) {
     if (placed.length >= wordCount) break;
     if (placedWords.has(word)) continue;
 
@@ -109,24 +177,38 @@ function tryGenerate(
     let bestPos: { r: number; c: number; dr: number; dc: number; score: number } | null = null;
 
     for (const [dr, dc] of shuffledDirs) {
+      // Sample positions rather than trying all for performance
       const positions: [number, number][] = [];
       for (let r = 0; r < size; r++)
         for (let c = 0; c < size; c++) positions.push([r, c]);
 
-      for (const [r, c] of rng.shuffle(positions)) {
+      const sampled = rng.shuffle(positions).slice(0, Math.min(positions.length, 40));
+
+      for (const [r, c] of sampled) {
         if (!canPlace(grid, word, r, c, dr, dc, size)) continue;
 
+        // Check overlap ratio
         let overlaps = 0;
         for (let i = 0; i < word.length; i++) {
-          const key = `${r + dr * i}-${c + dc * i}`;
-          if (cellUsed.has(key)) overlaps++;
+          if (grid[r + dr * i][c + dc * i] !== "") overlaps++;
         }
         if (overlaps / word.length > 0.3) continue;
 
+        // Score: prefer low-density regions, penalise clustering
+        const load = wordRegionLoad(r, c, dr, dc, word.length);
         const midR = r + dr * (word.length - 1) / 2;
         const midC = c + dc * (word.length - 1) / 2;
-        const distFromCenter = Math.abs(midR - size / 2) + Math.abs(midC - size / 2);
-        const posScore = (size - distFromCenter) - overlaps * 3;
+
+        // Proximity penalty to already-placed word midpoints
+        let proximityPenalty = 0;
+        for (const pw of placed) {
+          const pmR = pw.row + pw.dr * (pw.word.length - 1) / 2;
+          const pmC = pw.col + pw.dc * (pw.word.length - 1) / 2;
+          const dist = Math.abs(midR - pmR) + Math.abs(midC - pmC);
+          if (dist < size * 0.25) proximityPenalty += (size * 0.25 - dist);
+        }
+
+        const posScore = -load * 2 - overlaps * 4 - proximityPenalty * 2;
 
         if (!bestPos || posScore > bestPos.score) {
           bestPos = { r, c, dr, dc, score: posScore };
@@ -139,8 +221,8 @@ function tryGenerate(
       placed.push({ word, row: bestPos.r, col: bestPos.c, dr: bestPos.dr, dc: bestPos.dc });
       placedWords.add(word);
       for (let i = 0; i < word.length; i++) {
-        const key = `${bestPos.r + bestPos.dr * i}-${bestPos.c + bestPos.dc * i}`;
-        cellUsed.set(key, (cellUsed.get(key) || 0) + 1);
+        const ri = getRegion(bestPos.r + bestPos.dr * i, bestPos.c + bestPos.dc * i);
+        regionLoad[ri]++;
       }
     }
   }
@@ -150,7 +232,7 @@ function tryGenerate(
     for (let c = 0; c < size; c++)
       if (!grid[r][c]) grid[r][c] = letters[rng.nextInt(0, 25)];
 
-  return { grid, words: placed.map((p) => p.word), wordPositions: placed, size };
+  return { grid, words: placed.map(p => p.word), wordPositions: placed, size };
 }
 
 function canPlace(
