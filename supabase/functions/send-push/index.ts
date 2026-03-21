@@ -362,6 +362,21 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, serviceRoleKey);
 
+    // ── GENERATE VAPID (temporary) ──
+    if (action === "generate-vapid") {
+      const kp = await crypto.subtle.generateKey(
+        { name: "ECDSA", namedCurve: "P-256" },
+        true,
+        ["sign", "verify"]
+      );
+      const pubRaw = new Uint8Array(await crypto.subtle.exportKey("raw", kp.publicKey));
+      const jwk = await crypto.subtle.exportKey("jwk", kp.privateKey);
+      return json({
+        publicKey: b64url(pubRaw),
+        privateKey: jwk.d,
+      });
+    }
+
     // ── SUBSCRIBE ──
     if (action === "subscribe") {
       const user = await verifyToken(token);
