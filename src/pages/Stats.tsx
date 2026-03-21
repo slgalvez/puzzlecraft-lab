@@ -9,6 +9,7 @@ import { getEndlessStats } from "@/lib/endlessHistory";
 import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, Shield, Zap, Info, Sparkles } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PremiumStats from "@/components/account/PremiumStats";
+import { StatsPremiumPreview } from "@/components/account/PremiumPreview";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
