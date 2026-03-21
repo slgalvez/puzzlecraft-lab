@@ -153,8 +153,8 @@ const Stats = () => {
         {/* Overview cards */}
         {showGeneral && (
           <div className={cn(
-            "mt-8 grid gap-4 grid-cols-2 sm:grid-cols-3",
-            !dateFilter && "lg:grid-cols-6"
+            "mt-8 grid gap-4 grid-cols-2",
+            !dateFilter ? "sm:grid-cols-4" : "sm:grid-cols-3"
           )}>
             {statCards.map(({ icon: Icon, label, value }) => (
               <div key={label} className="rounded-xl border bg-card p-4 text-center">
