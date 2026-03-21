@@ -37,10 +37,7 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <DialogTitle className="font-display">Puzzlecraft+</DialogTitle>
-          </div>
+          <DialogTitle className="font-display">Puzzlecraft+</DialogTitle>
           <DialogDescription>
             Unlock deeper insight into your puzzle performance
           </DialogDescription>
