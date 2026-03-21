@@ -461,7 +461,7 @@ const CraftPuzzle = () => {
                     <Input
                       value={puzzleTitle}
                       onChange={e => setPuzzleTitle(e.target.value)}
-                      placeholder="For my Mariah"
+                      placeholder="Just for You"
                       maxLength={100}
                     />
                   </div>
