@@ -205,7 +205,7 @@ const CraftPuzzle = () => {
     } finally {
       setSaving(false);
     }
-  }, [selectedType, buildPuzzleData, revealMessage, puzzleTitle, puzzleFrom, craftSettings, toast, parseRecipients]);
+  }, [selectedType, buildPuzzleData, revealMessage, puzzleTitle, puzzleFrom, craftSettings, toast]);
 
   /** Regenerate — only refreshes puzzle data + updates DB, stays in draft */
   const handleRegenerate = useCallback(async () => {
