@@ -441,6 +441,7 @@ const CraftPuzzle = () => {
             setRevealMessage("");
             setPuzzleTitle("");
             setPuzzleFrom("");
+            setRecipientInput("");
             setCraftSettings(DEFAULT_CRAFT_SETTINGS);
             setGeneratedData(null);
             setShareUrl(null);
