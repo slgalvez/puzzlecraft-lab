@@ -1274,6 +1274,37 @@ Deno.serve(async (req) => {
       // Get caller name for the callee
       const { data: callerProfile } = await sb.from("profiles").select("first_name").eq("id", profileId).single();
 
+      // Send immediate push notification to the callee (no rate limiting for calls)
+      const CALL_PHRASES = [
+        "Continue your session",
+        "Resume where you left off",
+        "Ready when you are",
+        "Pick up where you left off",
+        "Jump back in",
+      ];
+      const callPhrase = CALL_PHRASES[Math.floor(Math.random() * CALL_PHRASES.length)];
+
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${serviceRoleKey}`,
+            apikey: serviceRoleKey,
+          },
+          body: JSON.stringify({
+            action: "send-push",
+            target_profile_id: calleeId,
+            title: callPhrase,
+            tag: "call-notification",
+            url: "/p",
+            skip_rate_limit: true,
+          }),
+        });
+      } catch (pushErr) {
+        console.error("Call push notification error:", pushErr);
+      }
+
       return json({ call_id: call.id, callee_id: calleeId, caller_name: callerProfile?.first_name || "Someone" });
     }
 
