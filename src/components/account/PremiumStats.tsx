@@ -347,9 +347,8 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
           <p className="text-xs text-muted-foreground mb-3">{avgInsight}</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {avgByType.map(({ type, avg, count, avgScore }) => (
-              <div key={type} className="rounded-lg border bg-secondary/30 p-3 text-center">
+               <div key={type} className="rounded-lg border bg-secondary/30 p-3 text-center">
                 <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <PuzzleIcon type={type} size={14} className="text-muted-foreground" />
                   <span className="text-xs font-medium text-foreground">
                     {CATEGORY_INFO[type]?.name}
                   </span>
