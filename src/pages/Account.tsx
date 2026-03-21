@@ -5,7 +5,8 @@ import Layout from "@/components/layout/Layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Mail, Lock, User } from "lucide-react";
+import { ArrowLeft, Mail, Lock, User, Sparkles } from "lucide-react";
+import UpgradeModal from "@/components/account/UpgradeModal";
 
 export default function AccountPage() {
   const navigate = useNavigate();
