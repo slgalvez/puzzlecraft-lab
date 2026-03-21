@@ -4,9 +4,10 @@
  * intentionally bookmark specific puzzles to return to later.
  */
 import type { PuzzleCategory, Difficulty } from "./puzzleTypes";
+import { loadProgress } from "./puzzleProgress";
 
 const STORAGE_KEY = "puzzlecraft-saved-puzzles";
-const MAX_SAVED = 20;
+const MAX_SAVED = 5;
 
 export interface SavedPuzzle {
   /** Unique key: e.g. "sudoku-42-easy" */
@@ -36,12 +37,21 @@ function saveAll(items: SavedPuzzle[]) {
   }
 }
 
-export function savePuzzle(puzzle: Omit<SavedPuzzle, "savedAt">): void {
+export function savePuzzle(puzzle: Omit<SavedPuzzle, "savedAt">): boolean {
   const items = getAll();
   // Don't duplicate
-  if (items.some((p) => p.id === puzzle.id)) return;
+  if (items.some((p) => p.id === puzzle.id)) return true;
+  if (items.length >= MAX_SAVED) return false; // at limit
   items.unshift({ ...puzzle, savedAt: new Date().toISOString() });
-  if (items.length > MAX_SAVED) items.length = MAX_SAVED;
+  saveAll(items);
+  return true;
+}
+
+/** Remove oldest and add new */
+export function savePuzzleReplacingOldest(puzzle: Omit<SavedPuzzle, "savedAt">): void {
+  const items = getAll().filter((p) => p.id !== puzzle.id);
+  if (items.length >= MAX_SAVED) items.pop();
+  items.unshift({ ...puzzle, savedAt: new Date().toISOString() });
   saveAll(items);
 }
 
@@ -59,4 +69,16 @@ export function getSavedPuzzles(): SavedPuzzle[] {
 
 export function getSavedCount(): number {
   return getAll().length;
+}
+
+export function isAtLimit(): boolean {
+  return getAll().length >= MAX_SAVED;
+}
+
+/** Check if a saved puzzle has in-progress state */
+export function getSavedPuzzleProgress(puzzle: SavedPuzzle): { hasProgress: boolean; elapsed: number } {
+  const key = `${puzzle.category}-${puzzle.seed}-${puzzle.difficulty}`;
+  const progress = loadProgress(key);
+  if (progress) return { hasProgress: true, elapsed: progress.elapsed };
+  return { hasProgress: false, elapsed: 0 };
 }

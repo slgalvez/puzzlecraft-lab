@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import SavedPuzzlesSection from "@/components/puzzles/SavedPuzzlesSection";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory, type Difficulty, isDifficultyDisabled } from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
 import { cn } from "@/lib/utils";
@@ -59,6 +60,8 @@ const PuzzleLibrary = () => {
             Pick a puzzle and start solving instantly.
           </p>
         </div>
+
+        <SavedPuzzlesSection />
 
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {categories.map(([type, info]) => {
