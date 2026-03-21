@@ -70,6 +70,41 @@ function buildMessageQuery(
   return query;
 }
 
+async function fetchLatestConversationMessages(
+  sb: ReturnType<typeof createClient>,
+  conversationId: string,
+  now: string,
+  clearedAt: string | null,
+  limit = 200,
+) {
+  const { data, error } = await buildMessageQuery(sb, conversationId, now, clearedAt)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("[messaging] failed to fetch conversation messages", {
+      conversationId,
+      clearedAt,
+      limit,
+      error,
+    });
+    return [];
+  }
+
+  const messages = data || [];
+  const newestMessageAt = messages[0]?.created_at ?? null;
+  const oldestReturnedAt = messages[messages.length - 1]?.created_at ?? null;
+
+  console.debug("[messaging] fetched latest conversation messages", {
+    conversationId,
+    returned: messages.length,
+    newestMessageAt,
+    oldestReturnedAt,
+  });
+
+  return messages.reverse();
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
