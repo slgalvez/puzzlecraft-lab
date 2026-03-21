@@ -9,6 +9,12 @@
  */
 
 import { SeededRandom } from "../seededRandom";
+import {
+  tryGenerateWordSearch,
+  scoreWordSearchPuzzle,
+  validateWordSearchGrid,
+  type WordSearchPuzzle,
+} from "./wordSearch";
 
 type CraftDifficulty = "easy" | "medium" | "hard";
 
@@ -573,7 +579,11 @@ export interface CustomCryptogramData {
 }
 
 export function generateCustomCryptogram(phrase: string, difficulty: CraftDifficulty = "medium"): CustomCryptogramData {
-  const decoded = phrase.toUpperCase().replace(/[^A-Z .,!?;:'"()-]/g, "");
+  // Normalize smart/curly quotes to straight equivalents before filtering
+  const normalized = phrase
+    .replace(/[\u2018\u2019\u201A\u2032]/g, "'")   // curly single quotes → straight apostrophe
+    .replace(/[\u201C\u201D\u201E\u2033]/g, '"');   // curly double quotes → straight quote
+  const decoded = normalized.toUpperCase().replace(/[^A-Z .,!?;:'"()-]/g, "");
   if (decoded.replace(/[^A-Z]/g, "").length < 3) throw new Error("Phrase too short");
 
   const rng = new SeededRandom(Date.now() % 2147483646 || 1);
@@ -723,7 +733,7 @@ function buildCrossword(
 }
 
 // ═══════════════════════════════════════════════
-// Custom Word Search
+// Custom Word Search — delegates to the standard site-wide generator
 // ═══════════════════════════════════════════════
 
 export interface CustomWordSearchData {
@@ -733,138 +743,43 @@ export interface CustomWordSearchData {
   size: number;
 }
 
-const WS_SIZE_MULT: Record<CraftDifficulty, number> = { easy: 1.5, medium: 1.3, hard: 1.1 };
-const WS_MAX_OVERLAP: Record<CraftDifficulty, number> = { easy: 0.10, medium: 0.25, hard: 0.40 };
+/** Difficulty → standard Difficulty mapping for direction/size behaviour */
+const CRAFT_TO_STD_DIFF: Record<CraftDifficulty, "easy" | "medium" | "hard"> = {
+  easy: "easy",
+  medium: "medium",
+  hard: "hard",
+};
+
+const MAX_CRAFT_WS_ATTEMPTS = 15;
 
 export function generateCustomWordSearch(words: string[], difficulty: CraftDifficulty = "medium"): CustomWordSearchData {
   const cleaned = words.map(w => w.toUpperCase().replace(/[^A-Z]/g, "")).filter(w => w.length >= 2);
   if (cleaned.length === 0) throw new Error("No valid words provided");
 
-  const maxLen = Math.max(...cleaned.map(w => w.length));
-  const sizeFromCount = Math.ceil(Math.sqrt(cleaned.length * cleaned.reduce((s, w) => s + w.length, 0)) * WS_SIZE_MULT[difficulty]);
-  const size = Math.max(10, Math.max(maxLen + 2, sizeFromCount));
+  const stdDiff = CRAFT_TO_STD_DIFF[difficulty];
 
-  // Direction sets by difficulty
-  const DIRS_EASY: [number, number][] = [[0, 1], [1, 0]];
-  const DIRS_MEDIUM: [number, number][] = [[0, 1], [1, 0], [1, 1], [-1, 1]];
-  const DIRS_HARD: [number, number][] = [[0, 1], [1, 0], [1, 1], [-1, 1], [0, -1], [-1, 0], [-1, -1], [1, -1]];
-  const dirs = difficulty === "easy" ? DIRS_EASY : difficulty === "medium" ? DIRS_MEDIUM : DIRS_HARD;
-  const maxOverlap = WS_MAX_OVERLAP[difficulty];
+  // Use the exact same generation pipeline as site-wide word searches
+  let bestResult: WordSearchPuzzle | null = null;
+  let bestScore = -Infinity;
+  const baseSeed = Date.now() % 2147483646 || 1;
 
-  return selectBestLayout((seed) => {
-    const result = buildWordSearch(cleaned, size, dirs, maxOverlap, seed, difficulty);
-    const score = result.placedCount * 10 + result.distributionScore;
-    return { data: result.data, score };
-  }, Date.now());
-}
+  for (let attempt = 0; attempt < MAX_CRAFT_WS_ATTEMPTS; attempt++) {
+    const result = tryGenerateWordSearch(baseSeed + attempt * 7919, stdDiff, cleaned);
+    if (result.words.length === 0) continue;
+    if (!validateWordSearchGrid(result)) continue;
 
-function buildWordSearch(
-  words: string[],
-  size: number,
-  dirs: [number, number][],
-  maxOverlap: number,
-  seed: number,
-  difficulty: CraftDifficulty
-) {
-  const rng = new SeededRandom(seed);
-  const grid: string[][] = Array.from({ length: size }, () => Array(size).fill(""));
-  const placed: CustomWordSearchData["wordPositions"] = [];
-  const placedWords = new Set<string>();
-
-  const cellUsed = new Map<string, number>();
-
-  // Sort longest first
-  const sorted = rng.shuffle([...words]).sort((a, b) => b.length - a.length);
-
-  for (const word of sorted) {
-    if (placedWords.has(word)) continue;
-    const shuffledDirs = rng.shuffle([...dirs]);
-    let bestPos: { r: number; c: number; dr: number; dc: number; score: number } | null = null;
-
-    for (const [dr, dc] of shuffledDirs) {
-      const positions: [number, number][] = [];
-      for (let r = 0; r < size; r++)
-        for (let c = 0; c < size; c++) positions.push([r, c]);
-
-      for (const [r, c] of rng.shuffle(positions)) {
-        if (!canPlaceWS(grid, word, r, c, dr, dc, size)) continue;
-
-        let overlaps = 0;
-        for (let i = 0; i < word.length; i++) {
-          const key = `${r + dr * i}-${c + dc * i}`;
-          if (cellUsed.has(key)) overlaps++;
-        }
-        if (overlaps / word.length > maxOverlap) continue;
-
-        const midR = r + dr * (word.length - 1) / 2;
-        const midC = c + dc * (word.length - 1) / 2;
-        const distFromCenter = Math.abs(midR - size / 2) + Math.abs(midC - size / 2);
-        const posScore = (size - distFromCenter) - overlaps * 3;
-
-        if (!bestPos || posScore > bestPos.score) {
-          bestPos = { r, c, dr, dc, score: posScore };
-        }
-      }
+    const score = scoreWordSearchPuzzle(result, stdDiff);
+    if (score > bestScore) {
+      bestScore = score;
+      bestResult = result;
     }
-
-    if (bestPos) {
-      placeWordWS(grid, word, bestPos.r, bestPos.c, bestPos.dr, bestPos.dc);
-      placed.push({ word, row: bestPos.r, col: bestPos.c, dr: bestPos.dr, dc: bestPos.dc });
-      placedWords.add(word);
-      for (let i = 0; i < word.length; i++) {
-        const key = `${bestPos.r + bestPos.dr * i}-${bestPos.c + bestPos.dc * i}`;
-        cellUsed.set(key, (cellUsed.get(key) || 0) + 1);
-      }
-    }
+    if (result.words.length >= cleaned.length && score > 60) break;
   }
 
-  // Fill empty cells
-  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const wordLetters = difficulty === "hard"
-    ? [...new Set(words.join("").split(""))].join("") || letters
-    : letters;
-  for (let r = 0; r < size; r++)
-    for (let c = 0; c < size; c++)
-      if (!grid[r][c]) grid[r][c] = wordLetters[rng.nextInt(0, wordLetters.length - 1)];
-
-  // Post-placement validation
-  for (const wp of placed) {
-    for (let i = 0; i < wp.word.length; i++) {
-      const r = wp.row + wp.dr * i;
-      const c = wp.col + wp.dc * i;
-      if (grid[r][c] !== wp.word[i]) {
-        return { data: { grid, words: [], wordPositions: [], size } as CustomWordSearchData, placedCount: 0, distributionScore: -100 };
-      }
-    }
+  if (!bestResult) {
+    // Fallback: run with easy difficulty for max placement
+    bestResult = tryGenerateWordSearch(baseSeed, "easy", cleaned);
   }
 
-  // Distribution score
-  const quadrants = [0, 0, 0, 0];
-  for (const wp of placed) {
-    const midR = wp.row + wp.dr * (wp.word.length - 1) / 2;
-    const midC = wp.col + wp.dc * (wp.word.length - 1) / 2;
-    const qi = (midR < size / 2 ? 0 : 2) + (midC < size / 2 ? 0 : 1);
-    quadrants[qi]++;
-  }
-  const avg = placed.length / 4;
-  const distributionScore = 10 - quadrants.reduce((s, q) => s + Math.abs(q - avg), 0);
-
-  return {
-    data: { grid, words: placed.map(p => p.word), wordPositions: placed, size } as CustomWordSearchData,
-    placedCount: placed.length,
-    distributionScore,
-  };
-}
-
-function canPlaceWS(grid: string[][], word: string, row: number, col: number, dr: number, dc: number, size: number): boolean {
-  for (let i = 0; i < word.length; i++) {
-    const r = row + dr * i, c = col + dc * i;
-    if (r < 0 || r >= size || c < 0 || c >= size) return false;
-    if (grid[r][c] && grid[r][c] !== word[i]) return false;
-  }
-  return true;
-}
-
-function placeWordWS(grid: string[][], word: string, row: number, col: number, dr: number, dc: number) {
-  for (let i = 0; i < word.length; i++) grid[row + dr * i][col + dc * i] = word[i];
+  return bestResult as CustomWordSearchData;
 }
