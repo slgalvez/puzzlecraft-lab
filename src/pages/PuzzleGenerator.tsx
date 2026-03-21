@@ -760,7 +760,9 @@ const PuzzleGenerator = () => {
         </label>
         <div className="flex flex-wrap gap-2">
           {difficulties.map(([val, label]) => {
-            const disabled = category ? isDifficultyDisabled(category, val) : false;
+            // Disabled if ALL selected types disable this difficulty
+            const selectedTypes = Array.from(generateTypes);
+            const disabled = selectedTypes.length > 0 && selectedTypes.every(t => isDifficultyDisabled(t, val));
             return (
               <button
                 key={val}
