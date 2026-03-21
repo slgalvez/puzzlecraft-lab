@@ -9,6 +9,12 @@
  */
 
 import { SeededRandom } from "../seededRandom";
+import {
+  tryGenerateWordSearch,
+  scoreWordSearchPuzzle,
+  validateWordSearchGrid,
+  type WordSearchPuzzle,
+} from "./wordSearch";
 
 type CraftDifficulty = "easy" | "medium" | "hard";
 
