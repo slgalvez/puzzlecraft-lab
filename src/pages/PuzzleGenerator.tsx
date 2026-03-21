@@ -844,7 +844,7 @@ const PuzzleGenerator = () => {
         </Button>
         {!canGenerate && (
           <p className="text-xs text-muted-foreground">
-            Select a puzzle type and difficulty to generate
+            Select at least one puzzle type and difficulty to generate
           </p>
         )}
         {puzzleGenerated && (
