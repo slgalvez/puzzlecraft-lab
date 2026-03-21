@@ -1,7 +1,6 @@
 /**
- * Puzzlecraft+ Advanced Stats — premium-only section.
- * Shows solve history, personal bests, average performance, accuracy insights,
- * player rating with skill tier, trend indicators, and no-hint rate.
+ * Puzzlecraft+ Advanced Stats — premium-only sections.
+ * Hero → Accuracy → Personal Bests → Average Performance → Solve History (collapsible)
  */
 import { useMemo, useState, useCallback } from "react";
 import { getSolveRecords, getSolveSummary, type SolveRecord } from "@/lib/solveTracker";
@@ -15,16 +14,17 @@ import {
   getTierProgress,
   trueMistakes,
 } from "@/lib/solveScoring";
-import { Clock, Trophy, Target, BarChart3, Zap, CheckCircle, FlaskConical, Trash2, TrendingUp, TrendingDown, ShieldCheck } from "lucide-react";
+import { getBestInsight } from "@/lib/solveInsights";
+import { Clock, Trophy, Target, BarChart3, Zap, CheckCircle, FlaskConical, Trash2, TrendingUp, TrendingDown, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
 import { generateDemoSolves, clearDemoSolves, hasDemoData } from "@/lib/demoStats";
 import { useUserAccount } from "@/contexts/UserAccountContext";
-import { hasPremiumAccess } from "@/lib/premiumAccess";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 const MIN_SOLVES_FOR_AVG = 2;
+const HISTORY_PREVIEW = 5;
 
 const ALL_CATEGORIES: PuzzleCategory[] = [
   "crossword", "word-fill", "number-fill", "sudoku",
@@ -50,7 +50,7 @@ function TrendBadge({ trend, invertColor }: { trend: "up" | "down" | "flat"; inv
   const isGood = invertColor ? trend === "down" : trend === "up";
   return (
     <span className={cn(
-      "inline-flex items-center gap-0.5 text-[10px] font-medium",
+      "inline-flex items-center gap-0.5 text-[10px] font-medium ml-1",
       isGood ? "text-primary" : "text-destructive"
     )}>
       {trend === "up" ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
@@ -60,11 +60,12 @@ function TrendBadge({ trend, invertColor }: { trend: "up" | "down" | "flat"; inv
 
 export default function PremiumStats({ onDataChange }: { onDataChange?: () => void }) {
   const [refreshKey, setRefreshKey] = useState(0);
-  const { account, subscribed } = useUserAccount();
+  const { account } = useUserAccount();
   const isAdmin = account?.isAdmin ?? false;
   const records = useMemo(() => getSolveRecords(), [refreshKey]);
   const summary = useMemo(() => getSolveSummary(), [refreshKey]);
   const demoActive = useMemo(() => hasDemoData(), [refreshKey]);
+  const [historyExpanded, setHistoryExpanded] = useState(false);
 
   const handleGenerate = useCallback(() => {
     generateDemoSolves(25);
@@ -107,58 +108,49 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
     );
   }
 
-  const recent20 = records.slice(0, 20);
-
-  // ── New scoring system ──
+  // ── Scoring / Rating ──
   const playerRating = computePlayerRating(records);
   const skillTier = getSkillTier(playerRating);
   const tierProgress = getTierProgress(playerRating);
   const tierColor = getTierColor(skillTier);
+  const scoreTrend = computeTrend(records, (r) => computeSolveScore(r));
+  const timeTrend = computeTrend(records, (r) => r.solveTime);
+  const accuracyTrend = computeTrend(records, (r) => trueMistakes(r));
 
-  // Personal bests per type
+  // Data-driven insight
+  const insight = getBestInsight(records);
+
+  // No-hint rate
+  const noHintSolves = records.filter((r) => r.hintsUsed === 0 && !r.assisted);
+  const noHintRate = Math.round((noHintSolves.length / records.length) * 100);
+
+  // Accuracy
+  const totalTrueMistakes = records.reduce((s, r) => s + trueMistakes(r), 0);
+  const avgMistakes = Math.round((totalTrueMistakes / records.length) * 10) / 10;
+  const noHintPercent = Math.round((noHintSolves.length / records.length) * 100);
+  const unassistedPercent = Math.round((summary.unassistedCount / records.length) * 100);
+
+  const accuracyInsight = avgMistakes < 1
+    ? "You're solving with impressive precision."
+    : avgMistakes < 2
+      ? "Solid accuracy — room to tighten up on harder puzzles."
+      : "Try slowing down on tricky sections to reduce mistakes.";
+
+  // Personal bests & averages
   const bestByType: { type: PuzzleCategory; time: number; difficulty: string; score: number }[] = [];
   const avgByType: { type: PuzzleCategory; avg: number; count: number; avgScore: number }[] = [];
 
   for (const cat of ALL_CATEGORIES) {
     const catRecords = records.filter((r) => r.puzzleType === cat);
     if (catRecords.length === 0) continue;
-
     const best = catRecords.reduce((a, b) => (a.solveTime < b.solveTime ? a : b));
     bestByType.push({ type: cat, time: best.solveTime, difficulty: best.difficulty, score: computeSolveScore(best) });
-
     if (catRecords.length >= MIN_SOLVES_FOR_AVG) {
       const total = catRecords.reduce((s, r) => s + r.solveTime, 0);
       const totalScore = catRecords.reduce((s, r) => s + computeSolveScore(r), 0);
-      avgByType.push({
-        type: cat,
-        avg: Math.round(total / catRecords.length),
-        count: catRecords.length,
-        avgScore: Math.round(totalScore / catRecords.length),
-      });
+      avgByType.push({ type: cat, avg: Math.round(total / catRecords.length), count: catRecords.length, avgScore: Math.round(totalScore / catRecords.length) });
     }
   }
-
-  // Accuracy insights (using forgiven mistakes)
-  const totalTrueMistakes = records.reduce((s, r) => s + trueMistakes(r), 0);
-  const avgMistakes = Math.round((totalTrueMistakes / records.length) * 10) / 10;
-  const noHintSolves = records.filter((r) => r.hintsUsed === 0 && !r.assisted);
-  const noHintPercent = Math.round((noHintSolves.length / records.length) * 100);
-  const unassistedPercent = Math.round((summary.unassistedCount / records.length) * 100);
-
-  // Trends (records are newest-first)
-  const timeTrend = computeTrend(records, (r) => r.solveTime);
-  const accuracyTrend = computeTrend(records, (r) => trueMistakes(r));
-  const scoreTrend = computeTrend(records, (r) => computeSolveScore(r));
-
-  // No-hint rate
-  const noHintRate = Math.round((noHintSolves.length / records.length) * 100);
-
-  // Insight text
-  const accuracyInsight = avgMistakes < 1
-    ? "You're solving with impressive precision."
-    : avgMistakes < 2
-      ? "Solid accuracy — room to tighten up on harder puzzles."
-      : "Try slowing down on tricky sections to reduce mistakes.";
 
   const bestInsight = bestByType.length >= 3
     ? `You've set personal bests across ${bestByType.length} puzzle types.`
@@ -168,14 +160,20 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
     ? `Your consistency is ${timeTrend === "down" ? "improving" : timeTrend === "up" ? "worth watching" : "holding steady"} over recent solves.`
     : "Play more to track your average performance.";
 
+  // History
+  const recent20 = records.slice(0, 20);
+  const historyVisible = historyExpanded ? recent20 : recent20.slice(0, HISTORY_PREVIEW);
+
   return (
     <div className="space-y-8">
       {adminControls}
       {demoActive && (
         <p className="text-xs text-primary/60 italic">
-          ⚡ Viewing demo data — not from real solves
+          Viewing demo data — not from real solves
         </p>
       )}
+
+      {/* ── HEADER ── */}
       <div className="flex items-center gap-2">
         <h2 className="font-display text-xl font-semibold text-foreground">
           Advanced Analytics
@@ -185,32 +183,48 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
         </span>
       </div>
 
-      {/* Top metrics row: Player Rating + No-Hint Rate + Total Solves */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        {/* Player Rating with tier */}
-        <div className="rounded-xl border bg-card p-4 text-center col-span-2 sm:col-span-1">
-          <Zap className="mx-auto h-5 w-5 text-primary mb-2" />
-          <p className="font-mono text-2xl font-bold text-foreground">
-            {playerRating}
-            <TrendBadge trend={scoreTrend} />
-          </p>
-          <p className={cn("mt-0.5 text-xs font-semibold", tierColor)}>{skillTier}</p>
-          <Progress value={tierProgress} className="mt-2 h-1.5" />
-          <p className="mt-1 text-[10px] text-muted-foreground">Player Rating</p>
-        </div>
-        <div className="rounded-xl border bg-card p-4 text-center">
-          <ShieldCheck className="mx-auto h-5 w-5 text-primary mb-2" />
-          <p className="font-mono text-2xl font-bold text-foreground">{noHintRate}%</p>
-          <p className="mt-1 text-xs text-muted-foreground">No-Hint Rate</p>
-        </div>
-        <div className="rounded-xl border bg-card p-4 text-center">
-          <Target className="mx-auto h-5 w-5 text-primary mb-2" />
-          <p className="font-mono text-2xl font-bold text-foreground">{records.length}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Total Solves</p>
+      {/* ── HERO SECTION ── */}
+      <div className="rounded-2xl border bg-card p-6 sm:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+          {/* Rating block */}
+          <div className="text-center sm:text-left">
+            <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+              <Zap size={18} className="text-primary" />
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Player Rating</span>
+            </div>
+            <p className="font-mono text-5xl font-bold text-foreground leading-none">
+              {playerRating}
+              <TrendBadge trend={scoreTrend} />
+            </p>
+            <p className={cn("mt-2 text-sm font-semibold", tierColor)}>{skillTier}</p>
+            <div className="mt-3 max-w-48">
+              <Progress value={tierProgress} className="h-2" />
+              <p className="mt-1 text-[10px] text-muted-foreground">Progress to next rank</p>
+            </div>
+          </div>
+
+          {/* Insight + quick stats */}
+          <div className="flex-1 space-y-4">
+            <p className="text-sm text-muted-foreground italic leading-relaxed">
+              "{insight}"
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border bg-secondary/30 p-3 text-center">
+                <ShieldCheck size={14} className="mx-auto text-primary mb-1" />
+                <p className="font-mono text-lg font-bold text-foreground">{noHintRate}%</p>
+                <p className="text-[10px] text-muted-foreground">No-Hint Rate</p>
+              </div>
+              <div className="rounded-lg border bg-secondary/30 p-3 text-center">
+                <Target size={14} className="mx-auto text-primary mb-1" />
+                <p className="font-mono text-lg font-bold text-foreground">{records.length}</p>
+                <p className="text-[10px] text-muted-foreground">Total Solves</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Accuracy Insights */}
+      {/* ── ACCURACY INSIGHTS ── */}
       <div className="rounded-xl border bg-card p-5">
         <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
           <CheckCircle size={15} className="text-primary" />
@@ -240,7 +254,7 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
         </div>
       </div>
 
-      {/* Personal Bests */}
+      {/* ── PERSONAL BESTS ── */}
       {bestByType.length > 0 && (
         <div className="rounded-xl border bg-card p-5">
           <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
@@ -268,7 +282,7 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
         </div>
       )}
 
-      {/* Average Performance */}
+      {/* ── AVERAGE PERFORMANCE ── */}
       {avgByType.length > 0 && (
         <div className="rounded-xl border bg-card p-5">
           <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
@@ -294,14 +308,22 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
         </div>
       )}
 
-      {/* Solve History (last 20) */}
+      {/* ── SOLVE HISTORY (collapsible) ── */}
       <div className="rounded-xl border bg-card p-5">
-        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-          <Clock size={15} className="text-primary" />
-          Solve History
-          <span className="text-xs text-muted-foreground font-normal">Last 20</span>
-        </h3>
-        <div className="overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setHistoryExpanded((p) => !p)}
+          className="w-full flex items-center justify-between"
+        >
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Clock size={15} className="text-primary" />
+            Solve History
+            <span className="text-xs text-muted-foreground font-normal">Last 20</span>
+          </h3>
+          {historyExpanded ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+        </button>
+
+        <div className="overflow-x-auto mt-3">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-secondary/50">
@@ -313,7 +335,7 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
               </tr>
             </thead>
             <tbody>
-              {recent20.map((r) => {
+              {historyVisible.map((r) => {
                 const info = CATEGORY_INFO[r.puzzleType];
                 const score = computeSolveScore(r);
                 return (
@@ -340,6 +362,16 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
             </tbody>
           </table>
         </div>
+
+        {recent20.length > HISTORY_PREVIEW && !historyExpanded && (
+          <button
+            type="button"
+            onClick={() => setHistoryExpanded(true)}
+            className="mt-2 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+          >
+            Show all {recent20.length} solves
+          </button>
+        )}
       </div>
     </div>
   );
