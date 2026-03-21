@@ -219,6 +219,17 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
             >
               <RotateCcw className="h-3.5 w-3.5" />
             </Button>
+            {canSave && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 ${saved ? "text-primary" : "text-muted-foreground/60 hover:text-foreground"}`}
+                onClick={toggleSave}
+                aria-label={saved ? "Remove bookmark" : "Save for later"}
+              >
+                <Bookmark className="h-3.5 w-3.5" fill={saved ? "currentColor" : "none"} />
+              </Button>
+            )}
           </div>
 
           {puzzleCode && (
