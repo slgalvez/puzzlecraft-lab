@@ -1,0 +1,1 @@
+ALTER TABLE public.user_profiles ADD COLUMN is_admin boolean NOT NULL DEFAULT false;

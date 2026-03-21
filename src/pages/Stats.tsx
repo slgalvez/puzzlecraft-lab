@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useUserAccount } from "@/contexts/UserAccountContext";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import PremiumLockedCard from "@/components/account/PremiumLockedCard";
+import { hasPremiumAccess, shouldShowUpgradeCTA } from "@/lib/premiumAccess";
 
 type ViewFilter = null | "daily" | "endless";
 
@@ -29,7 +30,10 @@ const Stats = () => {
   const dailyStreak = useMemo(() => getDailyStreak(), []);
   const dailyCompleted = useMemo(() => getTotalDailyCompleted(), []);
   const endlessStats = useMemo(() => getEndlessStats(), []);
-  const { subscribed } = useUserAccount();
+  const { account, subscribed } = useUserAccount();
+  const isAdmin = account?.isAdmin ?? false;
+  const premiumAccess = hasPremiumAccess({ isAdmin, subscribed });
+  const showUpgrade = shouldShowUpgradeCTA({ isAdmin, subscribed });
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const [viewFilter, setViewFilter] = useState<ViewFilter>(null);
@@ -433,9 +437,14 @@ const Stats = () => {
         )}
 
         {/* Premium locked section */}
-        {showGeneral && !subscribed && (
+        {showGeneral && !premiumAccess && showUpgrade && (
           <div className="mt-12">
             <PremiumLockedCard onUpgrade={() => setUpgradeOpen(true)} />
+          </div>
+        )}
+        {showGeneral && !premiumAccess && !showUpgrade && (
+          <div className="mt-12">
+            <PremiumLockedCard comingSoon />
           </div>
         )}
       </div>

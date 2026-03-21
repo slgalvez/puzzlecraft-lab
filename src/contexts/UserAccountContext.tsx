@@ -18,6 +18,7 @@ export interface UserAccount {
   email: string;
   displayName: string | null;
   isPremium: boolean;
+  isAdmin: boolean;
 }
 
 interface UserAccountContextType {
@@ -68,7 +69,7 @@ function getLocalBlob(key: string, fallback: any = []) {
 async function fetchProfile(userId: string): Promise<UserAccount | null> {
   const { data } = await supabase
     .from("user_profiles")
-    .select("display_name, is_premium")
+    .select("display_name, is_premium, is_admin")
     .eq("id", userId)
     .single();
   if (!data) return null;
@@ -79,6 +80,7 @@ async function fetchProfile(userId: string): Promise<UserAccount | null> {
     email: user?.email || "",
     displayName: data.display_name,
     isPremium: data.is_premium,
+    isAdmin: !!(data as any).is_admin,
   };
 }
 
