@@ -362,6 +362,50 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, serviceRoleKey);
 
+    // ── DIAGNOSTIC (temporary) ──
+    if (action === "diagnostic") {
+      const rawKey = Deno.env.get("VAPID_PRIVATE_KEY") || "";
+      const normalizedKey = rawKey.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+      const pubKeyBytes = b64urlDecode(VAPID_PUBLIC_KEY);
+
+      // Try importing the key pair to verify match
+      let keyValid = false;
+      let keyError = "";
+      try {
+        const x = b64url(pubKeyBytes.slice(1, 33));
+        const y = b64url(pubKeyBytes.slice(33, 65));
+        const imported = await crypto.subtle.importKey(
+          "jwk",
+          { kty: "EC", crv: "P-256", x, y, d: normalizedKey },
+          { name: "ECDSA", namedCurve: "P-256" },
+          true,
+          ["sign"]
+        );
+        // Sign and verify
+        const testData = new TextEncoder().encode("test");
+        const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, imported, testData);
+        const pubKey = await crypto.subtle.importKey(
+          "jwk",
+          { kty: "EC", crv: "P-256", x, y },
+          { name: "ECDSA", namedCurve: "P-256" },
+          false,
+          ["verify"]
+        );
+        keyValid = await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, pubKey, sig, testData);
+      } catch (e) {
+        keyError = String(e);
+      }
+
+      return json({
+        vapid_key_pair: { valid: keyValid, error: keyError || undefined },
+        public_key_in_function: VAPID_PUBLIC_KEY,
+        private_key_length: rawKey.length,
+        private_key_normalized_length: normalizedKey.length,
+        private_key_first_4: rawKey.substring(0, 4),
+        private_key_last_4: rawKey.substring(rawKey.length - 4),
+      });
+    }
+
     // ── SUBSCRIBE ──
     if (action === "subscribe") {
       const user = await verifyToken(token);
