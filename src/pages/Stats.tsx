@@ -210,6 +210,55 @@ const Stats = () => {
           )}
         </p>
 
+        {/* Your Rank Card — premium users */}
+        {showGeneral && premiumAccess && localRating && (
+          <div className="mt-6 rounded-2xl border border-primary/20 bg-card p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <Zap size={16} className="text-primary" />
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your Rank</span>
+                  {myLeaderboardEntry && (
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                      #{myLeaderboardEntry.rank}
+                    </span>
+                  )}
+                </div>
+                <p className={cn("text-lg font-semibold", getTierColor(localRating.tier as any))}>
+                  {localRating.tier}
+                </p>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <p className="font-mono text-3xl font-bold text-foreground">{localRating.rating}</p>
+                  <span className="text-xs text-muted-foreground">Rating</span>
+                  {myLeaderboardEntry && myLeaderboardEntry.previous_rating > 0 && (
+                    (() => {
+                      const diff = myLeaderboardEntry.rating - myLeaderboardEntry.previous_rating;
+                      if (diff === 0) return null;
+                      return (
+                        <span className={cn("text-xs font-semibold inline-flex items-center gap-0.5", diff > 0 ? "text-emerald-500" : "text-destructive")}>
+                          {diff > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                          {diff > 0 ? "+" : ""}{diff}
+                        </span>
+                      );
+                    })()
+                  )}
+                </div>
+                {nextTierInfo && (
+                  <div className="mt-3 max-w-56">
+                    <Progress value={getTierProgress(localRating.rating)} className="h-2" />
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      Next: {nextTierInfo.name} ({nextTierInfo.threshold})
+                    </p>
+                  </div>
+                )}
+              </div>
+              <Button asChild variant="outline" size="sm" className="self-start">
+                <Link to="/leaderboard"><Shield size={14} /> View Leaderboard</Link>
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Overview cards */}
         {showGeneral && (
           <div className={cn(
