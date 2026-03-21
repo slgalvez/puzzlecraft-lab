@@ -183,9 +183,8 @@ const PuzzleGenerator = () => {
     () => category ? new Set([category]) : new Set()
   );
 
-  // Random tab state
-  const [randomTypes, setRandomTypes] = useState<Set<PuzzleCategory>>(new Set());
-  const [randomDifficulty, setRandomDifficulty] = useState<Difficulty | "any" | null>(null);
+
+
 
   const handleNewPuzzle = useCallback(() => {
     const pool = randomPool ?? (generateTypes.size > 1 ? Array.from(generateTypes) : null);
