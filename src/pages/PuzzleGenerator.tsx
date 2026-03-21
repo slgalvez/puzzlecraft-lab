@@ -212,6 +212,18 @@ const PuzzleGenerator = () => {
     }
   }, [randomPool, generateTypes, category, difficulty, navigate]);
 
+  // Called when a Surprise Me puzzle is completed — updates adaptive difficulty
+  const handleSurpriseComplete = useCallback((perf: PuzzlePerformance) => {
+    if (mode !== "random" || !category) return;
+    const current = surpriseDiffMap[category];
+    const { next } = computeNextDifficulty(current, perf);
+    setSurpriseDiffMap((prev) => {
+      const updated = { ...prev, [category]: next };
+      localStorage.setItem(SURPRISE_DIFF_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, [mode, category, surpriseDiffMap, SURPRISE_DIFF_KEY]);
+
   // Show error for truly invalid types (not just missing)
   if (type && !info) {
     return (
