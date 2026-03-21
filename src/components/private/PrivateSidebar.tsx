@@ -225,7 +225,17 @@ export function PrivateSidebar() {
 
       setUnreadCount(msgUnread);
       setUnsolvedPuzzles(unsolved);
-      checkUnread(msgUnread);
+
+      // Only trigger push/browser notifications if user is NOT currently viewing a conversation
+      const isInConversation =
+        location.pathname === "/p/conversation" ||
+        location.pathname.startsWith("/p/conversations/");
+      if (!isInConversation) {
+        checkUnread(msgUnread);
+      } else {
+        // Still track count so we don't fire a stale notification later
+        checkUnread(0);
+      }
 
       const overviewSeen = getSeenTimestamp(SEEN_KEY_OVERVIEW);
       const isOnOverview = location.pathname === "/p";
