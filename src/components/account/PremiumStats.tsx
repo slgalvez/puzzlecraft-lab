@@ -58,6 +58,18 @@ function TrendBadge({ trend, invertColor }: { trend: "up" | "down" | "flat"; inv
   );
 }
 
+const MILESTONE_ICONS: Record<MilestoneIcon, React.ComponentType<{ size?: number; className?: string }>> = {
+  puzzle: Puzzle,
+  flame: Flame,
+  trophy: Trophy,
+  medal: Medal,
+  zap: Zap,
+  crown: Crown,
+  target: Target,
+  award: Award,
+  bolt: Bolt,
+};
+
 export default function PremiumStats({ onDataChange }: { onDataChange?: () => void }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const { account } = useUserAccount();
