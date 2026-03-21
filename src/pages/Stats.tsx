@@ -559,17 +559,9 @@ const Stats = () => {
           </div>
         )}
 
-        {/* Subtle upgrade nudge for free users (no locked UI, no clutter) */}
+        {/* Premium preview for free users — blurred teaser */}
         {showGeneral && !premiumAccess && showUpgrade && stats.totalSolved > 0 && (
-          <div className="mt-12 text-center">
-            <button
-              onClick={() => setUpgradeOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
-            >
-              <Sparkles size={12} />
-              Unlock performance tracking with Puzzlecraft+
-            </button>
-          </div>
+          <StatsPremiumPreview onUpgrade={() => setUpgradeOpen(true)} />
         )}
       </div>
 

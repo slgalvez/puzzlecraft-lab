@@ -164,9 +164,11 @@ export default function LoginPage() {
           size="sm"
           className="w-full text-xs text-muted-foreground/50 hover:text-muted-foreground"
           onClick={() => window.location.href = "/"}>
-          
           Exit
         </Button>
+
+        {/* Puzzlecraft+ teaser */}
+        <LoginPremiumPreview />
       </div>
     </div>);
 
