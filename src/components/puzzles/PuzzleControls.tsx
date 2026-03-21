@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { RotateCcw, CheckCircle2, Shuffle, Eye, Lightbulb, Bookmark } from "lucide-react";
 import { useState, useCallback } from "react";
 import CompletionPanel from "./CompletionPanel";
+import SaveIndicator from "./SaveIndicator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Difficulty, PuzzleCategory } from "@/lib/puzzleTypes";
 import { savePuzzle, savePuzzleReplacingOldest, unsavePuzzle, isSaved, isAtLimit } from "@/lib/savedPuzzles";
