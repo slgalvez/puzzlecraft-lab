@@ -560,7 +560,7 @@ const Stats = () => {
         )}
 
         {/* Premium preview for free users — blurred teaser */}
-        {showGeneral && !premiumAccess && showUpgrade && stats.totalSolved > 0 && (
+        {showGeneral && !premiumAccess && (
           <StatsPremiumPreview onUpgrade={() => setUpgradeOpen(true)} />
         )}
       </div>
