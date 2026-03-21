@@ -51,7 +51,15 @@ const Stats = () => {
     if (recs.length < 10) return null;
     const rating = computePlayerRating(recs);
     const tier = getSkillTier(rating);
-    return { rating, tier, solveCount: recs.length };
+    // Compute personal best rating from all rolling windows
+    let bestRating = rating;
+    const WINDOW = 25;
+    for (let i = 1; i <= Math.max(0, recs.length - 10); i++) {
+      const windowRecs = recs.slice(i);
+      const r = computePlayerRating(windowRecs);
+      if (r > bestRating) bestRating = r;
+    }
+    return { rating, tier, solveCount: recs.length, bestRating };
   }, [dataVersion]);
 
   // Fetch user's leaderboard entry for rank position and rating change
