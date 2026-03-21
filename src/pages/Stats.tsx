@@ -6,9 +6,10 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puz
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { getDailyStreak, getTotalDailyCompleted } from "@/lib/dailyChallenge";
 import { getEndlessStats } from "@/lib/endlessHistory";
-import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, Shield, Zap, Info, Sparkles } from "lucide-react";
+import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, Shield, Zap, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PremiumStats from "@/components/account/PremiumStats";
+import { StatsPremiumPreview } from "@/components/account/PremiumPreview";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -558,17 +559,9 @@ const Stats = () => {
           </div>
         )}
 
-        {/* Subtle upgrade nudge for free users (no locked UI, no clutter) */}
+        {/* Premium preview for free users — blurred teaser */}
         {showGeneral && !premiumAccess && showUpgrade && stats.totalSolved > 0 && (
-          <div className="mt-12 text-center">
-            <button
-              onClick={() => setUpgradeOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
-            >
-              <Sparkles size={12} />
-              Unlock performance tracking with Puzzlecraft+
-            </button>
-          </div>
+          <StatsPremiumPreview onUpgrade={() => setUpgradeOpen(true)} />
         )}
       </div>
 
