@@ -852,7 +852,7 @@ const PuzzleGenerator = () => {
             Puzzle Code: <span className="font-mono text-foreground">{seed}</span>
           </p>
         )}
-        {(puzzleGenerated || category || difficulty) && (
+        {(puzzleGenerated || generateTypes.size > 0 || difficulty) && (
           <button
             onClick={handleClear}
             className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
