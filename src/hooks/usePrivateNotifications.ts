@@ -44,11 +44,10 @@ export function usePrivateNotifications(token?: string | null) {
     const result = dispatchNotification(eventType, messageCount);
     if (!result) return;
 
-    if (result.action === "push") {
-      sendPushNotification(result.phrase);
-    } else if (result.action === "banner") {
+    if (result.action === "banner") {
       setBannerPhrase(result.phrase);
     }
+    // "push" action → handled server-side by send-push edge function (with rate limiting)
     // "silent" → do nothing (UI updates handled by conversation view)
   }, []);
 
