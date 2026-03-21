@@ -286,7 +286,6 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
                 );
               })}
             </div>
-            </div>
           )}
         </TabsContent>
 
