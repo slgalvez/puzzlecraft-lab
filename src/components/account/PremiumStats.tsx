@@ -23,16 +23,48 @@ const ALL_CATEGORIES: PuzzleCategory[] = [
 ];
 
 export default function PremiumStats() {
-  const records = useMemo(() => getSolveRecords(), []);
-  const summary = useMemo(() => getSolveSummary(), []);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const { account, subscribed } = useUserAccount();
+  const isAdmin = account?.isAdmin ?? false;
+  const records = useMemo(() => getSolveRecords(), [refreshKey]);
+  const summary = useMemo(() => getSolveSummary(), [refreshKey]);
+  const demoActive = useMemo(() => hasDemoData(), [refreshKey]);
+
+  const handleGenerate = useCallback(() => {
+    generateDemoSolves(25);
+    setRefreshKey((k) => k + 1);
+  }, []);
+
+  const handleClear = useCallback(() => {
+    clearDemoSolves();
+    setRefreshKey((k) => k + 1);
+  }, []);
+
+  const adminControls = isAdmin && (
+    <div className="flex items-center gap-2 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2">
+      <FlaskConical size={14} className="text-primary" />
+      <span className="text-xs font-medium text-primary">Admin</span>
+      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleGenerate}>
+        Generate Demo Data
+      </Button>
+      {demoActive && (
+        <Button size="sm" variant="outline" className="h-7 text-xs text-destructive border-destructive/30 hover:bg-destructive/10" onClick={handleClear}>
+          <Trash2 size={12} className="mr-1" /> Clear Demo
+        </Button>
+      )}
+    </div>
+  );
 
   if (!summary || records.length === 0) {
     return (
-      <div className="rounded-xl border border-primary/20 bg-card p-6 text-center">
-        <Sparkles className="mx-auto h-6 w-6 text-primary mb-3" />
-        <p className="text-sm text-muted-foreground">
-          Complete some puzzles to unlock advanced analytics.
-        </p>
+      <div className="space-y-3">
+        {adminControls}
+        <div className="rounded-xl border border-primary/20 bg-card p-6 text-center">
+          <Sparkles className="mx-auto h-6 w-6 text-primary mb-3" />
+          <p className="text-sm text-muted-foreground">
+            Complete some puzzles to unlock advanced analytics.
+          </p>
+        </div>
       </div>
     );
   }
