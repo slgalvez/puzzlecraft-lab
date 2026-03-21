@@ -54,6 +54,7 @@ const AdminConversationView = () => {
   const messageIds = useMemo(() => messages.map((m) => m.id), [messages]);
   const { containerRef: messagesContainerRef, bottomRef: messagesEndRef, markUserSent } = useChatScroll(messageIds);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
+  const loadingRef = useRef(true);
 
   const handleSessionExpired = useCallback(() => {
     signOut();
