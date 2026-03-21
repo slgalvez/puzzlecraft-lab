@@ -431,7 +431,16 @@ const Stats = () => {
             </div>
           </div>
         )}
+
+        {/* Premium locked section */}
+        {showGeneral && !subscribed && (
+          <div className="mt-12">
+            <PremiumLockedCard onUpgrade={() => setUpgradeOpen(true)} />
+          </div>
+        )}
       </div>
+
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </Layout>
   );
 };
