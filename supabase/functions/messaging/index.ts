@@ -188,10 +188,8 @@ Deno.serve(async (req) => {
           .not("read_at", "is", null);
       }
 
-      // Get messages, filtering out expired ones and cleared ones
-      const { data: messages } = await buildMessageQuery(sb, conv.id, now, clearedAt)
-        .order("created_at", { ascending: true })
-        .limit(200);
+      // Get the latest visible messages without cutting off newest ones in long threads
+      const messages = await fetchLatestConversationMessages(sb, conv.id, now, clearedAt);
 
       // Count unread from admin (only after cleared_at)
       let unreadQuery = sb
