@@ -1,18 +1,31 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bookmark, X, Play, Clock } from "lucide-react";
+import { ChevronRight, X, Play, Clock } from "lucide-react";
 import { getSavedPuzzles, unsavePuzzle, getSavedPuzzleProgress, type SavedPuzzle } from "@/lib/savedPuzzles";
 import { CATEGORY_INFO, DIFFICULTY_LABELS } from "@/lib/puzzleTypes";
 import PuzzleIcon from "./PuzzleIcon";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { formatDistanceToNow } from "date-fns";
+import { cn } from "@/lib/utils";
+
+const SESSION_KEY = "puzzlecraft-saved-expanded";
 
 const SavedPuzzlesSection = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [puzzles, setPuzzles] = useState(() => getSavedPuzzles());
+  const [expanded, setExpanded] = useState(() => {
+    try { return sessionStorage.getItem(SESSION_KEY) === "1"; } catch { return false; }
+  });
+
+  const toggleExpanded = useCallback(() => {
+    setExpanded((prev) => {
+      const next = !prev;
+      try { sessionStorage.setItem(SESSION_KEY, next ? "1" : "0"); } catch {}
+      return next;
+    });
+  }, []);
 
   const enriched = useMemo(
     () =>
@@ -26,81 +39,93 @@ const SavedPuzzlesSection = () => {
 
   if (enriched.length === 0) return null;
 
+  const visible = enriched.slice(0, 3);
+
   const handleResume = (p: SavedPuzzle) => {
     navigate(`/quick-play/${p.category}?seed=${p.seed}&d=${p.difficulty}`);
   };
 
-  const handleRemove = (id: string) => {
+  const handleRemove = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     unsavePuzzle(id);
     setPuzzles(getSavedPuzzles());
     toast({ title: "Removed from saved" });
   };
 
   return (
-    <div className="mb-8">
-      <div className="flex items-center gap-2 mb-3">
-        <Bookmark size={14} className="text-muted-foreground" />
-        <h2 className="text-sm font-medium text-muted-foreground">
-          Saved Puzzles ({enriched.length})
-        </h2>
-      </div>
+    <div className="mb-6">
+      {/* Collapsed header row */}
+      <button
+        onClick={toggleExpanded}
+        className="flex w-full items-center gap-2 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+      >
+        <ChevronRight
+          size={14}
+          className={cn(
+            "transition-transform duration-200 shrink-0",
+            expanded && "rotate-90"
+          )}
+        />
+        <span className="font-medium">
+          Continue where you left off
+          <span className="ml-1 text-muted-foreground/60">({enriched.length})</span>
+        </span>
+      </button>
 
-      <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-        {enriched.map((p) => (
-          <div
-            key={p.id}
-            className="group relative flex-shrink-0 w-52 rounded-lg border bg-card p-3 transition-colors hover:border-primary/40"
-          >
-            {/* Remove button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleRemove(p.id);
-              }}
-              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity rounded-full p-0.5 text-muted-foreground hover:text-foreground"
-              aria-label="Remove"
-            >
-              <X size={12} />
-            </button>
+      {/* Expanded content */}
+      <div
+        className={cn(
+          "grid transition-all duration-200 ease-out",
+          expanded ? "grid-rows-[1fr] opacity-100 mt-2" : "grid-rows-[0fr] opacity-0"
+        )}
+      >
+        <div className="overflow-hidden">
+          <div className="space-y-1">
+            {visible.map((p) => (
+              <div
+                key={p.id}
+                className="group flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted/50 transition-colors"
+              >
+                <PuzzleIcon type={p.category} size={16} className="text-muted-foreground shrink-0" />
 
-            {/* Puzzle info */}
-            <div className="flex items-center gap-2 mb-2">
-              <PuzzleIcon type={p.category} size={18} className="text-foreground/70" />
-              <span className="text-xs font-semibold text-foreground truncate">
-                {p.info.name}
-              </span>
-            </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-foreground truncate">
+                      {p.info.name}
+                    </span>
+                    <span className="rounded-full bg-secondary px-1.5 py-px text-[10px] text-muted-foreground capitalize">
+                      {DIFFICULTY_LABELS[p.difficulty]}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground/60 mt-0.5">
+                    {p.progress.hasProgress && (
+                      <span className="flex items-center gap-0.5">
+                        <Clock size={9} />
+                        {formatTime(p.progress.elapsed)}
+                      </span>
+                    )}
+                    <span>{formatDistanceToNow(new Date(p.savedAt), { addSuffix: true })}</span>
+                  </div>
+                </div>
 
-            {/* Difficulty + time */}
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground mb-2">
-              <span className="rounded-full bg-secondary px-1.5 py-px capitalize">
-                {DIFFICULTY_LABELS[p.difficulty]}
-              </span>
-              {p.progress.hasProgress && (
-                <span className="flex items-center gap-0.5">
-                  <Clock size={10} />
-                  {formatTime(p.progress.elapsed)}
-                </span>
-              )}
-            </div>
+                <button
+                  onClick={() => handleResume(p)}
+                  className="text-[11px] font-medium text-primary hover:text-primary/80 transition-colors shrink-0"
+                >
+                  Resume
+                </button>
 
-            {/* Last saved */}
-            <p className="text-[10px] text-muted-foreground/60 mb-2">
-              {formatDistanceToNow(new Date(p.savedAt), { addSuffix: true })}
-            </p>
-
-            {/* Resume button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-full text-xs gap-1 text-primary hover:text-primary hover:bg-primary/10"
-              onClick={() => handleResume(p)}
-            >
-              <Play size={10} />
-              Resume
-            </Button>
+                <button
+                  onClick={(e) => handleRemove(p.id, e)}
+                  className="opacity-0 group-hover:opacity-100 text-muted-foreground/40 hover:text-foreground transition-opacity shrink-0"
+                  aria-label="Remove"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );
