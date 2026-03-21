@@ -156,8 +156,8 @@ const SharedCraftPuzzle = () => {
             )}
           </div>
 
-          {/* Puzzle solver */}
-          <div className="min-h-[300px]">
+          {/* Puzzle solver — detect first real interaction */}
+          <div className="min-h-[300px]" onPointerDown={markStarted} onKeyDown={markStarted}>
             {(type === "word-fill" || type === "crossword") && (
               <GridSolver
                 data={puzzleData}
