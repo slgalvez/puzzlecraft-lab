@@ -275,6 +275,14 @@ const CraftPuzzle = () => {
       deleteDraft(activeDraftId.current);
       activeDraftId.current = null;
     }
+
+    // Build recipients list from craft_recipients created during generate
+    const names = parseRecipients();
+    const recipients: CraftRecipient[] | undefined =
+      names.length > 0
+        ? names.map((name) => ({ id: generateShortId(), name }))
+        : undefined;
+
     addSentItem({
       id: shareId,
       shareId,
@@ -284,9 +292,10 @@ const CraftPuzzle = () => {
       revealMessage,
       shareUrl,
       sentAt: Date.now(),
+      recipients,
     });
     refreshDraftCount();
-  }, [shareUrl, selectedType, puzzleTitle, puzzleFrom, revealMessage, refreshDraftCount]);
+  }, [shareUrl, selectedType, puzzleTitle, puzzleFrom, revealMessage, refreshDraftCount, parseRecipients]);
 
   const handleCopyLink = async () => {
     if (!shareUrl) return;
