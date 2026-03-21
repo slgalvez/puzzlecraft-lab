@@ -39,6 +39,13 @@ const Stats = () => {
   const showUpgrade = shouldShowUpgradeCTA({ isAdmin, subscribed });
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
+  // Sync rating to leaderboard when page loads (signed-in users)
+  useEffect(() => {
+    if (account) {
+      syncLeaderboardRating(account.id, account.displayName);
+    }
+  }, [account, dataVersion]);
+
   const [viewFilter, setViewFilter] = useState<ViewFilter>(null);
   const [categoryFilter, setCategoryFilter] = useState<PuzzleCategory | null>(null);
   const [dateFilter, setDateFilter] = useState<string | null>(null);
