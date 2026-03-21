@@ -6,7 +6,7 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puz
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { getDailyStreak, getTotalDailyCompleted } from "@/lib/dailyChallenge";
 import { getEndlessStats } from "@/lib/endlessHistory";
-import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, Shield, Zap } from "lucide-react";
+import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, Shield, Zap, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PremiumStats from "@/components/account/PremiumStats";
 import { Button } from "@/components/ui/button";
@@ -51,7 +51,15 @@ const Stats = () => {
     if (recs.length < 10) return null;
     const rating = computePlayerRating(recs);
     const tier = getSkillTier(rating);
-    return { rating, tier, solveCount: recs.length };
+    // Compute personal best rating from all rolling windows
+    let bestRating = rating;
+    const WINDOW = 25;
+    for (let i = 1; i <= Math.max(0, recs.length - 10); i++) {
+      const windowRecs = recs.slice(i);
+      const r = computePlayerRating(windowRecs);
+      if (r > bestRating) bestRating = r;
+    }
+    return { rating, tier, solveCount: recs.length, bestRating };
   }, [dataVersion]);
 
   // Fetch user's leaderboard entry for rank position and rating change
@@ -187,7 +195,12 @@ const Stats = () => {
 
         {/* Your Rank Card — premium users */}
         {showGeneral && premiumAccess && localRating && (
-          <div className="mt-6 rounded-2xl border border-primary/20 bg-card p-5">
+          <div className={cn(
+            "mt-6 rounded-2xl border bg-card p-5 transition-all",
+            nextTierInfo && localRating.rating >= nextTierInfo.threshold * 0.88
+              ? "border-primary/30"
+              : "border-primary/20"
+          )}>
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
@@ -198,6 +211,24 @@ const Stats = () => {
                       #{myLeaderboardEntry.rank}
                     </span>
                   )}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button className="text-muted-foreground/50 hover:text-muted-foreground transition-colors cursor-default">
+                          <Info size={13} />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-52 text-xs leading-relaxed">
+                        <p className="font-medium mb-1">Your rating is based on:</p>
+                        <ul className="space-y-0.5 text-muted-foreground">
+                          <li>• Puzzle difficulty</li>
+                          <li>• Solve speed</li>
+                          <li>• Accuracy</li>
+                          <li>• Hint usage</li>
+                        </ul>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <p className={cn("text-lg font-semibold", getTierColor(localRating.tier as any))}>
                   {localRating.tier}
@@ -218,14 +249,37 @@ const Stats = () => {
                     })()
                   )}
                 </div>
-                {nextTierInfo && (
-                  <div className="mt-3 max-w-56">
-                    <Progress value={getTierProgress(localRating.rating)} className="h-2 group cursor-default [&:hover_.h-full]:shadow-[0_0_8px_hsl(var(--primary)/0.5)] [&:active_.h-full]:shadow-[0_0_8px_hsl(var(--primary)/0.5)]" />
-                    <p className="mt-1 text-[10px] text-muted-foreground">
-                      Next: {nextTierInfo.name} ({nextTierInfo.threshold})
-                    </p>
-                  </div>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Based on your recent solves</p>
+                {localRating.bestRating > localRating.rating && (
+                  <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                    Best: {localRating.bestRating}
+                  </p>
                 )}
+                {nextTierInfo && (() => {
+                  const pointsNeeded = nextTierInfo.threshold - localRating.rating;
+                  const nearRank = pointsNeeded <= Math.round(nextTierInfo.threshold * 0.12);
+                  return (
+                    <div className="mt-3 max-w-56">
+                      <Progress
+                        value={getTierProgress(localRating.rating)}
+                        className={cn(
+                          "h-2 group cursor-default transition-all",
+                          "[&:hover_.h-full]:shadow-[0_0_8px_hsl(var(--primary)/0.5)] [&:active_.h-full]:shadow-[0_0_8px_hsl(var(--primary)/0.5)]",
+                          nearRank && "h-2.5"
+                        )}
+                      />
+                      <p className="mt-1 text-[10px] text-muted-foreground">
+                        {nearRank
+                          ? `Only ${pointsNeeded} points to ${nextTierInfo.name}`
+                          : `${pointsNeeded} points to ${nextTierInfo.name}`
+                        }
+                      </p>
+                      <p className="text-[9px] text-muted-foreground/60">
+                        {localRating.rating} / {nextTierInfo.threshold}
+                      </p>
+                    </div>
+                  );
+                })()}
               </div>
               <Button asChild variant="outline" size="sm" className="self-start">
                 <Link to="/leaderboard"><Shield size={14} /> View Leaderboard</Link>
