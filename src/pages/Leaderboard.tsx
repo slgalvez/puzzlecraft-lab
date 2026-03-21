@@ -4,13 +4,14 @@ import Layout from "@/components/layout/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserAccount } from "@/contexts/UserAccountContext";
 import { cn } from "@/lib/utils";
-import { Trophy, Medal, Shield, TrendingUp, TrendingDown, Zap } from "lucide-react";
+import { Trophy, Medal, Shield, TrendingUp, TrendingDown, Zap, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getSolveRecords } from "@/lib/solveTracker";
 import { computePlayerRating, getSkillTier, getTierColor, getTierProgress } from "@/lib/solveScoring";
-import { hasPremiumAccess, shouldShowUpgradeCTA } from "@/lib/premiumAccess";
+import { hasPremiumAccess } from "@/lib/premiumAccess";
 
 interface LeaderboardEntry {
   user_id: string;
@@ -24,7 +25,7 @@ interface LeaderboardEntry {
 
 const TIER_COLORS: Record<string, string> = {
   Expert: "text-amber-500",
-  Advanced: "text-primary",
+  Advanced: "text-orange-500",
   Skilled: "text-emerald-500",
   Casual: "text-sky-500",
   Beginner: "text-muted-foreground",
@@ -32,7 +33,7 @@ const TIER_COLORS: Record<string, string> = {
 
 const TIER_BG: Record<string, string> = {
   Expert: "bg-amber-500/10",
-  Advanced: "bg-primary/10",
+  Advanced: "bg-orange-500/10",
   Skilled: "bg-emerald-500/10",
   Casual: "bg-sky-500/10",
   Beginner: "bg-muted/50",
@@ -48,7 +49,7 @@ const TIER_THRESHOLDS: { tier: string; min: number }[] = [
 
 function getNextTier(currentTier: string): { name: string; threshold: number } | null {
   const idx = TIER_THRESHOLDS.findIndex((t) => t.tier === currentTier);
-  if (idx <= 0) return null; // already Expert or not found
+  if (idx <= 0) return null;
   return { name: TIER_THRESHOLDS[idx - 1].tier, threshold: TIER_THRESHOLDS[idx - 1].min };
 }
 
@@ -58,7 +59,7 @@ const RankBadge = ({ rank }: { rank: number }) => {
   if (rank === 1) return <Trophy size={16} className="text-amber-500" />;
   if (rank === 2) return <Medal size={16} className="text-slate-400" />;
   if (rank === 3) return <Medal size={16} className="text-amber-700" />;
-  return <span className="text-xs font-mono text-muted-foreground w-4 text-center">{rank}</span>;
+  return <span className="text-xs font-bold font-mono text-muted-foreground w-4 text-center">#{rank}</span>;
 };
 
 function RatingChange({ current, previous }: { current: number; previous: number }) {
@@ -129,7 +130,6 @@ export default function Leaderboard() {
 
   const ranked = useMemo(() => {
     const real = entries ?? [];
-    // Merge demo entries only if fewer than 10 real entries
     const merged = real.length >= 10 ? real : [...real, ...demoEntries.filter(d => !real.some(r => r.display_name === d.display_name))];
     merged.sort((a, b) => b.rating - a.rating);
     return merged.slice(0, 25).map((e, i) => ({ ...e, rank: i + 1 }));
@@ -153,7 +153,6 @@ export default function Leaderboard() {
   const tierProgress = localRating ? getTierProgress(localRating.rating) : 0;
   const ratingChange = myEntry ? myEntry.rating - myEntry.previous_rating : 0;
 
-  // Check if user is outside top 25 display
   const myRankOutside = myEntry && myEntry.rank > 25;
   const displayEntries = ranked.slice(0, 25);
 
@@ -177,11 +176,7 @@ export default function Leaderboard() {
                   <Zap size={16} className="text-primary" />
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your Rank</span>
                   {myEntry && (
-                    <span className={cn(
-                      "rounded-full px-2 py-0.5 text-[10px] font-bold",
-                      TIER_BG[myEntry.skill_tier],
-                      TIER_COLORS[myEntry.skill_tier]
-                    )}>
+                    <span className="font-mono font-bold text-sm text-primary">
                       #{myEntry.rank}
                     </span>
                   )}
@@ -194,9 +189,10 @@ export default function Leaderboard() {
                   <span className="text-xs text-muted-foreground">Rating</span>
                   {myEntry && myEntry.previous_rating > 0 && ratingChange !== 0 && (
                     <span className={cn(
-                      "text-xs font-semibold",
+                      "text-xs font-semibold inline-flex items-center gap-0.5",
                       ratingChange > 0 ? "text-emerald-500" : "text-destructive"
                     )}>
+                      {ratingChange > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
                       {ratingChange > 0 ? "+" : ""}{ratingChange}
                     </span>
                   )}
@@ -215,7 +211,7 @@ export default function Leaderboard() {
         )}
 
         {/* Time filter */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex items-center gap-2 mb-6">
           <Button
             variant={timeFilter === "all" ? "default" : "outline"}
             size="sm"
@@ -255,13 +251,18 @@ export default function Leaderboard() {
 
         {/* Leaderboard list */}
         {!isLoading && displayEntries.length > 0 && (
+          <TooltipProvider>
           <div className="rounded-xl border bg-card overflow-hidden">
-            <div className="grid grid-cols-[40px_1fr_auto_auto] sm:grid-cols-[40px_1fr_80px_80px_60px] items-center px-4 py-2 border-b bg-secondary/50">
+            <div className="grid grid-cols-[40px_1fr_80px_60px] items-center px-4 py-2 border-b bg-secondary/50">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">#</span>
               <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Player</span>
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hidden sm:block text-right">Solves</span>
               <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right">Rating</span>
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right hidden sm:block">+/-</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right cursor-default">+/−</span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">Rating change (recent)</TooltipContent>
+              </Tooltip>
             </div>
             {displayEntries.map((entry) => {
               const isMe = account?.id === entry.user_id;
@@ -269,7 +270,7 @@ export default function Leaderboard() {
                 <div
                   key={entry.user_id}
                   className={cn(
-                    "grid grid-cols-[40px_1fr_auto_auto] sm:grid-cols-[40px_1fr_80px_80px_60px] items-center px-4 py-3 border-b last:border-0 transition-colors",
+                    "grid grid-cols-[40px_1fr_80px_60px] items-center px-4 py-3 border-b last:border-0 transition-colors",
                     isMe && "bg-primary/5 border-l-2 border-l-primary"
                   )}
                 >
@@ -279,20 +280,18 @@ export default function Leaderboard() {
                   <div className="min-w-0">
                     <p className={cn("text-sm font-medium text-foreground truncate", isMe && "font-semibold")}>
                       {entry.display_name}
-                      {isMe && <span className="text-[10px] text-primary ml-1.5">YOU</span>}
+                      {isMe && <span className="text-[10px] text-muted-foreground ml-1.5">• YOU</span>}
                     </p>
-                    <p className={cn("text-[11px] font-medium", TIER_COLORS[entry.skill_tier] ?? "text-muted-foreground")}>
-                      <span className={cn(
-                        "inline-block rounded-full px-1.5 py-0 text-[9px]",
-                        TIER_BG[entry.skill_tier]
-                      )}>
-                        {entry.skill_tier}
-                      </span>
-                    </p>
+                    <span className={cn(
+                      "inline-block rounded-full px-1.5 py-0 text-[9px] font-medium",
+                      TIER_BG[entry.skill_tier],
+                      TIER_COLORS[entry.skill_tier] ?? "text-muted-foreground"
+                    )}>
+                      {entry.skill_tier}
+                    </span>
                   </div>
-                  <p className="text-xs text-muted-foreground text-right hidden sm:block">{entry.solve_count}</p>
                   <p className="font-mono text-sm font-bold text-foreground text-right">{entry.rating}</p>
-                  <div className="text-right hidden sm:block">
+                  <div className="text-right">
                     <RatingChange current={entry.rating} previous={entry.previous_rating} />
                   </div>
                 </div>
@@ -305,30 +304,32 @@ export default function Leaderboard() {
                 <div className="px-4 py-1 text-center text-[10px] text-muted-foreground border-t">
                   ···
                 </div>
-                <div className="grid grid-cols-[40px_1fr_auto_auto] sm:grid-cols-[40px_1fr_80px_80px_60px] items-center px-4 py-3 border-t bg-primary/5 border-l-2 border-l-primary">
+                <div className="grid grid-cols-[40px_1fr_80px_60px] items-center px-4 py-3 border-t bg-primary/5 border-l-2 border-l-primary">
                   <div className="flex items-center justify-center">
-                    <span className="text-xs font-mono text-muted-foreground">{myEntry.rank}</span>
+                    <span className="text-xs font-bold font-mono text-muted-foreground">#{myEntry.rank}</span>
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">
                       {myEntry.display_name}
-                      <span className="text-[10px] text-primary ml-1.5">YOU</span>
+                      <span className="text-[10px] text-muted-foreground ml-1.5">• YOU</span>
                     </p>
-                    <p className={cn("text-[11px] font-medium", TIER_COLORS[myEntry.skill_tier] ?? "text-muted-foreground")}>
-                      <span className={cn("inline-block rounded-full px-1.5 py-0 text-[9px]", TIER_BG[myEntry.skill_tier])}>
-                        {myEntry.skill_tier}
-                      </span>
-                    </p>
+                    <span className={cn(
+                      "inline-block rounded-full px-1.5 py-0 text-[9px] font-medium",
+                      TIER_BG[myEntry.skill_tier],
+                      TIER_COLORS[myEntry.skill_tier] ?? "text-muted-foreground"
+                    )}>
+                      {myEntry.skill_tier}
+                    </span>
                   </div>
-                  <p className="text-xs text-muted-foreground text-right hidden sm:block">{myEntry.solve_count}</p>
                   <p className="font-mono text-sm font-bold text-foreground text-right">{myEntry.rating}</p>
-                  <div className="text-right hidden sm:block">
+                  <div className="text-right">
                     <RatingChange current={myEntry.rating} previous={myEntry.previous_rating} />
                   </div>
                 </div>
               </>
             )}
           </div>
+          </TooltipProvider>
         )}
       </div>
     </Layout>
