@@ -52,8 +52,6 @@ const SharedCraftPuzzle = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const interactionMarked = React.useRef(false);
-  // Track whether this is a recipient-specific link
-  const recipientId = React.useRef<string | null>(null);
 
   useEffect(() => {
     if (!id) { setError(true); setLoading(false); return; }
@@ -76,32 +74,6 @@ const SharedCraftPuzzle = () => {
         }
       }
 
-      // Fallback: check if this is a recipient-specific link
-      const { data: recData } = await supabase
-        .from("craft_recipients" as any)
-        .select("puzzle_id")
-        .eq("id", id)
-        .single();
-
-      if (recData) {
-        recipientId.current = id;
-        const parentId = (recData as any).puzzle_id;
-        const { data: parentData } = await supabase
-          .from("shared_puzzles" as any)
-          .select("payload")
-          .eq("id", parentId)
-          .single();
-
-        if (parentData) {
-          const p = (parentData as any).payload as CraftPayload;
-          if (p?.type && p?.puzzleData) {
-            setPayload(p);
-            setLoading(false);
-            return;
-          }
-        }
-      }
-
       setError(true);
       setLoading(false);
     };
@@ -112,43 +84,23 @@ const SharedCraftPuzzle = () => {
   const markStarted = useCallback(() => {
     if (!id || interactionMarked.current) return;
     interactionMarked.current = true;
-    const now = new Date().toISOString();
-    if (recipientId.current) {
-      supabase
-        .from("craft_recipients" as any)
-        .update({ started_at: now } as any)
-        .eq("id", recipientId.current)
-        .is("started_at" as any, null)
-        .then();
-    } else {
-      supabase
-        .from("shared_puzzles" as any)
-        .update({ started_at: now } as any)
-        .eq("id", id)
-        .is("started_at" as any, null)
-        .then();
-    }
+    supabase
+      .from("shared_puzzles" as any)
+      .update({ started_at: new Date().toISOString() } as any)
+      .eq("id", id)
+      .is("started_at" as any, null)
+      .then();
   }, [id]);
 
   const handleComplete = useCallback(() => {
     setSolved(true);
     if (!id) return;
-    const now = new Date().toISOString();
-    if (recipientId.current) {
-      supabase
-        .from("craft_recipients" as any)
-        .update({ completed_at: now } as any)
-        .eq("id", recipientId.current)
-        .is("completed_at" as any, null)
-        .then();
-    } else {
-      supabase
-        .from("shared_puzzles" as any)
-        .update({ completed_at: now } as any)
-        .eq("id", id)
-        .is("completed_at" as any, null)
-        .then();
-    }
+    supabase
+      .from("shared_puzzles" as any)
+      .update({ completed_at: new Date().toISOString() } as any)
+      .eq("id", id)
+      .is("completed_at" as any, null)
+      .then();
   }, [id]);
 
   if (loading) {

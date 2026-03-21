@@ -27,7 +27,6 @@ import {
 } from "@/lib/craftShare";
 import {
   type CraftDraft,
-  type CraftRecipient,
   generateDraftId,
   saveDraft,
   deleteDraft,
@@ -73,7 +72,7 @@ const CraftPuzzle = () => {
   const [draftCount, setDraftCount] = useState(() => loadDrafts().length);
   const [draftSaved, setDraftSaved] = useState(false);
   const [enteredFromDraft, setEnteredFromDraft] = useState(false);
-  const [recipientInput, setRecipientInput] = useState("");
+  
   const sentRecorded = useRef(false);
 
   // Active draft ID for auto-save
@@ -159,13 +158,6 @@ const CraftPuzzle = () => {
     }
   }, [selectedType, wordInput, phraseInput, clueEntries, craftSettings.difficulty, toast]);
 
-  /** Parse recipient names from comma/newline input */
-  const parseRecipients = useCallback((): string[] => {
-    return recipientInput
-      .split(/[,\n]+/)
-      .map((n) => n.trim())
-      .filter(Boolean);
-  }, [recipientInput]);
 
   /** Generate + save to DB + create share URL (first time only) */
   const handleGenerate = useCallback(async () => {
@@ -201,16 +193,6 @@ const CraftPuzzle = () => {
         return;
       }
 
-      // Create per-recipient records if any
-      const names = parseRecipients();
-      if (names.length > 0) {
-        const rows = names.map((name) => ({
-          id: generateShortId(),
-          puzzle_id: shortId,
-          recipient_name: name,
-        }));
-        await supabase.from("craft_recipients" as any).insert(rows as any);
-      }
 
       const url = buildCraftShareUrl(shortId);
       setShareUrl(url);
@@ -223,7 +205,7 @@ const CraftPuzzle = () => {
     } finally {
       setSaving(false);
     }
-  }, [selectedType, buildPuzzleData, revealMessage, puzzleTitle, puzzleFrom, craftSettings, toast, parseRecipients]);
+  }, [selectedType, buildPuzzleData, revealMessage, puzzleTitle, puzzleFrom, craftSettings, toast]);
 
   /** Regenerate — only refreshes puzzle data + updates DB, stays in draft */
   const handleRegenerate = useCallback(async () => {
@@ -276,13 +258,6 @@ const CraftPuzzle = () => {
       activeDraftId.current = null;
     }
 
-    // Build recipients list from craft_recipients created during generate
-    const names = parseRecipients();
-    const recipients: CraftRecipient[] | undefined =
-      names.length > 0
-        ? names.map((name) => ({ id: generateShortId(), name }))
-        : undefined;
-
     addSentItem({
       id: shareId,
       shareId,
@@ -292,10 +267,9 @@ const CraftPuzzle = () => {
       revealMessage,
       shareUrl,
       sentAt: Date.now(),
-      recipients,
     });
     refreshDraftCount();
-  }, [shareUrl, selectedType, puzzleTitle, puzzleFrom, revealMessage, refreshDraftCount, parseRecipients]);
+  }, [shareUrl, selectedType, puzzleTitle, puzzleFrom, revealMessage, refreshDraftCount]);
 
   const handleCopyLink = async () => {
     if (!shareUrl) return;
@@ -381,7 +355,6 @@ const CraftPuzzle = () => {
     setRevealMessage("");
     setPuzzleTitle("");
     setPuzzleFrom("");
-    setRecipientInput("");
     setCraftSettings(DEFAULT_CRAFT_SETTINGS);
     setGeneratedData(null);
     setShareUrl(null);
@@ -441,7 +414,7 @@ const CraftPuzzle = () => {
             setRevealMessage("");
             setPuzzleTitle("");
             setPuzzleFrom("");
-            setRecipientInput("");
+            
             setCraftSettings(DEFAULT_CRAFT_SETTINGS);
             setGeneratedData(null);
             setShareUrl(null);
@@ -501,18 +474,6 @@ const CraftPuzzle = () => {
                       placeholder="Sylas"
                       maxLength={100}
                     />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Recipients (optional)</label>
-                    <Input
-                      value={recipientInput}
-                      onChange={e => setRecipientInput(e.target.value)}
-                      placeholder="Mom, Dad, Sarah"
-                      maxLength={200}
-                    />
-                    <p className="text-[10px] text-muted-foreground">
-                      Comma-separated names to track each recipient
-                    </p>
                   </div>
                 </div>
 
@@ -633,9 +594,7 @@ const CraftPuzzle = () => {
                     Your puzzle is ready to send
                   </h2>
                   <p className="text-xs text-muted-foreground/70">
-                    {parseRecipients().length > 0
-                      ? `Sending to ${parseRecipients().join(", ")}`
-                      : "This is exactly what they'll see"}
+                    This is exactly what they'll see
                   </p>
                 </div>
 

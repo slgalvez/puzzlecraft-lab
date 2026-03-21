@@ -15,10 +15,6 @@ export interface CraftDraft {
   updatedAt: number; // epoch ms
 }
 
-export interface CraftRecipient {
-  id: string;       // unique share-link ID for this recipient
-  name: string;     // display name
-}
 
 export interface CraftSentItem {
   id: string;
@@ -29,7 +25,6 @@ export interface CraftSentItem {
   revealMessage: string;
   shareUrl: string;
   sentAt: number; // epoch ms
-  recipients?: CraftRecipient[]; // multi-recipient entries
 }
 
 export interface CraftReceivedItem {
