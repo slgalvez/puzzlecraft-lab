@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { LoginPremiumPreview } from "@/components/account/PremiumPreview";
 
 
 const ACCESS_GRANT_KEY = "private_access_grant";
