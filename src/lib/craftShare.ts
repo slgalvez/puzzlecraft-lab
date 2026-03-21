@@ -25,19 +25,9 @@ function decodeBase64Url(value: string): string {
   return atob(padded);
 }
 
-export function buildCraftShareText(title?: string, from?: string, url?: string): string {
-  const lines: string[] = [];
-
-  if (title) lines.push(`For ${title}`);
-  if (from) lines.push(`From — ${from}`);
-  if (lines.length > 0) lines.push("");
-  lines.push("I made you a puzzle");
-  if (url) {
-    lines.push("Solve it here:");
-    lines.push(url);
-  }
-
-  return lines.join("\n");
+export function buildCraftShareText(_title?: string, _from?: string, url?: string): string {
+  if (url) return `Made this for you.\n${url}`;
+  return "Made this for you.";
 }
 
 export function isPrivateSessionAvailable(): boolean {

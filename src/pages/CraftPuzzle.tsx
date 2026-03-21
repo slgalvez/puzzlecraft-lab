@@ -292,19 +292,6 @@ const CraftPuzzle = () => {
   const handleShare = async () => {
     if (!shareUrl || !generatedData || !selectedType) return;
 
-    if (isPrivateSessionAvailable()) {
-      recordSent();
-      saveCraftMessageHandoff({
-        type: selectedType,
-        puzzleData: generatedData,
-        revealMessage,
-        title: puzzleTitle.trim() || undefined,
-        from: puzzleFrom.trim() || undefined,
-      });
-      navigate("/p/for-you");
-      return;
-    }
-
     const shareText = buildCraftShareText(
       puzzleTitle.trim() || undefined,
       puzzleFrom.trim() || undefined,
@@ -323,7 +310,18 @@ const CraftPuzzle = () => {
       return;
     }
 
-    handleCopyLink();
+    // Fallback: copy to clipboard, then navigate back
+    try {
+      await navigator.clipboard.writeText(shareText);
+      recordSent();
+      setCopied(true);
+      setShareSuccess(true);
+      toast({ title: "Puzzle link copied" });
+      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setShareSuccess(false), 1500);
+    } catch {
+      toast({ title: "Failed to copy link" });
+    }
   };
 
   const handleBack = () => {
