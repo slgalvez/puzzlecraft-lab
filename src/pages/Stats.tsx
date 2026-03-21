@@ -384,7 +384,7 @@ const Stats = () => {
         {/* Premium section */}
         {showGeneral && premiumAccess && (
           <div className="mt-12">
-            <PremiumStats />
+            <PremiumStats onDataChange={() => setDataVersion((v) => v + 1)} />
           </div>
         )}
         {showGeneral && !premiumAccess && showUpgrade && (
