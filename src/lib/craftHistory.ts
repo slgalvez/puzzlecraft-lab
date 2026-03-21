@@ -25,7 +25,6 @@ export interface CraftSentItem {
   revealMessage: string;
   shareUrl: string;
   sentAt: number; // epoch ms
-  recipients?: CraftRecipient[]; // multi-recipient entries
 }
 
 export interface CraftReceivedItem {

@@ -594,9 +594,7 @@ const CraftPuzzle = () => {
                     Your puzzle is ready to send
                   </h2>
                   <p className="text-xs text-muted-foreground/70">
-                    {parseRecipients().length > 0
-                      ? `Sending to ${parseRecipients().join(", ")}`
-                      : "This is exactly what they'll see"}
+                    This is exactly what they'll see
                   </p>
                 </div>
 

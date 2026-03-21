@@ -95,22 +95,12 @@ const SharedCraftPuzzle = () => {
   const handleComplete = useCallback(() => {
     setSolved(true);
     if (!id) return;
-    const now = new Date().toISOString();
-    if (recipientId.current) {
-      supabase
-        .from("craft_recipients" as any)
-        .update({ completed_at: now } as any)
-        .eq("id", recipientId.current)
-        .is("completed_at" as any, null)
-        .then();
-    } else {
-      supabase
-        .from("shared_puzzles" as any)
-        .update({ completed_at: now } as any)
-        .eq("id", id)
-        .is("completed_at" as any, null)
-        .then();
-    }
+    supabase
+      .from("shared_puzzles" as any)
+      .update({ completed_at: new Date().toISOString() } as any)
+      .eq("id", id)
+      .is("completed_at" as any, null)
+      .then();
   }, [id]);
 
   if (loading) {
