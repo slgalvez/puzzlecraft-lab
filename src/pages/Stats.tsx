@@ -289,7 +289,7 @@ const Stats = () => {
                     );
                   })}
                 </div>
-              </div>
+              </TooltipProvider>
             )}
           </div>
         )}
