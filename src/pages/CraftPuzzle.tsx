@@ -470,7 +470,7 @@ const CraftPuzzle = () => {
                     <Input
                       value={puzzleFrom}
                       onChange={e => setPuzzleFrom(e.target.value)}
-                      placeholder="- Sylas"
+                      placeholder="Sylas"
                       maxLength={100}
                     />
                   </div>
