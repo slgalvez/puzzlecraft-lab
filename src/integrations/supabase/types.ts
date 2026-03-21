@@ -535,6 +535,7 @@ export type Database = {
           created_at: string
           endpoint: string
           id: string
+          last_push_at: string | null
           p256dh: string
           profile_id: string
         }
@@ -543,6 +544,7 @@ export type Database = {
           created_at?: string
           endpoint: string
           id?: string
+          last_push_at?: string | null
           p256dh: string
           profile_id: string
         }
@@ -551,6 +553,7 @@ export type Database = {
           created_at?: string
           endpoint?: string
           id?: string
+          last_push_at?: string | null
           p256dh?: string
           profile_id?: string
         }
