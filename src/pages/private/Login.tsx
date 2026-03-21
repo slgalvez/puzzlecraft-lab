@@ -167,8 +167,6 @@ export default function LoginPage() {
           Exit
         </Button>
 
-        {/* Puzzlecraft+ teaser */}
-        <LoginPremiumPreview />
       </div>
     </div>);
 

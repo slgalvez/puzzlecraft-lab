@@ -305,6 +305,17 @@ export default function AccountPage() {
             </form>
           </TabsContent>
         </Tabs>
+
+        {!PUZZLECRAFT_PLUS_LAUNCHED && (
+          <button
+            onClick={() => setUpgradeOpen(true)}
+            className="w-full text-[11px] font-medium text-muted-foreground/50 hover:text-muted-foreground transition-colors py-2"
+          >
+            Puzzlecraft+ Coming Soon
+          </button>
+        )}
+
+        <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
       </div>
     </Layout>
   );
