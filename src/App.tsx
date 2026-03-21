@@ -40,6 +40,7 @@ import PrivateSettings from "./pages/private/PrivateSettings";
 import ForYou from "./pages/private/ForYou";
 
 const queryClient = new QueryClient();
+pruneStaleProgress();
 
 function NavigationTracker() {
   const location = useLocation();
