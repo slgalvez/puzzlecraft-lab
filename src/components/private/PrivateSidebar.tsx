@@ -114,7 +114,9 @@ export function PrivateSidebar() {
           0
         );
 
-        // Detect new messages per conversation
+        // Detect new messages per conversation (only from OTHER users)
+        // unread_count from backend already excludes messages sent by current user,
+        // so c.unread_count > prev.unread only triggers for incoming messages.
         if (!initialLoadRef.current) {
           for (const c of convs) {
             const prev = prevConvsRef.current[c.id];
@@ -156,11 +158,12 @@ export function PrivateSidebar() {
         msgUnread = data.unread_count || 0;
         const msgs = data.messages || [];
 
-        // Detect new messages for user role
+        // Detect new messages for user role (suppress self-notifications)
         if (!initialLoadRef.current && msgs.length > 0) {
           const lastMsg = msgs[msgs.length - 1];
           const prevAny = Object.values(prevConvsRef.current)[0];
-          if (prevAny && msgUnread > prevAny.unread && lastMsg.created_at !== prevAny.lastMsgAt) {
+          const isSelfMessage = lastMsg.sender_profile_id === user.id;
+          if (!isSelfMessage && prevAny && msgUnread > prevAny.unread && lastMsg.created_at !== prevAny.lastMsgAt) {
             let preview = lastMsg.body || "";
             if (preview.startsWith("__")) preview = "";
             if (preview.length > 50) preview = preview.slice(0, 47) + "…";
@@ -222,7 +225,17 @@ export function PrivateSidebar() {
 
       setUnreadCount(msgUnread);
       setUnsolvedPuzzles(unsolved);
-      checkUnread(msgUnread);
+
+      // Only trigger push/browser notifications if user is NOT currently viewing a conversation
+      const isInConversation =
+        location.pathname === "/p/conversation" ||
+        location.pathname.startsWith("/p/conversations/");
+      if (!isInConversation) {
+        checkUnread(msgUnread);
+      } else {
+        // Still track count so we don't fire a stale notification later
+        checkUnread(0);
+      }
 
       const overviewSeen = getSeenTimestamp(SEEN_KEY_OVERVIEW);
       const isOnOverview = location.pathname === "/p";
