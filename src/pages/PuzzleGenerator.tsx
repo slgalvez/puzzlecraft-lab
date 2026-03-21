@@ -363,17 +363,6 @@ const PuzzleGenerator = () => {
     });
   };
 
-  // Called when a Surprise Me puzzle is completed — updates adaptive difficulty
-  const handleSurpriseComplete = useCallback((perf: PuzzlePerformance) => {
-    if (mode !== "random" || !category) return;
-    const current = surpriseDiffMap[category];
-    const { next } = computeNextDifficulty(current, perf);
-    setSurpriseDiffMap((prev) => {
-      const updated = { ...prev, [category]: next };
-      localStorage.setItem(SURPRISE_DIFF_KEY, JSON.stringify(updated));
-      return updated;
-    });
-  }, [mode, category, surpriseDiffMap, SURPRISE_DIFF_KEY]);
 
   const activeTimeLimit = timeLimitEnabled ? (timeLimitMinutes * 60 + timeLimitSeconds) : undefined;
 
