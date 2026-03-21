@@ -5,11 +5,13 @@ import Layout from "@/components/layout/Layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Mail, Lock, User } from "lucide-react";
+import { ArrowLeft, Mail, Lock, User, Sparkles } from "lucide-react";
+import UpgradeModal from "@/components/account/UpgradeModal";
 
 export default function AccountPage() {
   const navigate = useNavigate();
-  const { account, signIn, signUp, signOut } = useUserAccount();
+  const { account, signIn, signUp, signOut, subscribed, subscriptionEnd, openCustomerPortal } = useUserAccount();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [tab, setTab] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -43,9 +45,33 @@ export default function AccountPage() {
               Your progress is synced across devices automatically.
             </p>
           </div>
+
+          {/* Subscription status */}
+          {subscribed ? (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">Puzzlecraft+</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Active{subscriptionEnd ? ` · Renews ${new Date(subscriptionEnd).toLocaleDateString()}` : ""}
+              </p>
+              <Button variant="outline" size="sm" onClick={() => openCustomerPortal()}>
+                Manage Subscription
+              </Button>
+            </div>
+          ) : (
+            <Button variant="outline" className="w-full gap-2" onClick={() => setUpgradeOpen(true)}>
+              <Sparkles size={14} />
+              Upgrade to Puzzlecraft+
+            </Button>
+          )}
+
           <Button variant="outline" className="w-full" onClick={() => { signOut(); navigate("/"); }}>
             Sign Out
           </Button>
+
+          <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
         </div>
       </Layout>
     );

@@ -29,6 +29,13 @@ interface UserAccountContextType {
   /** True when local data exists and user just authenticated — triggers merge modal */
   pendingMerge: boolean;
   resolveMerge: (strategy: "merge" | "keep-account") => Promise<void>;
+  /** Subscription state */
+  subscribed: boolean;
+  subscriptionEnd: string | null;
+  checkingSubscription: boolean;
+  refreshSubscription: () => Promise<void>;
+  startCheckout: () => Promise<void>;
+  openCustomerPortal: () => Promise<void>;
 }
 
 const UserAccountContext = createContext<UserAccountContextType | null>(null);
@@ -163,18 +170,36 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [pendingMerge, setPendingMerge] = useState(false);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  const [subscribed, setSubscribed] = useState(false);
+  const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState(false);
+
+  const refreshSubscription = useCallback(async () => {
+    try {
+      setCheckingSubscription(true);
+      const { data, error } = await supabase.functions.invoke("check-subscription");
+      if (!error && data) {
+        setSubscribed(!!data.subscribed);
+        setSubscriptionEnd(data.subscription_end ?? null);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setCheckingSubscription(false);
+    }
+  }, []);
 
   const handleSession = useCallback(async (session: Session | null, event?: string) => {
     if (!session?.user) {
       setAccount(null);
+      setSubscribed(false);
+      setSubscriptionEnd(null);
       setLoading(false);
       return;
     }
     const profile = await fetchProfile(session.user.id);
     setAccount(profile);
 
-    // Only prompt merge on a fresh sign-in, not on token refreshes or initial session restore.
-    // Use a localStorage flag keyed to the user ID so it's only shown once per account.
     const mergeKey = `${MERGE_HANDLED_KEY}-${session.user.id}`;
     const alreadyHandled = localStorage.getItem(mergeKey) === "1";
 
@@ -182,7 +207,6 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
       setPendingMerge(true);
       setPendingUserId(session.user.id);
     } else if (!alreadyHandled && !hasLocalData()) {
-      // No local data and first time — pull from DB and mark handled
       await pullProgressFromDb(session.user.id);
       localStorage.setItem(mergeKey, "1");
     }
@@ -203,12 +227,20 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [handleSession]);
 
+  // Check subscription when account loads and periodically
+  useEffect(() => {
+    if (!account) return;
+    refreshSubscription();
+    const interval = setInterval(refreshSubscription, 60_000);
+    return () => clearInterval(interval);
+  }, [account, refreshSubscription]);
+
   // Sync progress to DB periodically for logged-in users
   useEffect(() => {
     if (!account) return;
     const interval = setInterval(() => {
       pushProgressToDb(account.id);
-    }, 60_000); // every 60s
+    }, 60_000);
     return () => clearInterval(interval);
   }, [account]);
 
@@ -234,11 +266,12 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     if (account) {
       await pushProgressToDb(account.id);
-      // Clear merge-handled flag so a future login can re-prompt if new local data appears
       localStorage.removeItem(`${MERGE_HANDLED_KEY}-${account.id}`);
     }
     await supabase.auth.signOut();
     setAccount(null);
+    setSubscribed(false);
+    setSubscriptionEnd(null);
   }, [account]);
 
   const resolveMerge = useCallback(async (strategy: "merge" | "keep-account") => {
@@ -248,14 +281,41 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
     } else {
       await pullProgressFromDb(pendingUserId);
     }
-    // Mark as handled so modal never reopens for this account
     localStorage.setItem(`${MERGE_HANDLED_KEY}-${pendingUserId}`, "1");
     setPendingMerge(false);
     setPendingUserId(null);
   }, [pendingUserId]);
 
+  const startCheckout = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout");
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (e) {
+      console.error("Checkout error:", e);
+    }
+  }, []);
+
+  const openCustomerPortal = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("customer-portal");
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (e) {
+      console.error("Portal error:", e);
+    }
+  }, []);
+
   return (
-    <UserAccountContext.Provider value={{ account, loading, signUp, signIn, signOut, pendingMerge, resolveMerge }}>
+    <UserAccountContext.Provider value={{
+      account, loading, signUp, signIn, signOut, pendingMerge, resolveMerge,
+      subscribed, subscriptionEnd, checkingSubscription, refreshSubscription,
+      startCheckout, openCustomerPortal,
+    }}>
       {children}
     </UserAccountContext.Provider>
   );

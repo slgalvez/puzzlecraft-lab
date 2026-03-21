@@ -6,11 +6,14 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puz
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { getDailyStreak, getTotalDailyCompleted } from "@/lib/dailyChallenge";
 import { getEndlessStats } from "@/lib/endlessHistory";
-import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from "lucide-react";
+import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
+import { useUserAccount } from "@/contexts/UserAccountContext";
+import UpgradeModal from "@/components/account/UpgradeModal";
+import PremiumLockedCard from "@/components/account/PremiumLockedCard";
 
 type ViewFilter = null | "daily" | "endless";
 
@@ -26,6 +29,8 @@ const Stats = () => {
   const dailyStreak = useMemo(() => getDailyStreak(), []);
   const dailyCompleted = useMemo(() => getTotalDailyCompleted(), []);
   const endlessStats = useMemo(() => getEndlessStats(), []);
+  const { subscribed } = useUserAccount();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const [viewFilter, setViewFilter] = useState<ViewFilter>(null);
   const [categoryFilter, setCategoryFilter] = useState<PuzzleCategory | null>(null);
@@ -426,7 +431,16 @@ const Stats = () => {
             </div>
           </div>
         )}
+
+        {/* Premium locked section */}
+        {showGeneral && !subscribed && (
+          <div className="mt-12">
+            <PremiumLockedCard onUpgrade={() => setUpgradeOpen(true)} />
+          </div>
+        )}
       </div>
+
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </Layout>
   );
 };
