@@ -3,13 +3,17 @@
  * Shows solve history, personal bests, average performance, and accuracy insights.
  * Data source: solveTracker records (completed solves only).
  */
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { getSolveRecords, getSolveSummary, type SolveRecord } from "@/lib/solveTracker";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
-import { Clock, Trophy, Target, BarChart3, Sparkles, Zap, CheckCircle } from "lucide-react";
+import { Clock, Trophy, Target, BarChart3, Sparkles, Zap, CheckCircle, FlaskConical, Trash2 } from "lucide-react";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
+import { generateDemoSolves, clearDemoSolves, hasDemoData } from "@/lib/demoStats";
+import { useUserAccount } from "@/contexts/UserAccountContext";
+import { hasPremiumAccess } from "@/lib/premiumAccess";
+import { Button } from "@/components/ui/button";
 
 const MIN_SOLVES_FOR_AVG = 2;
 
@@ -19,16 +23,48 @@ const ALL_CATEGORIES: PuzzleCategory[] = [
 ];
 
 export default function PremiumStats() {
-  const records = useMemo(() => getSolveRecords(), []);
-  const summary = useMemo(() => getSolveSummary(), []);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const { account, subscribed } = useUserAccount();
+  const isAdmin = account?.isAdmin ?? false;
+  const records = useMemo(() => getSolveRecords(), [refreshKey]);
+  const summary = useMemo(() => getSolveSummary(), [refreshKey]);
+  const demoActive = useMemo(() => hasDemoData(), [refreshKey]);
+
+  const handleGenerate = useCallback(() => {
+    generateDemoSolves(25);
+    setRefreshKey((k) => k + 1);
+  }, []);
+
+  const handleClear = useCallback(() => {
+    clearDemoSolves();
+    setRefreshKey((k) => k + 1);
+  }, []);
+
+  const adminControls = isAdmin && (
+    <div className="flex items-center gap-2 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2">
+      <FlaskConical size={14} className="text-primary" />
+      <span className="text-xs font-medium text-primary">Admin</span>
+      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleGenerate}>
+        Generate Demo Data
+      </Button>
+      {demoActive && (
+        <Button size="sm" variant="outline" className="h-7 text-xs text-destructive border-destructive/30 hover:bg-destructive/10" onClick={handleClear}>
+          <Trash2 size={12} className="mr-1" /> Clear Demo
+        </Button>
+      )}
+    </div>
+  );
 
   if (!summary || records.length === 0) {
     return (
-      <div className="rounded-xl border border-primary/20 bg-card p-6 text-center">
-        <Sparkles className="mx-auto h-6 w-6 text-primary mb-3" />
-        <p className="text-sm text-muted-foreground">
-          Complete some puzzles to unlock advanced analytics.
-        </p>
+      <div className="space-y-3">
+        {adminControls}
+        <div className="rounded-xl border border-primary/20 bg-card p-6 text-center">
+          <Sparkles className="mx-auto h-6 w-6 text-primary mb-3" />
+          <p className="text-sm text-muted-foreground">
+            Complete some puzzles to unlock advanced analytics.
+          </p>
+        </div>
       </div>
     );
   }
@@ -61,6 +97,12 @@ export default function PremiumStats() {
 
   return (
     <div className="space-y-8">
+      {adminControls}
+      {demoActive && (
+        <p className="text-xs text-primary/60 italic">
+          ⚡ Viewing demo data — not from real solves
+        </p>
+      )}
       <div className="flex items-center gap-2">
         <Sparkles className="h-5 w-5 text-primary" />
         <h2 className="font-display text-xl font-semibold text-foreground">
