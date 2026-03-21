@@ -39,6 +39,7 @@ interface Props {
     seed?: number;
     dailyCode?: string;
   };
+  saveStatus?: "idle" | "saving" | "saved";
 }
 
 const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintCount = 0, maxHints, isRevealed, puzzleCode, solveData }: Props) => {
