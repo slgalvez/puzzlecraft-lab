@@ -71,6 +71,7 @@ const CraftPuzzle = () => {
   const [craftSettings, setCraftSettings] = useState<CraftSettings>(DEFAULT_CRAFT_SETTINGS);
   const [draftCount, setDraftCount] = useState(() => loadDrafts().length);
   const [draftSaved, setDraftSaved] = useState(false);
+  const [draftDirty, setDraftDirty] = useState(true);
   const [enteredFromDraft, setEnteredFromDraft] = useState(false);
   
   const sentRecorded = useRef(false);
