@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import AccountHeaderButton from "@/components/account/AccountHeaderButton";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -48,14 +49,21 @@ const Header = () => {
           ))}
         </nav>
 
-        {/* Mobile toggle */}
-        <button
-          className="inline-flex items-center justify-center rounded-md p-2 text-foreground md:hidden"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label={mobileOpen ? "Close menu" : "Open menu"}
-        >
-          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Account button - desktop */}
+          <div className="hidden md:block">
+            <AccountHeaderButton />
+          </div>
+
+          {/* Mobile toggle */}
+          <button
+            className="inline-flex items-center justify-center rounded-md p-2 text-foreground md:hidden"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          >
+            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile nav */}
@@ -76,6 +84,9 @@ const Header = () => {
               {link.label}
             </Link>
           ))}
+          <div className="mt-2 px-3">
+            <AccountHeaderButton />
+          </div>
         </nav>
       )}
     </header>

@@ -591,6 +591,60 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          is_premium: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+          is_premium?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          is_premium?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_progress: {
+        Row: {
+          completions: Json
+          daily_data: Json
+          endless_data: Json
+          id: string
+          solves: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completions?: Json
+          daily_data?: Json
+          endless_data?: Json
+          id?: string
+          solves?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completions?: Json
+          daily_data?: Json
+          endless_data?: Json
+          id?: string
+          solves?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
