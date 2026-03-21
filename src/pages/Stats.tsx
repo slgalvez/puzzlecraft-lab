@@ -303,9 +303,8 @@ const Stats = () => {
 
             {/* Show category stats card when a type is selected */}
             {categoryFilter && stats.byCategory[categoryFilter] && (
-              <div className="mt-4 rounded-xl border bg-card p-4">
+               <div className="mt-4 rounded-xl border bg-card p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-lg">{CATEGORY_INFO[categoryFilter]?.icon}</span>
                   <span className="font-display text-sm font-semibold text-primary">
                     {CATEGORY_INFO[categoryFilter]?.name}
                   </span>

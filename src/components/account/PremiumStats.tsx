@@ -58,7 +58,8 @@ function TrendBadge({ trend, invertColor }: { trend: "up" | "down" | "flat"; inv
   );
 }
 
-const MILESTONE_ICONS: Record<MilestoneIcon, React.ComponentType<{ size?: number; className?: string }>> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const MILESTONE_ICONS: Record<MilestoneIcon, any> = {
   puzzle: Puzzle,
   flame: Flame,
   trophy: Trophy,
