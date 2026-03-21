@@ -50,24 +50,47 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [solveStatuses, setSolveStatuses] = useState<Record<string, "sent" | "in_progress" | "completed">>({});
+  // Per-recipient statuses keyed by puzzle shareId → array of { name, status }
+  const [recipientStatuses, setRecipientStatuses] = useState<Record<string, { name: string; status: "sent" | "in_progress" | "completed" }[]>>({});
 
   // Fetch solve statuses for sent items from DB
   useEffect(() => {
     if (sent.length === 0) return;
     const shareIds = sent.map((s) => s.shareId);
+    const hasRecipients = sent.some((s) => s.recipients && s.recipients.length > 0);
+
     (async () => {
+      // Fetch puzzle-level statuses
       const { data } = await supabase
         .from("shared_puzzles" as any)
         .select("id, started_at, completed_at")
         .in("id", shareIds);
-      if (!data) return;
-      const map: Record<string, "sent" | "in_progress" | "completed"> = {};
-      for (const row of data as any[]) {
-        if (row.completed_at) map[row.id] = "completed";
-        else if (row.started_at) map[row.id] = "in_progress";
-        else map[row.id] = "sent";
+      if (data) {
+        const map: Record<string, "sent" | "in_progress" | "completed"> = {};
+        for (const row of data as any[]) {
+          if (row.completed_at) map[row.id] = "completed";
+          else if (row.started_at) map[row.id] = "in_progress";
+          else map[row.id] = "sent";
+        }
+        setSolveStatuses(map);
       }
-      setSolveStatuses(map);
+
+      // Fetch per-recipient statuses
+      if (hasRecipients) {
+        const { data: recData } = await supabase
+          .from("craft_recipients" as any)
+          .select("puzzle_id, recipient_name, started_at, completed_at")
+          .in("puzzle_id", shareIds);
+        if (recData) {
+          const rMap: Record<string, { name: string; status: "sent" | "in_progress" | "completed" }[]> = {};
+          for (const row of recData as any[]) {
+            const status: "sent" | "in_progress" | "completed" = row.completed_at ? "completed" : row.started_at ? "in_progress" : "sent";
+            if (!rMap[row.puzzle_id]) rMap[row.puzzle_id] = [];
+            rMap[row.puzzle_id].push({ name: row.recipient_name, status });
+          }
+          setRecipientStatuses(rMap);
+        }
+      }
     })();
   }, [sent]);
 
