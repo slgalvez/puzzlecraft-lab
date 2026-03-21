@@ -55,10 +55,8 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
   useEffect(() => {
     if (sent.length === 0) return;
     const shareIds = sent.map((s) => s.shareId);
-    const hasRecipients = sent.some((s) => s.recipients && s.recipients.length > 0);
 
     (async () => {
-      // Fetch puzzle-level statuses
       const { data } = await supabase
         .from("shared_puzzles" as any)
         .select("id, started_at, completed_at")
@@ -71,23 +69,6 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
           else map[row.id] = "sent";
         }
         setSolveStatuses(map);
-      }
-
-      // Fetch per-recipient statuses
-      if (hasRecipients) {
-        const { data: recData } = await supabase
-          .from("craft_recipients" as any)
-          .select("puzzle_id, recipient_name, started_at, completed_at")
-          .in("puzzle_id", shareIds);
-        if (recData) {
-          const rMap: Record<string, { name: string; status: "sent" | "in_progress" | "completed" }[]> = {};
-          for (const row of recData as any[]) {
-            const status: "sent" | "in_progress" | "completed" = row.completed_at ? "completed" : row.started_at ? "in_progress" : "sent";
-            if (!rMap[row.puzzle_id]) rMap[row.puzzle_id] = [];
-            rMap[row.puzzle_id].push({ name: row.recipient_name, status });
-          }
-          setRecipientStatuses(rMap);
-        }
       }
     })();
   }, [sent]);
