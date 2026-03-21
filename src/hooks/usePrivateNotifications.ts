@@ -2,7 +2,6 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import {
   dispatchNotification,
-  sendPushNotification,
   getNotificationsEnabled,
   subscribeToPush,
   type NotifyEventType,
