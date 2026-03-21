@@ -6,7 +6,7 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puz
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { getDailyStreak, getTotalDailyCompleted } from "@/lib/dailyChallenge";
 import { getEndlessStats } from "@/lib/endlessHistory";
-import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, Shield, Zap, Info } from "lucide-react";
+import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, Shield, Zap, Info, Sparkles } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PremiumStats from "@/components/account/PremiumStats";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { useUserAccount } from "@/contexts/UserAccountContext";
 import UpgradeModal from "@/components/account/UpgradeModal";
-import PremiumLockedCard from "@/components/account/PremiumLockedCard";
 import { hasPremiumAccess, shouldShowUpgradeCTA } from "@/lib/premiumAccess";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 import { checkMilestones } from "@/lib/milestones";
@@ -45,13 +44,13 @@ const Stats = () => {
   const showUpgrade = shouldShowUpgradeCTA({ isAdmin, subscribed });
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
-  // Local rating for Your Rank card
+  // Local rating for Your Rank card (premium only)
   const localRating = useMemo(() => {
+    if (!premiumAccess) return null;
     const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
     if (recs.length < 10) return null;
     const rating = computePlayerRating(recs);
     const tier = getSkillTier(rating);
-    // Compute personal best rating from all rolling windows
     let bestRating = rating;
     const WINDOW = 25;
     for (let i = 1; i <= Math.max(0, recs.length - 10); i++) {
@@ -60,9 +59,9 @@ const Stats = () => {
       if (r > bestRating) bestRating = r;
     }
     return { rating, tier, solveCount: recs.length, bestRating };
-  }, [dataVersion]);
+  }, [dataVersion, premiumAccess]);
 
-  // Fetch user's leaderboard entry for rank position and rating change
+  // Fetch user's leaderboard entry for rank position and rating change (premium only)
   const { data: myLeaderboardEntry } = useQuery({
     queryKey: ["my-leaderboard-entry", account?.id, dataVersion],
     queryFn: async () => {
@@ -193,7 +192,7 @@ const Stats = () => {
           )}
         </p>
 
-        {/* Your Rank Card — premium users */}
+        {/* Your Rank Card — premium users only */}
         {showGeneral && premiumAccess && localRating && (
           <div className={cn(
             "mt-6 rounded-2xl border bg-card p-5 transition-all",
@@ -207,7 +206,7 @@ const Stats = () => {
                   <Zap size={16} className="text-primary" />
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your Rank</span>
                   {myLeaderboardEntry && (
-                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                    <span className="font-mono font-bold text-sm text-primary">
                       #{myLeaderboardEntry.rank}
                     </span>
                   )}
@@ -552,20 +551,23 @@ const Stats = () => {
           </div>
         )}
 
-        {/* Premium section */}
+        {/* Premium section — full analytics */}
         {showGeneral && premiumAccess && (
           <div className="mt-12">
             <PremiumStats onDataChange={() => setDataVersion((v) => v + 1)} />
           </div>
         )}
-        {showGeneral && !premiumAccess && showUpgrade && (
-          <div className="mt-12">
-            <PremiumLockedCard onUpgrade={() => setUpgradeOpen(true)} />
-          </div>
-        )}
-        {showGeneral && !premiumAccess && !showUpgrade && (
-          <div className="mt-12">
-            <PremiumLockedCard comingSoon />
+
+        {/* Subtle upgrade nudge for free users (no locked UI, no clutter) */}
+        {showGeneral && !premiumAccess && showUpgrade && stats.totalSolved > 0 && (
+          <div className="mt-12 text-center">
+            <button
+              onClick={() => setUpgradeOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+            >
+              <Sparkles size={12} />
+              Unlock performance tracking with Puzzlecraft+
+            </button>
           </div>
         )}
       </div>
