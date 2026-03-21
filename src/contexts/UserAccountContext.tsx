@@ -29,6 +29,13 @@ interface UserAccountContextType {
   /** True when local data exists and user just authenticated — triggers merge modal */
   pendingMerge: boolean;
   resolveMerge: (strategy: "merge" | "keep-account") => Promise<void>;
+  /** Subscription state */
+  subscribed: boolean;
+  subscriptionEnd: string | null;
+  checkingSubscription: boolean;
+  refreshSubscription: () => Promise<void>;
+  startCheckout: () => Promise<void>;
+  openCustomerPortal: () => Promise<void>;
 }
 
 const UserAccountContext = createContext<UserAccountContextType | null>(null);
