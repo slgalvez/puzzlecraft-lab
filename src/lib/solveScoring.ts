@@ -18,7 +18,7 @@ const DIFFICULTY_MULT: Record<Difficulty, number> = {
   medium: 1.0,
   hard: 1.4,
   extreme: 1.9,
-  insane: 2.5,
+  insane: 2.8,
 };
 
 // ── Expected solve times (seconds) per type × difficulty ──
