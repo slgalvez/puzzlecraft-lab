@@ -362,6 +362,27 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, serviceRoleKey);
 
+    // ── DIAGNOSTIC (temporary) ──
+    if (action === "diagnostic") {
+      const keyCheck = await verifyVapidKeyPair();
+      const { data: subs } = await sb
+        .from("push_subscriptions")
+        .select("endpoint, p256dh, auth, profile_id, created_at")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      return json({
+        vapid_key_pair: keyCheck,
+        public_key_in_function: VAPID_PUBLIC_KEY,
+        subscriptions: (subs || []).map((s: any) => ({
+          profile_id: s.profile_id,
+          endpoint_host: new URL(s.endpoint).hostname,
+          has_p256dh: !!s.p256dh,
+          has_auth: !!s.auth,
+          created_at: s.created_at,
+        })),
+      });
+    }
+
     // ── SUBSCRIBE ──
     if (action === "subscribe") {
       const user = await verifyToken(token);
