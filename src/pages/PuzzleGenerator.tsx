@@ -793,77 +793,42 @@ const PuzzleGenerator = () => {
     </div>
   );
 
-  const renderDesktopRandom = () => (
-    <div className="max-w-md space-y-8">
-      <div className="text-center">
-        <Dices size={40} className="mx-auto text-primary mb-3" />
-        <h2 className="font-display text-2xl font-bold text-foreground">Surprise Me</h2>
-        <p className="text-sm text-muted-foreground mt-2">
-          We'll pick a random puzzle type and difficulty — just click and play
-        </p>
-      </div>
-
-      {/* Collapsible Settings */}
-      <Collapsible open={randomSettingsOpen} onOpenChange={setRandomSettingsOpen}>
-        <CollapsibleTrigger className="mx-auto flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-          <ChevronDown size={14} className={cn("transition-transform", randomSettingsOpen && "rotate-180")} />
-          Settings
-        </CollapsibleTrigger>
-        <CollapsibleContent className="mt-3 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Switch checked={timeLimitEnabled} onCheckedChange={setTimeLimitEnabled} id="random-timer-desktop" />
-              <label htmlFor="random-timer-desktop" className="flex items-center gap-1.5 text-sm font-medium text-foreground cursor-pointer">
-                <Clock size={14} className="text-muted-foreground" /> Timer
-              </label>
+  const renderDesktopRandom = () => {
+    if (puzzleGenerated && category && info && difficulty) {
+      // Show puzzle in-place with compact header
+      return (
+        <div className="animate-in fade-in duration-200">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <PuzzleIcon type={category} size={22} className="text-foreground" />
+              <span className="font-medium text-foreground">{info.name}</span>
+              <span className="text-sm text-muted-foreground capitalize">· {DIFFICULTY_LABELS[getEffectiveDifficulty(category, difficulty)]}</span>
             </div>
-            {timeLimitEnabled && (
-              <div className="ml-10 flex items-center gap-1.5">
-                <Input type="number" min={0} max={120} value={timeLimitMinutes} onChange={(e) => setTimeLimitMinutes(Math.max(0, Math.min(120, parseInt(e.target.value) || 0)))} className="w-16 h-8 text-center text-sm" />
-                <span className="text-xs text-muted-foreground">min</span>
-                <Input type="number" min={0} max={59} value={timeLimitSeconds} onChange={(e) => setTimeLimitSeconds(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))} className="w-16 h-8 text-center text-sm" />
-                <span className="text-xs text-muted-foreground">sec</span>
-              </div>
-            )}
+            <Button onClick={handleRandomGenerate} size="sm" variant="outline" className="gap-1.5">
+              <Dices size={14} /> Next Surprise
+            </Button>
           </div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Switch checked={hintsEnabled} onCheckedChange={setHintsEnabled} id="random-hints-desktop" />
-              <label htmlFor="random-hints-desktop" className="flex items-center gap-1.5 text-sm font-medium text-foreground cursor-pointer">
-                <Lightbulb size={14} className="text-muted-foreground" /> Hints
-              </label>
-            </div>
-            {hintsEnabled && (
-              <div className="ml-10 flex items-center gap-1.5">
-                <span className="text-xs text-muted-foreground mr-1">Limit:</span>
-                {hintLimits.map(({ value, label }) => (
-                  <button key={label} onClick={() => setHintLimit(value)} className={cn("rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors min-w-[28px]", hintLimit === value ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40")}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Switch checked={revealEnabled} onCheckedChange={setRevealEnabled} id="random-reveal-desktop" />
-            <label htmlFor="random-reveal-desktop" className="flex items-center gap-1.5 text-sm font-medium text-foreground cursor-pointer">
-              <Eye size={14} className="text-muted-foreground" /> Reveal
-            </label>
-          </div>
-          <button onClick={resetRandomSettings} className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors mt-1">
-            <RotateCcw size={11} /> Reset to defaults
-          </button>
-        </CollapsibleContent>
-      </Collapsible>
+          <div className="min-h-[300px]">{renderPuzzle()}</div>
+        </div>
+      );
+    }
 
-      <div className="text-center">
-        <Button onClick={handleRandomGenerate} size="lg" className="gap-2 text-base px-10">
-          <Dices size={18} />
-          Surprise Me
-        </Button>
+    return (
+      <div className="max-w-md">
+        <div className="text-center">
+          <Dices size={40} className="mx-auto text-primary mb-3" />
+          <h2 className="font-display text-2xl font-bold text-foreground">Surprise Me</h2>
+          <p className="text-sm text-muted-foreground mt-2 mb-8">
+            One click — instant puzzle, adaptive difficulty
+          </p>
+          <Button onClick={handleRandomGenerate} size="lg" className="gap-2 text-base px-10">
+            <Dices size={18} />
+            Surprise Me
+          </Button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <Layout>
@@ -915,9 +880,6 @@ const PuzzleGenerator = () => {
         ) : (
           <>
             {isMobile ? renderMobileRandom() : renderDesktopRandom()}
-            {puzzleGenerated && (
-              <div className="mt-10 min-h-[300px]">{renderPuzzle()}</div>
-            )}
           </>
         )}
       </div>
