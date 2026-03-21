@@ -1,9 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { RotateCcw, CheckCircle2, Shuffle, Eye, Lightbulb } from "lucide-react";
-import { useState } from "react";
+import { RotateCcw, CheckCircle2, Shuffle, Eye, Lightbulb, Bookmark } from "lucide-react";
+import { useState, useCallback } from "react";
 import CompletionPanel from "./CompletionPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Difficulty, PuzzleCategory } from "@/lib/puzzleTypes";
+import { savePuzzle, unsavePuzzle, isSaved } from "@/lib/savedPuzzles";
+import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,7 +44,32 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
   const [open, setOpen] = useState(false);
   const [showRevealConfirm, setShowRevealConfirm] = useState(false);
   const isMobile = useIsMobile();
+  const { toast } = useToast();
   const hintLimitReached = maxHints != null && hintCount >= maxHints;
+
+  // Save for later
+  const canSave = solveData?.category && solveData?.seed != null && !solveData?.isSolved && !isRevealed && !solveData?.isEndless;
+  const puzzleSaveId = canSave ? `${solveData!.category}-${solveData!.seed}-${solveData!.difficulty}` : null;
+  const [saved, setSaved] = useState(() => puzzleSaveId ? isSaved(puzzleSaveId) : false);
+
+  const toggleSave = useCallback(() => {
+    if (!puzzleSaveId || !solveData?.category || solveData?.seed == null) return;
+    if (saved) {
+      unsavePuzzle(puzzleSaveId);
+      setSaved(false);
+      toast({ title: "Removed from saved" });
+    } else {
+      savePuzzle({
+        id: puzzleSaveId,
+        category: solveData.category,
+        difficulty: solveData.difficulty,
+        seed: solveData.seed,
+        dailyCode: solveData.dailyCode,
+      });
+      setSaved(true);
+      toast({ title: "Saved for later" });
+    }
+  }, [puzzleSaveId, saved, solveData, toast]);
 
   const showCompletion = solveData?.isSolved && !solveData?.isEndless;
   const showControls = !solveData?.isSolved && !isRevealed;
