@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, ArrowLeft, RefreshCw, Share, Copy, CheckCheck } from "lucide-react";
+import { Check, ArrowLeft, RefreshCw, Share, CheckCheck, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
@@ -8,6 +8,8 @@ import { getPuzzleOrigin, getBackPath, getBackLabel } from "@/lib/puzzleOrigin";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { hapticSuccess } from "@/lib/haptic";
+import { getSolveRecords } from "@/lib/solveTracker";
+import { computePlayerRating } from "@/lib/solveScoring";
 
 interface Props {
   time: number;
@@ -18,6 +20,8 @@ interface Props {
   category?: PuzzleCategory;
   seed?: number;
   dailyCode?: string;
+  hintsUsed?: number;
+  mistakesCount?: number;
 }
 
 function buildShareData(props: {
@@ -35,8 +39,6 @@ function buildShareData(props: {
   const diffLabel = DIFFICULTY_LABELS[difficulty];
   const timeStr = formatTime(time);
 
-  // For daily puzzles, use the canonical daily code
-  const code = dailyCode ?? `${category}-${seed}-${difficulty}`;
   const shareUrl = dailyCode
     ? `${window.location.origin}/play?code=${dailyCode}`
     : `${window.location.origin}/play?code=${category}-${seed}-${difficulty}`;
@@ -48,7 +50,31 @@ function buildShareData(props: {
 
   const text = `${headline}\n\n${typeName} • ${diffLabel} • ${timeStr}\n\nThink you can beat my time?\n\nPlay: ${shareUrl}\n\nPuzzle Code: ${displayCode}`;
 
-  return { text, url: shareUrl, code, displayCode };
+  return { text, url: shareUrl, displayCode };
+}
+
+/** Compute rating change by comparing current rating with what it was before the latest solve */
+function useRatingDelta(): { delta: number; factors: string[] } | null {
+  return useMemo(() => {
+    const records = getSolveRecords().filter((r) => r.solveTime >= 10);
+    if (records.length < 11) return null;
+
+    const currentRating = computePlayerRating(records);
+    const previousRating = computePlayerRating(records.slice(1));
+    const delta = currentRating - previousRating;
+
+    const latest = records[0];
+    if (!latest) return null;
+
+    const factors: string[] = [];
+    if (latest.difficulty === "hard" || latest.difficulty === "extreme" || latest.difficulty === "insane") {
+      factors.push(`${DIFFICULTY_LABELS[latest.difficulty]} difficulty`);
+    }
+    if (latest.hintsUsed === 0) factors.push("No hints");
+    if (latest.mistakesCount <= 1) factors.push("High accuracy");
+
+    return { delta, factors };
+  }, []);
 }
 
 const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, category, seed, dailyCode }: Props) => {
@@ -60,6 +86,7 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, ca
   const isDaily = origin === "daily";
 
   const shareData = buildShareData({ category, seed, difficulty, time, isDaily, dailyCode });
+  const ratingDelta = useRatingDelta();
 
   useEffect(() => {
     hapticSuccess();
@@ -69,18 +96,12 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, ca
 
   const handleShare = async () => {
     if (!shareData) return;
-
-    // Try native share on mobile
     if (navigator.share) {
       try {
         await navigator.share({ text: shareData.text });
         return;
-      } catch {
-        // User cancelled or share failed — fall through to clipboard
-      }
+      } catch { /* fall through */ }
     }
-
-    // Clipboard fallback
     try {
       await navigator.clipboard.writeText(shareData.text);
       setCopied(true);
@@ -129,6 +150,31 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, ca
         )}
       </div>
 
+      {/* Post-solve rating feedback */}
+      {ratingDelta && ratingDelta.delta !== 0 && !assisted && (
+        <div className={cn(
+          "flex flex-wrap items-center gap-2 mb-3 px-3 py-2 rounded-lg transition-all duration-700",
+          ratingDelta.delta > 0 ? "bg-emerald-500/10" : "bg-destructive/10",
+          visible ? "opacity-100" : "opacity-0"
+        )}>
+          {ratingDelta.delta > 0
+            ? <TrendingUp size={14} className="text-emerald-500" />
+            : <TrendingDown size={14} className="text-destructive" />
+          }
+          <span className={cn(
+            "font-mono text-sm font-bold",
+            ratingDelta.delta > 0 ? "text-emerald-500" : "text-destructive"
+          )}>
+            {ratingDelta.delta > 0 ? "+" : ""}{ratingDelta.delta} Rating
+          </span>
+          {ratingDelta.factors.length > 0 && (
+            <span className="text-[11px] text-muted-foreground">
+              {ratingDelta.factors.join(" · ")}
+            </span>
+          )}
+        </div>
+      )}
+
       {assisted && (
         <p className="text-xs text-muted-foreground mb-3">
           Hints were used — this solve won't count toward your best time or streak.
@@ -155,7 +201,6 @@ const CompletionPanel = ({ time, difficulty, onPlayAgain, accuracy, assisted, ca
         </Button>
       </div>
 
-      {/* Share link + code preview */}
       {shareData && (
         <div className={cn(
           "mt-3 rounded-lg bg-muted/50 px-3 py-2.5 space-y-1 transition-all duration-500",
