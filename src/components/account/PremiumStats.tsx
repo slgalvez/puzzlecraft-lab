@@ -3,13 +3,17 @@
  * Shows solve history, personal bests, average performance, and accuracy insights.
  * Data source: solveTracker records (completed solves only).
  */
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { getSolveRecords, getSolveSummary, type SolveRecord } from "@/lib/solveTracker";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
-import { Clock, Trophy, Target, BarChart3, Sparkles, Zap, CheckCircle } from "lucide-react";
+import { Clock, Trophy, Target, BarChart3, Sparkles, Zap, CheckCircle, FlaskConical, Trash2 } from "lucide-react";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
+import { generateDemoSolves, clearDemoSolves, hasDemoData } from "@/lib/demoStats";
+import { useUserAccount } from "@/contexts/UserAccountContext";
+import { hasPremiumAccess } from "@/lib/premiumAccess";
+import { Button } from "@/components/ui/button";
 
 const MIN_SOLVES_FOR_AVG = 2;
 
