@@ -24,8 +24,6 @@ import {
   type CraftType,
   buildCraftShareText,
   buildCraftShareUrl,
-  isPrivateSessionAvailable,
-  saveCraftMessageHandoff,
 } from "@/lib/craftShare";
 import {
   type CraftDraft,
