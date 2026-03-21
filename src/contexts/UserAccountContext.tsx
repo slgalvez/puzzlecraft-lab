@@ -1,3 +1,14 @@
+/**
+ * MAIN ACCOUNT SYSTEM — Supabase Auth (email/password)
+ *
+ * Completely isolated from the secret/private system (AuthContext).
+ * Uses: supabase.auth, user_profiles table, user_progress table
+ * Storage: puzzlecraft-* localStorage keys
+ * Routes: all public routes + /account
+ *
+ * This provider must NEVER reference private_session, AuthContext,
+ * or any authorized_users/profiles/conversations tables.
+ */
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
