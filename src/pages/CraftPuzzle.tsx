@@ -93,6 +93,14 @@ const CraftPuzzle = () => {
     }
   }, [location.state]);
 
+  /* ── Mark dirty on any content change ── */
+  useEffect(() => {
+    if (step === "content" || step === "preview") {
+      setDraftDirty(true);
+      setDraftSaved(false);
+    }
+  }, [wordInput, phraseInput, clueEntries, revealMessage, puzzleTitle, puzzleFrom, craftSettings]);
+
   /* ── Auto-save draft ── */
   useEffect(() => {
     if (step !== "content" || !selectedType) return;
@@ -119,14 +127,40 @@ const CraftPuzzle = () => {
       };
       saveDraft(draft);
       refreshDraftCount();
-      setDraftSaved(true);
-      setTimeout(() => setDraftSaved(false), 1500);
     }, 2000);
 
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [step, selectedType, puzzleTitle, puzzleFrom, wordInput, phraseInput, clueEntries, revealMessage, craftSettings, refreshDraftCount]);
+
+  /** Manual save draft — works on both content and preview steps */
+  const handleSaveDraft = useCallback(() => {
+    if (!selectedType) return;
+    if (!activeDraftId.current) {
+      activeDraftId.current = generateDraftId();
+    }
+    // Clear any pending auto-save
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+
+    const draft: CraftDraft = {
+      id: activeDraftId.current,
+      type: selectedType,
+      title: puzzleTitle,
+      from: puzzleFrom,
+      wordInput,
+      phraseInput,
+      clueEntries,
+      revealMessage,
+      settings: craftSettings,
+      updatedAt: Date.now(),
+    };
+    saveDraft(draft);
+    refreshDraftCount();
+    setDraftSaved(true);
+    setDraftDirty(false);
+    setTimeout(() => setDraftSaved(false), 2000);
+  }, [selectedType, puzzleTitle, puzzleFrom, wordInput, phraseInput, clueEntries, revealMessage, craftSettings, refreshDraftCount]);
 
   const handleSelectType = (type: CraftType) => {
     setSelectedType(type);
