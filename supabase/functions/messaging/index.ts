@@ -70,6 +70,41 @@ function buildMessageQuery(
   return query;
 }
 
+async function fetchLatestConversationMessages(
+  sb: ReturnType<typeof createClient>,
+  conversationId: string,
+  now: string,
+  clearedAt: string | null,
+  limit = 200,
+) {
+  const { data, error } = await buildMessageQuery(sb, conversationId, now, clearedAt)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("[messaging] failed to fetch conversation messages", {
+      conversationId,
+      clearedAt,
+      limit,
+      error,
+    });
+    return [];
+  }
+
+  const messages = data || [];
+  const newestMessageAt = messages[0]?.created_at ?? null;
+  const oldestReturnedAt = messages[messages.length - 1]?.created_at ?? null;
+
+  console.debug("[messaging] fetched latest conversation messages", {
+    conversationId,
+    returned: messages.length,
+    newestMessageAt,
+    oldestReturnedAt,
+  });
+
+  return messages.reverse();
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -153,10 +188,8 @@ Deno.serve(async (req) => {
           .not("read_at", "is", null);
       }
 
-      // Get messages, filtering out expired ones and cleared ones
-      const { data: messages } = await buildMessageQuery(sb, conv.id, now, clearedAt)
-        .order("created_at", { ascending: true })
-        .limit(200);
+      // Get the latest visible messages without cutting off newest ones in long threads
+      const messages = await fetchLatestConversationMessages(sb, conv.id, now, clearedAt);
 
       // Count unread from admin (only after cleared_at)
       let unreadQuery = sb
@@ -506,9 +539,7 @@ Deno.serve(async (req) => {
           .not("read_at", "is", null);
       }
 
-      const { data: messages } = await buildMessageQuery(sb, conversation_id, now, clearedAt)
-        .order("created_at", { ascending: true })
-        .limit(200);
+      const messages = await fetchLatestConversationMessages(sb, conversation_id, now, clearedAt);
 
       const profile = conv.profiles as unknown as { first_name: string; last_name: string } | null;
 
