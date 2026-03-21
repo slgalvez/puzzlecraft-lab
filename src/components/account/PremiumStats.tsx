@@ -1,12 +1,20 @@
 /**
  * Puzzlecraft+ Advanced Stats — premium-only section.
  * Shows solve history, personal bests, average performance, accuracy insights,
- * skill rating, trend indicators, and no-hint rate.
+ * player rating with skill tier, trend indicators, and no-hint rate.
  */
 import { useMemo, useState, useCallback } from "react";
 import { getSolveRecords, getSolveSummary, type SolveRecord } from "@/lib/solveTracker";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory, type Difficulty } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
+import {
+  computeSolveScore,
+  computePlayerRating,
+  getSkillTier,
+  getTierColor,
+  getTierProgress,
+  trueMistakes,
+} from "@/lib/solveScoring";
 import { Clock, Trophy, Target, BarChart3, Zap, CheckCircle, FlaskConical, Trash2, TrendingUp, TrendingDown, ShieldCheck } from "lucide-react";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
@@ -14,6 +22,7 @@ import { generateDemoSolves, clearDemoSolves, hasDemoData } from "@/lib/demoStat
 import { useUserAccount } from "@/contexts/UserAccountContext";
 import { hasPremiumAccess } from "@/lib/premiumAccess";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 const MIN_SOLVES_FOR_AVG = 2;
 
@@ -21,25 +30,6 @@ const ALL_CATEGORIES: PuzzleCategory[] = [
   "crossword", "word-fill", "number-fill", "sudoku",
   "word-search", "kakuro", "nonogram", "cryptogram",
 ];
-
-// ── Skill Rating ──
-const DIFF_WEIGHT: Record<string, number> = { easy: 1, medium: 2, hard: 3, extreme: 4, insane: 5 };
-
-function computeSkillRating(records: SolveRecord[]): number {
-  if (records.length === 0) return 0;
-  // Weighted score based on difficulty, speed, and self-reliance
-  let totalScore = 0;
-  for (const r of records) {
-    const diffW = DIFF_WEIGHT[r.difficulty] ?? 2;
-    const speedBonus = Math.max(0, 1 - r.solveTime / 1200); // faster = higher (cap at 20min)
-    const hintPenalty = r.hintsUsed > 0 ? 0.7 : 1;
-    totalScore += diffW * (0.5 + speedBonus * 0.5) * hintPenalty;
-  }
-  // Normalize to 0–99 scale, using log growth
-  const raw = totalScore / records.length;
-  const rating = Math.min(99, Math.round(raw * 25));
-  return Math.max(1, rating);
-}
 
 // ── Trend helpers ──
 function computeTrend(records: SolveRecord[], getValue: (r: SolveRecord) => number): "up" | "down" | "flat" {
@@ -117,36 +107,46 @@ export default function PremiumStats() {
 
   const recent20 = records.slice(0, 20);
 
+  // ── New scoring system ──
+  const playerRating = computePlayerRating(records);
+  const skillTier = getSkillTier(playerRating);
+  const tierProgress = getTierProgress(playerRating);
+  const tierColor = getTierColor(skillTier);
+
   // Personal bests per type
-  const bestByType: { type: PuzzleCategory; time: number; difficulty: string }[] = [];
-  const avgByType: { type: PuzzleCategory; avg: number; count: number }[] = [];
-  
+  const bestByType: { type: PuzzleCategory; time: number; difficulty: string; score: number }[] = [];
+  const avgByType: { type: PuzzleCategory; avg: number; count: number; avgScore: number }[] = [];
+
   for (const cat of ALL_CATEGORIES) {
     const catRecords = records.filter((r) => r.puzzleType === cat);
     if (catRecords.length === 0) continue;
-    
+
     const best = catRecords.reduce((a, b) => (a.solveTime < b.solveTime ? a : b));
-    bestByType.push({ type: cat, time: best.solveTime, difficulty: best.difficulty });
-    
+    bestByType.push({ type: cat, time: best.solveTime, difficulty: best.difficulty, score: computeSolveScore(best) });
+
     if (catRecords.length >= MIN_SOLVES_FOR_AVG) {
       const total = catRecords.reduce((s, r) => s + r.solveTime, 0);
-      avgByType.push({ type: cat, avg: Math.round(total / catRecords.length), count: catRecords.length });
+      const totalScore = catRecords.reduce((s, r) => s + computeSolveScore(r), 0);
+      avgByType.push({
+        type: cat,
+        avg: Math.round(total / catRecords.length),
+        count: catRecords.length,
+        avgScore: Math.round(totalScore / catRecords.length),
+      });
     }
   }
 
-  // Accuracy insights
-  const totalMistakes = records.reduce((s, r) => s + r.mistakesCount, 0);
-  const avgMistakes = Math.round((totalMistakes / records.length) * 10) / 10;
+  // Accuracy insights (using forgiven mistakes)
+  const totalTrueMistakes = records.reduce((s, r) => s + trueMistakes(r), 0);
+  const avgMistakes = Math.round((totalTrueMistakes / records.length) * 10) / 10;
   const noHintSolves = records.filter((r) => r.hintsUsed === 0 && !r.assisted);
   const noHintPercent = Math.round((noHintSolves.length / records.length) * 100);
   const unassistedPercent = Math.round((summary.unassistedCount / records.length) * 100);
 
-  // Skill rating
-  const skillRating = computeSkillRating(records);
-
-  // Trends (records are newest-first from getSolveRecords)
+  // Trends (records are newest-first)
   const timeTrend = computeTrend(records, (r) => r.solveTime);
-  const accuracyTrend = computeTrend(records, (r) => r.mistakesCount);
+  const accuracyTrend = computeTrend(records, (r) => trueMistakes(r));
+  const scoreTrend = computeTrend(records, (r) => computeSolveScore(r));
 
   // No-hint rate
   const noHintRate = Math.round((noHintSolves.length / records.length) * 100);
@@ -157,7 +157,7 @@ export default function PremiumStats() {
     : avgMistakes < 2
       ? "Solid accuracy — room to tighten up on harder puzzles."
       : "Try slowing down on tricky sections to reduce mistakes.";
-  
+
   const bestInsight = bestByType.length >= 3
     ? `You've set personal bests across ${bestByType.length} puzzle types.`
     : "Keep solving to set more personal records.";
@@ -183,19 +183,25 @@ export default function PremiumStats() {
         </span>
       </div>
 
-      {/* Top metrics row: Skill Rating + No-Hint Rate */}
+      {/* Top metrics row: Player Rating + No-Hint Rate + Total Solves */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <div className="rounded-xl border bg-card p-4 text-center">
+        {/* Player Rating with tier */}
+        <div className="rounded-xl border bg-card p-4 text-center col-span-2 sm:col-span-1">
           <Zap className="mx-auto h-5 w-5 text-primary mb-2" />
-          <p className="font-mono text-2xl font-bold text-foreground">{skillRating}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Skill Rating</p>
+          <p className="font-mono text-2xl font-bold text-foreground">
+            {playerRating}
+            <TrendBadge trend={scoreTrend} />
+          </p>
+          <p className={cn("mt-0.5 text-xs font-semibold", tierColor)}>{skillTier}</p>
+          <Progress value={tierProgress} className="mt-2 h-1.5" />
+          <p className="mt-1 text-[10px] text-muted-foreground">Player Rating</p>
         </div>
         <div className="rounded-xl border bg-card p-4 text-center">
           <ShieldCheck className="mx-auto h-5 w-5 text-primary mb-2" />
           <p className="font-mono text-2xl font-bold text-foreground">{noHintRate}%</p>
           <p className="mt-1 text-xs text-muted-foreground">No-Hint Rate</p>
         </div>
-        <div className="rounded-xl border bg-card p-4 text-center col-span-2 sm:col-span-1">
+        <div className="rounded-xl border bg-card p-4 text-center">
           <Target className="mx-auto h-5 w-5 text-primary mb-2" />
           <p className="font-mono text-2xl font-bold text-foreground">{records.length}</p>
           <p className="mt-1 text-xs text-muted-foreground">Total Solves</p>
@@ -241,7 +247,7 @@ export default function PremiumStats() {
           </h3>
           <p className="text-xs text-muted-foreground mb-3">{bestInsight}</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {bestByType.map(({ type, time, difficulty }) => (
+            {bestByType.map(({ type, time, difficulty, score }) => (
               <div key={type} className="rounded-lg border bg-secondary/30 p-3 text-center">
                 <div className="flex items-center justify-center gap-1.5 mb-1">
                   <PuzzleIcon type={type} size={14} className="text-muted-foreground" />
@@ -252,6 +258,7 @@ export default function PremiumStats() {
                 <p className="font-mono text-lg font-bold text-primary">{formatTime(time)}</p>
                 <p className="text-[10px] text-muted-foreground capitalize">
                   {DIFFICULTY_LABELS[difficulty as keyof typeof DIFFICULTY_LABELS] ?? difficulty}
+                  {" · "}{score} pts
                 </p>
               </div>
             ))}
@@ -269,7 +276,7 @@ export default function PremiumStats() {
           </h3>
           <p className="text-xs text-muted-foreground mb-3">{avgInsight}</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {avgByType.map(({ type, avg, count }) => (
+            {avgByType.map(({ type, avg, count, avgScore }) => (
               <div key={type} className="rounded-lg border bg-secondary/30 p-3 text-center">
                 <div className="flex items-center justify-center gap-1.5 mb-1">
                   <PuzzleIcon type={type} size={14} className="text-muted-foreground" />
@@ -278,7 +285,7 @@ export default function PremiumStats() {
                   </span>
                 </div>
                 <p className="font-mono text-lg font-bold text-foreground">{formatTime(avg)}</p>
-                <p className="text-[10px] text-muted-foreground">{count} solves</p>
+                <p className="text-[10px] text-muted-foreground">{count} solves · {avgScore} avg pts</p>
               </div>
             ))}
           </div>
@@ -299,13 +306,14 @@ export default function PremiumStats() {
                 <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Time</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Difficulty</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Hints</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Score</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date</th>
               </tr>
             </thead>
             <tbody>
               {recent20.map((r) => {
                 const info = CATEGORY_INFO[r.puzzleType];
+                const score = computeSolveScore(r);
                 return (
                   <tr key={r.id} className="border-b last:border-0">
                     <td className="px-3 py-2 text-foreground whitespace-nowrap">
@@ -318,8 +326,8 @@ export default function PremiumStats() {
                     <td className="px-3 py-2 capitalize text-muted-foreground hidden sm:table-cell">
                       {DIFFICULTY_LABELS[r.difficulty as keyof typeof DIFFICULTY_LABELS] ?? r.difficulty}
                     </td>
-                    <td className="px-3 py-2 text-muted-foreground hidden sm:table-cell">
-                      {r.hintsUsed > 0 ? r.hintsUsed : "—"}
+                    <td className="px-3 py-2 font-mono text-muted-foreground hidden sm:table-cell">
+                      {score}
                     </td>
                     <td className="px-3 py-2 text-muted-foreground text-xs">
                       {new Date(r.completedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
