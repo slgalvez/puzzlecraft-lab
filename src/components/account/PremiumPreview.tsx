@@ -98,8 +98,8 @@ function MilestonesCard() {
   return (
     <div className="rounded-xl border bg-card p-4">
       <div className="flex items-center gap-2 mb-2">
-        <Flame size={14} className="text-primary" />
-        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Milestones</span>
+        <BarChart3 size={14} className="text-primary" />
+        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Insights</span>
       </div>
       <div className="space-y-1.5">
         {["First 10 Solves", "7-Day Streak", "Speed Demon"].map((m) => (
