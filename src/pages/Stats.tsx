@@ -133,6 +133,9 @@ const Stats = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
           <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Your Progress</h1>
           <div className="flex gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/leaderboard"><Shield size={14} /> Leaderboard</Link>
+            </Button>
             <Button
               variant={viewFilter === "daily" ? "default" : "outline"}
               size="sm"
