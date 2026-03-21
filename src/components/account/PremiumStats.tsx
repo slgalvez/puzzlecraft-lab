@@ -58,7 +58,7 @@ function TrendBadge({ trend, invertColor }: { trend: "up" | "down" | "flat"; inv
   );
 }
 
-export default function PremiumStats() {
+export default function PremiumStats({ onDataChange }: { onDataChange?: () => void }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const { account, subscribed } = useUserAccount();
   const isAdmin = account?.isAdmin ?? false;
@@ -69,12 +69,14 @@ export default function PremiumStats() {
   const handleGenerate = useCallback(() => {
     generateDemoSolves(25);
     setRefreshKey((k) => k + 1);
-  }, []);
+    onDataChange?.();
+  }, [onDataChange]);
 
   const handleClear = useCallback(() => {
     clearDemoSolves();
     setRefreshKey((k) => k + 1);
-  }, []);
+    onDataChange?.();
+  }, [onDataChange]);
 
   const adminControls = isAdmin && (
     <div className="flex items-center gap-2 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2">
