@@ -16,6 +16,7 @@ import {
   loadReceivedItems,
   deleteDraft,
   deleteSentItem,
+  deleteReceivedItem,
   relativeTime,
 } from "@/lib/craftHistory";
 
@@ -46,7 +47,7 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
   const navigate = useNavigate();
   const [drafts, setDrafts] = useState<CraftDraft[]>(() => loadDrafts());
   const [sent, setSent] = useState<CraftSentItem[]>(() => loadSentItems());
-  const [received] = useState<CraftReceivedItem[]>(() => loadReceivedItems());
+  const [received, setReceived] = useState<CraftReceivedItem[]>(() => loadReceivedItems());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [solveStatuses, setSolveStatuses] = useState<Record<string, "sent" | "in_progress" | "completed">>({});
@@ -95,6 +96,21 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
       if (confirmDeleteId === id) {
         deleteSentItem(id);
         setSent(loadSentItems());
+        setConfirmDeleteId(null);
+        onDataChange?.();
+      } else {
+        setConfirmDeleteId(id);
+        setTimeout(() => setConfirmDeleteId(null), 3000);
+      }
+    },
+    [confirmDeleteId, onDataChange]
+  );
+
+  const handleDeleteReceived = useCallback(
+    (id: string) => {
+      if (confirmDeleteId === id) {
+        deleteReceivedItem(id);
+        setReceived(loadReceivedItems());
         setConfirmDeleteId(null);
         onDataChange?.();
       } else {
@@ -276,15 +292,24 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
                       <p className="text-[10px] text-muted-foreground/60 italic mt-0.5">from {r.from}</p>
                     )}
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7 gap-1 px-3"
-                    onClick={() => navigate(`/s/${r.shareId}`, { state: { fromInbox: "received" } })}
-                  >
-                    <Play className="h-3 w-3" />
-                    {r.status === "in_progress" ? "Continue" : r.status === "completed" ? "View" : "Play"}
-                  </Button>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-7 gap-1 px-3"
+                      onClick={() => navigate(`/s/${r.shareId}`, { state: { fromInbox: "received" } })}
+                    >
+                      <Play className="h-3 w-3" />
+                      {r.status === "in_progress" ? "Continue" : r.status === "completed" ? "View" : "Play"}
+                    </Button>
+                    <button
+                      className="p-1.5 rounded-md opacity-30 hover:opacity-100 hover:bg-destructive/10 transition-all"
+                      onClick={() => handleDeleteReceived(r.id)}
+                      aria-label="Delete received item"
+                    >
+                      <Trash2 className={`h-3 w-3 ${confirmDeleteId === r.id ? "text-destructive opacity-100" : "text-muted-foreground"}`} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

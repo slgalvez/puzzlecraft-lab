@@ -112,6 +112,10 @@ export function addReceivedItem(item: CraftReceivedItem) {
   writeJson(RECEIVED_KEY, items.slice(0, MAX_SENT));
 }
 
+export function deleteReceivedItem(id: string) {
+  writeJson(RECEIVED_KEY, readJson<CraftReceivedItem>(RECEIVED_KEY).filter((r) => r.id !== id));
+}
+
 /* ── Relative time ── */
 
 export function relativeTime(epochMs: number): string {
