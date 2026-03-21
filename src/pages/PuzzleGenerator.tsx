@@ -488,7 +488,7 @@ const PuzzleGenerator = () => {
           </div>
         )}
 
-        {mobileStep === 2 && info && (
+        {mobileStep === 2 && generateTypes.size > 0 && (
           <div className="animate-in fade-in slide-in-from-right-4 duration-300">
             <button
               onClick={() => setMobileStep(1)}
@@ -499,17 +499,22 @@ const PuzzleGenerator = () => {
             <p className="mb-1 text-xs font-medium uppercase tracking-widest text-muted-foreground">Step 2 of 2</p>
             <h2 className="font-display text-2xl font-bold text-foreground mb-2">Choose Difficulty</h2>
             <p className="text-sm text-muted-foreground mb-6">
-              <PuzzleIcon type={category!} size={20} className="text-foreground mr-1 inline-block align-text-bottom" /> {info.name}
+              {generateTypes.size === 1 ? (
+                <><PuzzleIcon type={Array.from(generateTypes)[0]} size={20} className="text-foreground mr-1 inline-block align-text-bottom" /> {CATEGORY_INFO[Array.from(generateTypes)[0]].name}</>
+              ) : (
+                <>{generateTypes.size} puzzle types selected</>
+              )}
             </p>
             <div className="flex flex-col gap-3">
               {difficulties.map(([val, label]) => {
-                const disabled = isDifficultyDisabled(category!, val);
+                const selectedTypes = Array.from(generateTypes);
+                const disabled = selectedTypes.every(t => isDifficultyDisabled(t, val));
                 return (
                   <button
                     key={val}
                     onClick={() => {
                       if (disabled) {
-                        toast({ title: `${label} not available for ${info!.name} yet` });
+                        toast({ title: `${label} not available for selected types` });
                         return;
                       }
                       handleDifficultyChange(val);
