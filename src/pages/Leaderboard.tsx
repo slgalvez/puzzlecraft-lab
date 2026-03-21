@@ -104,10 +104,36 @@ export default function Leaderboard() {
     staleTime: 30_000,
   });
 
+  // Demo entries to fill leaderboard when real data is sparse
+  const demoEntries = useMemo((): LeaderboardEntry[] => {
+    const names = [
+      "PuzzleMaster99", "GridNinja", "WordSmithX", "SudokuSage", "CrossKing",
+      "BrainBolt", "TileRunner", "ClueHunter", "LogicLion", "NumberWiz",
+    ];
+    const ratings = [1350, 1180, 1050, 980, 920, 870, 810, 750, 680, 620];
+    return names.map((name, i) => {
+      const rating = ratings[i];
+      const diff = (i % 2 === 0 ? 1 : -1) * (5 + (i * 7) % 35);
+      const tier = rating >= 1200 ? "Expert" : rating >= 950 ? "Advanced" : rating >= 700 ? "Skilled" : rating >= 400 ? "Casual" : "Beginner";
+      return {
+        user_id: `demo-${i}`,
+        display_name: name,
+        rating,
+        previous_rating: rating - diff,
+        skill_tier: tier,
+        solve_count: 15 + i * 8,
+        updated_at: new Date().toISOString(),
+      };
+    });
+  }, []);
+
   const ranked = useMemo(() => {
-    if (!entries) return [];
-    return entries.map((e, i) => ({ ...e, rank: i + 1 }));
-  }, [entries]);
+    const real = entries ?? [];
+    // Merge demo entries only if fewer than 10 real entries
+    const merged = real.length >= 10 ? real : [...real, ...demoEntries.filter(d => !real.some(r => r.display_name === d.display_name))];
+    merged.sort((a, b) => b.rating - a.rating);
+    return merged.slice(0, 25).map((e, i) => ({ ...e, rank: i + 1 }));
+  }, [entries, demoEntries]);
 
   const myEntry = useMemo(
     () => (account ? ranked.find((e) => e.user_id === account.id) : null),
