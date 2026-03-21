@@ -318,6 +318,7 @@ const PuzzleGenerator = () => {
     setSeed(randomSeed());
     setPuzzleKey(0);
     setRandomPool(null);
+    setGenerateTypes(new Set());
     setSeedInput("");
     setAdvancedOpen(false);
     if (isMobile) setMobileStep(1);
