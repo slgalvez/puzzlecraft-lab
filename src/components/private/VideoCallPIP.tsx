@@ -1,7 +1,23 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useContext, createContext } from "react";
 import { PhoneOff, Maximize2 } from "lucide-react";
-import { useVideoCallContext } from "@/contexts/VideoCallContext";
 import { hapticTap } from "@/lib/haptic";
+
+/**
+ * PIP state is managed externally and passed via this context.
+ * If no provider exists, PIP simply doesn't render.
+ */
+export interface PIPState {
+  active: boolean;
+  remoteStream: MediaStream | null;
+  localStream: MediaStream | null;
+  isCameraOff: boolean;
+  callDuration: number;
+  callState: string;
+  onEnd: () => void;
+  onExpand: () => void;
+}
+
+export const PIPContext = createContext<PIPState | null>(null);
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -10,32 +26,23 @@ function formatDuration(seconds: number): string {
 }
 
 export function VideoCallPIP() {
-  const {
-    showPIP,
-    remoteStream,
-    localStream,
-    isCameraOff,
-    callDuration,
-    callState,
-    endCall,
-    expandCall,
-  } = useVideoCallContext();
-
+  const pip = useContext(PIPContext);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const bubbleRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ x: 16, y: 80 });
   const dragging = useRef(false);
+  const dragMoved = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
 
   // Attach stream to video
   useEffect(() => {
-    if (!videoRef.current) return;
-    const stream = remoteStream || localStream;
+    if (!videoRef.current || !pip) return;
+    const stream = pip.remoteStream || pip.localStream;
     if (stream) videoRef.current.srcObject = stream;
-  }, [remoteStream, localStream]);
+  }, [pip?.remoteStream, pip?.localStream]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     dragging.current = true;
+    dragMoved.current = false;
     offset.current = {
       x: e.clientX - pos.x,
       y: e.clientY - pos.y,
@@ -45,6 +52,7 @@ export function VideoCallPIP() {
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragging.current) return;
+    dragMoved.current = true;
     setPos({
       x: e.clientX - offset.current.x,
       y: e.clientY - offset.current.y,
@@ -55,11 +63,10 @@ export function VideoCallPIP() {
     dragging.current = false;
   }, []);
 
-  if (!showPIP) return null;
+  if (!pip || !pip.active) return null;
 
   return (
     <div
-      ref={bubbleRef}
       className="fixed z-[95] touch-none select-none"
       style={{ right: pos.x, top: pos.y }}
       onPointerDown={handlePointerDown}
@@ -70,28 +77,28 @@ export function VideoCallPIP() {
       <div
         className="w-28 h-40 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 bg-black relative cursor-grab active:cursor-grabbing"
         onClick={() => {
-          if (!dragging.current) expandCall();
+          if (!dragMoved.current) pip.onExpand();
         }}
       >
         <video
           ref={videoRef}
           autoPlay
           playsInline
-          muted={!remoteStream}
+          muted={!pip.remoteStream}
           className="absolute inset-0 w-full h-full object-cover"
-          style={!remoteStream ? { transform: "scaleX(-1)" } : undefined}
+          style={!pip.remoteStream ? { transform: "scaleX(-1)" } : undefined}
         />
 
-        {isCameraOff && !remoteStream && (
+        {pip.isCameraOff && !pip.remoteStream && (
           <div className="absolute inset-0 bg-card/80 flex items-center justify-center">
             <span className="text-xs text-muted-foreground">Call active</span>
           </div>
         )}
 
         {/* Duration pill */}
-        {callState === "connected" && (
+        {pip.callState === "connected" && (
           <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full bg-black/60 backdrop-blur-sm">
-            <span className="text-[9px] text-white/80 font-medium">{formatDuration(callDuration)}</span>
+            <span className="text-[9px] text-white/80 font-medium">{formatDuration(pip.callDuration)}</span>
           </div>
         )}
 
@@ -107,7 +114,7 @@ export function VideoCallPIP() {
           onClick={(e) => {
             e.stopPropagation();
             hapticTap();
-            endCall();
+            pip.onEnd();
           }}
           className="w-8 h-8 rounded-full bg-destructive flex items-center justify-center text-white shadow-lg"
           aria-label="End call"
