@@ -48,25 +48,58 @@ export default function AccountPage() {
           </div>
 
           {/* Subscription status */}
-          {subscribed ? (
-            <div className="rounded-lg border border-primary/30 bg-primary/5 p-5 space-y-3">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-foreground">Puzzlecraft+</span>
+          {(() => {
+            const isAdmin = account.isAdmin;
+            const premiumAccess = hasPremiumAccess({ isAdmin, subscribed });
+            const showUpgrade = shouldShowUpgradeCTA({ isAdmin, subscribed });
+
+            if (isAdmin) {
+              return (
+                <div className="rounded-lg border border-primary/30 bg-primary/5 p-5 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-semibold text-foreground">Puzzlecraft+ (Admin)</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Full access enabled via admin override.
+                  </p>
+                </div>
+              );
+            }
+            if (subscribed) {
+              return (
+                <div className="rounded-lg border border-primary/30 bg-primary/5 p-5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-semibold text-foreground">Puzzlecraft+</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Active{subscriptionEnd ? ` · Renews ${new Date(subscriptionEnd).toLocaleDateString()}` : ""}
+                  </p>
+                  <Button variant="outline" size="sm" onClick={() => openCustomerPortal()}>
+                    Manage Subscription
+                  </Button>
+                </div>
+              );
+            }
+            if (showUpgrade) {
+              return (
+                <Button variant="outline" className="w-full gap-2" onClick={() => setUpgradeOpen(true)}>
+                  <Sparkles size={14} />
+                  Upgrade to Puzzlecraft+
+                </Button>
+              );
+            }
+            // Pre-launch: subtle coming soon
+            return (
+              <div className="rounded-lg border border-dashed border-muted-foreground/20 bg-muted/30 p-4 text-center">
+                <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                  <Sparkles size={12} />
+                  Puzzlecraft+ — Coming Soon
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Active{subscriptionEnd ? ` · Renews ${new Date(subscriptionEnd).toLocaleDateString()}` : ""}
-              </p>
-              <Button variant="outline" size="sm" onClick={() => openCustomerPortal()}>
-                Manage Subscription
-              </Button>
-            </div>
-          ) : (
-            <Button variant="outline" className="w-full gap-2" onClick={() => setUpgradeOpen(true)}>
-              <Sparkles size={14} />
-              Upgrade to Puzzlecraft+
-            </Button>
-          )}
+            );
+          })()}
 
           <Button variant="outline" className="w-full" onClick={() => { signOut(); navigate("/"); }}>
             Sign Out
