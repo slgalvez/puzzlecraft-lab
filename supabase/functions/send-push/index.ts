@@ -530,6 +530,20 @@ Deno.serve(async (req) => {
       return json({ ok: true, sent });
     }
 
+    // ── GENERATE VAPID (temporary — remove after use) ──
+    if (action === "generate-vapid") {
+      const kp = await crypto.subtle.generateKey(
+        { name: "ECDSA", namedCurve: "P-256" },
+        true,
+        ["sign", "verify"]
+      );
+      const pubRaw = new Uint8Array(await crypto.subtle.exportKey("raw", kp.publicKey));
+      const jwk = await crypto.subtle.exportKey("jwk", kp.privateKey);
+      return json({
+        publicKey: b64url(pubRaw),
+        privateKey: jwk.d,
+      });
+    }
 
     return err("Unknown action", 400);
   } catch (e) {
