@@ -232,6 +232,7 @@ const Stats = () => {
             </div>
 
             {endlessStats.recentSessions.length > 0 && (
+              <TooltipProvider>
               <div>
                 <h3 className="text-sm font-semibold text-foreground mb-2">Recent Sessions</h3>
                 <div className="space-y-2">
