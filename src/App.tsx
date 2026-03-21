@@ -73,6 +73,7 @@ const App = () => (
             <Route path="/craft" element={<CraftPuzzle />} />
             <Route path="/craft/play" element={<PlayCraftPuzzle />} />
             <Route path="/s/:id" element={<SharedCraftPuzzle />} />
+            <Route path="/account" element={<Account />} />
 
             {/* Private app */}
             <Route path="/p/login" element={<Login />} />
