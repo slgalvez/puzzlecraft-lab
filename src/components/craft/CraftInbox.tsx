@@ -16,6 +16,7 @@ import {
   loadReceivedItems,
   deleteDraft,
   deleteSentItem,
+  deleteReceivedItem,
   relativeTime,
 } from "@/lib/craftHistory";
 
