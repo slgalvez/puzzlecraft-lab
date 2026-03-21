@@ -437,9 +437,14 @@ const Stats = () => {
         )}
 
         {/* Premium locked section */}
-        {showGeneral && !subscribed && (
+        {showGeneral && !premiumAccess && showUpgrade && (
           <div className="mt-12">
             <PremiumLockedCard onUpgrade={() => setUpgradeOpen(true)} />
+          </div>
+        )}
+        {showGeneral && !premiumAccess && !showUpgrade && (
+          <div className="mt-12">
+            <PremiumLockedCard comingSoon />
           </div>
         )}
       </div>

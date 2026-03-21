@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sparkles, BarChart3, History, TrendingUp } from "lucide-react";
 import { useState } from "react";
+import { PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
 
 interface UpgradeModalProps {
   open: boolean;
@@ -57,7 +58,11 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
         </ul>
 
         <div className="flex flex-col gap-2 pt-2">
-          {!account ? (
+          {!PUZZLECRAFT_PLUS_LAUNCHED ? (
+            <p className="text-xs text-muted-foreground text-center">
+              Puzzlecraft+ is coming soon. Stay tuned!
+            </p>
+          ) : !account ? (
             <p className="text-xs text-muted-foreground text-center">
               Sign in to your account first to upgrade.
             </p>
@@ -68,7 +73,7 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
             </Button>
           )}
           <Button variant="ghost" onClick={onClose} className="w-full text-muted-foreground">
-            Continue free
+            {PUZZLECRAFT_PLUS_LAUNCHED ? "Continue free" : "Close"}
           </Button>
         </div>
       </DialogContent>
