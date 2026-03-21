@@ -449,15 +449,16 @@ const PuzzleGenerator = () => {
         {mobileStep === 1 && (
           <div className="animate-in fade-in slide-in-from-right-4 duration-300">
             <p className="mb-1 text-xs font-medium uppercase tracking-widest text-muted-foreground">Step 1 of 2</p>
-            <h2 className="font-display text-2xl font-bold text-foreground mb-6">Choose Puzzle Type</h2>
+            <h2 className="font-display text-2xl font-bold text-foreground mb-1">Choose Puzzle Type</h2>
+            <p className="text-sm text-muted-foreground mb-6">Select one or more types</p>
             <div className="grid grid-cols-2 gap-3">
               {puzzleTypes.map((pt) => (
                 <button
                   key={pt.value}
-                  onClick={() => handleTypeChange(pt.value)}
+                  onClick={() => toggleGenerateType(pt.value)}
                   className={cn(
                     "flex flex-col items-center gap-1.5 rounded-xl border-2 p-4 transition-all",
-                    category === pt.value
+                    generateTypes.has(pt.value)
                       ? "border-primary bg-primary/5 shadow-sm"
                       : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
                   )}
@@ -467,6 +468,23 @@ const PuzzleGenerator = () => {
                 </button>
               ))}
             </div>
+            {generateTypes.size > 0 && (
+              <div className="mt-6">
+                <Button
+                  onClick={() => {
+                    // Navigate to first selected type for URL consistency
+                    const first = Array.from(generateTypes)[0];
+                    navigate(`/generate/${first}`, { replace: true });
+                    setMobileStep(2);
+                  }}
+                  size="lg"
+                  className="w-full gap-2 text-base"
+                >
+                  Next — {generateTypes.size === 1 ? CATEGORY_INFO[Array.from(generateTypes)[0]].name : `${generateTypes.size} types`}
+                  <ChevronRight size={16} />
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
