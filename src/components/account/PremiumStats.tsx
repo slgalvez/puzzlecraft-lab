@@ -97,6 +97,12 @@ export default function PremiumStats() {
 
   return (
     <div className="space-y-8">
+      {adminControls}
+      {demoActive && (
+        <p className="text-xs text-primary/60 italic">
+          ⚡ Viewing demo data — not from real solves
+        </p>
+      )}
       <div className="flex items-center gap-2">
         <Sparkles className="h-5 w-5 text-primary" />
         <h2 className="font-display text-xl font-semibold text-foreground">
