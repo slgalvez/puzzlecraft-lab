@@ -45,6 +45,48 @@ const Stats = () => {
   const showUpgrade = shouldShowUpgradeCTA({ isAdmin, subscribed });
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
+  // Local rating for Your Rank card
+  const localRating = useMemo(() => {
+    const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
+    if (recs.length < 10) return null;
+    const rating = computePlayerRating(recs);
+    const tier = getSkillTier(rating);
+    return { rating, tier, solveCount: recs.length };
+  }, [dataVersion]);
+
+  // Fetch user's leaderboard entry for rank position and rating change
+  const { data: myLeaderboardEntry } = useQuery({
+    queryKey: ["my-leaderboard-entry", account?.id, dataVersion],
+    queryFn: async () => {
+      if (!account) return null;
+      // Get rank by counting entries with higher rating
+      const { data: entry } = await supabase
+        .from("leaderboard_entries")
+        .select("rating, previous_rating, skill_tier, solve_count")
+        .eq("user_id", account.id)
+        .maybeSingle();
+      if (!entry) return null;
+      const { count } = await supabase
+        .from("leaderboard_entries")
+        .select("*", { count: "exact", head: true })
+        .gt("rating", entry.rating);
+      return { ...entry, rank: (count ?? 0) + 1 };
+    },
+    enabled: !!account && premiumAccess,
+    staleTime: 30_000,
+  });
+
+  const TIER_THRESHOLDS: Record<string, number> = {
+    Expert: 1200, Advanced: 950, Skilled: 700, Casual: 400, Beginner: 0,
+  };
+  const TIER_ORDER_LIST = ["Beginner", "Casual", "Skilled", "Advanced", "Expert"];
+  const nextTierInfo = localRating ? (() => {
+    const idx = TIER_ORDER_LIST.indexOf(localRating.tier);
+    if (idx >= TIER_ORDER_LIST.length - 1) return null;
+    const next = TIER_ORDER_LIST[idx + 1];
+    return { name: next, threshold: TIER_THRESHOLDS[next] };
+  })() : null;
+
   // Sync rating to leaderboard + check milestones on load
   useEffect(() => {
     if (account) {
