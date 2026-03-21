@@ -84,22 +84,12 @@ const SharedCraftPuzzle = () => {
   const markStarted = useCallback(() => {
     if (!id || interactionMarked.current) return;
     interactionMarked.current = true;
-    const now = new Date().toISOString();
-    if (recipientId.current) {
-      supabase
-        .from("craft_recipients" as any)
-        .update({ started_at: now } as any)
-        .eq("id", recipientId.current)
-        .is("started_at" as any, null)
-        .then();
-    } else {
-      supabase
-        .from("shared_puzzles" as any)
-        .update({ started_at: now } as any)
-        .eq("id", id)
-        .is("started_at" as any, null)
-        .then();
-    }
+    supabase
+      .from("shared_puzzles" as any)
+      .update({ started_at: new Date().toISOString() } as any)
+      .eq("id", id)
+      .is("started_at" as any, null)
+      .then();
   }, [id]);
 
   const handleComplete = useCallback(() => {
