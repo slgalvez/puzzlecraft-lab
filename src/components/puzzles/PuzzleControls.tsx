@@ -1,9 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { RotateCcw, CheckCircle2, Shuffle, Eye, Lightbulb } from "lucide-react";
-import { useState } from "react";
+import { RotateCcw, CheckCircle2, Shuffle, Eye, Lightbulb, Bookmark } from "lucide-react";
+import { useState, useCallback } from "react";
 import CompletionPanel from "./CompletionPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Difficulty, PuzzleCategory } from "@/lib/puzzleTypes";
+import { savePuzzle, unsavePuzzle, isSaved } from "@/lib/savedPuzzles";
+import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,7 +44,32 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
   const [open, setOpen] = useState(false);
   const [showRevealConfirm, setShowRevealConfirm] = useState(false);
   const isMobile = useIsMobile();
+  const { toast } = useToast();
   const hintLimitReached = maxHints != null && hintCount >= maxHints;
+
+  // Save for later
+  const canSave = solveData?.category && solveData?.seed != null && !solveData?.isSolved && !isRevealed && !solveData?.isEndless;
+  const puzzleSaveId = canSave ? `${solveData!.category}-${solveData!.seed}-${solveData!.difficulty}` : null;
+  const [saved, setSaved] = useState(() => puzzleSaveId ? isSaved(puzzleSaveId) : false);
+
+  const toggleSave = useCallback(() => {
+    if (!puzzleSaveId || !solveData?.category || solveData?.seed == null) return;
+    if (saved) {
+      unsavePuzzle(puzzleSaveId);
+      setSaved(false);
+      toast({ title: "Removed from saved" });
+    } else {
+      savePuzzle({
+        id: puzzleSaveId,
+        category: solveData.category,
+        difficulty: solveData.difficulty,
+        seed: solveData.seed,
+        dailyCode: solveData.dailyCode,
+      });
+      setSaved(true);
+      toast({ title: "Saved for later" });
+    }
+  }, [puzzleSaveId, saved, solveData, toast]);
 
   const showCompletion = solveData?.isSolved && !solveData?.isEndless;
   const showControls = !solveData?.isSolved && !isRevealed;
@@ -70,8 +97,19 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
       ) : isMobile ? (
         /* ── Mobile layout ── */
         <div className="space-y-3">
-          {/* Reset — top-right aligned, icon-only, low emphasis */}
-          <div className="flex justify-end">
+          {/* Save + Reset — top-right aligned, icon-only, low emphasis */}
+          <div className="flex justify-end gap-1">
+            {canSave && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-9 w-9 ${saved ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                onClick={toggleSave}
+                aria-label={saved ? "Remove bookmark" : "Save for later"}
+              >
+                <Bookmark className="h-4 w-4" fill={saved ? "currentColor" : "none"} />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -181,6 +219,17 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
             >
               <RotateCcw className="h-3.5 w-3.5" />
             </Button>
+            {canSave && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 ${saved ? "text-primary" : "text-muted-foreground/60 hover:text-foreground"}`}
+                onClick={toggleSave}
+                aria-label={saved ? "Remove bookmark" : "Save for later"}
+              >
+                <Bookmark className="h-3.5 w-3.5" fill={saved ? "currentColor" : "none"} />
+              </Button>
+            )}
           </div>
 
           {puzzleCode && (

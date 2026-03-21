@@ -45,10 +45,10 @@ function buildShareData(props: {
   const displayCode = dailyCode ?? String(seed);
 
   const headline = isDaily
-    ? "I just completed today's Puzzlecraft challenge 🧠"
-    : "I just completed a Puzzlecraft puzzle 🧠";
+    ? "Just solved today's Puzzlecraft challenge 🧠"
+    : "Just tackled a Puzzlecraft puzzle 🧠";
 
-  const text = `${headline}\n\n${typeName} • ${diffLabel} • ${timeStr}\n\nThink you can beat my time?\n\nPlay: ${shareUrl}\n\nPuzzle Code: ${displayCode}`;
+  const text = `${headline}\n\n${typeName} • ${diffLabel} • ${timeStr}\n\nCan you beat this time?\n\nPlay: ${shareUrl}\n\nPuzzle Code: ${displayCode}`;
 
   return { text, url: shareUrl, displayCode };
 }
