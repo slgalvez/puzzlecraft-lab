@@ -18,6 +18,7 @@ export interface UserAccount {
   email: string;
   displayName: string | null;
   isPremium: boolean;
+  isAdmin: boolean;
 }
 
 interface UserAccountContextType {
