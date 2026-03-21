@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useUserAccount } from "@/contexts/UserAccountContext";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import PremiumLockedCard from "@/components/account/PremiumLockedCard";
+import { hasPremiumAccess, shouldShowUpgradeCTA } from "@/lib/premiumAccess";
 
 type ViewFilter = null | "daily" | "endless";
 
