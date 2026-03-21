@@ -769,19 +769,19 @@ function buildWordSearch(
   const rng = new SeededRandom(seed);
   const grid: string[][] = Array.from({ length: size }, () => Array(size).fill(""));
   const placed: CustomWordSearchData["wordPositions"] = [];
+  const placedWords = new Set<string>();
 
-  // Track cell usage for overlap control
   const cellUsed = new Map<string, number>();
 
   // Sort longest first
   const sorted = rng.shuffle([...words]).sort((a, b) => b.length - a.length);
 
   for (const word of sorted) {
+    if (placedWords.has(word)) continue;
     const shuffledDirs = rng.shuffle([...dirs]);
     let bestPos: { r: number; c: number; dr: number; dc: number; score: number } | null = null;
 
     for (const [dr, dc] of shuffledDirs) {
-      // Try positions, preferring less-used areas
       const positions: [number, number][] = [];
       for (let r = 0; r < size; r++)
         for (let c = 0; c < size; c++) positions.push([r, c]);
@@ -789,20 +789,17 @@ function buildWordSearch(
       for (const [r, c] of rng.shuffle(positions)) {
         if (!canPlaceWS(grid, word, r, c, dr, dc, size)) continue;
 
-        // Check overlap ratio
         let overlaps = 0;
         for (let i = 0; i < word.length; i++) {
           const key = `${r + dr * i}-${c + dc * i}`;
           if (cellUsed.has(key)) overlaps++;
         }
-        const overlapRatio = overlaps / word.length;
-        if (overlapRatio > maxOverlap) continue;
+        if (overlaps / word.length > maxOverlap) continue;
 
-        // Score: prefer positions toward center and less-used quadrants
         const midR = r + dr * (word.length - 1) / 2;
         const midC = c + dc * (word.length - 1) / 2;
         const distFromCenter = Math.abs(midR - size / 2) + Math.abs(midC - size / 2);
-        const posScore = (size - distFromCenter) - overlaps * 2;
+        const posScore = (size - distFromCenter) - overlaps * 3;
 
         if (!bestPos || posScore > bestPos.score) {
           bestPos = { r, c, dr, dc, score: posScore };
@@ -813,6 +810,7 @@ function buildWordSearch(
     if (bestPos) {
       placeWordWS(grid, word, bestPos.r, bestPos.c, bestPos.dr, bestPos.dc);
       placed.push({ word, row: bestPos.r, col: bestPos.c, dr: bestPos.dr, dc: bestPos.dc });
+      placedWords.add(word);
       for (let i = 0; i < word.length; i++) {
         const key = `${bestPos.r + bestPos.dr * i}-${bestPos.c + bestPos.dc * i}`;
         cellUsed.set(key, (cellUsed.get(key) || 0) + 1);
@@ -829,7 +827,18 @@ function buildWordSearch(
     for (let c = 0; c < size; c++)
       if (!grid[r][c]) grid[r][c] = wordLetters[rng.nextInt(0, wordLetters.length - 1)];
 
-  // Distribution score: measure how well words are spread across quadrants
+  // Post-placement validation
+  for (const wp of placed) {
+    for (let i = 0; i < wp.word.length; i++) {
+      const r = wp.row + wp.dr * i;
+      const c = wp.col + wp.dc * i;
+      if (grid[r][c] !== wp.word[i]) {
+        return { data: { grid, words: [], wordPositions: [], size } as CustomWordSearchData, placedCount: 0, distributionScore: -100 };
+      }
+    }
+  }
+
+  // Distribution score
   const quadrants = [0, 0, 0, 0];
   for (const wp of placed) {
     const midR = wp.row + wp.dr * (wp.word.length - 1) / 2;
