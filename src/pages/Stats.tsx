@@ -7,6 +7,7 @@ import { formatTime } from "@/hooks/usePuzzleTimer";
 import { getDailyStreak, getTotalDailyCompleted } from "@/lib/dailyChallenge";
 import { getEndlessStats } from "@/lib/endlessHistory";
 import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import PremiumStats from "@/components/account/PremiumStats";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
