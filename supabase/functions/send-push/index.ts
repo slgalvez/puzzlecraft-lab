@@ -364,22 +364,45 @@ Deno.serve(async (req) => {
 
     // ── DIAGNOSTIC (temporary) ──
     if (action === "diagnostic") {
-      const keyCheck = await verifyVapidKeyPair();
-      const { data: subs } = await sb
-        .from("push_subscriptions")
-        .select("endpoint, p256dh, auth, profile_id, created_at")
-        .order("created_at", { ascending: false })
-        .limit(10);
+      const rawKey = Deno.env.get("VAPID_PRIVATE_KEY") || "";
+      const normalizedKey = rawKey.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+      const pubKeyBytes = b64urlDecode(VAPID_PUBLIC_KEY);
+
+      // Try importing the key pair to verify match
+      let keyValid = false;
+      let keyError = "";
+      try {
+        const x = b64url(pubKeyBytes.slice(1, 33));
+        const y = b64url(pubKeyBytes.slice(33, 65));
+        const imported = await crypto.subtle.importKey(
+          "jwk",
+          { kty: "EC", crv: "P-256", x, y, d: normalizedKey },
+          { name: "ECDSA", namedCurve: "P-256" },
+          true,
+          ["sign"]
+        );
+        // Sign and verify
+        const testData = new TextEncoder().encode("test");
+        const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, imported, testData);
+        const pubKey = await crypto.subtle.importKey(
+          "jwk",
+          { kty: "EC", crv: "P-256", x, y },
+          { name: "ECDSA", namedCurve: "P-256" },
+          false,
+          ["verify"]
+        );
+        keyValid = await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, pubKey, sig, testData);
+      } catch (e) {
+        keyError = String(e);
+      }
+
       return json({
-        vapid_key_pair: keyCheck,
+        vapid_key_pair: { valid: keyValid, error: keyError || undefined },
         public_key_in_function: VAPID_PUBLIC_KEY,
-        subscriptions: (subs || []).map((s: any) => ({
-          profile_id: s.profile_id,
-          endpoint_host: new URL(s.endpoint).hostname,
-          has_p256dh: !!s.p256dh,
-          has_auth: !!s.auth,
-          created_at: s.created_at,
-        })),
+        private_key_length: rawKey.length,
+        private_key_normalized_length: normalizedKey.length,
+        private_key_first_4: rawKey.substring(0, 4),
+        private_key_last_4: rawKey.substring(rawKey.length - 4),
       });
     }
 
