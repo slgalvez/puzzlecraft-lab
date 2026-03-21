@@ -276,6 +276,41 @@ export type Database = {
           },
         ]
       }
+      craft_recipients: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          puzzle_id: string
+          recipient_name: string
+          started_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id: string
+          puzzle_id: string
+          recipient_name?: string
+          started_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          puzzle_id?: string
+          recipient_name?: string
+          started_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "craft_recipients_puzzle_id_fkey"
+            columns: ["puzzle_id"]
+            isOneToOne: false
+            referencedRelation: "shared_puzzles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       failed_login_attempts: {
         Row: {
           attempted_code: string
