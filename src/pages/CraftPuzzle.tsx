@@ -159,6 +159,14 @@ const CraftPuzzle = () => {
     }
   }, [selectedType, wordInput, phraseInput, clueEntries, craftSettings.difficulty, toast]);
 
+  /** Parse recipient names from comma/newline input */
+  const parseRecipients = useCallback((): string[] => {
+    return recipientInput
+      .split(/[,\n]+/)
+      .map((n) => n.trim())
+      .filter(Boolean);
+  }, [recipientInput]);
+
   /** Generate + save to DB + create share URL (first time only) */
   const handleGenerate = useCallback(async () => {
     if (!selectedType) return;
@@ -193,6 +201,17 @@ const CraftPuzzle = () => {
         return;
       }
 
+      // Create per-recipient records if any
+      const names = parseRecipients();
+      if (names.length > 0) {
+        const rows = names.map((name) => ({
+          id: generateShortId(),
+          puzzle_id: shortId,
+          recipient_name: name,
+        }));
+        await supabase.from("craft_recipients" as any).insert(rows as any);
+      }
+
       const url = buildCraftShareUrl(shortId);
       setShareUrl(url);
       sentRecorded.current = false;
@@ -204,7 +223,7 @@ const CraftPuzzle = () => {
     } finally {
       setSaving(false);
     }
-  }, [selectedType, buildPuzzleData, revealMessage, puzzleTitle, puzzleFrom, craftSettings, toast]);
+  }, [selectedType, buildPuzzleData, revealMessage, puzzleTitle, puzzleFrom, craftSettings, toast, parseRecipients]);
 
   /** Regenerate — only refreshes puzzle data + updates DB, stays in draft */
   const handleRegenerate = useCallback(async () => {
