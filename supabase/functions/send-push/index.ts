@@ -69,7 +69,7 @@ function b64urlDecode(s: string): Uint8Array {
 // ── VAPID JWT (ES256) ──
 
 const VAPID_PUBLIC_KEY =
-  "BJ5JWSSmBalD2-30bdGXSA1R4wktHs-NaQQ923hGuaGnyiTeIr8SdWAO7irZ_ktjx7xFNPDFyKHTDE6dScn-LPs";
+  "BPRMv8hHpmf3idJlYtYX4n7SKNpW6CNdZwq0otQ_KysMTsT47_sKbYy_L82y0_CefS7sbGq6L_-SuEFHSB7ehuM";
 
 /** Verify the private key matches the public key at startup */
 async function verifyVapidKeyPair(): Promise<{ valid: boolean; error?: string }> {
@@ -530,6 +530,20 @@ Deno.serve(async (req) => {
       return json({ ok: true, sent });
     }
 
+    // ── GENERATE VAPID (temporary — remove after use) ──
+    if (action === "generate-vapid") {
+      const kp = await crypto.subtle.generateKey(
+        { name: "ECDSA", namedCurve: "P-256" },
+        true,
+        ["sign", "verify"]
+      );
+      const pubRaw = new Uint8Array(await crypto.subtle.exportKey("raw", kp.publicKey));
+      const jwk = await crypto.subtle.exportKey("jwk", kp.privateKey);
+      return json({
+        publicKey: b64url(pubRaw),
+        privateKey: jwk.d,
+      });
+    }
 
     return err("Unknown action", 400);
   } catch (e) {
