@@ -10,7 +10,6 @@ import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight
 import PremiumStats from "@/components/account/PremiumStats";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
 import { useUserAccount } from "@/contexts/UserAccountContext";
 import UpgradeModal from "@/components/account/UpgradeModal";
