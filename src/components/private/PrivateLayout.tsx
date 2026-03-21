@@ -8,6 +8,7 @@ import { LogOut, Puzzle } from "lucide-react";
 import { applyChatTheme } from "@/lib/chatTheme";
 import { useGlobalIncomingCall } from "@/hooks/useGlobalIncomingCall";
 import { IncomingCallBanner } from "@/components/private/IncomingCallBanner";
+import { VideoCallPIP } from "@/components/private/VideoCallPIP";
 
 const LAST_ACTIVE_KEY = "private_last_active";
 const GRACE_PERIOD_MS = 5 * 60 * 1000; // 5 minutes
