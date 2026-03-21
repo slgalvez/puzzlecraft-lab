@@ -248,20 +248,32 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
               Milestones
               <span className="text-xs text-muted-foreground font-normal">{unlockedCount}/{milestones.length}</span>
             </h3>
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-              {milestones.map((m) => (
-                <div
-                  key={m.id}
-                  className={cn(
-                    "rounded-lg border p-2 text-center transition-opacity",
-                    m.unlocked ? "bg-primary/5 border-primary/20" : "opacity-30"
-                  )}
-                  title={m.label}
-                >
-                  <span className="text-lg">{m.emoji}</span>
-                  <p className="text-[9px] text-muted-foreground mt-0.5 leading-tight truncate">{m.label}</p>
-                </div>
-              ))}
+             <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+              {milestones.map((m) => {
+                const IconComp = MILESTONE_ICONS[m.icon] ?? Target;
+                return (
+                  <div
+                    key={m.id}
+                    className={cn(
+                      "rounded-lg border p-2 text-center transition-opacity",
+                      m.unlocked ? "bg-primary/5 border-primary/20" : "opacity-40"
+                    )}
+                    title={m.label}
+                  >
+                    <IconComp
+                      size={18}
+                      className={cn(
+                        "mx-auto mb-0.5",
+                        m.unlocked ? "text-primary" : "text-muted-foreground"
+                      )}
+                    />
+                    <p className={cn(
+                      "text-[9px] mt-0.5 leading-tight truncate",
+                      m.unlocked ? "text-foreground/80 font-medium" : "text-muted-foreground"
+                    )}>{m.label}</p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
