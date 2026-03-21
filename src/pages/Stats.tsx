@@ -173,24 +173,8 @@ const Stats = () => {
   return (
     <Layout>
       <div className="container py-6 md:py-12">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
+        <div className="mb-2">
           <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Your Progress</h1>
-          <div className="flex gap-2">
-            <Button
-              variant={viewFilter === "daily" ? "default" : "outline"}
-              size="sm"
-              onClick={() => toggleViewFilter("daily")}
-            >
-              <Calendar size={14} /> Daily
-            </Button>
-            <Button
-              variant={viewFilter === "endless" ? "default" : "outline"}
-              size="sm"
-              onClick={() => toggleViewFilter("endless")}
-            >
-              <Infinity size={14} /> Endless
-            </Button>
-          </div>
         </div>
         <p className="text-muted-foreground">
           Track your solving stats, streaks, and best times.
