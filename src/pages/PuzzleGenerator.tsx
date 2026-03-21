@@ -131,7 +131,17 @@ const PuzzleGenerator = () => {
     () => !!(routeState?.randomPool && routeState.randomDifficulty)
   );
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [randomSettingsOpen, setRandomSettingsOpen] = useState(false);
+
+  // Adaptive difficulty map for Surprise Me (persisted in localStorage)
+  const SURPRISE_DIFF_KEY = "puzzlecraft-surprise-diffmap";
+  const [surpriseDiffMap, setSurpriseDiffMap] = useState<Record<PuzzleCategory, Difficulty>>(() => {
+    try {
+      const raw = localStorage.getItem(SURPRISE_DIFF_KEY);
+      if (raw) return { ...createDifficultyMap(), ...JSON.parse(raw) };
+    } catch { /* ignore */ }
+    return createDifficultyMap();
+  });
+  const surpriseStartTime = useRef<number>(0);
 
   // Random settings with localStorage persistence
   const RANDOM_SETTINGS_KEY = "puzzlecraft-random-settings";
