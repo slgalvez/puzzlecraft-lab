@@ -169,6 +169,34 @@ function tryGenerate(
     return load;
   }
 
+  // Build a cell-occupancy map for minimum-distance checks
+  const occupied = new Set<string>();
+  const MIN_GAP = Math.max(2, Math.floor(size / 6)); // 2-3 cells depending on grid
+
+  function isNearOccupied(r: number, c: number): boolean {
+    for (let dr2 = -MIN_GAP; dr2 <= MIN_GAP; dr2++) {
+      for (let dc2 = -MIN_GAP; dc2 <= MIN_GAP; dc2++) {
+        if (dr2 === 0 && dc2 === 0) continue;
+        if (occupied.has(`${r + dr2},${c + dc2}`)) return true;
+      }
+    }
+    return false;
+  }
+
+  function adjacencyPenalty(row: number, col: number, dr: number, dc: number, len: number): number {
+    let nearCells = 0;
+    let totalChecked = 0;
+    for (let i = 0; i < len; i++) {
+      const cr = row + dr * i;
+      const cc = col + dc * i;
+      // Skip cells that are valid overlaps (letter already matches)
+      if (grid[cr][cc] !== "") continue;
+      totalChecked++;
+      if (isNearOccupied(cr, cc)) nearCells++;
+    }
+    return totalChecked > 0 ? nearCells / totalChecked : 0;
+  }
+
   for (const word of shuffled) {
     if (placed.length >= wordCount) break;
     if (placedWords.has(word)) continue;
@@ -177,12 +205,12 @@ function tryGenerate(
     let bestPos: { r: number; c: number; dr: number; dc: number; score: number } | null = null;
 
     for (const [dr, dc] of shuffledDirs) {
-      // Sample positions rather than trying all for performance
       const positions: [number, number][] = [];
       for (let r = 0; r < size; r++)
         for (let c = 0; c < size; c++) positions.push([r, c]);
 
-      const sampled = rng.shuffle(positions).slice(0, Math.min(positions.length, 40));
+      // Sample more positions for better coverage
+      const sampled = rng.shuffle(positions).slice(0, Math.min(positions.length, 60));
 
       for (const [r, c] of sampled) {
         if (!canPlace(grid, word, r, c, dr, dc, size)) continue;
@@ -194,21 +222,34 @@ function tryGenerate(
         }
         if (overlaps / word.length > 0.3) continue;
 
-        // Score: prefer low-density regions, penalise clustering
+        // Adjacency: fraction of new cells that are near existing words
+        const adjPen = adjacencyPenalty(r, c, dr, dc, word.length);
+
+        // Region load
         const load = wordRegionLoad(r, c, dr, dc, word.length);
+
+        // Midpoint proximity to already-placed words
         const midR = r + dr * (word.length - 1) / 2;
         const midC = c + dc * (word.length - 1) / 2;
-
-        // Proximity penalty to already-placed word midpoints
         let proximityPenalty = 0;
+        let minDist = Infinity;
         for (const pw of placed) {
           const pmR = pw.row + pw.dr * (pw.word.length - 1) / 2;
           const pmC = pw.col + pw.dc * (pw.word.length - 1) / 2;
           const dist = Math.abs(midR - pmR) + Math.abs(midC - pmC);
-          if (dist < size * 0.25) proximityPenalty += (size * 0.25 - dist);
+          if (dist < minDist) minDist = dist;
+          if (dist < size * 0.3) proximityPenalty += (size * 0.3 - dist);
         }
 
-        const posScore = -load * 2 - overlaps * 4 - proximityPenalty * 2;
+        // Strong bonus for being far from all existing words
+        const distBonus = placed.length > 0 ? Math.min(minDist, size) : size;
+
+        const posScore =
+          distBonus * 3            // reward distance from nearest word
+          - load * 2               // penalise dense regions
+          - overlaps * 3           // slight penalty for overlaps
+          - proximityPenalty * 3   // penalise nearby midpoints
+          - adjPen * size * 4;    // penalise cell-level adjacency
 
         if (!bestPos || posScore > bestPos.score) {
           bestPos = { r, c, dr, dc, score: posScore };
@@ -221,8 +262,10 @@ function tryGenerate(
       placed.push({ word, row: bestPos.r, col: bestPos.c, dr: bestPos.dr, dc: bestPos.dc });
       placedWords.add(word);
       for (let i = 0; i < word.length; i++) {
-        const ri = getRegion(bestPos.r + bestPos.dr * i, bestPos.c + bestPos.dc * i);
-        regionLoad[ri]++;
+        const cr = bestPos.r + bestPos.dr * i;
+        const cc = bestPos.c + bestPos.dc * i;
+        occupied.add(`${cr},${cc}`);
+        regionLoad[getRegion(cr, cc)]++;
       }
     }
   }
