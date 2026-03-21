@@ -115,13 +115,12 @@ export function PrivateSidebar() {
         );
 
         // Detect new messages per conversation (only from OTHER users)
+        // unread_count from backend already excludes messages sent by current user,
+        // so c.unread_count > prev.unread only triggers for incoming messages.
         if (!initialLoadRef.current) {
           for (const c of convs) {
             const prev = prevConvsRef.current[c.id];
             if (prev && c.unread_count > prev.unread && c.last_message_at !== prev.lastMsgAt) {
-              // Skip if the latest message was sent by the current user (self-notification suppression)
-              if (c.last_sender_profile_id === user.id) continue;
-
               // Clean preview from system prefixes
               let preview = c.last_message || "";
               if (preview.startsWith("__")) preview = "";
