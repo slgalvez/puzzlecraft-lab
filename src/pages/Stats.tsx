@@ -6,7 +6,7 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puz
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { getDailyStreak, getTotalDailyCompleted } from "@/lib/dailyChallenge";
 import { getEndlessStats } from "@/lib/endlessHistory";
-import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, Shield } from "lucide-react";
+import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, Shield, Zap } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PremiumStats from "@/components/account/PremiumStats";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,11 @@ import PremiumLockedCard from "@/components/account/PremiumLockedCard";
 import { hasPremiumAccess, shouldShowUpgradeCTA } from "@/lib/premiumAccess";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 import { checkMilestones } from "@/lib/milestones";
+import { getSolveRecords } from "@/lib/solveTracker";
+import { computePlayerRating, getSkillTier, getTierColor, getTierProgress } from "@/lib/solveScoring";
+import { Progress } from "@/components/ui/progress";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 type ViewFilter = null | "daily" | "endless";
 
