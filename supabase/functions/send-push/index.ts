@@ -502,7 +502,7 @@ Deno.serve(async (req) => {
       }
 
       const payload = JSON.stringify({
-        title: title || "Puzzlecraft",
+        title: title || pushBody,
         body: pushBody,
         tag: tag || "private-notification",
         url: url || "/p",
