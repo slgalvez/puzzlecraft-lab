@@ -118,8 +118,7 @@ export function checkMilestones() {
 }
 
 /** Returns all milestones with their unlocked status. */
-export function getAllMilestones(): { id: string; label: string; emoji: string; unlocked: boolean }[] {
-  const shown = getShownIds();
+export function getAllMilestones(): { id: string; label: string; icon: MilestoneIcon; unlocked: boolean }[] {
   const solveCount = getSolveRecords().filter((r) => r.solveTime >= 10).length;
   const records = getSolveRecords().filter((r) => r.solveTime >= 10);
   const rating = records.length >= 5 ? computePlayerRating(records) : 0;
@@ -129,7 +128,7 @@ export function getAllMilestones(): { id: string; label: string; emoji: string; 
   let streakCurrent = 0;
   try { streakCurrent = getDailyStreak().current; } catch {}
 
-  const all: { id: string; label: string; emoji: string; unlocked: boolean }[] = [];
+  const all: { id: string; label: string; icon: MilestoneIcon; unlocked: boolean }[] = [];
 
   for (const { count, milestone } of SOLVE_MILESTONES) {
     all.push({ ...milestone, unlocked: solveCount >= count });

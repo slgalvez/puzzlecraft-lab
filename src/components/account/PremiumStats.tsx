@@ -393,9 +393,8 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
                 const score = computeSolveScore(r);
                 return (
                   <tr key={r.id} className="border-b last:border-0">
-                    <td className="px-3 py-2 text-foreground whitespace-nowrap">
+                     <td className="px-3 py-2 text-foreground whitespace-nowrap">
                       <span className="flex items-center gap-1.5">
-                        <PuzzleIcon type={r.puzzleType} size={13} className="text-muted-foreground" />
                         {info?.name ?? r.puzzleType}
                       </span>
                     </td>
