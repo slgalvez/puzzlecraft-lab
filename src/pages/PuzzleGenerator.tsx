@@ -356,7 +356,7 @@ const PuzzleGenerator = () => {
     setPuzzleGenerated(true);
     setRandomPool(allTypeKeys);
     setPuzzleKey((k) => k + 1);
-    surpriseStartTime.current = Date.now();
+    
     navigate(`/generate/${chosenType}?seed=${newSeed}`, {
       state: { randomPool: allTypeKeys, randomDifficulty: effectiveDiff },
       replace: true,
