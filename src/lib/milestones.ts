@@ -14,31 +14,33 @@ const STORAGE_KEY = "puzzlecraft-milestones-shown";
 
 // ── Milestone definitions ──
 
+export type MilestoneIcon = "puzzle" | "flame" | "trophy" | "medal" | "zap" | "crown" | "target" | "award" | "bolt";
+
 interface Milestone {
   id: string;
   label: string;
-  emoji: string;
+  icon: MilestoneIcon;
 }
 
 const SOLVE_MILESTONES: { count: number; milestone: Milestone }[] = [
-  { count: 10, milestone: { id: "solves-10", label: "10 Puzzles Solved", emoji: "🧩" } },
-  { count: 50, milestone: { id: "solves-50", label: "50 Puzzles Solved", emoji: "🔥" } },
-  { count: 100, milestone: { id: "solves-100", label: "100 Puzzles Solved", emoji: "💯" } },
-  { count: 250, milestone: { id: "solves-250", label: "250 Puzzles Solved", emoji: "🏆" } },
+  { count: 10, milestone: { id: "solves-10", label: "10 Puzzles Solved", icon: "puzzle" } },
+  { count: 50, milestone: { id: "solves-50", label: "50 Puzzles Solved", icon: "flame" } },
+  { count: 100, milestone: { id: "solves-100", label: "100 Puzzles Solved", icon: "trophy" } },
+  { count: 250, milestone: { id: "solves-250", label: "250 Puzzles Solved", icon: "medal" } },
 ];
 
 const STREAK_MILESTONES: { days: number; milestone: Milestone }[] = [
-  { days: 3, milestone: { id: "streak-3", label: "3-Day Streak", emoji: "🔥" } },
-  { days: 7, milestone: { id: "streak-7", label: "7-Day Streak", emoji: "⚡" } },
-  { days: 14, milestone: { id: "streak-14", label: "14-Day Streak", emoji: "🌟" } },
-  { days: 30, milestone: { id: "streak-30", label: "30-Day Streak", emoji: "👑" } },
+  { days: 3, milestone: { id: "streak-3", label: "3-Day Streak", icon: "flame" } },
+  { days: 7, milestone: { id: "streak-7", label: "7-Day Streak", icon: "zap" } },
+  { days: 14, milestone: { id: "streak-14", label: "14-Day Streak", icon: "bolt" } },
+  { days: 30, milestone: { id: "streak-30", label: "30-Day Streak", icon: "crown" } },
 ];
 
 const TIER_ORDER: SkillTier[] = ["Skilled", "Advanced", "Expert"];
 const TIER_MILESTONES: { tier: SkillTier; milestone: Milestone }[] = [
-  { tier: "Skilled", milestone: { id: "tier-skilled", label: "Skilled Rank Reached", emoji: "🎯" } },
-  { tier: "Advanced", milestone: { id: "tier-advanced", label: "Advanced Rank Reached", emoji: "⚔️" } },
-  { tier: "Expert", milestone: { id: "tier-expert", label: "Expert Rank Reached", emoji: "🏅" } },
+  { tier: "Skilled", milestone: { id: "tier-skilled", label: "Skilled Rank Reached", icon: "target" } },
+  { tier: "Advanced", milestone: { id: "tier-advanced", label: "Advanced Rank Reached", icon: "award" } },
+  { tier: "Expert", milestone: { id: "tier-expert", label: "Expert Rank Reached", icon: "medal" } },
 ];
 
 // ── Persistence ──
