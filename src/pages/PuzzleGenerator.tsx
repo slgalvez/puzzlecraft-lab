@@ -257,27 +257,56 @@ const PuzzleGenerator = () => {
     }
   };
 
+  const toggleGenerateType = (t: PuzzleCategory) => {
+    setGenerateTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t);
+      else next.add(t);
+      return next;
+    });
+    // On mobile step 1, don't navigate yet — wait for explicit "Next"
+    if (!isMobile) {
+      // Navigate to show the type in URL (pick last toggled if adding, or first remaining)
+      setPuzzleGenerated(false);
+    }
+  };
+
   const handleTypeChange = (newType: PuzzleCategory) => {
+    setGenerateTypes(new Set([newType]));
     setRandomPool(null);
     setPuzzleGenerated(false);
     if (isMobile) setMobileStep(2);
     navigate(`/generate/${newType}`, { replace: true });
   };
 
-  const canGenerate = !!info && !!difficulty;
+  const canGenerate = generateTypes.size > 0 && !!difficulty;
 
   const handleGenerate = () => {
     if (!canGenerate) {
       toast({
         title: "Missing selections",
-        description: "Select a puzzle type and difficulty to generate",
+        description: "Select at least one puzzle type and difficulty to generate",
       });
       return;
     }
-    // If we already have a seed from the URL (first generate), keep it; otherwise pick a new one
-    if (puzzleGenerated || !initialSeed) {
-      setSeed(randomSeed());
+    const types = Array.from(generateTypes);
+    const chosenType = types.length === 1 ? types[0] : types[Math.floor(Math.random() * types.length)];
+    const newSeed = puzzleGenerated || !initialSeed ? randomSeed() : seed;
+
+    if (types.length > 1) {
+      setRandomPool(types);
+    } else {
+      setRandomPool(null);
     }
+
+    if (chosenType !== category) {
+      navigate(`/generate/${chosenType}?seed=${newSeed}`, {
+        state: types.length > 1 ? { randomPool: types, randomDifficulty: difficulty } : undefined,
+        replace: true,
+      });
+    }
+
+    setSeed(newSeed);
     setPuzzleKey((k) => k + 1);
     setPuzzleGenerated(true);
     if (isMobile) setMobileStep(3);
