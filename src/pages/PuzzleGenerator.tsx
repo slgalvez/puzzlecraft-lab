@@ -178,17 +178,23 @@ const PuzzleGenerator = () => {
   const [mode, setMode] = useState<Mode>(() => routeState?.randomPool ? "random" : "generate");
   const [mobileStep, setMobileStep] = useState<MobileStep>(1);
 
+  // Generate tab: multi-select types
+  const [generateTypes, setGenerateTypes] = useState<Set<PuzzleCategory>>(
+    () => category ? new Set([category]) : new Set()
+  );
+
   // Random tab state
   const [randomTypes, setRandomTypes] = useState<Set<PuzzleCategory>>(new Set());
   const [randomDifficulty, setRandomDifficulty] = useState<Difficulty | "any" | null>(null);
 
   const handleNewPuzzle = useCallback(() => {
-    if (randomPool && randomPool.length > 1) {
-      const chosenType = randomPool[Math.floor(Math.random() * randomPool.length)];
+    const pool = randomPool ?? (generateTypes.size > 1 ? Array.from(generateTypes) : null);
+    if (pool && pool.length > 1) {
+      const chosenType = pool[Math.floor(Math.random() * pool.length)];
       const newSeed = randomSeed();
       if (chosenType !== category) {
         navigate(`/generate/${chosenType}?seed=${newSeed}`, {
-          state: { randomPool, randomDifficulty: difficulty },
+          state: { randomPool: pool, randomDifficulty: difficulty },
           replace: true,
         });
       } else {
@@ -199,7 +205,7 @@ const PuzzleGenerator = () => {
       setSeed(randomSeed());
       setPuzzleKey((k) => k + 1);
     }
-  }, [randomPool, category, difficulty, navigate]);
+  }, [randomPool, generateTypes, category, difficulty, navigate]);
 
   // Show error for truly invalid types (not just missing)
   if (type && !info) {
@@ -251,27 +257,56 @@ const PuzzleGenerator = () => {
     }
   };
 
+  const toggleGenerateType = (t: PuzzleCategory) => {
+    setGenerateTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t);
+      else next.add(t);
+      return next;
+    });
+    // On mobile step 1, don't navigate yet — wait for explicit "Next"
+    if (!isMobile) {
+      // Navigate to show the type in URL (pick last toggled if adding, or first remaining)
+      setPuzzleGenerated(false);
+    }
+  };
+
   const handleTypeChange = (newType: PuzzleCategory) => {
+    setGenerateTypes(new Set([newType]));
     setRandomPool(null);
     setPuzzleGenerated(false);
     if (isMobile) setMobileStep(2);
     navigate(`/generate/${newType}`, { replace: true });
   };
 
-  const canGenerate = !!info && !!difficulty;
+  const canGenerate = generateTypes.size > 0 && !!difficulty;
 
   const handleGenerate = () => {
     if (!canGenerate) {
       toast({
         title: "Missing selections",
-        description: "Select a puzzle type and difficulty to generate",
+        description: "Select at least one puzzle type and difficulty to generate",
       });
       return;
     }
-    // If we already have a seed from the URL (first generate), keep it; otherwise pick a new one
-    if (puzzleGenerated || !initialSeed) {
-      setSeed(randomSeed());
+    const types = Array.from(generateTypes);
+    const chosenType = types.length === 1 ? types[0] : types[Math.floor(Math.random() * types.length)];
+    const newSeed = puzzleGenerated || !initialSeed ? randomSeed() : seed;
+
+    if (types.length > 1) {
+      setRandomPool(types);
+    } else {
+      setRandomPool(null);
     }
+
+    if (chosenType !== category) {
+      navigate(`/generate/${chosenType}?seed=${newSeed}`, {
+        state: types.length > 1 ? { randomPool: types, randomDifficulty: difficulty } : undefined,
+        replace: true,
+      });
+    }
+
+    setSeed(newSeed);
     setPuzzleKey((k) => k + 1);
     setPuzzleGenerated(true);
     if (isMobile) setMobileStep(3);
@@ -283,6 +318,7 @@ const PuzzleGenerator = () => {
     setSeed(randomSeed());
     setPuzzleKey(0);
     setRandomPool(null);
+    setGenerateTypes(new Set());
     setSeedInput("");
     setAdvancedOpen(false);
     if (isMobile) setMobileStep(1);
@@ -382,7 +418,7 @@ const PuzzleGenerator = () => {
 
   // ─── Mobile Generate Stepper ───
   const renderMobileGenerate = () => {
-    if (mobileStep === 3 && puzzleGenerated && info && difficulty) {
+    if (mobileStep === 3 && puzzleGenerated && category && info && difficulty) {
       return (
         <div>
           <button
@@ -393,10 +429,10 @@ const PuzzleGenerator = () => {
           </button>
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <PuzzleIcon type={category!} size={24} className="text-foreground" />
+              <PuzzleIcon type={category} size={24} className="text-foreground" />
               <div>
                 <h2 className="font-display text-lg font-bold text-foreground">{info.name}</h2>
-                <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[getEffectiveDifficulty(category!, difficulty)]}</p>
+                <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[getEffectiveDifficulty(category, difficulty)]}</p>
               </div>
             </div>
             <Button onClick={handleGenerate} size="sm" variant="outline" className="gap-1.5">
@@ -413,15 +449,16 @@ const PuzzleGenerator = () => {
         {mobileStep === 1 && (
           <div className="animate-in fade-in slide-in-from-right-4 duration-300">
             <p className="mb-1 text-xs font-medium uppercase tracking-widest text-muted-foreground">Step 1 of 2</p>
-            <h2 className="font-display text-2xl font-bold text-foreground mb-6">Choose Puzzle Type</h2>
+            <h2 className="font-display text-2xl font-bold text-foreground mb-1">Choose Puzzle Type</h2>
+            <p className="text-sm text-muted-foreground mb-6">Select one or more types</p>
             <div className="grid grid-cols-2 gap-3">
               {puzzleTypes.map((pt) => (
                 <button
                   key={pt.value}
-                  onClick={() => handleTypeChange(pt.value)}
+                  onClick={() => toggleGenerateType(pt.value)}
                   className={cn(
                     "flex flex-col items-center gap-1.5 rounded-xl border-2 p-4 transition-all",
-                    category === pt.value
+                    generateTypes.has(pt.value)
                       ? "border-primary bg-primary/5 shadow-sm"
                       : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
                   )}
@@ -431,10 +468,27 @@ const PuzzleGenerator = () => {
                 </button>
               ))}
             </div>
+            {generateTypes.size > 0 && (
+              <div className="mt-6">
+                <Button
+                  onClick={() => {
+                    // Navigate to first selected type for URL consistency
+                    const first = Array.from(generateTypes)[0];
+                    navigate(`/generate/${first}`, { replace: true });
+                    setMobileStep(2);
+                  }}
+                  size="lg"
+                  className="w-full gap-2 text-base"
+                >
+                  Next — {generateTypes.size === 1 ? CATEGORY_INFO[Array.from(generateTypes)[0]].name : `${generateTypes.size} types`}
+                  <ChevronRight size={16} />
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
-        {mobileStep === 2 && info && (
+        {mobileStep === 2 && generateTypes.size > 0 && (
           <div className="animate-in fade-in slide-in-from-right-4 duration-300">
             <button
               onClick={() => setMobileStep(1)}
@@ -445,17 +499,22 @@ const PuzzleGenerator = () => {
             <p className="mb-1 text-xs font-medium uppercase tracking-widest text-muted-foreground">Step 2 of 2</p>
             <h2 className="font-display text-2xl font-bold text-foreground mb-2">Choose Difficulty</h2>
             <p className="text-sm text-muted-foreground mb-6">
-              <PuzzleIcon type={category!} size={20} className="text-foreground mr-1 inline-block align-text-bottom" /> {info.name}
+              {generateTypes.size === 1 ? (
+                <><PuzzleIcon type={Array.from(generateTypes)[0]} size={20} className="text-foreground mr-1 inline-block align-text-bottom" /> {CATEGORY_INFO[Array.from(generateTypes)[0]].name}</>
+              ) : (
+                <>{generateTypes.size} puzzle types selected</>
+              )}
             </p>
             <div className="flex flex-col gap-3">
               {difficulties.map(([val, label]) => {
-                const disabled = isDifficultyDisabled(category!, val);
+                const selectedTypes = Array.from(generateTypes);
+                const disabled = selectedTypes.every(t => isDifficultyDisabled(t, val));
                 return (
                   <button
                     key={val}
                     onClick={() => {
                       if (disabled) {
-                        toast({ title: `${label} not available for ${info!.name} yet` });
+                        toast({ title: `${label} not available for selected types` });
                         return;
                       }
                       handleDifficultyChange(val);
@@ -681,19 +740,26 @@ const PuzzleGenerator = () => {
   // ─── Desktop Layout ───
   const renderDesktopGenerate = () => (
     <div className="space-y-8">
-      {/* Puzzle Type */}
+      {/* Puzzle Type — multi-select */}
       <div>
-        <label className="mb-3 block text-xs font-medium uppercase tracking-widest text-muted-foreground">
-          Puzzle Type
-        </label>
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            Puzzle Type
+          </label>
+          <div className="flex gap-2">
+            <button onClick={() => setGenerateTypes(new Set(puzzleTypes.map(pt => pt.value)))} className="text-xs font-medium text-primary hover:underline">All</button>
+            <span className="text-xs text-muted-foreground">·</span>
+            <button onClick={() => { setGenerateTypes(new Set()); setPuzzleGenerated(false); }} className="text-xs font-medium text-primary hover:underline">Clear</button>
+          </div>
+        </div>
         <div className="grid grid-cols-4 gap-3">
           {puzzleTypes.map((pt) => (
             <button
               key={pt.value}
-              onClick={() => handleTypeChange(pt.value)}
+              onClick={() => toggleGenerateType(pt.value)}
               className={cn(
                 "flex items-center gap-2.5 rounded-xl border-2 px-4 py-3 text-left transition-all",
-                category === pt.value
+                generateTypes.has(pt.value)
                   ? "border-primary bg-primary/5 shadow-sm"
                   : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
               )}
@@ -703,6 +769,11 @@ const PuzzleGenerator = () => {
             </button>
           ))}
         </div>
+        {generateTypes.size > 1 && (
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            {generateTypes.size} types selected — a random one will be picked on generate
+          </p>
+        )}
       </div>
 
       {/* Difficulty */}
@@ -712,7 +783,9 @@ const PuzzleGenerator = () => {
         </label>
         <div className="flex flex-wrap gap-2">
           {difficulties.map(([val, label]) => {
-            const disabled = category ? isDifficultyDisabled(category, val) : false;
+            // Disabled if ALL selected types disable this difficulty
+            const selectedTypes = Array.from(generateTypes);
+            const disabled = selectedTypes.length > 0 && selectedTypes.every(t => isDifficultyDisabled(t, val));
             return (
               <button
                 key={val}
@@ -794,7 +867,7 @@ const PuzzleGenerator = () => {
         </Button>
         {!canGenerate && (
           <p className="text-xs text-muted-foreground">
-            Select a puzzle type and difficulty to generate
+            Select at least one puzzle type and difficulty to generate
           </p>
         )}
         {puzzleGenerated && (
@@ -802,7 +875,7 @@ const PuzzleGenerator = () => {
             Puzzle Code: <span className="font-mono text-foreground">{seed}</span>
           </p>
         )}
-        {(puzzleGenerated || category || difficulty) && (
+        {(puzzleGenerated || generateTypes.size > 0 || difficulty) && (
           <button
             onClick={handleClear}
             className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
