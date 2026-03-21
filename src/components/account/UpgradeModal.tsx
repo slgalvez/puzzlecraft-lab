@@ -7,7 +7,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Sparkles, BarChart3, History, TrendingUp } from "lucide-react";
+import { BarChart3, TrendingUp, Shield } from "lucide-react";
 import { useState } from "react";
 import { PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
 
@@ -17,9 +17,9 @@ interface UpgradeModalProps {
 }
 
 const features = [
-  { icon: BarChart3, label: "Advanced stats" },
-  { icon: History, label: "Solve history" },
-  { icon: TrendingUp, label: "Performance insights" },
+  { icon: BarChart3, label: "Advanced performance stats" },
+  { icon: Shield, label: "Player ranking & leaderboard" },
+  { icon: TrendingUp, label: "Personalized insights" },
 ];
 
 export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
@@ -37,10 +37,7 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <DialogTitle className="font-display">Puzzlecraft+</DialogTitle>
-          </div>
+          <DialogTitle className="font-display">Puzzlecraft+</DialogTitle>
           <DialogDescription>
             Unlock deeper insight into your puzzle performance
           </DialogDescription>
@@ -67,8 +64,7 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
               Sign in to your account first to upgrade.
             </p>
           ) : (
-            <Button onClick={handleUpgrade} disabled={loading} className="w-full gap-2">
-              <Sparkles size={14} />
+            <Button onClick={handleUpgrade} disabled={loading} className="w-full">
               {loading ? "Opening checkout..." : "Upgrade – $2.99/month"}
             </Button>
           )}
