@@ -461,7 +461,7 @@ const CraftPuzzle = () => {
                     <Input
                       value={puzzleTitle}
                       onChange={e => setPuzzleTitle(e.target.value)}
-                      placeholder="For my Mariah"
+                      placeholder="Just for You"
                       maxLength={100}
                     />
                   </div>
@@ -470,7 +470,7 @@ const CraftPuzzle = () => {
                     <Input
                       value={puzzleFrom}
                       onChange={e => setPuzzleFrom(e.target.value)}
-                      placeholder="- Sylas"
+                      placeholder="Sylas"
                       maxLength={100}
                     />
                   </div>
@@ -482,7 +482,7 @@ const CraftPuzzle = () => {
                     <Textarea
                       value={wordInput}
                       onChange={e => setWordInput(e.target.value)}
-                      placeholder={"LOVE\nSARAH\nBIRTHDAY\nMEMORIES\nFOREVER"}
+                      placeholder={"CHUCKY\nBEACH\nBIRTHDAY\nVACATION\nNASHVILLE"}
                       rows={6}
                       className="resize-none"
                     />
@@ -554,7 +554,7 @@ const CraftPuzzle = () => {
                   <Input
                     value={revealMessage}
                     onChange={e => setRevealMessage(e.target.value)}
-                    placeholder="Congratulations! You cracked it 🎉"
+                    placeholder="Congratulations! You cracked it"
                     maxLength={500}
                   />
                 </div>

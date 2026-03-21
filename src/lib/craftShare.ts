@@ -31,7 +31,7 @@ export function buildCraftShareText(title?: string, from?: string, url?: string)
   if (title) lines.push(`For ${title}`);
   if (from) lines.push(`From — ${from}`);
   if (lines.length > 0) lines.push("");
-  lines.push("I made you a puzzle 🧩");
+  lines.push("I made you a puzzle");
   if (url) {
     lines.push("Solve it here:");
     lines.push(url);
