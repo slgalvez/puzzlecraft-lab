@@ -371,7 +371,9 @@ export type Database = {
         Row: {
           display_name: string
           id: string
+          previous_rating: number
           rating: number
+          rating_updated_at: string
           skill_tier: string
           solve_count: number
           updated_at: string
@@ -380,7 +382,9 @@ export type Database = {
         Insert: {
           display_name?: string
           id?: string
+          previous_rating?: number
           rating?: number
+          rating_updated_at?: string
           skill_tier?: string
           solve_count?: number
           updated_at?: string
@@ -389,7 +393,9 @@ export type Database = {
         Update: {
           display_name?: string
           id?: string
+          previous_rating?: number
           rating?: number
+          rating_updated_at?: string
           skill_tier?: string
           solve_count?: number
           updated_at?: string

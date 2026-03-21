@@ -6,7 +6,7 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puz
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { getDailyStreak, getTotalDailyCompleted } from "@/lib/dailyChallenge";
 import { getEndlessStats } from "@/lib/endlessHistory";
-import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, Shield } from "lucide-react";
+import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, Shield, Zap } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PremiumStats from "@/components/account/PremiumStats";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,11 @@ import PremiumLockedCard from "@/components/account/PremiumLockedCard";
 import { hasPremiumAccess, shouldShowUpgradeCTA } from "@/lib/premiumAccess";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 import { checkMilestones } from "@/lib/milestones";
+import { getSolveRecords } from "@/lib/solveTracker";
+import { computePlayerRating, getSkillTier, getTierColor, getTierProgress } from "@/lib/solveScoring";
+import { Progress } from "@/components/ui/progress";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 type ViewFilter = null | "daily" | "endless";
 
@@ -39,6 +44,48 @@ const Stats = () => {
   const premiumAccess = hasPremiumAccess({ isAdmin, subscribed });
   const showUpgrade = shouldShowUpgradeCTA({ isAdmin, subscribed });
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  // Local rating for Your Rank card
+  const localRating = useMemo(() => {
+    const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
+    if (recs.length < 10) return null;
+    const rating = computePlayerRating(recs);
+    const tier = getSkillTier(rating);
+    return { rating, tier, solveCount: recs.length };
+  }, [dataVersion]);
+
+  // Fetch user's leaderboard entry for rank position and rating change
+  const { data: myLeaderboardEntry } = useQuery({
+    queryKey: ["my-leaderboard-entry", account?.id, dataVersion],
+    queryFn: async () => {
+      if (!account) return null;
+      // Get rank by counting entries with higher rating
+      const { data: entry } = await supabase
+        .from("leaderboard_entries")
+        .select("rating, previous_rating, skill_tier, solve_count")
+        .eq("user_id", account.id)
+        .maybeSingle();
+      if (!entry) return null;
+      const { count } = await supabase
+        .from("leaderboard_entries")
+        .select("*", { count: "exact", head: true })
+        .gt("rating", entry.rating);
+      return { ...entry, rank: (count ?? 0) + 1 };
+    },
+    enabled: !!account && premiumAccess,
+    staleTime: 30_000,
+  });
+
+  const TIER_THRESHOLDS: Record<string, number> = {
+    Expert: 1200, Advanced: 950, Skilled: 700, Casual: 400, Beginner: 0,
+  };
+  const TIER_ORDER_LIST = ["Beginner", "Casual", "Skilled", "Advanced", "Expert"];
+  const nextTierInfo = localRating ? (() => {
+    const idx = TIER_ORDER_LIST.indexOf(localRating.tier);
+    if (idx >= TIER_ORDER_LIST.length - 1) return null;
+    const next = TIER_ORDER_LIST[idx + 1];
+    return { name: next, threshold: TIER_THRESHOLDS[next] };
+  })() : null;
 
   // Sync rating to leaderboard + check milestones on load
   useEffect(() => {
@@ -162,6 +209,55 @@ const Stats = () => {
             </span>
           )}
         </p>
+
+        {/* Your Rank Card — premium users */}
+        {showGeneral && premiumAccess && localRating && (
+          <div className="mt-6 rounded-2xl border border-primary/20 bg-card p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <Zap size={16} className="text-primary" />
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your Rank</span>
+                  {myLeaderboardEntry && (
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                      #{myLeaderboardEntry.rank}
+                    </span>
+                  )}
+                </div>
+                <p className={cn("text-lg font-semibold", getTierColor(localRating.tier as any))}>
+                  {localRating.tier}
+                </p>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <p className="font-mono text-3xl font-bold text-foreground">{localRating.rating}</p>
+                  <span className="text-xs text-muted-foreground">Rating</span>
+                  {myLeaderboardEntry && myLeaderboardEntry.previous_rating > 0 && (
+                    (() => {
+                      const diff = myLeaderboardEntry.rating - myLeaderboardEntry.previous_rating;
+                      if (diff === 0) return null;
+                      return (
+                        <span className={cn("text-xs font-semibold inline-flex items-center gap-0.5", diff > 0 ? "text-emerald-500" : "text-destructive")}>
+                          {diff > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                          {diff > 0 ? "+" : ""}{diff}
+                        </span>
+                      );
+                    })()
+                  )}
+                </div>
+                {nextTierInfo && (
+                  <div className="mt-3 max-w-56">
+                    <Progress value={getTierProgress(localRating.rating)} className="h-2" />
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      Next: {nextTierInfo.name} ({nextTierInfo.threshold})
+                    </p>
+                  </div>
+                )}
+              </div>
+              <Button asChild variant="outline" size="sm" className="self-start">
+                <Link to="/leaderboard"><Shield size={14} /> View Leaderboard</Link>
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Overview cards */}
         {showGeneral && (
