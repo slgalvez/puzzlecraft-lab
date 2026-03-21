@@ -166,11 +166,6 @@ const PuzzleGenerator = () => {
     });
   };
 
-  const resetRandomSettings = () => {
-    localStorage.removeItem(RANDOM_SETTINGS_KEY);
-    setRandomSettings(defaultRandomSettings);
-  };
-
   // Derive convenience accessors from randomSettings (used throughout render)
   const timeLimitEnabled = randomSettings.timer;
   const setTimeLimitEnabled = (v: boolean) => updateRandomSetting("timer", v);
