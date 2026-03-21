@@ -106,6 +106,21 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
     [confirmDeleteId, onDataChange]
   );
 
+  const handleDeleteReceived = useCallback(
+    (id: string) => {
+      if (confirmDeleteId === id) {
+        deleteReceivedItem(id);
+        setReceived(loadReceivedItems());
+        setConfirmDeleteId(null);
+        onDataChange?.();
+      } else {
+        setConfirmDeleteId(id);
+        setTimeout(() => setConfirmDeleteId(null), 3000);
+      }
+    },
+    [confirmDeleteId, onDataChange]
+  );
+
   const handleCopyLink = useCallback(
     async (id: string, url: string) => {
       try {
