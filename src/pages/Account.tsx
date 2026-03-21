@@ -10,7 +10,8 @@ import UpgradeModal from "@/components/account/UpgradeModal";
 
 export default function AccountPage() {
   const navigate = useNavigate();
-  const { account, signIn, signUp, signOut } = useUserAccount();
+  const { account, signIn, signUp, signOut, subscribed, subscriptionEnd, openCustomerPortal } = useUserAccount();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [tab, setTab] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
