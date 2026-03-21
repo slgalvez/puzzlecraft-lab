@@ -45,9 +45,33 @@ export default function AccountPage() {
               Your progress is synced across devices automatically.
             </p>
           </div>
+
+          {/* Subscription status */}
+          {subscribed ? (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">Puzzlecraft+</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Active{subscriptionEnd ? ` · Renews ${new Date(subscriptionEnd).toLocaleDateString()}` : ""}
+              </p>
+              <Button variant="outline" size="sm" onClick={() => openCustomerPortal()}>
+                Manage Subscription
+              </Button>
+            </div>
+          ) : (
+            <Button variant="outline" className="w-full gap-2" onClick={() => setUpgradeOpen(true)}>
+              <Sparkles size={14} />
+              Upgrade to Puzzlecraft+
+            </Button>
+          )}
+
           <Button variant="outline" className="w-full" onClick={() => { signOut(); navigate("/"); }}>
             Sign Out
           </Button>
+
+          <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
         </div>
       </Layout>
     );
