@@ -418,7 +418,7 @@ const PuzzleGenerator = () => {
 
   // ─── Mobile Generate Stepper ───
   const renderMobileGenerate = () => {
-    if (mobileStep === 3 && puzzleGenerated && info && difficulty) {
+    if (mobileStep === 3 && puzzleGenerated && category && info && difficulty) {
       return (
         <div>
           <button
@@ -429,10 +429,10 @@ const PuzzleGenerator = () => {
           </button>
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <PuzzleIcon type={category!} size={24} className="text-foreground" />
+              <PuzzleIcon type={category} size={24} className="text-foreground" />
               <div>
                 <h2 className="font-display text-lg font-bold text-foreground">{info.name}</h2>
-                <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[getEffectiveDifficulty(category!, difficulty)]}</p>
+                <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[getEffectiveDifficulty(category, difficulty)]}</p>
               </div>
             </div>
             <Button onClick={handleGenerate} size="sm" variant="outline" className="gap-1.5">
