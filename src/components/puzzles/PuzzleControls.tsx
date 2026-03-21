@@ -106,8 +106,9 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
       ) : isMobile ? (
         /* ── Mobile layout ── */
         <div className="space-y-3">
-          {/* Save + Reset — top-right aligned, icon-only, low emphasis */}
-          <div className="flex justify-end gap-1">
+          {/* Save + Status + Reset — top-right aligned, icon-only, low emphasis */}
+          <div className="flex items-center justify-end gap-1">
+            <SaveIndicator status={saveStatus} />
             {canSave && (
               <Button
                 variant="ghost"
