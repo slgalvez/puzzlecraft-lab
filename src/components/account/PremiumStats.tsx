@@ -15,9 +15,8 @@ import {
   trueMistakes,
 } from "@/lib/solveScoring";
 import { getBestInsight } from "@/lib/solveInsights";
-import { getAllMilestones } from "@/lib/milestones";
-import { Clock, Trophy, Target, BarChart3, Zap, CheckCircle, FlaskConical, Trash2, TrendingUp, TrendingDown, ShieldCheck, ChevronDown, ChevronUp, Award } from "lucide-react";
-import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
+import { getAllMilestones, type MilestoneIcon } from "@/lib/milestones";
+import { Clock, Trophy, Target, BarChart3, Zap, CheckCircle, FlaskConical, Trash2, TrendingUp, TrendingDown, ShieldCheck, ChevronDown, ChevronUp, Award, Puzzle, Flame, Crown, Medal, Bolt } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateDemoSolves, clearDemoSolves, hasDemoData } from "@/lib/demoStats";
 import { useUserAccount } from "@/contexts/UserAccountContext";
