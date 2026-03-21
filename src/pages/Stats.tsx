@@ -97,16 +97,22 @@ const Stats = () => {
 
   // Stat cards use filtered data when date filter is active
   const displayStats = filteredStatCards ?? stats;
+
+  // Top row: 4 key metrics
   const statCards = [
     { icon: Target, label: "Puzzles Solved", value: displayStats.totalSolved.toString() },
     ...(!dateFilter ? [
       { icon: Flame, label: "Current Streak", value: `${stats.currentStreak} day${stats.currentStreak !== 1 ? "s" : ""}` },
-      { icon: Trophy, label: "Longest Streak", value: `${stats.longestStreak} day${stats.longestStreak !== 1 ? "s" : ""}` },
     ] : []),
     { icon: Clock, label: "Avg Solve Time", value: displayStats.totalSolved > 0 ? formatTime(displayStats.averageTime) : "—" },
-    { icon: BarChart3, label: "Total Time", value: displayStats.totalSolved > 0 ? formatTime(displayStats.totalTime) : "—" },
     { icon: Trophy, label: "Fastest Solve", value: displayStats.bestTime !== null ? formatTime(displayStats.bestTime) : "—" },
   ];
+
+  // Lifetime stats (lower priority)
+  const lifetimeCards = !dateFilter ? [
+    { icon: Flame, label: "Longest Streak", value: `${stats.longestStreak} day${stats.longestStreak !== 1 ? "s" : ""}` },
+    { icon: BarChart3, label: "Total Time", value: stats.totalSolved > 0 ? formatTime(stats.totalTime) : "—" },
+  ] : [];
 
   const activeFilterLabel = [
     dateFilter && new Date(dateFilter + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }),
