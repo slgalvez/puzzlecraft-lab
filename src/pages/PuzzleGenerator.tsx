@@ -188,12 +188,13 @@ const PuzzleGenerator = () => {
   const [randomDifficulty, setRandomDifficulty] = useState<Difficulty | "any" | null>(null);
 
   const handleNewPuzzle = useCallback(() => {
-    if (randomPool && randomPool.length > 1) {
-      const chosenType = randomPool[Math.floor(Math.random() * randomPool.length)];
+    const pool = randomPool ?? (generateTypes.size > 1 ? Array.from(generateTypes) : null);
+    if (pool && pool.length > 1) {
+      const chosenType = pool[Math.floor(Math.random() * pool.length)];
       const newSeed = randomSeed();
       if (chosenType !== category) {
         navigate(`/generate/${chosenType}?seed=${newSeed}`, {
-          state: { randomPool, randomDifficulty: difficulty },
+          state: { randomPool: pool, randomDifficulty: difficulty },
           replace: true,
         });
       } else {
@@ -204,7 +205,7 @@ const PuzzleGenerator = () => {
       setSeed(randomSeed());
       setPuzzleKey((k) => k + 1);
     }
-  }, [randomPool, category, difficulty, navigate]);
+  }, [randomPool, generateTypes, category, difficulty, navigate]);
 
   // Show error for truly invalid types (not just missing)
   if (type && !info) {
