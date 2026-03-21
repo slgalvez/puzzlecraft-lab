@@ -164,7 +164,7 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
   const [pendingMerge, setPendingMerge] = useState(false);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 
-  const handleSession = useCallback(async (session: Session | null) => {
+  const handleSession = useCallback(async (session: Session | null, event?: string) => {
     if (!session?.user) {
       setAccount(null);
       setLoading(false);
@@ -173,13 +173,18 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
     const profile = await fetchProfile(session.user.id);
     setAccount(profile);
 
-    // Check if local data exists and needs merging
-    if (hasLocalData()) {
+    // Only prompt merge on a fresh sign-in, not on token refreshes or initial session restore.
+    // Use a localStorage flag keyed to the user ID so it's only shown once per account.
+    const mergeKey = `${MERGE_HANDLED_KEY}-${session.user.id}`;
+    const alreadyHandled = localStorage.getItem(mergeKey) === "1";
+
+    if (!alreadyHandled && (event === "SIGNED_IN") && hasLocalData()) {
       setPendingMerge(true);
       setPendingUserId(session.user.id);
-    } else {
-      // No local data — pull from DB
+    } else if (!alreadyHandled && !hasLocalData()) {
+      // No local data and first time — pull from DB and mark handled
       await pullProgressFromDb(session.user.id);
+      localStorage.setItem(mergeKey, "1");
     }
     setLoading(false);
   }, []);
