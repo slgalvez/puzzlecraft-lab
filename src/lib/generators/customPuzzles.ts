@@ -573,7 +573,11 @@ export interface CustomCryptogramData {
 }
 
 export function generateCustomCryptogram(phrase: string, difficulty: CraftDifficulty = "medium"): CustomCryptogramData {
-  const decoded = phrase.toUpperCase().replace(/[^A-Z .,!?;:'"()-]/g, "");
+  // Normalize smart/curly quotes to straight equivalents before filtering
+  const normalized = phrase
+    .replace(/[\u2018\u2019\u201A\u2032]/g, "'")   // curly single quotes → straight apostrophe
+    .replace(/[\u201C\u201D\u201E\u2033]/g, '"');   // curly double quotes → straight quote
+  const decoded = normalized.toUpperCase().replace(/[^A-Z .,!?;:'"()-]/g, "");
   if (decoded.replace(/[^A-Z]/g, "").length < 3) throw new Error("Phrase too short");
 
   const rng = new SeededRandom(Date.now() % 2147483646 || 1);

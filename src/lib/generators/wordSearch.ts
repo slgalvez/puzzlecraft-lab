@@ -8,6 +8,8 @@ export interface WordSearchPuzzle {
   size: number;
 }
 
+export { tryGenerate as tryGenerateWordSearch, canPlace as canPlaceWS, placeWord as placeWordWS, scorePuzzle as scoreWordSearchPuzzle, validateGrid as validateWordSearchGrid };
+
 const DIRECTIONS: [number, number][] = [
   [0, 1], [1, 0], [1, 1], [-1, 1], [0, -1], [-1, 0], [-1, -1], [1, -1],
 ];
