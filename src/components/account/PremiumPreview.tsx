@@ -1,4 +1,4 @@
-import { Shield, Target, Trophy, Flame, TrendingUp, Zap } from "lucide-react";
+import { Shield, Target, Trophy, TrendingUp, BarChart3 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 /** Fake data cards shown blurred to tease Puzzlecraft+ features */
