@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share, Copy, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share, Copy, Check, Loader2, Save } from "lucide-react";
 import CraftStepper from "@/components/craft/CraftStepper";
 import CraftTypeCards, { TYPE_OPTIONS } from "@/components/craft/CraftTypeCards";
 import CraftPreviewGrid from "@/components/craft/CraftPreviewGrid";
@@ -71,6 +71,7 @@ const CraftPuzzle = () => {
   const [craftSettings, setCraftSettings] = useState<CraftSettings>(DEFAULT_CRAFT_SETTINGS);
   const [draftCount, setDraftCount] = useState(() => loadDrafts().length);
   const [draftSaved, setDraftSaved] = useState(false);
+  const [draftDirty, setDraftDirty] = useState(true);
   const [enteredFromDraft, setEnteredFromDraft] = useState(false);
   
   const sentRecorded = useRef(false);
@@ -91,6 +92,14 @@ const CraftPuzzle = () => {
       window.history.replaceState({}, "");
     }
   }, [location.state]);
+
+  /* ── Mark dirty on any content change ── */
+  useEffect(() => {
+    if (step === "content" || step === "preview") {
+      setDraftDirty(true);
+      setDraftSaved(false);
+    }
+  }, [wordInput, phraseInput, clueEntries, revealMessage, puzzleTitle, puzzleFrom, craftSettings]);
 
   /* ── Auto-save draft ── */
   useEffect(() => {
@@ -118,14 +127,40 @@ const CraftPuzzle = () => {
       };
       saveDraft(draft);
       refreshDraftCount();
-      setDraftSaved(true);
-      setTimeout(() => setDraftSaved(false), 1500);
     }, 2000);
 
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [step, selectedType, puzzleTitle, puzzleFrom, wordInput, phraseInput, clueEntries, revealMessage, craftSettings, refreshDraftCount]);
+
+  /** Manual save draft — works on both content and preview steps */
+  const handleSaveDraft = useCallback(() => {
+    if (!selectedType) return;
+    if (!activeDraftId.current) {
+      activeDraftId.current = generateDraftId();
+    }
+    // Clear any pending auto-save
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+
+    const draft: CraftDraft = {
+      id: activeDraftId.current,
+      type: selectedType,
+      title: puzzleTitle,
+      from: puzzleFrom,
+      wordInput,
+      phraseInput,
+      clueEntries,
+      revealMessage,
+      settings: craftSettings,
+      updatedAt: Date.now(),
+    };
+    saveDraft(draft);
+    refreshDraftCount();
+    setDraftSaved(true);
+    setDraftDirty(false);
+    setTimeout(() => setDraftSaved(false), 2000);
+  }, [selectedType, puzzleTitle, puzzleFrom, wordInput, phraseInput, clueEntries, revealMessage, craftSettings, refreshDraftCount]);
 
   const handleSelectType = (type: CraftType) => {
     setSelectedType(type);
@@ -569,13 +604,27 @@ const CraftPuzzle = () => {
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   {saving ? "Saving…" : "Preview Puzzle"}
                 </Button>
-                <p className="text-[10px] text-muted-foreground text-center">
-                  {draftSaved ? (
-                    <span className="text-primary animate-in fade-in-0 duration-300">Saved ✓</span>
-                  ) : (
-                    "No account needed • Share instantly with a link"
-                  )}
-                </p>
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={handleSaveDraft}
+                    className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {draftSaved && !draftDirty ? (
+                      <>
+                        <Check className="h-3 w-3 text-primary" />
+                        <span className="text-primary">Saved</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-3 w-3" />
+                        <span>Save draft</span>
+                      </>
+                    )}
+                  </button>
+                  <p className="text-[10px] text-muted-foreground">
+                    No account needed
+                  </p>
+                </div>
               </div>
             )}
 
@@ -651,9 +700,27 @@ const CraftPuzzle = () => {
                   </button>
                 </div>
 
-                <Button onClick={handleRegenerate} variant="ghost" className="w-full gap-2 text-muted-foreground">
-                  <RefreshCw className="h-4 w-4" /> Regenerate Puzzle
-                </Button>
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={handleSaveDraft}
+                    className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {draftSaved && !draftDirty ? (
+                      <>
+                        <Check className="h-3 w-3 text-primary" />
+                        <span className="text-primary">Saved</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-3 w-3" />
+                        <span>Save draft</span>
+                      </>
+                    )}
+                  </button>
+                  <Button onClick={handleRegenerate} variant="ghost" size="sm" className="gap-1.5 text-muted-foreground h-auto py-1 px-2">
+                    <RefreshCw className="h-3 w-3" /> Regenerate
+                  </Button>
+                </div>
               </div>
             )}
           </>
