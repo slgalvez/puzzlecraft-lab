@@ -438,8 +438,8 @@ Deno.serve(async (req) => {
       }
 
       const payload = JSON.stringify({
-        title: "Puzzlecraft",
-        body: "Test notification — push is working!",
+        title: "Push is working!",
+        body: "Test notification delivered successfully.",
         tag: "test-notification",
         url: "/p/settings",
       });
