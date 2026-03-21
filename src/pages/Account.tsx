@@ -5,9 +5,12 @@ import Layout from "@/components/layout/Layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Mail, Lock, User, Sparkles } from "lucide-react";
+import { ArrowLeft, Mail, Lock, User, Sparkles, Pencil, Check, X } from "lucide-react";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import { hasPremiumAccess, shouldShowUpgradeCTA, PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
+import { supabase } from "@/integrations/supabase/client";
+import { syncLeaderboardRating } from "@/lib/leaderboardSync";
+import { toast } from "sonner";
 
 export default function AccountPage() {
   const navigate = useNavigate();
@@ -20,6 +23,54 @@ export default function AccountPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
+
+  // Username editing state
+  const [editingName, setEditingName] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [nameSaving, setNameSaving] = useState(false);
+
+  const handleSaveName = async () => {
+    if (!account || !newName.trim() || newName.trim().length < 2) {
+      toast.error("Username must be at least 2 characters");
+      return;
+    }
+    setNameSaving(true);
+    try {
+      // Check uniqueness
+      const { data: existing } = await supabase
+        .from("user_profiles")
+        .select("id")
+        .eq("display_name", newName.trim())
+        .neq("id", account.id)
+        .maybeSingle();
+
+      if (existing) {
+        toast.error("That username is already taken");
+        setNameSaving(false);
+        return;
+      }
+
+      // Update profile
+      const { error: updateErr } = await supabase
+        .from("user_profiles")
+        .update({ display_name: newName.trim(), updated_at: new Date().toISOString() })
+        .eq("id", account.id);
+
+      if (updateErr) throw updateErr;
+
+      // Update leaderboard entry
+      await syncLeaderboardRating(account.id, newName.trim());
+
+      toast.success("Username updated");
+      setEditingName(false);
+      // Force page refresh to pick up new name
+      window.location.reload();
+    } catch {
+      toast.error("Failed to update username");
+    } finally {
+      setNameSaving(false);
+    }
+  };
 
   if (account) {
     return (
@@ -37,8 +88,37 @@ export default function AccountPage() {
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">
                 {(account.displayName || account.email)[0]?.toUpperCase()}
               </div>
-              <div>
-                <p className="font-medium text-foreground">{account.displayName || "Puzzler"}</p>
+              <div className="flex-1 min-w-0">
+                {editingName ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      placeholder="New username"
+                      className="h-8 text-sm"
+                      maxLength={30}
+                      autoFocus
+                      onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") setEditingName(false); }}
+                    />
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={handleSaveName} disabled={nameSaving}>
+                      <Check size={14} />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setEditingName(false)}>
+                      <X size={14} />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-foreground">{account.displayName || "Puzzler"}</p>
+                    <button
+                      onClick={() => { setNewName(account.displayName || ""); setEditingName(true); }}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                      title="Edit username"
+                    >
+                      <Pencil size={12} />
+                    </button>
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground">{account.email}</p>
               </div>
             </div>
@@ -90,7 +170,6 @@ export default function AccountPage() {
                 </Button>
               );
             }
-            // Pre-launch: subtle coming soon
             return (
               <div className="rounded-lg border border-dashed border-muted-foreground/20 bg-muted/30 p-4 text-center">
                 <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
