@@ -54,7 +54,9 @@ const App = () => (
         <NavigationTracker />
         <ScrollToTop />
         <AuthProvider>
-          <Routes>
+          <UserAccountProvider>
+            <DataMergeModal />
+            <Routes>
             {/* Public puzzle site */}
             <Route path="/" element={<Index />} />
             <Route path="/puzzles" element={<PuzzleLibrary />} />
