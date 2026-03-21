@@ -80,11 +80,16 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
     return map;
   }, [encoded]);
 
-  useEffect(() => {
-    if (!timer.isSolved && !isRevealed) {
-      saveProgress<CryptogramState>(timerKey, { guesses }, timer.elapsed);
-    }
-  }, [guesses, timer.elapsed, timer.isSolved, isRevealed, timerKey]);
+  const guessesRef = useRef(guesses);
+  guessesRef.current = guesses;
+  const { status: saveStatus, debouncedSave } = useAutoSave<CryptogramState>({
+    puzzleKey: timerKey,
+    getState: () => ({ guesses: guessesRef.current }),
+    getElapsed: () => timer.elapsed,
+    disabled: timer.isSolved || isRevealed,
+  });
+
+  useEffect(() => { debouncedSave(); }, [guesses, debouncedSave]);
 
   useEffect(() => {
     if (editableIndices.length > 0) {

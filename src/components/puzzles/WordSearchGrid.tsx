@@ -62,14 +62,21 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
 
   const timer = usePuzzleTimer(timerKey, { category: "word-search", difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
-  useEffect(() => {
-    if (!timer.isSolved && !isRevealed) {
-      saveProgress<WordSearchState>(timerKey, {
-        foundWords: Array.from(foundWords),
-        foundCells: Array.from(foundCells),
-      }, timer.elapsed);
-    }
-  }, [foundWords, foundCells, timer.elapsed, timer.isSolved, isRevealed, timerKey]);
+  const foundWordsRef = useRef(foundWords);
+  foundWordsRef.current = foundWords;
+  const foundCellsRef = useRef(foundCells);
+  foundCellsRef.current = foundCells;
+  const { status: saveStatus, debouncedSave } = useAutoSave<WordSearchState>({
+    puzzleKey: timerKey,
+    getState: () => ({
+      foundWords: Array.from(foundWordsRef.current),
+      foundCells: Array.from(foundCellsRef.current),
+    }),
+    getElapsed: () => timer.elapsed,
+    disabled: timer.isSolved || isRevealed,
+  });
+
+  useEffect(() => { debouncedSave(); }, [foundWords, foundCells, debouncedSave]);
 
   useEffect(() => {
     setCursor([0, 0]);

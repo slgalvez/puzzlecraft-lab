@@ -86,11 +86,16 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
     return sg;
   }, [clues, gridSize]);
 
-  useEffect(() => {
-    if (!timer.isSolved && !isRevealed) {
-      saveProgress<CrosswordState>(timerKey, { grid }, timer.elapsed);
-    }
-  }, [grid, timer.elapsed, timer.isSolved, isRevealed, timerKey]);
+  const gridRef2 = useRef(grid);
+  gridRef2.current = grid;
+  const { status: saveStatus, debouncedSave } = useAutoSave<CrosswordState>({
+    puzzleKey: timerKey,
+    getState: () => ({ grid: gridRef2.current }),
+    getElapsed: () => timer.elapsed,
+    disabled: timer.isSolved || isRevealed,
+  });
+
+  useEffect(() => { debouncedSave(); }, [grid, debouncedSave]);
 
   useEffect(() => {
     for (let r = 0; r < gridSize; r++)

@@ -54,11 +54,16 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
 
   const isGiven = (r: number, c: number) => puzzle.grid[r][c] !== null;
 
-  useEffect(() => {
-    if (!timer.isSolved && !isRevealed) {
-      saveProgress<SudokuState>(timerKey, { grid }, timer.elapsed);
-    }
-  }, [grid, timer.elapsed, timer.isSolved, isRevealed, timerKey]);
+  const gridRef2 = useRef(grid);
+  gridRef2.current = grid;
+  const { status: saveStatus, debouncedSave } = useAutoSave<SudokuState>({
+    puzzleKey: timerKey,
+    getState: () => ({ grid: gridRef2.current }),
+    getElapsed: () => timer.elapsed,
+    disabled: timer.isSolved || isRevealed,
+  });
+
+  useEffect(() => { debouncedSave(); }, [grid, debouncedSave]);
 
   useEffect(() => {
     containerRef.current?.focus();

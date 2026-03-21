@@ -57,11 +57,16 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
 
   const maxRowClueLen = Math.max(...rowClues.map((c) => c.length));
 
-  useEffect(() => {
-    if (!timer.isSolved && !isRevealed) {
-      saveProgress<NonogramState>(timerKey, { grid }, timer.elapsed);
-    }
-  }, [grid, timer.elapsed, timer.isSolved, isRevealed, timerKey]);
+  const gridRef2 = useRef(grid);
+  gridRef2.current = grid;
+  const { status: saveStatus, debouncedSave } = useAutoSave<NonogramState>({
+    puzzleKey: timerKey,
+    getState: () => ({ grid: gridRef2.current }),
+    getElapsed: () => timer.elapsed,
+    disabled: timer.isSolved || isRevealed,
+  });
+
+  useEffect(() => { debouncedSave(); }, [grid, debouncedSave]);
 
   useEffect(() => {
     setCursor([0, 0]);
