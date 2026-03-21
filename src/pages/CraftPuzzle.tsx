@@ -303,11 +303,16 @@ const CraftPuzzle = () => {
     if (navigator.share) {
       try {
         await navigator.share({ text: shareText });
+        // Promise resolved without error → user completed the share action
         recordSent();
         setShareSuccess(true);
         setTimeout(() => setShareSuccess(false), 1500);
-      } catch {
-        // user cancelled — don't record
+      } catch (err: unknown) {
+        // AbortError = user cancelled the share sheet — do NOT mark as sent
+        // Any other error is also not a successful share
+        if (err instanceof Error && err.name !== "AbortError") {
+          console.warn("Share failed:", err.message);
+        }
       }
       return;
     }
