@@ -717,19 +717,26 @@ const PuzzleGenerator = () => {
   // ─── Desktop Layout ───
   const renderDesktopGenerate = () => (
     <div className="space-y-8">
-      {/* Puzzle Type */}
+      {/* Puzzle Type — multi-select */}
       <div>
-        <label className="mb-3 block text-xs font-medium uppercase tracking-widest text-muted-foreground">
-          Puzzle Type
-        </label>
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            Puzzle Type
+          </label>
+          <div className="flex gap-2">
+            <button onClick={() => setGenerateTypes(new Set(puzzleTypes.map(pt => pt.value)))} className="text-xs font-medium text-primary hover:underline">All</button>
+            <span className="text-xs text-muted-foreground">·</span>
+            <button onClick={() => { setGenerateTypes(new Set()); setPuzzleGenerated(false); }} className="text-xs font-medium text-primary hover:underline">Clear</button>
+          </div>
+        </div>
         <div className="grid grid-cols-4 gap-3">
           {puzzleTypes.map((pt) => (
             <button
               key={pt.value}
-              onClick={() => handleTypeChange(pt.value)}
+              onClick={() => toggleGenerateType(pt.value)}
               className={cn(
                 "flex items-center gap-2.5 rounded-xl border-2 px-4 py-3 text-left transition-all",
-                category === pt.value
+                generateTypes.has(pt.value)
                   ? "border-primary bg-primary/5 shadow-sm"
                   : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
               )}
@@ -739,6 +746,11 @@ const PuzzleGenerator = () => {
             </button>
           ))}
         </div>
+        {generateTypes.size > 1 && (
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            {generateTypes.size} types selected — a random one will be picked on generate
+          </p>
+        )}
       </div>
 
       {/* Difficulty */}
