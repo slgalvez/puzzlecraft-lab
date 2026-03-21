@@ -86,6 +86,7 @@ function PublicRoutes() {
         <Route path="/about" element={<About />} />
         <Route path="/help" element={<Help />} />
         <Route path="/stats" element={<Stats />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/craft" element={<CraftPuzzle />} />
         <Route path="/craft/play" element={<PlayCraftPuzzle />} />
         <Route path="/s/:id" element={<SharedCraftPuzzle />} />
