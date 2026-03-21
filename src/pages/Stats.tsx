@@ -30,7 +30,10 @@ const Stats = () => {
   const dailyStreak = useMemo(() => getDailyStreak(), []);
   const dailyCompleted = useMemo(() => getTotalDailyCompleted(), []);
   const endlessStats = useMemo(() => getEndlessStats(), []);
-  const { subscribed } = useUserAccount();
+  const { account, subscribed } = useUserAccount();
+  const isAdmin = account?.isAdmin ?? false;
+  const premiumAccess = hasPremiumAccess({ isAdmin, subscribed });
+  const showUpgrade = shouldShowUpgradeCTA({ isAdmin, subscribed });
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const [viewFilter, setViewFilter] = useState<ViewFilter>(null);
