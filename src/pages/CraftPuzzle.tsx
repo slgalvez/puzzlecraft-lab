@@ -554,7 +554,7 @@ const CraftPuzzle = () => {
                   <Input
                     value={revealMessage}
                     onChange={e => setRevealMessage(e.target.value)}
-                    placeholder="Congratulations! You cracked it 🎉"
+                    placeholder="Congratulations! You cracked it"
                     maxLength={500}
                   />
                 </div>
