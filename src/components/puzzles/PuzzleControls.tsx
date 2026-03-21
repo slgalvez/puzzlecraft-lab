@@ -59,15 +59,22 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
       setSaved(false);
       toast({ title: "Removed from saved" });
     } else {
-      savePuzzle({
+      const puzzle = {
         id: puzzleSaveId,
         category: solveData.category,
         difficulty: solveData.difficulty,
         seed: solveData.seed,
         dailyCode: solveData.dailyCode,
-      });
+      };
+      const ok = savePuzzle(puzzle);
+      if (!ok) {
+        // At limit — replace oldest
+        savePuzzleReplacingOldest(puzzle);
+        toast({ title: "Saved (oldest removed)" });
+      } else {
+        toast({ title: "Saved for later" });
+      }
       setSaved(true);
-      toast({ title: "Saved for later" });
     }
   }, [puzzleSaveId, saved, solveData, toast]);
 
