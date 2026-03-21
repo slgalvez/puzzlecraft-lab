@@ -52,6 +52,8 @@ const TIER_RATING_THRESHOLDS: Record<string, number> = {
   Expert: 1200,
 };
 
+const CELEBRATED_KEY = "puzzlecraft-milestones-celebrated";
+
 // ── Persistence ──
 
 function getShownIds(): Set<string> {
@@ -67,6 +69,35 @@ function markShown(id: string) {
   const shown = getShownIds();
   shown.add(id);
   localStorage.setItem(STORAGE_KEY, JSON.stringify([...shown]));
+}
+
+/** Get milestone IDs that were recently achieved and not yet celebrated in the UI. */
+export function getUncelebratedIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(CELEBRATED_KEY);
+    const celebrated = raw ? new Set<string>(JSON.parse(raw)) : new Set<string>();
+    const shown = getShownIds();
+    // Uncelebrated = shown (achieved via toast) but not yet celebrated in UI
+    const uncelebrated = new Set<string>();
+    for (const id of shown) {
+      if (!celebrated.has(id)) uncelebrated.add(id);
+    }
+    return uncelebrated;
+  } catch {
+    return new Set();
+  }
+}
+
+/** Mark milestone IDs as celebrated (animation played). */
+export function markCelebrated(ids: string[]) {
+  try {
+    const raw = localStorage.getItem(CELEBRATED_KEY);
+    const celebrated: Set<string> = raw ? new Set(JSON.parse(raw)) : new Set();
+    for (const id of ids) celebrated.add(id);
+    localStorage.setItem(CELEBRATED_KEY, JSON.stringify([...celebrated]));
+  } catch {
+    // silently fail
+  }
 }
 
 // ── Check & notify ──
