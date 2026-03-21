@@ -57,10 +57,10 @@ const SavedPuzzlesSection = () => {
       {/* Collapsed header row */}
       <button
         onClick={toggleExpanded}
-        className="flex w-full items-center gap-2 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+        className="flex w-full items-center gap-1.5 py-1.5 text-xs text-muted-foreground/50 hover:text-muted-foreground/70 transition-colors group"
       >
         <ChevronRight
-          size={14}
+          size={11}
           className={cn(
             "transition-transform duration-200 shrink-0",
             expanded && "rotate-90"
@@ -68,7 +68,7 @@ const SavedPuzzlesSection = () => {
         />
         <span className="font-medium">
           Continue where you left off
-          <span className="ml-1 text-muted-foreground/60">({enriched.length})</span>
+          <span className="ml-1 opacity-60">({enriched.length})</span>
         </span>
       </button>
 
