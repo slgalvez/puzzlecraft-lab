@@ -84,7 +84,14 @@ export function computeSolveScore(record: SolveRecord): number {
     record.hintsUsed === 1 ? 0.9 :
     record.hintsUsed === 2 ? 0.8 : 0.7;
 
-  return Math.round(1000 * diffMult * speedFactor * accuracyFactor * hintFactor);
+  let score = 1000 * diffMult * speedFactor * accuracyFactor * hintFactor;
+
+  // High-difficulty bonus: clean Insane solve (no hints, ≤1 true mistake) → +5%
+  if (record.difficulty === "insane" && record.hintsUsed === 0 && mistakes <= 1) {
+    score *= 1.05;
+  }
+
+  return Math.round(score);
 }
 
 // ── Player Rating (rolling window) ──
