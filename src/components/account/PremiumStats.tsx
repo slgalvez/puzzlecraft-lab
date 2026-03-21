@@ -15,7 +15,7 @@ import {
   trueMistakes,
 } from "@/lib/solveScoring";
 import { getBestInsight } from "@/lib/solveInsights";
-import { getAllMilestones, type MilestoneIcon, type MilestoneState } from "@/lib/milestones";
+import { getAllMilestones, getUncelebratedIds, markCelebrated, type MilestoneIcon, type MilestoneState } from "@/lib/milestones";
 import { Clock, Trophy, Target, BarChart3, Zap, CheckCircle, FlaskConical, Trash2, TrendingUp, TrendingDown, ShieldCheck, ChevronDown, ChevronUp, Award, Puzzle, Flame, Crown, Medal, Bolt, Star, Gauge, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateDemoSolves, clearDemoSolves, hasDemoData } from "@/lib/demoStats";
@@ -277,6 +277,18 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
           const milestones = getAllMilestones();
           const achievedCount = milestones.filter((m) => m.state === "achieved").length;
           if (achievedCount === 0 && records.length < 5) return null;
+
+          // Detect newly achieved milestones for celebration animation
+          const uncelebrated = getUncelebratedIds();
+          const newlyAchieved = milestones
+            .filter((m) => m.state === "achieved" && uncelebrated.has(m.id))
+            .map((m) => m.id);
+
+          // Mark as celebrated after render so animation plays once
+          if (newlyAchieved.length > 0) {
+            setTimeout(() => markCelebrated(newlyAchieved), 2000);
+          }
+
           return (
             <div className="rounded-xl border bg-card p-5">
               <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -291,26 +303,38 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
                   const isInProgress = m.state === "in-progress";
                   const isLocked = m.state === "locked";
                   const progressPercent = Math.round((m.current / m.target) * 100);
+                  const isCelebrating = isAchieved && uncelebrated.has(m.id);
 
                   return (
                     <div
                       key={m.id}
                       className={cn(
-                        "rounded-lg border p-3 transition-all relative",
+                        "rounded-lg border p-3 transition-all relative overflow-hidden",
                         isAchieved && "bg-primary/5 border-primary/25",
                         isInProgress && "bg-card border-border",
                         isLocked && "opacity-35",
-                        m.isNext && !isAchieved && "ring-1 ring-primary/30"
+                        m.isNext && !isAchieved && "ring-1 ring-primary/30",
+                        isCelebrating && "animate-milestone-glow"
                       )}
                       title={m.label}
                     >
+                      {/* Sparkle overlay for celebration */}
+                      {isCelebrating && (
+                        <>
+                          <span className="absolute top-1 right-1 text-primary animate-milestone-sparkle" style={{ animationDelay: "0.1s" }}>✦</span>
+                          <span className="absolute bottom-1 left-2 text-primary/60 animate-milestone-sparkle text-[10px]" style={{ animationDelay: "0.3s" }}>✦</span>
+                          <span className="absolute top-2 left-1 text-primary/40 animate-milestone-sparkle text-[8px]" style={{ animationDelay: "0.5s" }}>✦</span>
+                        </>
+                      )}
                       <div className="flex items-start gap-2.5">
                         <IconComp
                           size={18}
                           className={cn(
                             "shrink-0 mt-0.5",
-                            isAchieved ? "text-primary" : "text-muted-foreground"
+                            isAchieved ? "text-primary" : "text-muted-foreground",
+                            isCelebrating && "animate-milestone-sparkle"
                           )}
+                          style={isCelebrating ? { animationDelay: "0.2s" } : undefined}
                         />
                         <div className="flex-1 min-w-0">
                           <p className={cn(
