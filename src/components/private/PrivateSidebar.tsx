@@ -114,11 +114,14 @@ export function PrivateSidebar() {
           0
         );
 
-        // Detect new messages per conversation
+        // Detect new messages per conversation (only from OTHER users)
         if (!initialLoadRef.current) {
           for (const c of convs) {
             const prev = prevConvsRef.current[c.id];
             if (prev && c.unread_count > prev.unread && c.last_message_at !== prev.lastMsgAt) {
+              // Skip if the latest message was sent by the current user (self-notification suppression)
+              if (c.last_sender_profile_id === user.id) continue;
+
               // Clean preview from system prefixes
               let preview = c.last_message || "";
               if (preview.startsWith("__")) preview = "";
