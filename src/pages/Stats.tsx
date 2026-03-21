@@ -17,6 +17,7 @@ import UpgradeModal from "@/components/account/UpgradeModal";
 import PremiumLockedCard from "@/components/account/PremiumLockedCard";
 import { hasPremiumAccess, shouldShowUpgradeCTA } from "@/lib/premiumAccess";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
+import { checkMilestones } from "@/lib/milestones";
 
 type ViewFilter = null | "daily" | "endless";
 
@@ -39,11 +40,12 @@ const Stats = () => {
   const showUpgrade = shouldShowUpgradeCTA({ isAdmin, subscribed });
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
-  // Sync rating to leaderboard when page loads (signed-in users)
+  // Sync rating to leaderboard + check milestones on load
   useEffect(() => {
     if (account) {
       syncLeaderboardRating(account.id, account.displayName);
     }
+    checkMilestones();
   }, [account, dataVersion]);
 
   const [viewFilter, setViewFilter] = useState<ViewFilter>(null);

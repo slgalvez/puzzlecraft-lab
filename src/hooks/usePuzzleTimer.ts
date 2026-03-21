@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { recordCompletion } from "@/lib/progressTracker";
 import { recordDailyCompletion, getTodaysChallenge } from "@/lib/dailyChallenge";
 import { recordSolve } from "@/lib/solveTracker";
+import { checkMilestones } from "@/lib/milestones";
 import type { PuzzleCategory } from "@/lib/puzzleTypes";
 
 interface TimerState {
@@ -154,6 +155,9 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
         assisted,
         origin: isDailyChallenge ? "daily" : undefined,
       });
+
+      // Check milestones after recording
+      setTimeout(() => checkMilestones(), 1500);
     }
     return { time: state.elapsed, isNewBest: isNew };
   }, [puzzleKey, state.elapsed, options?.category, options?.difficulty]);
