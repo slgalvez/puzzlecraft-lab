@@ -97,8 +97,19 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
       ) : isMobile ? (
         /* ── Mobile layout ── */
         <div className="space-y-3">
-          {/* Reset — top-right aligned, icon-only, low emphasis */}
-          <div className="flex justify-end">
+          {/* Save + Reset — top-right aligned, icon-only, low emphasis */}
+          <div className="flex justify-end gap-1">
+            {canSave && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-9 w-9 ${saved ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                onClick={toggleSave}
+                aria-label={saved ? "Remove bookmark" : "Save for later"}
+              >
+                <Bookmark className="h-4 w-4" fill={saved ? "currentColor" : "none"} />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
