@@ -783,5 +783,3 @@ export function generateCustomWordSearch(words: string[], difficulty: CraftDiffi
 
   return bestResult as CustomWordSearchData;
 }
-  for (let i = 0; i < word.length; i++) grid[row + dr * i][col + dc * i] = word[i];
-}
