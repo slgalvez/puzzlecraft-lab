@@ -539,9 +539,7 @@ Deno.serve(async (req) => {
           .not("read_at", "is", null);
       }
 
-      const { data: messages } = await buildMessageQuery(sb, conversation_id, now, clearedAt)
-        .order("created_at", { ascending: true })
-        .limit(200);
+      const messages = await fetchLatestConversationMessages(sb, conversation_id, now, clearedAt);
 
       const profile = conv.profiles as unknown as { first_name: string; last_name: string } | null;
 
