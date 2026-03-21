@@ -74,32 +74,6 @@ const SharedCraftPuzzle = () => {
         }
       }
 
-      // Fallback: check if this is a recipient-specific link
-      const { data: recData } = await supabase
-        .from("craft_recipients" as any)
-        .select("puzzle_id")
-        .eq("id", id)
-        .single();
-
-      if (recData) {
-        recipientId.current = id;
-        const parentId = (recData as any).puzzle_id;
-        const { data: parentData } = await supabase
-          .from("shared_puzzles" as any)
-          .select("payload")
-          .eq("id", parentId)
-          .single();
-
-        if (parentData) {
-          const p = (parentData as any).payload as CraftPayload;
-          if (p?.type && p?.puzzleData) {
-            setPayload(p);
-            setLoading(false);
-            return;
-          }
-        }
-      }
-
       setError(true);
       setLoading(false);
     };
