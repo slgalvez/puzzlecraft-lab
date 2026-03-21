@@ -269,7 +269,7 @@ const CraftPuzzle = () => {
       sentAt: Date.now(),
     });
     refreshDraftCount();
-  }, [shareUrl, selectedType, puzzleTitle, puzzleFrom, revealMessage, refreshDraftCount, parseRecipients]);
+  }, [shareUrl, selectedType, puzzleTitle, puzzleFrom, revealMessage, refreshDraftCount]);
 
   const handleCopyLink = async () => {
     if (!shareUrl) return;
