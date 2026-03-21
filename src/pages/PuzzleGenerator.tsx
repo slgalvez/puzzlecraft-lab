@@ -178,6 +178,11 @@ const PuzzleGenerator = () => {
   const [mode, setMode] = useState<Mode>(() => routeState?.randomPool ? "random" : "generate");
   const [mobileStep, setMobileStep] = useState<MobileStep>(1);
 
+  // Generate tab: multi-select types
+  const [generateTypes, setGenerateTypes] = useState<Set<PuzzleCategory>>(
+    () => category ? new Set([category]) : new Set()
+  );
+
   // Random tab state
   const [randomTypes, setRandomTypes] = useState<Set<PuzzleCategory>>(new Set());
   const [randomDifficulty, setRandomDifficulty] = useState<Difficulty | "any" | null>(null);
