@@ -16,6 +16,7 @@ import { useUserAccount } from "@/contexts/UserAccountContext";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import PremiumLockedCard from "@/components/account/PremiumLockedCard";
 import { hasPremiumAccess, shouldShowUpgradeCTA } from "@/lib/premiumAccess";
+import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 
 type ViewFilter = null | "daily" | "endless";
 
