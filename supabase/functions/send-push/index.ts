@@ -492,6 +492,25 @@ Deno.serve(async (req) => {
       const { target_profile_id, title, body: pushBody, tag, url } = body;
       if (!target_profile_id || !pushBody) return err("Missing params");
 
+      // ── RATE LIMIT: 8 minutes per profile ──
+      const RATE_LIMIT_MS = 8 * 60 * 1000;
+      const { data: rateSubs } = await sb
+        .from("push_subscriptions")
+        .select("last_push_at")
+        .eq("profile_id", target_profile_id)
+        .not("last_push_at", "is", null)
+        .order("last_push_at", { ascending: false })
+        .limit(1);
+
+      if (rateSubs && rateSubs.length > 0 && rateSubs[0].last_push_at) {
+        const lastPush = new Date(rateSubs[0].last_push_at).getTime();
+        const elapsed = Date.now() - lastPush;
+        if (elapsed < RATE_LIMIT_MS) {
+          console.log(`Push rate-limited for ${target_profile_id}: ${Math.round(elapsed / 1000)}s since last push (need ${RATE_LIMIT_MS / 1000}s)`);
+          return json({ ok: true, sent: 0, reason: "rate_limited", next_eligible_in_s: Math.ceil((RATE_LIMIT_MS - elapsed) / 1000) });
+        }
+      }
+
       const { data: subs } = await sb
         .from("push_subscriptions")
         .select("endpoint, p256dh, auth")
@@ -525,6 +544,14 @@ Deno.serve(async (req) => {
             .eq("profile_id", target_profile_id)
             .eq("endpoint", sub.endpoint);
         }
+      }
+
+      // Stamp last_push_at on all subscriptions for this profile
+      if (sent > 0) {
+        await sb
+          .from("push_subscriptions")
+          .update({ last_push_at: new Date().toISOString() })
+          .eq("profile_id", target_profile_id);
       }
 
       return json({ ok: true, sent });
