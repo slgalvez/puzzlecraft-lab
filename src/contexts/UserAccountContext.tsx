@@ -190,15 +190,14 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Set up auth listener BEFORE getSession
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        handleSession(session);
+      (event, session) => {
+        handleSession(session, event);
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      handleSession(session);
+      handleSession(session, "INITIAL_SESSION");
     });
 
     return () => subscription.unsubscribe();
