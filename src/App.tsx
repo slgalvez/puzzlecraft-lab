@@ -21,7 +21,9 @@ import NotFound from "./pages/NotFound";
 import CraftPuzzle from "./pages/CraftPuzzle";
 import PlayCraftPuzzle from "./pages/PlayCraftPuzzle";
 import SharedCraftPuzzle from "./pages/SharedCraftPuzzle";
-
+import Account from "./pages/Account";
+import { UserAccountProvider } from "./contexts/UserAccountContext";
+import DataMergeModal from "./components/account/DataMergeModal";
 // Private app
 import { AuthProvider } from "./contexts/AuthContext";
 import PrivateRoute from "./components/private/PrivateRoute";
