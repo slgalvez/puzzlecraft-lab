@@ -1,13 +1,13 @@
 /**
  * Puzzlecraft+ Advanced Stats — premium-only section.
- * Shows solve history, personal bests, average performance, and accuracy insights.
- * Data source: solveTracker records (completed solves only).
+ * Shows solve history, personal bests, average performance, accuracy insights,
+ * skill rating, trend indicators, and no-hint rate.
  */
 import { useMemo, useState, useCallback } from "react";
 import { getSolveRecords, getSolveSummary, type SolveRecord } from "@/lib/solveTracker";
-import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory, type Difficulty } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
-import { Clock, Trophy, Target, BarChart3, Sparkles, Zap, CheckCircle, FlaskConical, Trash2 } from "lucide-react";
+import { Clock, Trophy, Target, BarChart3, Zap, CheckCircle, FlaskConical, Trash2, TrendingUp, TrendingDown, ShieldCheck } from "lucide-react";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
 import { generateDemoSolves, clearDemoSolves, hasDemoData } from "@/lib/demoStats";
@@ -21,6 +21,52 @@ const ALL_CATEGORIES: PuzzleCategory[] = [
   "crossword", "word-fill", "number-fill", "sudoku",
   "word-search", "kakuro", "nonogram", "cryptogram",
 ];
+
+// ── Skill Rating ──
+const DIFF_WEIGHT: Record<string, number> = { easy: 1, medium: 2, hard: 3, extreme: 4, insane: 5 };
+
+function computeSkillRating(records: SolveRecord[]): number {
+  if (records.length === 0) return 0;
+  // Weighted score based on difficulty, speed, and self-reliance
+  let totalScore = 0;
+  for (const r of records) {
+    const diffW = DIFF_WEIGHT[r.difficulty] ?? 2;
+    const speedBonus = Math.max(0, 1 - r.solveTime / 1200); // faster = higher (cap at 20min)
+    const hintPenalty = r.hintsUsed > 0 ? 0.7 : 1;
+    totalScore += diffW * (0.5 + speedBonus * 0.5) * hintPenalty;
+  }
+  // Normalize to 0–99 scale, using log growth
+  const raw = totalScore / records.length;
+  const rating = Math.min(99, Math.round(raw * 25));
+  return Math.max(1, rating);
+}
+
+// ── Trend helpers ──
+function computeTrend(records: SolveRecord[], getValue: (r: SolveRecord) => number): "up" | "down" | "flat" {
+  if (records.length < 6) return "flat";
+  const half = Math.floor(records.length / 2);
+  const recent = records.slice(0, half);
+  const older = records.slice(half);
+  const recentAvg = recent.reduce((s, r) => s + getValue(r), 0) / recent.length;
+  const olderAvg = older.reduce((s, r) => s + getValue(r), 0) / older.length;
+  const diff = recentAvg - olderAvg;
+  const threshold = olderAvg * 0.05;
+  if (Math.abs(diff) < threshold) return "flat";
+  return diff > 0 ? "up" : "down";
+}
+
+function TrendBadge({ trend, invertColor }: { trend: "up" | "down" | "flat"; invertColor?: boolean }) {
+  if (trend === "flat") return null;
+  const isGood = invertColor ? trend === "down" : trend === "up";
+  return (
+    <span className={cn(
+      "inline-flex items-center gap-0.5 text-[10px] font-medium",
+      isGood ? "text-primary" : "text-destructive"
+    )}>
+      {trend === "up" ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+    </span>
+  );
+}
 
 export default function PremiumStats() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -60,7 +106,7 @@ export default function PremiumStats() {
       <div className="space-y-3">
         {adminControls}
         <div className="rounded-xl border border-primary/20 bg-card p-6 text-center">
-          <Sparkles className="mx-auto h-6 w-6 text-primary mb-3" />
+          <Target className="mx-auto h-6 w-6 text-primary mb-3" />
           <p className="text-sm text-muted-foreground">
             Complete some puzzles to unlock advanced analytics.
           </p>
@@ -95,6 +141,31 @@ export default function PremiumStats() {
   const noHintPercent = Math.round((noHintSolves.length / records.length) * 100);
   const unassistedPercent = Math.round((summary.unassistedCount / records.length) * 100);
 
+  // Skill rating
+  const skillRating = computeSkillRating(records);
+
+  // Trends (records are newest-first from getSolveRecords)
+  const timeTrend = computeTrend(records, (r) => r.solveTime);
+  const accuracyTrend = computeTrend(records, (r) => r.mistakesCount);
+
+  // No-hint rate
+  const noHintRate = Math.round((noHintSolves.length / records.length) * 100);
+
+  // Insight text
+  const accuracyInsight = avgMistakes < 1
+    ? "You're solving with impressive precision."
+    : avgMistakes < 2
+      ? "Solid accuracy — room to tighten up on harder puzzles."
+      : "Try slowing down on tricky sections to reduce mistakes.";
+  
+  const bestInsight = bestByType.length >= 3
+    ? `You've set personal bests across ${bestByType.length} puzzle types.`
+    : "Keep solving to set more personal records.";
+
+  const avgInsight = avgByType.length > 0
+    ? `Your consistency is ${timeTrend === "down" ? "improving" : timeTrend === "up" ? "worth watching" : "holding steady"} over recent solves.`
+    : "Play more to track your average performance.";
+
   return (
     <div className="space-y-8">
       {adminControls}
@@ -104,7 +175,6 @@ export default function PremiumStats() {
         </p>
       )}
       <div className="flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-primary" />
         <h2 className="font-display text-xl font-semibold text-foreground">
           Advanced Analytics
         </h2>
@@ -113,12 +183,33 @@ export default function PremiumStats() {
         </span>
       </div>
 
+      {/* Top metrics row: Skill Rating + No-Hint Rate */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="rounded-xl border bg-card p-4 text-center">
+          <Zap className="mx-auto h-5 w-5 text-primary mb-2" />
+          <p className="font-mono text-2xl font-bold text-foreground">{skillRating}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Skill Rating</p>
+        </div>
+        <div className="rounded-xl border bg-card p-4 text-center">
+          <ShieldCheck className="mx-auto h-5 w-5 text-primary mb-2" />
+          <p className="font-mono text-2xl font-bold text-foreground">{noHintRate}%</p>
+          <p className="mt-1 text-xs text-muted-foreground">No-Hint Rate</p>
+        </div>
+        <div className="rounded-xl border bg-card p-4 text-center col-span-2 sm:col-span-1">
+          <Target className="mx-auto h-5 w-5 text-primary mb-2" />
+          <p className="font-mono text-2xl font-bold text-foreground">{records.length}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Total Solves</p>
+        </div>
+      </div>
+
       {/* Accuracy Insights */}
       <div className="rounded-xl border bg-card p-5">
-        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
           <CheckCircle size={15} className="text-primary" />
           Accuracy Insights
+          <TrendBadge trend={accuracyTrend} invertColor />
         </h3>
+        <p className="text-xs text-muted-foreground mb-3">{accuracyInsight}</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
           <div>
             <p className="font-mono text-2xl font-bold text-foreground">{avgMistakes}</p>
@@ -144,10 +235,11 @@ export default function PremiumStats() {
       {/* Personal Bests */}
       {bestByType.length > 0 && (
         <div className="rounded-xl border bg-card p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
             <Trophy size={15} className="text-primary" />
             Personal Bests
           </h3>
+          <p className="text-xs text-muted-foreground mb-3">{bestInsight}</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {bestByType.map(({ type, time, difficulty }) => (
               <div key={type} className="rounded-lg border bg-secondary/30 p-3 text-center">
@@ -170,10 +262,12 @@ export default function PremiumStats() {
       {/* Average Performance */}
       {avgByType.length > 0 && (
         <div className="rounded-xl border bg-card p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
             <BarChart3 size={15} className="text-primary" />
             Average Performance
+            <TrendBadge trend={timeTrend} invertColor />
           </h3>
+          <p className="text-xs text-muted-foreground mb-3">{avgInsight}</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {avgByType.map(({ type, avg, count }) => (
               <div key={type} className="rounded-lg border bg-secondary/30 p-3 text-center">
