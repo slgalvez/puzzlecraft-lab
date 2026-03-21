@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Copy, Check, Trash2, FileText, Send, Eye, Inbox, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TYPE_OPTIONS } from "@/components/craft/CraftTypeCards";
+import { supabase } from "@/integrations/supabase/client";
 import {
   type CraftDraft,
   type CraftSentItem,
@@ -48,6 +49,27 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
   const [received] = useState<CraftReceivedItem[]>(() => loadReceivedItems());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [solveStatuses, setSolveStatuses] = useState<Record<string, "sent" | "in_progress" | "completed">>({});
+
+  // Fetch solve statuses for sent items from DB
+  useEffect(() => {
+    if (sent.length === 0) return;
+    const shareIds = sent.map((s) => s.shareId);
+    (async () => {
+      const { data } = await supabase
+        .from("shared_puzzles" as any)
+        .select("id, started_at, completed_at")
+        .in("id", shareIds);
+      if (!data) return;
+      const map: Record<string, "sent" | "in_progress" | "completed"> = {};
+      for (const row of data as any[]) {
+        if (row.completed_at) map[row.id] = "completed";
+        else if (row.started_at) map[row.id] = "in_progress";
+        else map[row.id] = "sent";
+      }
+      setSolveStatuses(map);
+    })();
+  }, [sent]);
 
   const typeLabel = (type: string) => TYPE_OPTIONS.find((o) => o.value === type)?.label ?? type;
 
@@ -190,6 +212,7 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">{typeLabel(s.type)}</Badge>
+                      <SolveStatusBadge status={solveStatuses[s.shareId] ?? "sent"} />
                       <span className="text-[10px] text-muted-foreground/60">{relativeTime(s.sentAt)}</span>
                     </div>
                     <p className="text-sm font-medium text-foreground truncate">
@@ -278,4 +301,15 @@ function EmptyState({ icon, text, sub }: { icon: React.ReactNode; text: string; 
       <p className="text-xs mt-1 opacity-60">{sub}</p>
     </div>
   );
+}
+
+function SolveStatusBadge({ status }: { status: "sent" | "in_progress" | "completed" }) {
+  const label = status === "completed" ? "Completed" : status === "in_progress" ? "In Progress" : "Sent";
+  const color =
+    status === "completed"
+      ? "text-primary"
+      : status === "in_progress"
+        ? "text-primary/70"
+        : "text-muted-foreground/60";
+  return <span className={`text-[10px] font-medium ${color}`}>{label}</span>;
 }

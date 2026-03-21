@@ -531,19 +531,25 @@ export type Database = {
       }
       shared_puzzles: {
         Row: {
+          completed_at: string | null
           created_at: string
           id: string
           payload: Json
+          started_at: string | null
         }
         Insert: {
+          completed_at?: string | null
           created_at?: string
           id: string
           payload: Json
+          started_at?: string | null
         }
         Update: {
+          completed_at?: string | null
           created_at?: string
           id?: string
           payload?: Json
+          started_at?: string | null
         }
         Relationships: []
       }

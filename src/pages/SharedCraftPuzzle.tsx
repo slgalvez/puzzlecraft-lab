@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,7 @@ const SharedCraftPuzzle = () => {
   const [payload, setPayload] = useState<CraftPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const interactionMarked = React.useRef(false);
 
   useEffect(() => {
     if (!id) { setError(true); setLoading(false); return; }
@@ -78,9 +79,28 @@ const SharedCraftPuzzle = () => {
     load();
   }, [id]);
 
+  // Mark puzzle as "in progress" on first real interaction
+  const markStarted = useCallback(() => {
+    if (!id || interactionMarked.current) return;
+    interactionMarked.current = true;
+    supabase
+      .from("shared_puzzles" as any)
+      .update({ started_at: new Date().toISOString() } as any)
+      .eq("id", id)
+      .is("started_at" as any, null)
+      .then();
+  }, [id]);
+
   const handleComplete = useCallback(() => {
     setSolved(true);
-  }, []);
+    if (!id) return;
+    supabase
+      .from("shared_puzzles" as any)
+      .update({ completed_at: new Date().toISOString() } as any)
+      .eq("id", id)
+      .is("completed_at" as any, null)
+      .then();
+  }, [id]);
 
   if (loading) {
     return (
@@ -136,8 +156,8 @@ const SharedCraftPuzzle = () => {
             )}
           </div>
 
-          {/* Puzzle solver */}
-          <div className="min-h-[300px]">
+          {/* Puzzle solver — detect first real interaction */}
+          <div className="min-h-[300px]" onPointerDown={markStarted} onKeyDown={markStarted}>
             {(type === "word-fill" || type === "crossword") && (
               <GridSolver
                 data={puzzleData}
