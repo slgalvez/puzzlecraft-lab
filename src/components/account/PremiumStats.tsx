@@ -15,7 +15,7 @@ import {
   trueMistakes,
 } from "@/lib/solveScoring";
 import { getBestInsight } from "@/lib/solveInsights";
-import { getAllMilestones, type MilestoneIcon, type MilestoneState } from "@/lib/milestones";
+import { getAllMilestones, getUncelebratedIds, markCelebrated, type MilestoneIcon, type MilestoneState } from "@/lib/milestones";
 import { Clock, Trophy, Target, BarChart3, Zap, CheckCircle, FlaskConical, Trash2, TrendingUp, TrendingDown, ShieldCheck, ChevronDown, ChevronUp, Award, Puzzle, Flame, Crown, Medal, Bolt, Star, Gauge, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateDemoSolves, clearDemoSolves, hasDemoData } from "@/lib/demoStats";
