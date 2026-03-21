@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import AccountHeaderButton from "@/components/account/AccountHeaderButton";
 
 const navLinks = [
   { to: "/", label: "Home" },
