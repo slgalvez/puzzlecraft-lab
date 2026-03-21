@@ -245,9 +245,10 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
     if (strategy === "merge") {
       await mergeProgressToDb(pendingUserId);
     } else {
-      // Keep account data only — overwrite local with remote
       await pullProgressFromDb(pendingUserId);
     }
+    // Mark as handled so modal never reopens for this account
+    localStorage.setItem(`${MERGE_HANDLED_KEY}-${pendingUserId}`, "1");
     setPendingMerge(false);
     setPendingUserId(null);
   }, [pendingUserId]);
