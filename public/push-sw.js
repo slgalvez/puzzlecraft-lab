@@ -9,7 +9,7 @@ self.addEventListener('push', (event) => {
     data = { body: event.data?.text() || 'New update available' };
   }
 
-  const title = data.title || 'Puzzlecraft';
+  const title = data.title || data.body || 'New update available';
   const options = {
     body: data.body || 'New update available',
     icon: '/pwa-icon-192.png',

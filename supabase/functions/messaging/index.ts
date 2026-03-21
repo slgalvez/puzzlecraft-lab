@@ -241,7 +241,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             action: "send-push",
             target_profile_id: recipientProfileId,
-            title: "Puzzlecraft",
+            title: MESSAGE_PHRASES[phraseIdx],
             body: MESSAGE_PHRASES[phraseIdx],
             tag: "private-notification",
             url: "/p",

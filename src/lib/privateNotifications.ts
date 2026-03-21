@@ -345,7 +345,7 @@ export function sendPushNotification(body: string): void {
       tag: "private-notification",
       silent: false,
     };
-    const n = new Notification("Puzzlecraft", opts);
+    const n = new Notification(body, opts);
 
     n.onclick = () => {
       window.focus();
