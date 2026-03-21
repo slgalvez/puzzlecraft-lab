@@ -48,6 +48,7 @@ const UserConversation = () => {
   const messageIds = useMemo(() => messages.map((m) => m.id), [messages]);
   const { containerRef: messagesContainerRef, bottomRef: messagesEndRef, markUserSent } = useChatScroll(messageIds);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
+  const loadingRef = useRef(true);
 
   const handleSessionExpired = useCallback(() => {
     signOut();
@@ -74,15 +75,16 @@ const UserConversation = () => {
       setDisappearingEnabled(data.conversation.disappearing_enabled);
       setDisappearingDuration(data.conversation.disappearing_duration);
       setError(null);
-      console.debug("[conversation] loaded successfully");
+      console.debug("[conversation] loaded", data.messages?.length, "messages");
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
       console.warn("[conversation] fetch error:", e);
-      if (loading) setError("Unable to load conversation");
+      if (loadingRef.current) setError("Unable to load conversation");
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
-  }, [token, loading, handleSessionExpired]);
+  }, [token, handleSessionExpired]);
 
   // Loading failsafe: if loading persists more than 20s, show error
   useEffect(() => {
