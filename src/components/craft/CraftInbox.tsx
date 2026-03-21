@@ -49,6 +49,27 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
   const [received] = useState<CraftReceivedItem[]>(() => loadReceivedItems());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [solveStatuses, setSolveStatuses] = useState<Record<string, "sent" | "in_progress" | "completed">>({});
+
+  // Fetch solve statuses for sent items from DB
+  useEffect(() => {
+    if (sent.length === 0) return;
+    const shareIds = sent.map((s) => s.shareId);
+    (async () => {
+      const { data } = await supabase
+        .from("shared_puzzles" as any)
+        .select("id, started_at, completed_at")
+        .in("id", shareIds);
+      if (!data) return;
+      const map: Record<string, "sent" | "in_progress" | "completed"> = {};
+      for (const row of data as any[]) {
+        if (row.completed_at) map[row.id] = "completed";
+        else if (row.started_at) map[row.id] = "in_progress";
+        else map[row.id] = "sent";
+      }
+      setSolveStatuses(map);
+    })();
+  }, [sent]);
 
   const typeLabel = (type: string) => TYPE_OPTIONS.find((o) => o.value === type)?.label ?? type;
 
