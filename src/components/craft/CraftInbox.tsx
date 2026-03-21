@@ -212,6 +212,7 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">{typeLabel(s.type)}</Badge>
+                      <SolveStatusBadge status={solveStatuses[s.shareId] ?? "sent"} />
                       <span className="text-[10px] text-muted-foreground/60">{relativeTime(s.sentAt)}</span>
                     </div>
                     <p className="text-sm font-medium text-foreground truncate">
