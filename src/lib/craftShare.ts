@@ -26,8 +26,8 @@ function decodeBase64Url(value: string): string {
 }
 
 export function buildCraftShareText(_title?: string, _from?: string, url?: string): string {
-  if (url) return `Made this for you.\n${url}`;
-  return "Made this for you.";
+  if (url) return `A little puzzle for you ✨\n${url}`;
+  return "A little puzzle for you ✨";
 }
 
 export function isPrivateSessionAvailable(): boolean {
