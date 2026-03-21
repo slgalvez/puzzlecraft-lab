@@ -225,6 +225,37 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
         </div>
       </div>
 
+      {/* ── MILESTONES ── */}
+      {(() => {
+        const milestones = getAllMilestones();
+        const unlockedCount = milestones.filter((m) => m.unlocked).length;
+        if (unlockedCount === 0 && records.length < 5) return null;
+        return (
+          <div className="rounded-xl border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <Award size={15} className="text-primary" />
+              Milestones
+              <span className="text-xs text-muted-foreground font-normal">{unlockedCount}/{milestones.length}</span>
+            </h3>
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+              {milestones.map((m) => (
+                <div
+                  key={m.id}
+                  className={cn(
+                    "rounded-lg border p-2 text-center transition-opacity",
+                    m.unlocked ? "bg-primary/5 border-primary/20" : "opacity-30"
+                  )}
+                  title={m.label}
+                >
+                  <span className="text-lg">{m.emoji}</span>
+                  <p className="text-[9px] text-muted-foreground mt-0.5 leading-tight truncate">{m.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── ACCURACY INSIGHTS ── */}
       <div className="rounded-xl border bg-card p-5">
         <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
