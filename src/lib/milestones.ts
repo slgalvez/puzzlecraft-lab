@@ -16,6 +16,8 @@ const STORAGE_KEY = "puzzlecraft-milestones-shown";
 
 export type MilestoneIcon = "puzzle" | "flame" | "trophy" | "medal" | "zap" | "crown" | "target" | "award" | "bolt";
 
+export type MilestoneState = "locked" | "in-progress" | "achieved";
+
 interface Milestone {
   id: string;
   label: string;
@@ -42,6 +44,13 @@ const TIER_MILESTONES: { tier: SkillTier; milestone: Milestone }[] = [
   { tier: "Advanced", milestone: { id: "tier-advanced", label: "Advanced Rank Reached", icon: "award" } },
   { tier: "Expert", milestone: { id: "tier-expert", label: "Expert Rank Reached", icon: "medal" } },
 ];
+
+// Rating thresholds for tier milestones (maps to getSkillTier bands)
+const TIER_RATING_THRESHOLDS: Record<string, number> = {
+  Skilled: 700,
+  Advanced: 950,
+  Expert: 1200,
+};
 
 // ── Persistence ──
 
@@ -117,8 +126,23 @@ export function checkMilestones() {
   return newMilestones.length;
 }
 
-/** Returns all milestones with their unlocked status. */
-export function getAllMilestones(): { id: string; label: string; icon: MilestoneIcon; unlocked: boolean }[] {
+export interface MilestoneWithProgress {
+  id: string;
+  label: string;
+  icon: MilestoneIcon;
+  state: MilestoneState;
+  /** Current progress value */
+  current: number;
+  /** Target to achieve the milestone */
+  target: number;
+  /** Human-readable progress text e.g. "32 / 50 puzzles" */
+  progressText: string;
+  /** Whether this is the next closest milestone to unlock */
+  isNext: boolean;
+}
+
+/** Returns all milestones with their state, progress, and next-milestone flag. */
+export function getAllMilestones(): MilestoneWithProgress[] {
   const solveCount = getSolveRecords().filter((r) => r.solveTime >= 10).length;
   const records = getSolveRecords().filter((r) => r.solveTime >= 10);
   const rating = records.length >= 5 ? computePlayerRating(records) : 0;
@@ -128,16 +152,71 @@ export function getAllMilestones(): { id: string; label: string; icon: Milestone
   let streakCurrent = 0;
   try { streakCurrent = getDailyStreak().current; } catch {}
 
-  const all: { id: string; label: string; icon: MilestoneIcon; unlocked: boolean }[] = [];
+  const all: MilestoneWithProgress[] = [];
 
+  // Solve milestones
   for (const { count, milestone } of SOLVE_MILESTONES) {
-    all.push({ ...milestone, unlocked: solveCount >= count });
+    const achieved = solveCount >= count;
+    const progress = Math.min(solveCount, count);
+    const ratio = progress / count;
+    const state: MilestoneState = achieved ? "achieved" : ratio >= 0.3 ? "in-progress" : "locked";
+    all.push({
+      ...milestone,
+      state,
+      current: progress,
+      target: count,
+      progressText: `${progress} / ${count} puzzles`,
+      isNext: false,
+    });
   }
+
+  // Streak milestones
   for (const { days, milestone } of STREAK_MILESTONES) {
-    all.push({ ...milestone, unlocked: streakCurrent >= days });
+    const achieved = streakCurrent >= days;
+    const progress = Math.min(streakCurrent, days);
+    const ratio = progress / days;
+    const state: MilestoneState = achieved ? "achieved" : ratio >= 0.3 ? "in-progress" : "locked";
+    all.push({
+      ...milestone,
+      state,
+      current: progress,
+      target: days,
+      progressText: `Day ${progress} of ${days}`,
+      isNext: false,
+    });
   }
+
+  // Tier milestones
   for (const { tier: t, milestone } of TIER_MILESTONES) {
-    all.push({ ...milestone, unlocked: TIER_ORDER.indexOf(t) <= tierIdx && tierIdx >= 0 });
+    const achieved = TIER_ORDER.indexOf(t) <= tierIdx && tierIdx >= 0;
+    const threshold = TIER_RATING_THRESHOLDS[t] ?? 700;
+    const progress = Math.min(rating, threshold);
+    const ratio = progress / threshold;
+    const state: MilestoneState = achieved ? "achieved" : ratio >= 0.3 ? "in-progress" : "locked";
+    all.push({
+      ...milestone,
+      state,
+      current: progress,
+      target: threshold,
+      progressText: `${progress} / ${threshold} rating`,
+      isNext: false,
+    });
+  }
+
+  // Mark the next closest milestone
+  let bestNextIdx = -1;
+  let bestNextRatio = -1;
+  for (let i = 0; i < all.length; i++) {
+    if (all[i].state !== "achieved") {
+      const ratio = all[i].current / all[i].target;
+      if (ratio > bestNextRatio) {
+        bestNextRatio = ratio;
+        bestNextIdx = i;
+      }
+    }
+  }
+  if (bestNextIdx >= 0) {
+    all[bestNextIdx].isNext = true;
   }
 
   return all;

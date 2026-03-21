@@ -7,6 +7,7 @@ import { formatTime } from "@/hooks/usePuzzleTimer";
 import { getDailyStreak, getTotalDailyCompleted } from "@/lib/dailyChallenge";
 import { getEndlessStats } from "@/lib/endlessHistory";
 import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, Shield } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PremiumStats from "@/components/account/PremiumStats";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -231,6 +232,7 @@ const Stats = () => {
             </div>
 
             {endlessStats.recentSessions.length > 0 && (
+              <TooltipProvider>
               <div>
                 <h3 className="text-sm font-semibold text-foreground mb-2">Recent Sessions</h3>
                 <div className="space-y-2">
@@ -248,34 +250,47 @@ const Stats = () => {
                             {session.totalSolved} solved · {formatTime(session.totalTime)}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
-                          {typesUnique.map((t, idx) => (
-                            <span key={t} className="inline-flex items-center gap-0.5">
-                              {idx > 0 && <span className="text-muted-foreground/40 mx-0.5">|</span>}
-                              <span className="text-muted-foreground">{CATEGORY_INFO[t]?.name}</span>
-                              {session.finalDifficulties[t] && session.finalDifficulties[t] !== "medium" && (
-                                <span className="text-muted-foreground/60 text-[10px]">
-                                  ({DIFFICULTY_LABELS[session.finalDifficulties[t]!]})
+                        <div className="flex items-center justify-between gap-2 text-[11px]">
+                          <div className="flex items-center gap-0 flex-wrap min-w-0">
+                            {typesUnique.map((t, idx) => (
+                              <span key={t} className="inline-flex items-center gap-0.5 whitespace-nowrap">
+                                {idx > 0 && <span className="text-muted-foreground/40 mx-1">|</span>}
+                                <span className="text-muted-foreground">{CATEGORY_INFO[t]?.name}</span>
+                                <span className="text-muted-foreground/60 text-[10px] ml-0.5">
+                                  ({DIFFICULTY_LABELS[session.finalDifficulties[t] ?? "medium"]})
                                 </span>
-                              )}
-                            </span>
-                          ))}
-                          {ups > 0 && (
-                            <span className="flex items-center gap-0.5 text-[10px] text-primary">
-                              <TrendingUp size={9} /> {ups}
-                            </span>
-                          )}
-                          {downs > 0 && (
-                            <span className="flex items-center gap-0.5 text-[10px] text-destructive">
-                              <TrendingDown size={9} /> {downs}
-                            </span>
-                          )}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {ups > 0 && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="flex items-center gap-0.5 text-[10px] text-primary cursor-default">
+                                    <TrendingUp size={9} /> {ups}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs">Faster than your average</TooltipContent>
+                              </Tooltip>
+                            )}
+                            {downs > 0 && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="flex items-center gap-0.5 text-[10px] text-destructive cursor-default">
+                                    <TrendingDown size={9} /> {downs}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs">Slower than your average</TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
               </div>
+              </TooltipProvider>
             )}
           </div>
         )}
