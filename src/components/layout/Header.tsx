@@ -32,7 +32,7 @@ const Header = () => {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="ml-auto hidden items-center gap-1 md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.to}
@@ -49,7 +49,7 @@ const Header = () => {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 md:ml-2">
           {/* Account button - desktop */}
           <div className="hidden md:block">
             <AccountHeaderButton />
