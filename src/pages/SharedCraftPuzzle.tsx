@@ -52,8 +52,6 @@ const SharedCraftPuzzle = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const interactionMarked = React.useRef(false);
-  // Track whether this is a recipient-specific link
-  const recipientId = React.useRef<string | null>(null);
 
   useEffect(() => {
     if (!id) { setError(true); setLoading(false); return; }
