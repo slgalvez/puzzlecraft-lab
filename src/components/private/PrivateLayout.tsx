@@ -8,6 +8,7 @@ import { LogOut, Puzzle } from "lucide-react";
 import { applyChatTheme } from "@/lib/chatTheme";
 import { useGlobalIncomingCall } from "@/hooks/useGlobalIncomingCall";
 import { IncomingCallBanner } from "@/components/private/IncomingCallBanner";
+import { VideoCallPIP } from "@/components/private/VideoCallPIP";
 
 const LAST_ACTIVE_KEY = "private_last_active";
 const GRACE_PERIOD_MS = 5 * 60 * 1000; // 5 minutes
@@ -139,6 +140,8 @@ export default function PrivateLayout({ children, title, fullHeight }: PrivateLa
 
   return (
     <div className="private-app">
+      {/* PIP overlay for active calls */}
+      <VideoCallPIP />
       {/* Global incoming call banner — visible on ALL Secret Lab pages */}
       {globalCall.incomingCall && !isOnConversationPage && (
         <IncomingCallBanner

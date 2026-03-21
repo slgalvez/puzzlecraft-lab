@@ -255,22 +255,6 @@ const AdminConversationView = () => {
           onEndCall={videoCall.endCall}
           onToggleMute={videoCall.toggleMute}
           onToggleCamera={videoCall.toggleCamera}
-          onDismiss={videoCall.dismissEnd}
-        />
-      )}
-      {videoCall.callState === "ended" && (
-        <VideoCallScreen
-          callState={videoCall.callState}
-          localStream={null}
-          remoteStream={null}
-          isMuted={false}
-          isCameraOff={false}
-          callDuration={videoCall.callDuration}
-          endReason={videoCall.endReason}
-          onEndCall={videoCall.endCall}
-          onToggleMute={videoCall.toggleMute}
-          onToggleCamera={videoCall.toggleCamera}
-          onDismiss={videoCall.dismissEnd}
         />
       )}
       {videoCall.incomingCall && videoCall.callState === "idle" && (

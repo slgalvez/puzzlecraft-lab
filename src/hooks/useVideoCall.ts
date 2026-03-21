@@ -359,7 +359,18 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     };
   }, []);
 
-  // Reset to idle after showing ended state
+  // Auto-dismiss ended state after a brief moment (no manual "Done" needed)
+  useEffect(() => {
+    if (callState !== "ended") return;
+    const timer = setTimeout(() => {
+      setCallState("idle");
+      setEndReason(null);
+      setCallDuration(0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [callState]);
+
+  // Reset to idle (kept for backward compat)
   const dismissEnd = useCallback(() => {
     setCallState("idle");
     setEndReason(null);
