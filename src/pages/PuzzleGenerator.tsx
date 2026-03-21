@@ -141,7 +141,7 @@ const PuzzleGenerator = () => {
     } catch { /* ignore */ }
     return createDifficultyMap();
   });
-  const surpriseStartTime = useRef<number>(0);
+  
 
   // Random settings with localStorage persistence
   const RANDOM_SETTINGS_KEY = "puzzlecraft-random-settings";
