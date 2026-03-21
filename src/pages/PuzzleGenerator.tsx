@@ -183,9 +183,8 @@ const PuzzleGenerator = () => {
     () => category ? new Set([category]) : new Set()
   );
 
-  // Random tab state
-  const [randomTypes, setRandomTypes] = useState<Set<PuzzleCategory>>(new Set());
-  const [randomDifficulty, setRandomDifficulty] = useState<Difficulty | "any" | null>(null);
+
+
 
   const handleNewPuzzle = useCallback(() => {
     const pool = randomPool ?? (generateTypes.size > 1 ? Array.from(generateTypes) : null);
@@ -325,44 +324,21 @@ const PuzzleGenerator = () => {
     navigate("/generate", { replace: true });
   };
 
-  // Random tab
-  const toggleRandomType = (type: PuzzleCategory) => {
-    setRandomTypes((prev) => {
-      const next = new Set(prev);
-      if (next.has(type)) next.delete(type);
-      else next.add(type);
-      // If only kakuro remains and insane is selected, downgrade to extreme
-      if (next.size === 1 && next.has("kakuro") && randomDifficulty === "insane") {
-        setRandomDifficulty("extreme");
-      }
-      return next;
-    });
-  };
-
-  const canRandomGenerate = randomTypes.size > 0 && randomDifficulty !== null;
-
+  // Random tab — fully random, no user selection needed
   const handleRandomGenerate = () => {
-    if (!canRandomGenerate) {
-      toast({
-        title: "Missing selections",
-        description: "Select at least one puzzle type and a difficulty to generate",
-      });
-      return;
-    }
-    const types = Array.from(randomTypes);
-    const chosenType = types[Math.floor(Math.random() * types.length)];
+    const allTypeKeys = allTypes.map(([t]) => t);
+    const chosenType = allTypeKeys[Math.floor(Math.random() * allTypeKeys.length)];
     const newSeed = randomSeed();
-    const diff: Difficulty = randomDifficulty === "any"
-      ? difficulties[Math.floor(Math.random() * difficulties.length)][0]
-      : randomDifficulty;
+    const validDiffs = difficulties.filter(([val]) => !isDifficultyDisabled(chosenType, val));
+    const diff = validDiffs[Math.floor(Math.random() * validDiffs.length)][0];
     setDifficulty(diff);
     setMode("random");
     setSeed(newSeed);
     setPuzzleGenerated(true);
-    setRandomPool(types.length > 1 ? types : null);
+    setRandomPool(allTypeKeys);
     setPuzzleKey((k) => k + 1);
     navigate(`/generate/${chosenType}?seed=${newSeed}`, {
-      state: { randomPool: types, randomDifficulty: diff },
+      state: { randomPool: allTypeKeys, randomDifficulty: diff },
       replace: true,
     });
   };
@@ -585,94 +561,25 @@ const PuzzleGenerator = () => {
 
   // ─── Mobile Random ───
   const renderMobileRandom = () => (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="text-center">
-        <Dices size={32} className="mx-auto text-primary mb-2" />
-        <h2 className="font-display text-xl font-bold text-foreground">Surprise Me</h2>
-        <p className="text-sm text-muted-foreground mt-1">Pick types and difficulty, we'll do the rest</p>
-      </div>
-
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Puzzle Types</label>
-          <div className="flex gap-2">
-            <button onClick={() => setRandomTypes(new Set(allTypes.map(([t]) => t)))} className="text-[10px] font-medium text-primary hover:underline">All</button>
-            <button onClick={() => { setRandomTypes(new Set()); setRandomDifficulty(null); }} className="text-[10px] font-medium text-primary hover:underline">Clear</button>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          {allTypes.map(([type, info]) => (
-            <button
-              key={type}
-              onClick={() => toggleRandomType(type)}
-              className={cn(
-                "flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors text-left",
-                randomTypes.has(type)
-                  ? "border-primary bg-primary/5 text-primary"
-                  : "border-border text-muted-foreground hover:border-primary/40"
-              )}
-            >
-               <PuzzleIcon type={type} size={18} className="shrink-0" />
-              <span>{info.name}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-muted-foreground">Difficulty</label>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setRandomDifficulty("any")}
-            className={cn(
-              "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
-              randomDifficulty === "any" ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Any
-          </button>
-          {difficulties.map(([val, label]) => {
-            const onlyKakuro = randomTypes.size === 1 && randomTypes.has("kakuro");
-            const disabled = onlyKakuro && isDifficultyDisabled("kakuro", val);
-            return (
-              <button
-                key={val}
-                onClick={() => {
-                  if (disabled) {
-                    toast({ title: `${label} not available for Kakuro yet` });
-                    return;
-                  }
-                  setRandomDifficulty(val);
-                }}
-                className={cn(
-                  "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
-                  disabled
-                    ? "border-border text-muted-foreground/40 cursor-not-allowed"
-                    : randomDifficulty === val ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:text-foreground"
-                )}
-                title={disabled ? `${label} not available for Kakuro yet` : undefined}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+    <div className="flex flex-col items-center justify-center min-h-[60vh] animate-in fade-in duration-300">
+      <Dices size={48} className="text-primary mb-4" />
+      <h2 className="font-display text-2xl font-bold text-foreground mb-2">Surprise Me</h2>
+      <p className="text-sm text-muted-foreground text-center mb-8 max-w-xs">
+        We'll pick a random puzzle type and difficulty — just tap and play
+      </p>
 
       {/* Collapsible Settings */}
-      <Collapsible open={randomSettingsOpen} onOpenChange={setRandomSettingsOpen}>
-        <CollapsibleTrigger className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+      <Collapsible open={randomSettingsOpen} onOpenChange={setRandomSettingsOpen} className="w-full max-w-xs mb-6">
+        <CollapsibleTrigger className="mx-auto flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
           <ChevronDown size={14} className={cn("transition-transform", randomSettingsOpen && "rotate-180")} />
           Settings
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-3 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-          {/* Timer */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Switch checked={timeLimitEnabled} onCheckedChange={setTimeLimitEnabled} id="random-timer-mobile" />
               <label htmlFor="random-timer-mobile" className="flex items-center gap-1.5 text-sm font-medium text-foreground cursor-pointer">
-                <Clock size={14} className="text-muted-foreground" />
-                Timer
+                <Clock size={14} className="text-muted-foreground" /> Timer
               </label>
             </div>
             {timeLimitEnabled && (
@@ -684,13 +591,11 @@ const PuzzleGenerator = () => {
               </div>
             )}
           </div>
-          {/* Hints */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Switch checked={hintsEnabled} onCheckedChange={setHintsEnabled} id="random-hints-mobile" />
               <label htmlFor="random-hints-mobile" className="flex items-center gap-1.5 text-sm font-medium text-foreground cursor-pointer">
-                <Lightbulb size={14} className="text-muted-foreground" />
-                Hints
+                <Lightbulb size={14} className="text-muted-foreground" /> Hints
               </label>
             </div>
             {hintsEnabled && (
@@ -704,36 +609,22 @@ const PuzzleGenerator = () => {
               </div>
             )}
           </div>
-          {/* Reveal */}
           <div className="flex items-center gap-2">
             <Switch checked={revealEnabled} onCheckedChange={setRevealEnabled} id="random-reveal-mobile" />
             <label htmlFor="random-reveal-mobile" className="flex items-center gap-1.5 text-sm font-medium text-foreground cursor-pointer">
-              <Eye size={14} className="text-muted-foreground" />
-              Reveal
+              <Eye size={14} className="text-muted-foreground" /> Reveal
             </label>
           </div>
-          {/* Reset */}
           <button onClick={resetRandomSettings} className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors mt-1">
-            <RotateCcw size={11} />
-            Reset to defaults
+            <RotateCcw size={11} /> Reset to defaults
           </button>
         </CollapsibleContent>
       </Collapsible>
 
-      <Button onClick={handleRandomGenerate} size="lg" className="w-full gap-2 text-base" disabled={!canRandomGenerate}>
+      <Button onClick={handleRandomGenerate} size="lg" className="w-full max-w-xs gap-2 text-base">
         <Dices size={18} />
-        Generate Random Puzzle
+        Surprise Me
       </Button>
-      {!canRandomGenerate && (
-        <p className="text-center text-xs text-muted-foreground">
-          Select at least one puzzle type and a difficulty
-        </p>
-      )}
-      {canRandomGenerate && (
-        <p className="text-center text-[10px] text-muted-foreground">
-          {randomTypes.size === allTypes.length ? "From all puzzle types" : `From ${randomTypes.size} selected type${randomTypes.size > 1 ? "s" : ""}`}
-        </p>
-      )}
     </div>
   );
 
@@ -916,99 +807,27 @@ const PuzzleGenerator = () => {
   );
 
   const renderDesktopRandom = () => (
-    <div className="max-w-2xl space-y-8">
-      <div>
-        <div className="flex items-center gap-3 mb-1">
-          <Dices size={24} className="text-primary" />
-          <h2 className="font-display text-xl font-bold text-foreground">Surprise Me</h2>
-        </div>
-        <p className="text-sm text-muted-foreground">Select puzzle types and difficulty — we'll pick one at random</p>
-      </div>
-
-      {/* Types multi-select */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Puzzle Types</label>
-          <div className="flex gap-2">
-            <button onClick={() => setRandomTypes(new Set(allTypes.map(([t]) => t)))} className="text-xs font-medium text-primary hover:underline">All</button>
-            <span className="text-xs text-muted-foreground">·</span>
-            <button onClick={() => { setRandomTypes(new Set()); setRandomDifficulty(null); }} className="text-xs font-medium text-primary hover:underline">Clear</button>
-          </div>
-        </div>
-        <div className="grid grid-cols-4 gap-2">
-          {allTypes.map(([type, info]) => (
-            <button
-              key={type}
-              onClick={() => toggleRandomType(type)}
-              className={cn(
-                "flex items-center gap-2 rounded-xl border-2 px-3 py-2.5 text-sm font-medium transition-all text-left",
-                randomTypes.has(type)
-                  ? "border-primary bg-primary/5 text-primary"
-                  : "border-border bg-card text-muted-foreground hover:border-primary/40"
-              )}
-            >
-              <PuzzleIcon type={type} size={18} className="shrink-0" />
-              <span>{info.name}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Difficulty */}
-      <div>
-        <label className="mb-3 block text-xs font-medium uppercase tracking-widest text-muted-foreground">Difficulty</label>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setRandomDifficulty("any")}
-            className={cn(
-              "rounded-full border-2 px-5 py-2 text-sm font-medium transition-all",
-              randomDifficulty === "any" ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Any
-          </button>
-          {difficulties.map(([val, label]) => {
-            const onlyKakuro = randomTypes.size === 1 && randomTypes.has("kakuro");
-            const disabled = onlyKakuro && isDifficultyDisabled("kakuro", val);
-            return (
-              <button
-                key={val}
-                onClick={() => {
-                  if (disabled) {
-                    toast({ title: `${label} not available for Kakuro yet` });
-                    return;
-                  }
-                  setRandomDifficulty(val);
-                }}
-                className={cn(
-                  "rounded-full border-2 px-5 py-2 text-sm font-medium transition-all",
-                  disabled
-                    ? "border-border bg-card text-muted-foreground/40 cursor-not-allowed"
-                    : randomDifficulty === val ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:text-foreground"
-                )}
-                title={disabled ? `${label} not available for Kakuro yet` : undefined}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
+    <div className="max-w-md space-y-8">
+      <div className="text-center">
+        <Dices size={40} className="mx-auto text-primary mb-3" />
+        <h2 className="font-display text-2xl font-bold text-foreground">Surprise Me</h2>
+        <p className="text-sm text-muted-foreground mt-2">
+          We'll pick a random puzzle type and difficulty — just click and play
+        </p>
       </div>
 
       {/* Collapsible Settings */}
       <Collapsible open={randomSettingsOpen} onOpenChange={setRandomSettingsOpen}>
-        <CollapsibleTrigger className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+        <CollapsibleTrigger className="mx-auto flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
           <ChevronDown size={14} className={cn("transition-transform", randomSettingsOpen && "rotate-180")} />
           Settings
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-3 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-          {/* Timer */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Switch checked={timeLimitEnabled} onCheckedChange={setTimeLimitEnabled} id="random-timer-desktop" />
               <label htmlFor="random-timer-desktop" className="flex items-center gap-1.5 text-sm font-medium text-foreground cursor-pointer">
-                <Clock size={14} className="text-muted-foreground" />
-                Timer
+                <Clock size={14} className="text-muted-foreground" /> Timer
               </label>
             </div>
             {timeLimitEnabled && (
@@ -1020,13 +839,11 @@ const PuzzleGenerator = () => {
               </div>
             )}
           </div>
-          {/* Hints */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Switch checked={hintsEnabled} onCheckedChange={setHintsEnabled} id="random-hints-desktop" />
               <label htmlFor="random-hints-desktop" className="flex items-center gap-1.5 text-sm font-medium text-foreground cursor-pointer">
-                <Lightbulb size={14} className="text-muted-foreground" />
-                Hints
+                <Lightbulb size={14} className="text-muted-foreground" /> Hints
               </label>
             </div>
             {hintsEnabled && (
@@ -1040,37 +857,23 @@ const PuzzleGenerator = () => {
               </div>
             )}
           </div>
-          {/* Reveal */}
           <div className="flex items-center gap-2">
             <Switch checked={revealEnabled} onCheckedChange={setRevealEnabled} id="random-reveal-desktop" />
             <label htmlFor="random-reveal-desktop" className="flex items-center gap-1.5 text-sm font-medium text-foreground cursor-pointer">
-              <Eye size={14} className="text-muted-foreground" />
-              Reveal
+              <Eye size={14} className="text-muted-foreground" /> Reveal
             </label>
           </div>
-          {/* Reset */}
           <button onClick={resetRandomSettings} className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors mt-1">
-            <RotateCcw size={11} />
-            Reset to defaults
+            <RotateCcw size={11} /> Reset to defaults
           </button>
         </CollapsibleContent>
       </Collapsible>
 
-      <div className="flex items-center gap-4">
-        <Button onClick={handleRandomGenerate} size="lg" className="gap-2 text-base px-8" disabled={!canRandomGenerate}>
+      <div className="text-center">
+        <Button onClick={handleRandomGenerate} size="lg" className="gap-2 text-base px-10">
           <Dices size={18} />
-          Generate Random Puzzle
+          Surprise Me
         </Button>
-        {!canRandomGenerate && (
-          <p className="text-xs text-muted-foreground">
-            Select at least one puzzle type and a difficulty
-          </p>
-        )}
-        {canRandomGenerate && (
-          <p className="text-xs text-muted-foreground">
-            {randomTypes.size === allTypes.length ? "From all puzzle types" : `From ${randomTypes.size} selected type${randomTypes.size > 1 ? "s" : ""}`}
-          </p>
-        )}
       </div>
     </div>
   );
@@ -1106,7 +909,7 @@ const PuzzleGenerator = () => {
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            Random
+            Surprise Me
           </button>
         </div>
 
