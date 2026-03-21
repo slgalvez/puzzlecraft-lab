@@ -242,7 +242,6 @@ Deno.serve(async (req) => {
             action: "send-push",
             target_profile_id: recipientProfileId,
             title: MESSAGE_PHRASES[phraseIdx],
-            body: MESSAGE_PHRASES[phraseIdx],
             tag: "private-notification",
             url: "/p",
           }),

@@ -6,12 +6,11 @@ self.addEventListener('push', (event) => {
   try {
     data = event.data?.json() || {};
   } catch {
-    data = { body: event.data?.text() || 'New update available' };
+    data = { title: event.data?.text() || 'New update available' };
   }
 
-  const title = data.title || data.body || 'New update available';
+  const title = data.title || 'New update available';
   const options = {
-    body: data.body || 'New update available',
     icon: '/pwa-icon-192.png',
     badge: '/pwa-icon-192.png',
     tag: data.tag || 'private-notification',

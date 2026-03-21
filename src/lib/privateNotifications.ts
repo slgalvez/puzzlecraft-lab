@@ -333,19 +333,18 @@ export async function sendTestPush(token: string): Promise<{ ok: boolean; sent: 
 
 // ── Legacy push notification (fallback for when SW push not available) ──
 
-export function sendPushNotification(body: string): void {
+export function sendPushNotification(title: string): void {
   if (!("Notification" in window)) return;
   if (Notification.permission !== "granted") return;
   if (!getNotificationsEnabled()) return;
 
   try {
     const opts: NotificationOptions & Record<string, unknown> = {
-      body,
       icon: "/pwa-icon-192.png",
       tag: "private-notification",
       silent: false,
     };
-    const n = new Notification(body, opts);
+    const n = new Notification(title, opts);
 
     n.onclick = () => {
       window.focus();
