@@ -402,6 +402,7 @@ const KakuroGrid = ({ seed, difficulty: rawDifficulty, onNewPuzzle, onSolve, tim
         isRevealed={isRevealed}
         puzzleCode={dailyCode ?? `kakuro-${seed}`}
         solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0, category: "kakuro", seed, dailyCode }}
+        saveStatus={saveStatus}
       />
     </div>
   );

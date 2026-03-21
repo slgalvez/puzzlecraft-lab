@@ -297,6 +297,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
         isRevealed={isRevealed}
         puzzleCode={dailyCode ?? `cryptogram-${seed}`}
         solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0, category: "cryptogram", seed, dailyCode }}
+        saveStatus={saveStatus}
       />
     </div>
   );
