@@ -6,7 +6,7 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puz
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { getDailyStreak, getTotalDailyCompleted } from "@/lib/dailyChallenge";
 import { getEndlessStats } from "@/lib/endlessHistory";
-import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
 import PremiumStats from "@/components/account/PremiumStats";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -362,64 +362,7 @@ const Stats = () => {
           </div>
         )}
 
-        {/* Recent completions */}
-        {showGeneral && (filteredCompletions.length > 0 || stats.recentCompletions.length > 0) && (
-          <div className="mt-12">
-            <h2 className="font-display text-xl font-semibold text-foreground mb-4">
-              Recent Solves
-              {(categoryFilter || dateFilter) && (
-                <span className="ml-2 text-sm font-normal text-muted-foreground">
-                  — {[
-                    categoryFilter && CATEGORY_INFO[categoryFilter]?.name,
-                    dateFilter && new Date(dateFilter + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-                  ].filter(Boolean).join(", ")}
-                </span>
-              )}
-            </h2>
-            <div className="rounded-xl border bg-card overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-secondary/50">
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Difficulty</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Time</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibleCompletions.map((r, i) => {
-                    const info = CATEGORY_INFO[r.category as PuzzleCategory];
-                    return (
-                      <tr key={i} className="border-b last:border-0">
-                        <td className="px-4 py-2.5 text-foreground">
-                          {info?.name || r.category}
-                        </td>
-                        <td className="px-4 py-2.5 capitalize text-muted-foreground">{r.difficulty}</td>
-                        <td className="px-4 py-2.5 font-mono font-medium text-foreground">{formatTime(r.time)}</td>
-                        <td className="px-4 py-2.5 text-muted-foreground hidden sm:table-cell">
-                          {new Date(r.date).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            {filteredCompletions.length > RECENT_COLLAPSED_COUNT && (
-              <button
-                type="button"
-                onClick={() => setRecentExpanded((p) => !p)}
-                className="mt-3 flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 transition-colors mx-auto"
-              >
-                {recentExpanded ? (
-                  <>Show less <ChevronUp size={14} /></>
-                ) : (
-                  <>See more <ChevronDown size={14} /></>
-                )}
-              </button>
-            )}
-          </div>
-        )}
+        {/* Recent completions removed — Solve History lives in PremiumStats */}
 
         {stats.totalSolved === 0 && (
           <div className="mt-16 text-center">

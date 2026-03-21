@@ -1,4 +1,4 @@
-import { Sparkles, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface PremiumLockedCardProps {
@@ -21,12 +21,10 @@ export default function PremiumLockedCard({ onUpgrade, comingSoon }: PremiumLock
       </p>
       {comingSoon ? (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-          <Sparkles size={12} />
           Coming Soon
         </span>
       ) : onUpgrade ? (
         <Button variant="outline" size="sm" onClick={onUpgrade} className="gap-1.5">
-          <Sparkles size={12} />
           Unlock with Puzzlecraft+
         </Button>
       ) : null}

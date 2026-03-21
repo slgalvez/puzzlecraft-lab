@@ -3,14 +3,16 @@
  *
  * Generates realistic synthetic solve records across both data stores
  * (solveTracker + progressTracker) so premium analytics can be previewed.
+ * Also generates daily challenge completions and endless mode sessions.
  *
- * All demo records carry a `__demo: true` flag in solveTracker and a
- * `puzzleKey` prefix of "demo-" in progressTracker for easy identification.
+ * All demo records carry a `__demo: true` flag for easy identification.
  */
 import type { PuzzleCategory, Difficulty } from "./puzzleTypes";
 
 const SOLVES_KEY = "puzzlecraft-solves";
 const COMPLETIONS_KEY = "puzzlecraft-completions";
+const DAILY_KEY = "puzzlecraft-daily-completions";
+const ENDLESS_KEY = "puzzlecraft_endless_sessions";
 const DEMO_FLAG_KEY = "puzzlecraft-demo-active";
 
 // ── Realistic distributions ──
@@ -56,6 +58,10 @@ function generateTimestamp(daysAgo: number): string {
   return d.toISOString();
 }
 
+function dateToStr(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
 function solveTimeFor(type: PuzzleCategory, diff: Difficulty): number {
   const ranges = TIME_RANGES[type];
   const idx = diff === "easy" ? 0 : diff === "medium" ? 2 : 4;
@@ -80,6 +86,12 @@ export function generateDemoSolves(count = 25) {
     const assisted = hintsUsed > 0;
     const id = `demo-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`;
 
+    // Roughly 20% daily, 20% endless, 60% regular play
+    const r = Math.random();
+    const isDailyChallenge = r < 0.2;
+    const origin: "play" | "daily" | "endless" | "library" =
+      r < 0.2 ? "daily" : r < 0.4 ? "endless" : pick(["play", "library"] as const);
+
     solveRecords.push({
       id,
       puzzleId: `demo-${type}-${difficulty}-${i}`,
@@ -89,9 +101,9 @@ export function generateDemoSolves(count = 25) {
       mistakesCount,
       hintsUsed,
       completedAt,
-      isDailyChallenge: Math.random() < 0.15,
+      isDailyChallenge,
       assisted,
-      origin: pick(["play", "daily", "library"] as const),
+      origin,
       __demo: true,
     });
 
@@ -110,15 +122,82 @@ export function generateDemoSolves(count = 25) {
   solveRecords.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
   completionRecords.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  // Merge with existing real data (prepend demo to solves, append to completions)
   try {
+    // Merge solves
     const existingSolves = JSON.parse(localStorage.getItem(SOLVES_KEY) || "[]");
     const realSolves = existingSolves.filter((r: any) => !r.__demo);
     localStorage.setItem(SOLVES_KEY, JSON.stringify([...solveRecords, ...realSolves]));
 
+    // Merge completions
     const existingCompletions = JSON.parse(localStorage.getItem(COMPLETIONS_KEY) || "[]");
     const realCompletions = existingCompletions.filter((r: any) => !r.__demo);
     localStorage.setItem(COMPLETIONS_KEY, JSON.stringify([...realCompletions, ...completionRecords]));
+
+    // Generate daily challenge completions (8-12 days over last 21 days)
+    const existingDaily = JSON.parse(localStorage.getItem(DAILY_KEY) || "{}");
+    // Remove old demo dailies
+    const realDaily: Record<string, any> = {};
+    for (const [k, v] of Object.entries(existingDaily)) {
+      if (!(v as any).__demo) realDaily[k] = v;
+    }
+    const dailyCount = rand(8, 12);
+    const usedDays = new Set<number>();
+    for (let i = 0; i < dailyCount; i++) {
+      let day: number;
+      do { day = rand(0, 20); } while (usedDays.has(day));
+      usedDays.add(day);
+      const d = new Date();
+      d.setDate(d.getDate() - day);
+      const dateStr = dateToStr(d);
+      const type = pick(TYPES);
+      const diff = weightedDifficulty();
+      realDaily[dateStr] = {
+        dateStr,
+        time: solveTimeFor(type, diff),
+        category: type,
+        difficulty: diff,
+        __demo: true,
+      };
+    }
+    localStorage.setItem(DAILY_KEY, JSON.stringify(realDaily));
+
+    // Generate endless mode sessions (3-5 sessions)
+    const existingEndless = JSON.parse(localStorage.getItem(ENDLESS_KEY) || "[]");
+    const realEndless = existingEndless.filter((r: any) => !r.__demo);
+    const sessionCount = rand(3, 5);
+    const demoSessions: any[] = [];
+    for (let s = 0; s < sessionCount; s++) {
+      const daysAgo = rand(0, 18);
+      const d = new Date();
+      d.setDate(d.getDate() - daysAgo);
+      d.setHours(rand(10, 21), rand(0, 59), rand(0, 59));
+      const solveCount = rand(3, 8);
+      const sessionTypes = Array.from({ length: solveCount }, () => pick(TYPES));
+      const solves = sessionTypes.map((t) => {
+        const diff = weightedDifficulty();
+        const elapsed = solveTimeFor(t, diff);
+        const diffChange = pick(["up", "down", "stay"] as const);
+        return { type: t, difficulty: diff, elapsed, diffChange };
+      });
+      const totalTime = solves.reduce((s, r) => s + r.elapsed, 0);
+      const fastest = Math.min(...solves.map((s) => s.elapsed));
+      const finalDiffs: Partial<Record<PuzzleCategory, Difficulty>> = {};
+      for (const sv of solves) finalDiffs[sv.type] = sv.difficulty;
+
+      demoSessions.push({
+        id: `demo-endless-${Date.now()}-${s}`,
+        date: d.toISOString(),
+        totalSolved: solveCount,
+        totalTime,
+        fastestSolve: fastest,
+        typesPlayed: [...new Set(sessionTypes)],
+        solves,
+        finalDifficulties: finalDiffs,
+        __demo: true,
+      });
+    }
+    demoSessions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    localStorage.setItem(ENDLESS_KEY, JSON.stringify([...demoSessions, ...realEndless]));
 
     localStorage.setItem(DEMO_FLAG_KEY, "true");
   } catch {
@@ -133,6 +212,18 @@ export function clearDemoSolves() {
 
     const completions = JSON.parse(localStorage.getItem(COMPLETIONS_KEY) || "[]");
     localStorage.setItem(COMPLETIONS_KEY, JSON.stringify(completions.filter((r: any) => !r.__demo)));
+
+    // Clear demo daily completions
+    const daily = JSON.parse(localStorage.getItem(DAILY_KEY) || "{}");
+    const realDaily: Record<string, any> = {};
+    for (const [k, v] of Object.entries(daily)) {
+      if (!(v as any).__demo) realDaily[k] = v;
+    }
+    localStorage.setItem(DAILY_KEY, JSON.stringify(realDaily));
+
+    // Clear demo endless sessions
+    const endless = JSON.parse(localStorage.getItem(ENDLESS_KEY) || "[]");
+    localStorage.setItem(ENDLESS_KEY, JSON.stringify(endless.filter((r: any) => !r.__demo)));
 
     localStorage.removeItem(DEMO_FLAG_KEY);
   } catch {
