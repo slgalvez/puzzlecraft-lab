@@ -76,13 +76,15 @@ const AdminConversationView = () => {
       setConversation(data.conversation);
       setMessages(data.messages);
       setError(null);
+      console.debug("[admin-conversation] loaded", data.messages?.length, "messages");
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
-      if (loading) setError("Unable to load conversation");
+      if (loadingRef.current) setError("Unable to load conversation");
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
-  }, [token, conversationId, loading, handleSessionExpired]);
+  }, [token, conversationId, handleSessionExpired]);
 
   useEffect(() => {
     fetchConversation();
