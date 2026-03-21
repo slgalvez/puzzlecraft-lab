@@ -15,7 +15,7 @@ const VAPID_KEY_HASH_KEY = "private_vapid_key_hash";
 
 // VAPID public key (matches the private key stored as a secret)
 export const VAPID_PUBLIC_KEY =
-  "BPRMv8hHpmf3idJlYtYX4n7SKNpW6CNdZwq0otQ_KysMTsT47_sKbYy_L82y0_CefS7sbGq6L_-SuEFHSB7ehuM";
+  "BNMV-W_UX_Jcq9A9Ff2zC9KP407ttvg0qOKd5E_xR3CniOvdAHabHKZjJIWvwN2j4oW4Pi_WmC--gzF6s8d3Fng";
 
 // ── Phrase pools ──
 
