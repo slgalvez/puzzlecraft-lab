@@ -604,13 +604,27 @@ const CraftPuzzle = () => {
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   {saving ? "Saving…" : "Preview Puzzle"}
                 </Button>
-                <p className="text-[10px] text-muted-foreground text-center">
-                  {draftSaved ? (
-                    <span className="text-primary animate-in fade-in-0 duration-300">Saved ✓</span>
-                  ) : (
-                    "No account needed • Share instantly with a link"
-                  )}
-                </p>
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={handleSaveDraft}
+                    className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {draftSaved && !draftDirty ? (
+                      <>
+                        <Check className="h-3 w-3 text-primary" />
+                        <span className="text-primary">Saved</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-3 w-3" />
+                        <span>Save draft</span>
+                      </>
+                    )}
+                  </button>
+                  <p className="text-[10px] text-muted-foreground">
+                    No account needed
+                  </p>
+                </div>
               </div>
             )}
 
