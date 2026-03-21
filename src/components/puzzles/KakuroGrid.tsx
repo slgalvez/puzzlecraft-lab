@@ -8,7 +8,8 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
-import { saveProgress, loadProgress, clearProgress } from "@/lib/puzzleProgress";
+import { loadProgress, clearProgress } from "@/lib/puzzleProgress";
+import { useAutoSave } from "@/hooks/useAutoSave";
 import { type Difficulty, getEffectiveDifficulty } from "@/lib/puzzleTypes";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
@@ -62,11 +63,16 @@ const KakuroGrid = ({ seed, difficulty: rawDifficulty, onNewPuzzle, onSolve, tim
 
   const timer = usePuzzleTimer(timerKey, { category: "kakuro", difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
-  useEffect(() => {
-    if (!timer.isSolved && !isRevealed) {
-      saveProgress<KakuroState>(timerKey, { grid }, timer.elapsed);
-    }
-  }, [grid, timer.elapsed, timer.isSolved, isRevealed, timerKey]);
+  const gridRef2 = useRef(grid);
+  gridRef2.current = grid;
+  const { status: saveStatus, debouncedSave } = useAutoSave<KakuroState>({
+    puzzleKey: timerKey,
+    getState: () => ({ grid: gridRef2.current }),
+    getElapsed: () => timer.elapsed,
+    disabled: timer.isSolved || isRevealed,
+  });
+
+  useEffect(() => { debouncedSave(); }, [grid, debouncedSave]);
 
   const clueMap = useMemo(() => {
     const map = new Map<string, { across?: number; down?: number }>();
@@ -396,6 +402,7 @@ const KakuroGrid = ({ seed, difficulty: rawDifficulty, onNewPuzzle, onSolve, tim
         isRevealed={isRevealed}
         puzzleCode={dailyCode ?? `kakuro-${seed}`}
         solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0, category: "kakuro", seed, dailyCode }}
+        saveStatus={saveStatus}
       />
     </div>
   );

@@ -8,7 +8,8 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
-import { saveProgress, loadProgress, clearProgress } from "@/lib/puzzleProgress";
+import { loadProgress, clearProgress } from "@/lib/puzzleProgress";
+import { useAutoSave } from "@/hooks/useAutoSave";
 import type { Difficulty } from "@/lib/puzzleTypes";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
@@ -53,11 +54,16 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
 
   const isGiven = (r: number, c: number) => puzzle.grid[r][c] !== null;
 
-  useEffect(() => {
-    if (!timer.isSolved && !isRevealed) {
-      saveProgress<SudokuState>(timerKey, { grid }, timer.elapsed);
-    }
-  }, [grid, timer.elapsed, timer.isSolved, isRevealed, timerKey]);
+  const gridRef2 = useRef(grid);
+  gridRef2.current = grid;
+  const { status: saveStatus, debouncedSave } = useAutoSave<SudokuState>({
+    puzzleKey: timerKey,
+    getState: () => ({ grid: gridRef2.current }),
+    getElapsed: () => timer.elapsed,
+    disabled: timer.isSolved || isRevealed,
+  });
+
+  useEffect(() => { debouncedSave(); }, [grid, debouncedSave]);
 
   useEffect(() => {
     containerRef.current?.focus();
@@ -277,6 +283,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
         isRevealed={isRevealed}
         puzzleCode={dailyCode ?? `sudoku-${seed}`}
         solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0, category: "sudoku", seed, dailyCode }}
+        saveStatus={saveStatus}
       />
     </div>
   );

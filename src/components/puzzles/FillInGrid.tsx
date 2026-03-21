@@ -11,7 +11,8 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
-import { saveProgress, loadProgress, clearProgress } from "@/lib/puzzleProgress";
+import { loadProgress, clearProgress } from "@/lib/puzzleProgress";
+import { useAutoSave } from "@/hooks/useAutoSave";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
 interface Props {
@@ -67,14 +68,21 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
 
   const timer = usePuzzleTimer(timerKey, { category: puzzle.type as "word-fill" | "number-fill", difficulty: puzzle.difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
-  useEffect(() => {
-    if (!timer.isSolved && !isRevealed) {
-      saveProgress<FillInState>(timerKey, {
-        grid,
-        usedEntries: Array.from(usedEntries),
-      }, timer.elapsed);
-    }
-  }, [grid, usedEntries, timer.elapsed, timer.isSolved, isRevealed, timerKey]);
+  const gridRef2 = useRef(grid);
+  gridRef2.current = grid;
+  const usedRef = useRef(usedEntries);
+  usedRef.current = usedEntries;
+  const { status: saveStatus, debouncedSave } = useAutoSave<FillInState>({
+    puzzleKey: timerKey,
+    getState: () => ({
+      grid: gridRef2.current,
+      usedEntries: Array.from(usedRef.current),
+    }),
+    getElapsed: () => timer.elapsed,
+    disabled: timer.isSolved || isRevealed,
+  });
+
+  useEffect(() => { debouncedSave(); }, [grid, usedEntries, debouncedSave]);
 
   const blacks = useMemo(() => {
     const set = new Set<string>();
@@ -505,6 +513,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
             isRevealed={isRevealed}
             puzzleCode={dailyCode ?? puzzle.id}
             solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty: puzzle.difficulty as any, isEndless, assisted: hintCount.current > 0, category: puzzle.type as any, seed: parseInt(puzzle.id.replace(/\D/g, "")) || 0, dailyCode }}
+            saveStatus={saveStatus}
           />
         )}
       </div>

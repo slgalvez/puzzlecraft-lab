@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { RotateCcw, CheckCircle2, Shuffle, Eye, Lightbulb, Bookmark } from "lucide-react";
 import { useState, useCallback } from "react";
 import CompletionPanel from "./CompletionPanel";
+import SaveIndicator from "./SaveIndicator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Difficulty, PuzzleCategory } from "@/lib/puzzleTypes";
 import { savePuzzle, savePuzzleReplacingOldest, unsavePuzzle, isSaved, isAtLimit } from "@/lib/savedPuzzles";
@@ -38,9 +39,10 @@ interface Props {
     seed?: number;
     dailyCode?: string;
   };
+  saveStatus?: "idle" | "saving" | "saved";
 }
 
-const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintCount = 0, maxHints, isRevealed, puzzleCode, solveData }: Props) => {
+const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintCount = 0, maxHints, isRevealed, puzzleCode, solveData, saveStatus = "idle" }: Props) => {
   const [open, setOpen] = useState(false);
   const [showRevealConfirm, setShowRevealConfirm] = useState(false);
   const isMobile = useIsMobile();
@@ -104,8 +106,9 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
       ) : isMobile ? (
         /* ── Mobile layout ── */
         <div className="space-y-3">
-          {/* Save + Reset — top-right aligned, icon-only, low emphasis */}
-          <div className="flex justify-end gap-1">
+          {/* Save + Status + Reset — top-right aligned, icon-only, low emphasis */}
+          <div className="flex items-center justify-end gap-1">
+            <SaveIndicator status={saveStatus} />
             {canSave && (
               <Button
                 variant="ghost"
@@ -237,6 +240,7 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
                 <Bookmark className="h-3.5 w-3.5" fill={saved ? "currentColor" : "none"} />
               </Button>
             )}
+            <SaveIndicator status={saveStatus} />
           </div>
 
           {puzzleCode && (

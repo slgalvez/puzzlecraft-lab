@@ -8,7 +8,8 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
-import { saveProgress, loadProgress, clearProgress } from "@/lib/puzzleProgress";
+import { loadProgress, clearProgress } from "@/lib/puzzleProgress";
+import { useAutoSave } from "@/hooks/useAutoSave";
 import type { Difficulty } from "@/lib/puzzleTypes";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
@@ -61,14 +62,21 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
 
   const timer = usePuzzleTimer(timerKey, { category: "word-search", difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
-  useEffect(() => {
-    if (!timer.isSolved && !isRevealed) {
-      saveProgress<WordSearchState>(timerKey, {
-        foundWords: Array.from(foundWords),
-        foundCells: Array.from(foundCells),
-      }, timer.elapsed);
-    }
-  }, [foundWords, foundCells, timer.elapsed, timer.isSolved, isRevealed, timerKey]);
+  const foundWordsRef = useRef(foundWords);
+  foundWordsRef.current = foundWords;
+  const foundCellsRef = useRef(foundCells);
+  foundCellsRef.current = foundCells;
+  const { status: saveStatus, debouncedSave } = useAutoSave<WordSearchState>({
+    puzzleKey: timerKey,
+    getState: () => ({
+      foundWords: Array.from(foundWordsRef.current),
+      foundCells: Array.from(foundCellsRef.current),
+    }),
+    getElapsed: () => timer.elapsed,
+    disabled: timer.isSolved || isRevealed,
+  });
+
+  useEffect(() => { debouncedSave(); }, [foundWords, foundCells, debouncedSave]);
 
   useEffect(() => {
     setCursor([0, 0]);
@@ -409,6 +417,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
           isRevealed={isRevealed}
           puzzleCode={dailyCode ?? `word-search-${seed}`}
           solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0, category: "word-search", seed, dailyCode }}
+          saveStatus={saveStatus}
         />
       </div>
 

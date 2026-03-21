@@ -6,7 +6,8 @@ import PuzzleTimer from "./PuzzleTimer";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { saveProgress, loadProgress, clearProgress } from "@/lib/puzzleProgress";
+import { loadProgress, clearProgress } from "@/lib/puzzleProgress";
+import { useAutoSave } from "@/hooks/useAutoSave";
 import type { Difficulty } from "@/lib/puzzleTypes";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
@@ -79,11 +80,16 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
     return map;
   }, [encoded]);
 
-  useEffect(() => {
-    if (!timer.isSolved && !isRevealed) {
-      saveProgress<CryptogramState>(timerKey, { guesses }, timer.elapsed);
-    }
-  }, [guesses, timer.elapsed, timer.isSolved, isRevealed, timerKey]);
+  const guessesRef = useRef(guesses);
+  guessesRef.current = guesses;
+  const { status: saveStatus, debouncedSave } = useAutoSave<CryptogramState>({
+    puzzleKey: timerKey,
+    getState: () => ({ guesses: guessesRef.current }),
+    getElapsed: () => timer.elapsed,
+    disabled: timer.isSolved || isRevealed,
+  });
+
+  useEffect(() => { debouncedSave(); }, [guesses, debouncedSave]);
 
   useEffect(() => {
     if (editableIndices.length > 0) {
@@ -291,6 +297,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
         isRevealed={isRevealed}
         puzzleCode={dailyCode ?? `cryptogram-${seed}`}
         solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0, category: "cryptogram", seed, dailyCode }}
+        saveStatus={saveStatus}
       />
     </div>
   );
