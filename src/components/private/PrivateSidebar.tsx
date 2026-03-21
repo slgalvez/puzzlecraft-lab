@@ -159,11 +159,12 @@ export function PrivateSidebar() {
         msgUnread = data.unread_count || 0;
         const msgs = data.messages || [];
 
-        // Detect new messages for user role
+        // Detect new messages for user role (suppress self-notifications)
         if (!initialLoadRef.current && msgs.length > 0) {
           const lastMsg = msgs[msgs.length - 1];
           const prevAny = Object.values(prevConvsRef.current)[0];
-          if (prevAny && msgUnread > prevAny.unread && lastMsg.created_at !== prevAny.lastMsgAt) {
+          const isSelfMessage = lastMsg.sender_profile_id === user.id;
+          if (!isSelfMessage && prevAny && msgUnread > prevAny.unread && lastMsg.created_at !== prevAny.lastMsgAt) {
             let preview = lastMsg.body || "";
             if (preview.startsWith("__")) preview = "";
             if (preview.length > 50) preview = preview.slice(0, 47) + "…";
