@@ -40,11 +40,12 @@ const Stats = () => {
   const showUpgrade = shouldShowUpgradeCTA({ isAdmin, subscribed });
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
-  // Sync rating to leaderboard when page loads (signed-in users)
+  // Sync rating to leaderboard + check milestones on load
   useEffect(() => {
     if (account) {
       syncLeaderboardRating(account.id, account.displayName);
     }
+    checkMilestones();
   }, [account, dataVersion]);
 
   const [viewFilter, setViewFilter] = useState<ViewFilter>(null);
