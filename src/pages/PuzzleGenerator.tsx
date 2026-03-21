@@ -325,44 +325,21 @@ const PuzzleGenerator = () => {
     navigate("/generate", { replace: true });
   };
 
-  // Random tab
-  const toggleRandomType = (type: PuzzleCategory) => {
-    setRandomTypes((prev) => {
-      const next = new Set(prev);
-      if (next.has(type)) next.delete(type);
-      else next.add(type);
-      // If only kakuro remains and insane is selected, downgrade to extreme
-      if (next.size === 1 && next.has("kakuro") && randomDifficulty === "insane") {
-        setRandomDifficulty("extreme");
-      }
-      return next;
-    });
-  };
-
-  const canRandomGenerate = randomTypes.size > 0 && randomDifficulty !== null;
-
+  // Random tab — fully random, no user selection needed
   const handleRandomGenerate = () => {
-    if (!canRandomGenerate) {
-      toast({
-        title: "Missing selections",
-        description: "Select at least one puzzle type and a difficulty to generate",
-      });
-      return;
-    }
-    const types = Array.from(randomTypes);
-    const chosenType = types[Math.floor(Math.random() * types.length)];
+    const allTypeKeys = allTypes.map(([t]) => t);
+    const chosenType = allTypeKeys[Math.floor(Math.random() * allTypeKeys.length)];
     const newSeed = randomSeed();
-    const diff: Difficulty = randomDifficulty === "any"
-      ? difficulties[Math.floor(Math.random() * difficulties.length)][0]
-      : randomDifficulty;
+    const validDiffs = difficulties.filter(([val]) => !isDifficultyDisabled(chosenType, val));
+    const diff = validDiffs[Math.floor(Math.random() * validDiffs.length)][0];
     setDifficulty(diff);
     setMode("random");
     setSeed(newSeed);
     setPuzzleGenerated(true);
-    setRandomPool(types.length > 1 ? types : null);
+    setRandomPool(allTypeKeys);
     setPuzzleKey((k) => k + 1);
     navigate(`/generate/${chosenType}?seed=${newSeed}`, {
-      state: { randomPool: types, randomDifficulty: diff },
+      state: { randomPool: allTypeKeys, randomDifficulty: diff },
       replace: true,
     });
   };
