@@ -1,3 +1,14 @@
+/**
+ * SECRET / PRIVATE SYSTEM — Custom JWT auth via private-login edge function
+ *
+ * Completely isolated from the main account system (UserAccountContext).
+ * Uses: private-login edge function, authorized_users table, profiles table
+ * Storage: private_session (localStorage), private_access_grant (sessionStorage)
+ * Routes: /p/*
+ *
+ * This provider must NEVER reference supabase.auth, UserAccountContext,
+ * or any user_profiles/user_progress tables.
+ */
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 

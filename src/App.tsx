@@ -24,7 +24,7 @@ import SharedCraftPuzzle from "./pages/SharedCraftPuzzle";
 import Account from "./pages/Account";
 import { UserAccountProvider } from "./contexts/UserAccountContext";
 import DataMergeModal from "./components/account/DataMergeModal";
-// Private app
+// Private app — completely separate auth system (custom JWT, separate DB tables)
 import { AuthProvider } from "./contexts/AuthContext";
 import PrivateRoute from "./components/private/PrivateRoute";
 import Login from "./pages/private/Login";
@@ -45,6 +45,74 @@ function NavigationTracker() {
   return null;
 }
 
+/*
+ * ──────────────────────────────────────────────────────────────
+ * AUTH ISOLATION — Two completely independent authentication systems:
+ *
+ * 1. MAIN ACCOUNT (UserAccountProvider)
+ *    - Supabase Auth (email/password)
+ *    - Tables: user_profiles, user_progress
+ *    - localStorage: puzzlecraft-* keys
+ *    - Routes: /account and all public puzzle routes
+ *
+ * 2. SECRET SYSTEM (AuthProvider)
+ *    - Custom JWT via private-login edge function
+ *    - Tables: authorized_users, profiles, conversations, messages
+ *    - localStorage: private_session, private_last_active
+ *    - sessionStorage: private_access_grant
+ *    - Routes: /p/*
+ *
+ * These systems share NO sessions, tokens, user IDs, or data.
+ * Each provider is scoped to its own route group below.
+ * ──────────────────────────────────────────────────────────────
+ */
+
+/** Wraps public routes with the main account system */
+function PublicRoutes() {
+  return (
+    <UserAccountProvider>
+      <DataMergeModal />
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/puzzles" element={<PuzzleLibrary />} />
+        <Route path="/generate" element={<PuzzleGenerator />} />
+        <Route path="/generate/:type" element={<PuzzleGenerator />} />
+        <Route path="/daily" element={<DailyPuzzle />} />
+        <Route path="/play/:id" element={<PlayPuzzle />} />
+        <Route path="/play" element={<SharedPuzzle />} />
+        <Route path="/quick-play/:type" element={<QuickPlay />} />
+        <Route path="/surprise" element={<SurprisePlay />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/help" element={<Help />} />
+        <Route path="/stats" element={<Stats />} />
+        <Route path="/craft" element={<CraftPuzzle />} />
+        <Route path="/craft/play" element={<PlayCraftPuzzle />} />
+        <Route path="/s/:id" element={<SharedCraftPuzzle />} />
+        <Route path="/account" element={<Account />} />
+      </Routes>
+    </UserAccountProvider>
+  );
+}
+
+/** Wraps private routes with the secret auth system */
+function PrivateRoutes() {
+  return (
+    <AuthProvider>
+      <Routes>
+        <Route path="login" element={<Login />} />
+        <Route path="" element={<PrivateRoute><PrivateHome /></PrivateRoute>} />
+        <Route path="conversations" element={<PrivateRoute><AdminConversations /></PrivateRoute>} />
+        <Route path="conversation" element={<PrivateRoute><UserConversation /></PrivateRoute>} />
+        <Route path="conversation/:conversationId" element={<PrivateRoute><AdminConversationView /></PrivateRoute>} />
+        <Route path="users" element={<PrivateRoute><AdminUsers /></PrivateRoute>} />
+        <Route path="failed-logins" element={<PrivateRoute><AdminFailedLogins /></PrivateRoute>} />
+        <Route path="for-you" element={<PrivateRoute><ForYou /></PrivateRoute>} />
+        <Route path="settings" element={<PrivateRoute><PrivateSettings /></PrivateRoute>} />
+      </Routes>
+    </AuthProvider>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -53,43 +121,13 @@ const App = () => (
       <BrowserRouter>
         <NavigationTracker />
         <ScrollToTop />
-        <AuthProvider>
-          <UserAccountProvider>
-            <DataMergeModal />
-            <Routes>
-            {/* Public puzzle site */}
-            <Route path="/" element={<Index />} />
-            <Route path="/puzzles" element={<PuzzleLibrary />} />
-             <Route path="/generate" element={<PuzzleGenerator />} />
-             <Route path="/generate/:type" element={<PuzzleGenerator />} />
-            <Route path="/daily" element={<DailyPuzzle />} />
-            <Route path="/play/:id" element={<PlayPuzzle />} />
-            <Route path="/play" element={<SharedPuzzle />} />
-            <Route path="/quick-play/:type" element={<QuickPlay />} />
-            <Route path="/surprise" element={<SurprisePlay />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/help" element={<Help />} />
-            <Route path="/stats" element={<Stats />} />
-            <Route path="/craft" element={<CraftPuzzle />} />
-            <Route path="/craft/play" element={<PlayCraftPuzzle />} />
-            <Route path="/s/:id" element={<SharedCraftPuzzle />} />
-            <Route path="/account" element={<Account />} />
-
-            {/* Private app */}
-            <Route path="/p/login" element={<Login />} />
-            <Route path="/p" element={<PrivateRoute><PrivateHome /></PrivateRoute>} />
-            <Route path="/p/conversations" element={<PrivateRoute><AdminConversations /></PrivateRoute>} />
-            <Route path="/p/conversation" element={<PrivateRoute><UserConversation /></PrivateRoute>} />
-            <Route path="/p/conversation/:conversationId" element={<PrivateRoute><AdminConversationView /></PrivateRoute>} />
-            <Route path="/p/users" element={<PrivateRoute><AdminUsers /></PrivateRoute>} />
-            <Route path="/p/failed-logins" element={<PrivateRoute><AdminFailedLogins /></PrivateRoute>} />
-            <Route path="/p/for-you" element={<PrivateRoute><ForYou /></PrivateRoute>} />
-            <Route path="/p/settings" element={<PrivateRoute><PrivateSettings /></PrivateRoute>} />
-
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          </UserAccountProvider>
-        </AuthProvider>
+        <Routes>
+          {/* Main account system — public puzzle routes */}
+          <Route path="/*" element={<PublicRoutes />} />
+          {/* Secret system — completely isolated auth */}
+          <Route path="/p/*" element={<PrivateRoutes />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
