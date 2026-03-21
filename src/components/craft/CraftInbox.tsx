@@ -47,7 +47,7 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
   const navigate = useNavigate();
   const [drafts, setDrafts] = useState<CraftDraft[]>(() => loadDrafts());
   const [sent, setSent] = useState<CraftSentItem[]>(() => loadSentItems());
-  const [received] = useState<CraftReceivedItem[]>(() => loadReceivedItems());
+  const [received, setReceived] = useState<CraftReceivedItem[]>(() => loadReceivedItems());
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [solveStatuses, setSolveStatuses] = useState<Record<string, "sent" | "in_progress" | "completed">>({});
