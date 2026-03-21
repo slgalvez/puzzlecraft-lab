@@ -38,6 +38,7 @@ const COMPLETIONS_KEY = "puzzlecraft-completions";
 const SOLVES_KEY = "puzzlecraft-solves";
 const ENDLESS_KEY = "puzzlecraft_endless_sessions";
 const DAILY_KEY = "puzzlecraft-daily-completions";
+const MERGE_HANDLED_KEY = "puzzlecraft-merge-handled";
 
 function hasLocalData(): boolean {
   try {
