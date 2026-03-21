@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { getProgressStats } from "@/lib/progressTracker";
@@ -6,7 +6,7 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puz
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { getDailyStreak, getTotalDailyCompleted } from "@/lib/dailyChallenge";
 import { getEndlessStats } from "@/lib/endlessHistory";
-import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
+import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, Shield } from "lucide-react";
 import PremiumStats from "@/components/account/PremiumStats";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,6 +16,7 @@ import { useUserAccount } from "@/contexts/UserAccountContext";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import PremiumLockedCard from "@/components/account/PremiumLockedCard";
 import { hasPremiumAccess, shouldShowUpgradeCTA } from "@/lib/premiumAccess";
+import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 
 type ViewFilter = null | "daily" | "endless";
 
@@ -37,6 +38,13 @@ const Stats = () => {
   const premiumAccess = hasPremiumAccess({ isAdmin, subscribed });
   const showUpgrade = shouldShowUpgradeCTA({ isAdmin, subscribed });
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  // Sync rating to leaderboard when page loads (signed-in users)
+  useEffect(() => {
+    if (account) {
+      syncLeaderboardRating(account.id, account.displayName);
+    }
+  }, [account, dataVersion]);
 
   const [viewFilter, setViewFilter] = useState<ViewFilter>(null);
   const [categoryFilter, setCategoryFilter] = useState<PuzzleCategory | null>(null);
@@ -125,6 +133,9 @@ const Stats = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
           <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Your Progress</h1>
           <div className="flex gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/leaderboard"><Shield size={14} /> Leaderboard</Link>
+            </Button>
             <Button
               variant={viewFilter === "daily" ? "default" : "outline"}
               size="sm"
