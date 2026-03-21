@@ -106,7 +106,7 @@ export function checkMilestones() {
   // Show toasts with staggered delay
   newMilestones.forEach((m, i) => {
     setTimeout(() => {
-      toast.success(`${m.emoji} Milestone: ${m.label}`, {
+      toast.success(`Milestone: ${m.label}`, {
         description: "Keep it up!",
         duration: 4000,
       });
