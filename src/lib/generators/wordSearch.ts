@@ -171,30 +171,24 @@ function tryGenerate(
 
   // Build a cell-occupancy map for minimum-distance checks
   const occupied = new Set<string>();
-  const MIN_GAP = Math.max(2, Math.floor(size / 6)); // 2-3 cells depending on grid
 
-  function isNearOccupied(r: number, c: number): boolean {
-    for (let dr2 = -MIN_GAP; dr2 <= MIN_GAP; dr2++) {
-      for (let dc2 = -MIN_GAP; dc2 <= MIN_GAP; dc2++) {
-        if (dr2 === 0 && dc2 === 0) continue;
-        if (occupied.has(`${r + dr2},${c + dc2}`)) return true;
-      }
-    }
-    return false;
-  }
-
-  function adjacencyPenalty(row: number, col: number, dr: number, dc: number, len: number): number {
-    let nearCells = 0;
-    let totalChecked = 0;
+  /** Minimum distance (Manhattan) from any cell of a candidate to nearest occupied cell */
+  function minDistToOccupied(row: number, col: number, dr: number, dc: number, len: number): number {
+    if (occupied.size === 0) return size * 2;
+    let best = Infinity;
     for (let i = 0; i < len; i++) {
       const cr = row + dr * i;
       const cc = col + dc * i;
-      // Skip cells that are valid overlaps (letter already matches)
-      if (grid[cr][cc] !== "") continue;
-      totalChecked++;
-      if (isNearOccupied(cr, cc)) nearCells++;
+      // Skip cells that are valid overlaps
+      if (occupied.has(`${cr},${cc}`)) continue;
+      for (const key of occupied) {
+        const [or, oc] = key.split(",").map(Number);
+        const d = Math.abs(cr - or) + Math.abs(cc - oc);
+        if (d < best) best = d;
+        if (best <= 1) return best;
+      }
     }
-    return totalChecked > 0 ? nearCells / totalChecked : 0;
+    return best === Infinity ? size * 2 : best;
   }
 
   for (const word of shuffled) {
@@ -205,54 +199,49 @@ function tryGenerate(
     let bestPos: { r: number; c: number; dr: number; dc: number; score: number } | null = null;
 
     for (const [dr, dc] of shuffledDirs) {
-      const positions: [number, number][] = [];
-      for (let r = 0; r < size; r++)
-        for (let c = 0; c < size; c++) positions.push([r, c]);
+      // Try ALL positions — critical for finding distant placements
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (!canPlace(grid, word, r, c, dr, dc, size)) continue;
 
-      // Sample more positions for better coverage
-      const sampled = rng.shuffle(positions).slice(0, Math.min(positions.length, 60));
+          // Check overlap ratio
+          let overlaps = 0;
+          for (let i = 0; i < word.length; i++) {
+            if (grid[r + dr * i][c + dc * i] !== "") overlaps++;
+          }
+          if (overlaps / word.length > 0.3) continue;
 
-      for (const [r, c] of sampled) {
-        if (!canPlace(grid, word, r, c, dr, dc, size)) continue;
+          // Region load — prefer empty regions
+          const load = wordRegionLoad(r, c, dr, dc, word.length);
 
-        // Check overlap ratio
-        let overlaps = 0;
-        for (let i = 0; i < word.length; i++) {
-          if (grid[r + dr * i][c + dc * i] !== "") overlaps++;
-        }
-        if (overlaps / word.length > 0.3) continue;
+          // Midpoint-to-midpoint distance to every placed word
+          const midR = r + dr * (word.length - 1) / 2;
+          const midC = c + dc * (word.length - 1) / 2;
+          let minMidDist = size * 2;
+          let sumMidDist = 0;
+          for (const pw of placed) {
+            const pmR = pw.row + pw.dr * (pw.word.length - 1) / 2;
+            const pmC = pw.col + pw.dc * (pw.word.length - 1) / 2;
+            const dist = Math.abs(midR - pmR) + Math.abs(midC - pmC);
+            if (dist < minMidDist) minMidDist = dist;
+            sumMidDist += dist;
+          }
+          if (placed.length === 0) { minMidDist = size; sumMidDist = size; }
 
-        // Adjacency: fraction of new cells that are near existing words
-        const adjPen = adjacencyPenalty(r, c, dr, dc, word.length);
+          // Cell-level nearest distance to any occupied cell
+          const cellDist = minDistToOccupied(r, c, dr, dc, word.length);
 
-        // Region load
-        const load = wordRegionLoad(r, c, dr, dc, word.length);
+          // DOMINANT: distance is the primary factor (scaled by size for consistency)
+          const posScore =
+            minMidDist * 10            // strongly reward being far from nearest word midpoint
+            + sumMidDist * 2           // reward total spread from all words
+            + cellDist * 8             // reward cell-level separation
+            - load * 3                 // penalise dense regions
+            - overlaps * 2;           // slight penalty for overlaps
 
-        // Midpoint proximity to already-placed words
-        const midR = r + dr * (word.length - 1) / 2;
-        const midC = c + dc * (word.length - 1) / 2;
-        let proximityPenalty = 0;
-        let minDist = Infinity;
-        for (const pw of placed) {
-          const pmR = pw.row + pw.dr * (pw.word.length - 1) / 2;
-          const pmC = pw.col + pw.dc * (pw.word.length - 1) / 2;
-          const dist = Math.abs(midR - pmR) + Math.abs(midC - pmC);
-          if (dist < minDist) minDist = dist;
-          if (dist < size * 0.3) proximityPenalty += (size * 0.3 - dist);
-        }
-
-        // Strong bonus for being far from all existing words
-        const distBonus = placed.length > 0 ? Math.min(minDist, size) : size;
-
-        const posScore =
-          distBonus * 3            // reward distance from nearest word
-          - load * 2               // penalise dense regions
-          - overlaps * 3           // slight penalty for overlaps
-          - proximityPenalty * 3   // penalise nearby midpoints
-          - adjPen * size * 4;    // penalise cell-level adjacency
-
-        if (!bestPos || posScore > bestPos.score) {
-          bestPos = { r, c, dr, dc, score: posScore };
+          if (!bestPos || posScore > bestPos.score) {
+            bestPos = { r, c, dr, dc, score: posScore };
+          }
         }
       }
     }
