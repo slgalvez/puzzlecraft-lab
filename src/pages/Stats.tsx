@@ -27,10 +27,11 @@ const ALL_CATEGORIES: PuzzleCategory[] = [
 ];
 
 const Stats = () => {
-  const stats = useMemo(() => getProgressStats(), []);
-  const dailyStreak = useMemo(() => getDailyStreak(), []);
-  const dailyCompleted = useMemo(() => getTotalDailyCompleted(), []);
-  const endlessStats = useMemo(() => getEndlessStats(), []);
+  const [dataVersion, setDataVersion] = useState(0);
+  const stats = useMemo(() => getProgressStats(), [dataVersion]);
+  const dailyStreak = useMemo(() => getDailyStreak(), [dataVersion]);
+  const dailyCompleted = useMemo(() => getTotalDailyCompleted(), [dataVersion]);
+  const endlessStats = useMemo(() => getEndlessStats(), [dataVersion]);
   const { account, subscribed } = useUserAccount();
   const isAdmin = account?.isAdmin ?? false;
   const premiumAccess = hasPremiumAccess({ isAdmin, subscribed });
