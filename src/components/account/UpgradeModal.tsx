@@ -17,9 +17,9 @@ interface UpgradeModalProps {
 }
 
 const features = [
-  { icon: BarChart3, label: "Advanced stats" },
-  { icon: History, label: "Solve history" },
-  { icon: TrendingUp, label: "Performance insights" },
+  { icon: BarChart3, label: "Advanced performance stats" },
+  { icon: Shield, label: "Player ranking & leaderboard" },
+  { icon: TrendingUp, label: "Personalized insights" },
 ];
 
 export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
