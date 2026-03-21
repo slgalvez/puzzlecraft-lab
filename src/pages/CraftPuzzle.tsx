@@ -700,9 +700,27 @@ const CraftPuzzle = () => {
                   </button>
                 </div>
 
-                <Button onClick={handleRegenerate} variant="ghost" className="w-full gap-2 text-muted-foreground">
-                  <RefreshCw className="h-4 w-4" /> Regenerate Puzzle
-                </Button>
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={handleSaveDraft}
+                    className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {draftSaved && !draftDirty ? (
+                      <>
+                        <Check className="h-3 w-3 text-primary" />
+                        <span className="text-primary">Saved</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-3 w-3" />
+                        <span>Save draft</span>
+                      </>
+                    )}
+                  </button>
+                  <Button onClick={handleRegenerate} variant="ghost" size="sm" className="gap-1.5 text-muted-foreground h-auto py-1 px-2">
+                    <RefreshCw className="h-3 w-3" /> Regenerate
+                  </Button>
+                </div>
               </div>
             )}
           </>
