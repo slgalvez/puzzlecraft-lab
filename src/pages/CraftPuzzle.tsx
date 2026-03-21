@@ -502,6 +502,18 @@ const CraftPuzzle = () => {
                       maxLength={100}
                     />
                   </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Recipients (optional)</label>
+                    <Input
+                      value={recipientInput}
+                      onChange={e => setRecipientInput(e.target.value)}
+                      placeholder="Mom, Dad, Sarah"
+                      maxLength={200}
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      Comma-separated names to track each recipient
+                    </p>
+                  </div>
                 </div>
 
                 {(selectedType === "word-fill" || selectedType === "word-search") && (
