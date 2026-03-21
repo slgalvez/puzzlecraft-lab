@@ -27,6 +27,7 @@ import {
 } from "@/lib/craftShare";
 import {
   type CraftDraft,
+  type CraftRecipient,
   generateDraftId,
   saveDraft,
   deleteDraft,
