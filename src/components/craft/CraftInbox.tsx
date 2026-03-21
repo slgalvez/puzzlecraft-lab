@@ -302,3 +302,14 @@ function EmptyState({ icon, text, sub }: { icon: React.ReactNode; text: string; 
     </div>
   );
 }
+
+function SolveStatusBadge({ status }: { status: "sent" | "in_progress" | "completed" }) {
+  const label = status === "completed" ? "Completed" : status === "in_progress" ? "In Progress" : "Sent";
+  const color =
+    status === "completed"
+      ? "text-primary"
+      : status === "in_progress"
+        ? "text-primary/70"
+        : "text-muted-foreground/60";
+  return <span className={`text-[10px] font-medium ${color}`}>{label}</span>;
+}
