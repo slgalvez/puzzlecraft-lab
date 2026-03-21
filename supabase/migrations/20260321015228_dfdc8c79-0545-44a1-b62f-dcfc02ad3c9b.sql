@@ -1,0 +1,1 @@
+DELETE FROM push_subscriptions WHERE created_at < '2026-03-21T01:25:00+00:00';
