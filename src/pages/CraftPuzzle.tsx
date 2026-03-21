@@ -193,16 +193,6 @@ const CraftPuzzle = () => {
         return;
       }
 
-      // Create per-recipient records if any
-      const names = parseRecipients();
-      if (names.length > 0) {
-        const rows = names.map((name) => ({
-          id: generateShortId(),
-          puzzle_id: shortId,
-          recipient_name: name,
-        }));
-        await supabase.from("craft_recipients" as any).insert(rows as any);
-      }
 
       const url = buildCraftShareUrl(shortId);
       setShareUrl(url);
