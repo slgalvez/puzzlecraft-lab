@@ -140,6 +140,8 @@ export default function PrivateLayout({ children, title, fullHeight }: PrivateLa
 
   return (
     <div className="private-app">
+      {/* PIP overlay for active calls */}
+      <VideoCallPIP />
       {/* Global incoming call banner — visible on ALL Secret Lab pages */}
       {globalCall.incomingCall && !isOnConversationPage && (
         <IncomingCallBanner
