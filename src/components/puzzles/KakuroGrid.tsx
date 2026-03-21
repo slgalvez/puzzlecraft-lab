@@ -8,7 +8,8 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
-import { saveProgress, loadProgress, clearProgress } from "@/lib/puzzleProgress";
+import { loadProgress, clearProgress } from "@/lib/puzzleProgress";
+import { useAutoSave } from "@/hooks/useAutoSave";
 import { type Difficulty, getEffectiveDifficulty } from "@/lib/puzzleTypes";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
