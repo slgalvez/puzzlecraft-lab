@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import CompletionPanel from "./CompletionPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Difficulty, PuzzleCategory } from "@/lib/puzzleTypes";
-import { savePuzzle, unsavePuzzle, isSaved } from "@/lib/savedPuzzles";
+import { savePuzzle, savePuzzleReplacingOldest, unsavePuzzle, isSaved, isAtLimit } from "@/lib/savedPuzzles";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
