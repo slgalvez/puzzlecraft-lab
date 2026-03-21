@@ -7,7 +7,7 @@ function RatingCard() {
   return (
     <div className="rounded-xl border bg-card p-4">
       <div className="flex items-center gap-2 mb-2">
-        <Zap size={14} className="text-primary" />
+        <TrendingUp size={14} className="text-primary" />
         <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Your Rank</span>
         <span className="font-mono font-bold text-xs text-primary">#24</span>
       </div>
