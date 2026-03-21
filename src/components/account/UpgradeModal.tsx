@@ -7,7 +7,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Sparkles, BarChart3, History, TrendingUp } from "lucide-react";
+import { BarChart3, TrendingUp, Shield } from "lucide-react";
 import { useState } from "react";
 import { PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
 
