@@ -50,8 +50,6 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [solveStatuses, setSolveStatuses] = useState<Record<string, "sent" | "in_progress" | "completed">>({});
-  // Per-recipient statuses keyed by puzzle shareId → array of { name, status }
-  const [recipientStatuses, setRecipientStatuses] = useState<Record<string, { name: string; status: "sent" | "in_progress" | "completed" }[]>>({});
 
   // Fetch solve statuses for sent items from DB
   useEffect(() => {
