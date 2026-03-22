@@ -1290,9 +1290,27 @@ Deno.serve(async (req) => {
 
       const calleeId = profileId === conv.admin_profile_id ? conv.user_profile_id : conv.admin_profile_id;
 
-      // Check no active call already exists
-      const { data: existingCalls } = await sb.from("calls").select("id").eq("conversation_id", conversation_id).in("status", ["ringing", "connected"]);
-      if (existingCalls && existingCalls.length > 0) return err("A call is already active", 409);
+      // Auto-expire stale ringing calls (>30s old) and check for truly active calls
+      const { data: existingCalls } = await sb.from("calls").select("id, status, started_at").eq("conversation_id", conversation_id).in("status", ["ringing", "connected"]);
+      if (existingCalls && existingCalls.length > 0) {
+        const staleIds: string[] = [];
+        let hasActive = false;
+        for (const ec of existingCalls) {
+          if (ec.status === "ringing" && (Date.now() - new Date(ec.started_at).getTime()) > 30000) {
+            staleIds.push(ec.id);
+          } else {
+            hasActive = true;
+          }
+        }
+        // Clean up stale ringing calls
+        if (staleIds.length > 0) {
+          for (const staleId of staleIds) {
+            await sb.from("calls").update({ status: "ended", ended_at: now, end_reason: "missed" }).eq("id", staleId);
+            await sb.from("call_signals").delete().eq("call_id", staleId);
+          }
+        }
+        if (hasActive) return err("A call is already active", 409);
+      }
 
       const { data: call, error: callErr } = await sb.from("calls").insert({
         conversation_id,
