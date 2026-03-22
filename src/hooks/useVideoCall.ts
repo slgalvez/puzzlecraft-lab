@@ -267,19 +267,22 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
     try {
       const stream = await getMedia();
-      console.debug("[video-call] media acquired, starting call");
-      const data = await api("start-call", { conversation_id: conversationId });
-      callIdRef.current = data.call_id;
-      console.debug("[video-call] call created:", data.call_id);
+      console.debug("[video-call] media acquired, fetching TURN credentials & starting call");
+      const [iceServers, callData] = await Promise.all([
+        fetchIceServers(),
+        api("start-call", { conversation_id: conversationId }),
+      ]);
+      callIdRef.current = callData.call_id;
+      console.debug("[video-call] call created:", callData.call_id);
 
       setCallState("outgoing-ringing");
 
-      const pc = createPeerConnection(stream);
+      const pc = createPeerConnection(stream, iceServers);
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
       await api("send-signal", {
-        call_id: data.call_id,
+        call_id: callData.call_id,
         signal_type: "offer",
         payload: offer,
       });
