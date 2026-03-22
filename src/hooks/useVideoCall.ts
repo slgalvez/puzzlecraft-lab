@@ -306,14 +306,12 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     callIdRef.current = callId;
 
     try {
-      const stream = await getMedia();
+      const [stream, iceServers] = await Promise.all([getMedia(), fetchIceServers()]);
       console.debug("[video-call] media acquired, answering call:", callId);
       await api("answer-call", { call_id: callId });
       setCallState("connecting");
 
-      createPeerConnection(stream);
-      setIncomingCall(null);
-      startPolling();
+      createPeerConnection(stream, iceServers);
     } catch (e) {
       if (e instanceof SessionExpiredError) return;
       console.error("[video-call] acceptCall error:", e);
