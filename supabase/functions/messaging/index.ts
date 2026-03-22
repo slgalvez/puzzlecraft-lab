@@ -1554,6 +1554,37 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ─── GET TURN CREDENTIALS ───
+    if (action === "get-turn-credentials") {
+      const meteredKey = Deno.env.get("METERED_API_KEY");
+      if (!meteredKey) {
+        // Fall back to STUN-only if no TURN configured
+        return json({ iceServers: [
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:stun1.l.google.com:19302" },
+        ]});
+      }
+
+      try {
+        const resp = await fetch(`https://puzzlecraft.metered.live/api/v1/turn/credentials?apiKey=${meteredKey}`);
+        if (!resp.ok) {
+          console.error("[messaging] Metered TURN API error:", resp.status);
+          return json({ iceServers: [
+            { urls: "stun:stun.l.google.com:19302" },
+            { urls: "stun:stun1.l.google.com:19302" },
+          ]});
+        }
+        const creds = await resp.json();
+        return json({ iceServers: creds });
+      } catch (turnErr) {
+        console.error("[messaging] TURN credentials fetch error:", turnErr);
+        return json({ iceServers: [
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:stun1.l.google.com:19302" },
+        ]});
+      }
+    }
+
     // ─── SET NICKNAME ───
     if (action === "set-nickname") {
       const { contact_profile_id, nickname } = body;
