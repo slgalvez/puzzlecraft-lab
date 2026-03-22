@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 
-const ICE_SERVERS: RTCIceServer[] = [
+const FALLBACK_ICE_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
 ];
@@ -127,8 +127,21 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     }
   }, []);
 
-  const createPeerConnection = useCallback((stream: MediaStream) => {
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  const fetchIceServers = useCallback(async (): Promise<RTCIceServer[]> => {
+    try {
+      const data = await api("get-turn-credentials");
+      if (data.iceServers && Array.isArray(data.iceServers) && data.iceServers.length > 0) {
+        console.debug("[video-call] got ICE servers:", data.iceServers.length);
+        return data.iceServers;
+      }
+    } catch (e) {
+      console.warn("[video-call] failed to fetch TURN credentials, using STUN fallback:", e);
+    }
+    return FALLBACK_ICE_SERVERS;
+  }, [api]);
+
+  const createPeerConnection = useCallback((stream: MediaStream, iceServers: RTCIceServer[] = FALLBACK_ICE_SERVERS) => {
+    const pc = new RTCPeerConnection({ iceServers });
 
     stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
@@ -254,19 +267,22 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
     try {
       const stream = await getMedia();
-      console.debug("[video-call] media acquired, starting call");
-      const data = await api("start-call", { conversation_id: conversationId });
-      callIdRef.current = data.call_id;
-      console.debug("[video-call] call created:", data.call_id);
+      console.debug("[video-call] media acquired, fetching TURN credentials & starting call");
+      const [iceServers, callData] = await Promise.all([
+        fetchIceServers(),
+        api("start-call", { conversation_id: conversationId }),
+      ]);
+      callIdRef.current = callData.call_id;
+      console.debug("[video-call] call created:", callData.call_id);
 
       setCallState("outgoing-ringing");
 
-      const pc = createPeerConnection(stream);
+      const pc = createPeerConnection(stream, iceServers);
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
       await api("send-signal", {
-        call_id: data.call_id,
+        call_id: callData.call_id,
         signal_type: "offer",
         payload: offer,
       });
@@ -280,7 +296,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       setCallState("ended");
       cleanup();
     }
-  }, [conversationId, getMedia, api, createPeerConnection, startPolling, cleanup]);
+  }, [conversationId, getMedia, fetchIceServers, api, createPeerConnection, startPolling, cleanup]);
 
   // Accept an incoming call
   const acceptCall = useCallback(async (callId: string) => {
@@ -290,12 +306,12 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     callIdRef.current = callId;
 
     try {
-      const stream = await getMedia();
+      const [stream, iceServers] = await Promise.all([getMedia(), fetchIceServers()]);
       console.debug("[video-call] media acquired, answering call:", callId);
       await api("answer-call", { call_id: callId });
       setCallState("connecting");
 
-      createPeerConnection(stream);
+      createPeerConnection(stream, iceServers);
       setIncomingCall(null);
       startPolling();
     } catch (e) {
@@ -305,7 +321,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       setCallState("ended");
       cleanup();
     }
-  }, [getMedia, api, createPeerConnection, startPolling, cleanup]);
+  }, [getMedia, fetchIceServers, api, createPeerConnection, startPolling, cleanup]);
 
   // Decline an incoming call
   const declineCall = useCallback(async (callId: string) => {
