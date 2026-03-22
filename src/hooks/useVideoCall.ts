@@ -296,7 +296,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       setCallState("ended");
       cleanup();
     }
-  }, [conversationId, getMedia, api, createPeerConnection, startPolling, cleanup]);
+  }, [conversationId, getMedia, fetchIceServers, api, createPeerConnection, startPolling, cleanup]);
 
   // Accept an incoming call
   const acceptCall = useCallback(async (callId: string) => {
