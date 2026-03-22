@@ -1566,7 +1566,7 @@ Deno.serve(async (req) => {
       }
 
       try {
-        const resp = await fetch(`https://puzzlecraft.metered.live/api/v1/turn/credentials?apiKey=${meteredKey}`);
+        const resp = await fetch(`https://puzzlecrft.metered.live/api/v1/turn/credentials?apiKey=${meteredKey}`);
         if (!resp.ok) {
           console.error("[messaging] Metered TURN API error:", resp.status);
           return json({ iceServers: [
