@@ -312,6 +312,8 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       setCallState("connecting");
 
       createPeerConnection(stream, iceServers);
+      setIncomingCall(null);
+      startPolling();
     } catch (e) {
       if (e instanceof SessionExpiredError) return;
       console.error("[video-call] acceptCall error:", e);
