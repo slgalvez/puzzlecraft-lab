@@ -321,7 +321,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       setCallState("ended");
       cleanup();
     }
-  }, [getMedia, api, createPeerConnection, startPolling, cleanup]);
+  }, [getMedia, fetchIceServers, api, createPeerConnection, startPolling, cleanup]);
 
   // Decline an incoming call
   const declineCall = useCallback(async (callId: string) => {
