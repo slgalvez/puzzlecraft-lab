@@ -49,7 +49,17 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
   const isCallerRef = useRef(false);
   const cleaningUp = useRef(false);
   const sessionExpiredRef = useRef(false);
+  // Refs to avoid stale closures
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const callStateRef = useRef<CallState>("idle");
+  const tokenRef = useRef(token);
 
+  // Keep refs in sync with state
+  useEffect(() => { localStreamRef.current = localStream; }, [localStream]);
+  useEffect(() => { callStateRef.current = callState; }, [callState]);
+  useEffect(() => { tokenRef.current = token; }, [token]);
+
+  // Stable cleanup — uses ref instead of stale localStream closure
   const cleanup = useCallback(() => {
     if (cleaningUp.current) return;
     cleaningUp.current = true;
@@ -65,7 +75,8 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       pcRef.current = null;
     }
 
-    localStream?.getTracks().forEach((t) => t.stop());
+    // Use ref so we always stop the actual current stream
+    localStreamRef.current?.getTracks().forEach((t) => t.stop());
     setLocalStream(null);
     setRemoteStream(null);
     callIdRef.current = null;
@@ -73,7 +84,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     iceCandidateBuffer.current = [];
     remoteDescSet.current = false;
     cleaningUp.current = false;
-  }, [localStream]);
+  }, []); // stable — no state deps
 
   const handleSessionEnded = useCallback(() => {
     if (sessionExpiredRef.current) return;
@@ -86,24 +97,27 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     onSessionExpired();
   }, [cleanup, onSessionExpired]);
 
+  // Stable API caller — uses tokenRef so it doesn't cascade when localStream changes
   const api = useCallback(async (action: string, data: Record<string, unknown> = {}) => {
     try {
-      return await invokeMessaging(action, token, data);
+      return await invokeMessaging(action, tokenRef.current, data);
     } catch (e) {
       if (e instanceof SessionExpiredError) handleSessionEnded();
       throw e;
     }
-  }, [token, handleSessionEnded]);
+  }, [handleSessionEnded]);
 
   const getMedia = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      localStreamRef.current = stream;
       setLocalStream(stream);
       return stream;
     } catch {
       // Try audio only
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+        localStreamRef.current = stream;
         setLocalStream(stream);
         setIsCameraOff(true);
         return stream;
@@ -136,6 +150,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     };
 
     pc.onconnectionstatechange = () => {
+      console.debug("[video-call] connectionState:", pc.connectionState);
       if (pc.connectionState === "connected") {
         setCallState("connected");
         connectedAtRef.current = Date.now();
@@ -157,37 +172,42 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
     for (const sig of signals) {
       lastSignalIdRef.current = sig.id;
+      console.debug("[video-call] processing signal:", sig.signal_type, "isCaller:", isCallerRef.current);
 
-      if (sig.signal_type === "offer" && !isCallerRef.current) {
-        await pc.setRemoteDescription(new RTCSessionDescription(sig.payload as RTCSessionDescriptionInit));
-        remoteDescSet.current = true;
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        await api("send-signal", {
-          call_id: callIdRef.current,
-          signal_type: "answer",
-          payload: answer,
-        });
-        // Process buffered ICE candidates
-        for (const c of iceCandidateBuffer.current) {
-          await pc.addIceCandidate(new RTCIceCandidate(c));
+      try {
+        if (sig.signal_type === "offer" && !isCallerRef.current) {
+          await pc.setRemoteDescription(new RTCSessionDescription(sig.payload as RTCSessionDescriptionInit));
+          remoteDescSet.current = true;
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          await api("send-signal", {
+            call_id: callIdRef.current,
+            signal_type: "answer",
+            payload: answer,
+          });
+          // Process buffered ICE candidates
+          for (const c of iceCandidateBuffer.current) {
+            await pc.addIceCandidate(new RTCIceCandidate(c));
+          }
+          iceCandidateBuffer.current = [];
+        } else if (sig.signal_type === "answer" && isCallerRef.current) {
+          await pc.setRemoteDescription(new RTCSessionDescription(sig.payload as RTCSessionDescriptionInit));
+          remoteDescSet.current = true;
+          // Process buffered ICE candidates
+          for (const c of iceCandidateBuffer.current) {
+            await pc.addIceCandidate(new RTCIceCandidate(c));
+          }
+          iceCandidateBuffer.current = [];
+        } else if (sig.signal_type === "ice-candidate") {
+          const candidate = sig.payload as RTCIceCandidateInit;
+          if (remoteDescSet.current) {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          } else {
+            iceCandidateBuffer.current.push(candidate);
+          }
         }
-        iceCandidateBuffer.current = [];
-      } else if (sig.signal_type === "answer" && isCallerRef.current) {
-        await pc.setRemoteDescription(new RTCSessionDescription(sig.payload as RTCSessionDescriptionInit));
-        remoteDescSet.current = true;
-        // Process buffered ICE candidates
-        for (const c of iceCandidateBuffer.current) {
-          await pc.addIceCandidate(new RTCIceCandidate(c));
-        }
-        iceCandidateBuffer.current = [];
-      } else if (sig.signal_type === "ice-candidate") {
-        const candidate = sig.payload as RTCIceCandidateInit;
-        if (remoteDescSet.current) {
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
-        } else {
-          iceCandidateBuffer.current.push(candidate);
-        }
+      } catch (sigErr) {
+        console.error("[video-call] signal processing error:", sigErr);
       }
     }
   }, [api]);
@@ -213,7 +233,8 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
           await processSignals(data.signals);
         }
 
-        if (data.status === "connected" && callState === "outgoing-ringing") {
+        // Use ref to avoid stale callState closure
+        if (data.status === "connected" && callStateRef.current === "outgoing-ringing") {
           setCallState("connecting");
         }
       } catch (e) {
@@ -221,11 +242,11 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
         // Ignore polling errors
       }
     }, 800);
-  }, [api, processSignals, cleanup, callState]);
+  }, [api, processSignals, cleanup]);
 
   // Start an outgoing call
   const startCall = useCallback(async () => {
-    if (!conversationId || !token || callState !== "idle") return;
+    if (!conversationId || !tokenRef.current || callStateRef.current !== "idle") return;
 
     setCallState("requesting-media");
     setEndReason(null);
@@ -233,8 +254,10 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
     try {
       const stream = await getMedia();
+      console.debug("[video-call] media acquired, starting call");
       const data = await api("start-call", { conversation_id: conversationId });
       callIdRef.current = data.call_id;
+      console.debug("[video-call] call created:", data.call_id);
 
       setCallState("outgoing-ringing");
 
@@ -247,15 +270,17 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
         signal_type: "offer",
         payload: offer,
       });
+      console.debug("[video-call] offer sent, starting polling");
 
       startPolling();
     } catch (e) {
       if (e instanceof SessionExpiredError) return;
+      console.error("[video-call] startCall error:", e);
       setEndReason((e as Error).message || "failed");
       setCallState("ended");
       cleanup();
     }
-  }, [conversationId, token, callState, getMedia, api, createPeerConnection, startPolling, cleanup]);
+  }, [conversationId, getMedia, api, createPeerConnection, startPolling, cleanup]);
 
   // Accept an incoming call
   const acceptCall = useCallback(async (callId: string) => {
@@ -266,6 +291,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
     try {
       const stream = await getMedia();
+      console.debug("[video-call] media acquired, answering call:", callId);
       await api("answer-call", { call_id: callId });
       setCallState("connecting");
 
@@ -274,6 +300,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       startPolling();
     } catch (e) {
       if (e instanceof SessionExpiredError) return;
+      console.error("[video-call] acceptCall error:", e);
       setEndReason((e as Error).message || "failed");
       setCallState("ended");
       cleanup();
@@ -294,8 +321,9 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
   const endCall = useCallback(async () => {
     if (!callIdRef.current) return;
     const cid = callIdRef.current;
-    setCallState("ended");
+    // Cleanup FIRST so tracks stop, then notify server
     cleanup();
+    setCallState("ended");
     try {
       await api("end-call", { call_id: cid });
     } catch {
@@ -305,15 +333,15 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
   // Toggle mute
   const toggleMute = useCallback(() => {
-    localStream?.getAudioTracks().forEach((t) => { t.enabled = !t.enabled; });
+    localStreamRef.current?.getAudioTracks().forEach((t) => { t.enabled = !t.enabled; });
     setIsMuted((m) => !m);
-  }, [localStream]);
+  }, []);
 
   // Toggle camera
   const toggleCamera = useCallback(() => {
-    localStream?.getVideoTracks().forEach((t) => { t.enabled = !t.enabled; });
+    localStreamRef.current?.getVideoTracks().forEach((t) => { t.enabled = !t.enabled; });
     setIsCameraOff((c) => !c);
-  }, [localStream]);
+  }, []);
 
   // Poll for incoming calls
   useEffect(() => {
@@ -356,17 +384,19 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
         pcRef.current.close();
         pcRef.current = null;
       }
+      // Stop tracks on unmount
+      localStreamRef.current?.getTracks().forEach((t) => t.stop());
     };
   }, []);
 
-  // Auto-dismiss ended state after a brief moment (no manual "Done" needed)
+  // Auto-dismiss ended state — give enough time for end-call API to complete and user to see result
   useEffect(() => {
     if (callState !== "ended") return;
     const timer = setTimeout(() => {
       setCallState("idle");
       setEndReason(null);
       setCallDuration(0);
-    }, 300);
+    }, 2000);
     return () => clearTimeout(timer);
   }, [callState]);
 
