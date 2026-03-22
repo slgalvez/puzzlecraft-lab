@@ -1,0 +1,1 @@
+UPDATE calls SET status = 'ended', ended_at = now(), end_reason = 'stale-cleanup' WHERE status IN ('ringing', 'connected');
