@@ -127,8 +127,21 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     }
   }, []);
 
-  const createPeerConnection = useCallback((stream: MediaStream) => {
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  const fetchIceServers = useCallback(async (): Promise<RTCIceServer[]> => {
+    try {
+      const data = await api("get-turn-credentials");
+      if (data.iceServers && Array.isArray(data.iceServers) && data.iceServers.length > 0) {
+        console.debug("[video-call] got ICE servers:", data.iceServers.length);
+        return data.iceServers;
+      }
+    } catch (e) {
+      console.warn("[video-call] failed to fetch TURN credentials, using STUN fallback:", e);
+    }
+    return FALLBACK_ICE_SERVERS;
+  }, [api]);
+
+  const createPeerConnection = useCallback((stream: MediaStream, iceServers: RTCIceServer[] = FALLBACK_ICE_SERVERS) => {
+    const pc = new RTCPeerConnection({ iceServers });
 
     stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
