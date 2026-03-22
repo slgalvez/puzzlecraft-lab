@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 
-const ICE_SERVERS: RTCIceServer[] = [
+const FALLBACK_ICE_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
 ];
