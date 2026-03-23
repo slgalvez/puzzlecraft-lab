@@ -86,7 +86,10 @@ const AdminConversationView = () => {
       setConversation(data.conversation);
       if (lastMessagesKeyRef.current !== nextMessagesKey) {
         lastMessagesKeyRef.current = nextMessagesKey;
-        setMessages(nextMessages);
+        setMessages((prev) => {
+          const failed = prev.filter((m) => m.id.startsWith("failed-"));
+          return [...nextMessages, ...failed];
+        });
       }
       setError(null);
       console.debug("[admin-conversation] loaded", nextMessages.length, "messages");
