@@ -444,6 +444,7 @@ const AdminConversationView = () => {
               );
             })
           )}
+          {otherTyping && <TypingIndicator />}
           <div ref={messagesEndRef} />
         </div>
 
@@ -456,6 +457,7 @@ const AdminConversationView = () => {
           editingMessage={editingMessage}
           onCancelEdit={() => setEditingMessage(null)}
           onSaveEdit={(id, body) => { handleEdit(id, body); setEditingMessage(null); }}
+          onTyping={handleTypingPing}
         />
       </div>
     </PrivateLayout>
