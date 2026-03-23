@@ -113,6 +113,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     hasConnectedRef.current = false;
     remoteTrackSeenRef.current = false;
     isCallerRef.current = false;
+    connectedAtRef.current = 0;
 
     // Reset UI state so next call starts fresh
     setIsMuted(false);
@@ -257,10 +258,14 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       if (pc.connectionState === "connected") {
         hasConnectedRef.current = true;
         setCallState("connected");
-        connectedAtRef.current = Date.now();
-        durationTimerRef.current = setInterval(() => {
-          setCallDuration(Math.floor((Date.now() - connectedAtRef.current) / 1000));
-        }, 1000);
+        // Guard: only start duration timer once
+        if (!connectedAtRef.current) {
+          connectedAtRef.current = Date.now();
+          clearInterval(durationTimerRef.current);
+          durationTimerRef.current = setInterval(() => {
+            setCallDuration(Math.floor((Date.now() - connectedAtRef.current) / 1000));
+          }, 1000);
+        }
       } else if (pc.connectionState === "failed") {
         scheduleRecoveryGuard(
           "Connection failed",
@@ -472,7 +477,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
   // End an active call
   const endCall = useCallback(async () => {
-    if (!callIdRef.current) return;
+    if (!callIdRef.current || callStateRef.current === "ended" || callStateRef.current === "idle") return;
     const cid = callIdRef.current;
     diag("endCall", { callId: cid });
     // Cleanup FIRST so tracks stop, then notify server
