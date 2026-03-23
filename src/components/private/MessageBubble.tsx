@@ -58,9 +58,9 @@ function getGroupRadius(isMine: boolean, pos: GroupPosition): string {
 export function getGroupSpacing(pos: GroupPosition, senderChanged?: boolean): string {
   if (pos === "top" || pos === "single") {
     // Different sender gets more breathing room
-    return senderChanged ? "mt-3" : "mt-1.5";
+    return senderChanged ? "mt-5" : "mt-2";
   }
-  return "mt-[2px]";
+  return "mt-[3px]";
 }
 
 export function MessageBubble({
