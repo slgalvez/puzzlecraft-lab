@@ -109,7 +109,7 @@ export function CallSystemMessage({ body, formatTime, createdAt, onCallBack }: C
       break;
     case "ended":
       icon = <Video size={12} className="text-primary" />;
-      text = duration > 0 ? `Video call · ${formatCallDuration(duration)}` : "Video call ended";
+      text = "Video call";
       break;
     default:
       icon = <Phone size={12} className="text-muted-foreground" />;
@@ -142,7 +142,6 @@ export function CallSystemMessage({ body, formatTime, createdAt, onCallBack }: C
         >
           {icon}
           <span className="text-[11px] text-muted-foreground">{text}</span>
-          <span className="text-[10px] text-muted-foreground/60">{formatTime(createdAt)}</span>
         </div>
 
         {/* Expanded detail row — stacked below */}
