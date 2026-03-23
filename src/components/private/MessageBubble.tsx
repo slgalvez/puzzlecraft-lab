@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Timer, Check, CheckCheck, Eye, Pencil, Plus, Undo2 } from "lucide-react";
+import { Timer, Check, CheckCheck, Eye, Pencil, Plus, Undo2, AlertCircle, RotateCcw } from "lucide-react";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { isGifMessage, getGifUrl } from "@/components/private/MessageComposer";
 import { ImageViewer } from "@/components/private/ImageViewer";
