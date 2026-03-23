@@ -112,9 +112,9 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
   const getVideoConstraints = useCallback((facing: "user" | "environment" = "user"): MediaTrackConstraints => ({
     facingMode: { ideal: facing },
-    width: { ideal: 960 },
-    height: { ideal: 1280 },
-    aspectRatio: { ideal: 3 / 4 },
+    width: { ideal: 640 },
+    height: { ideal: 480 },
+    frameRate: { ideal: 30 },
   }), []);
 
   const getMedia = useCallback(async (facing: "user" | "environment" = "user") => {
