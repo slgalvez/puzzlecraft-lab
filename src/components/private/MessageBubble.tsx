@@ -200,6 +200,30 @@ export function MessageBubble({
       <div className={`relative max-w-[82%] sm:max-w-[70%] transition-all duration-150 ${
         showMenu ? "z-50 scale-[1.03] -translate-y-0.5" : ""
       } ${reactPop ? "scale-[1.04]" : ""}`}>
+        {/* Reaction overlay */}
+        {hasReactions && (
+          <div className={`absolute -top-2.5 z-10 flex items-center gap-0.5 ${isMine ? "left-0 -translate-x-1" : "right-0 translate-x-1"}`}>
+            {reactionEntries.map(([emoji, users]) => {
+              const iReacted = users.includes(currentUserId);
+              return (
+                <button
+                  key={emoji}
+                  onClick={() => handleReact(emoji)}
+                  className={`inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full border shadow-sm transition-all active:scale-95 ${
+                    iReacted
+                      ? "border-primary/30 bg-primary/[0.12] backdrop-blur-sm"
+                      : "border-border/40 bg-card/80 backdrop-blur-sm hover:bg-secondary/40"
+                  }`}
+                >
+                  <span className="text-[11px]">{emoji}</span>
+                  {users.length > 1 && (
+                    <span className="text-[9px] text-muted-foreground/60">{users.length}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )
         {showMenu && (
           <div
             className={`absolute z-50 bottom-full mb-2 flex flex-col bg-card/95 backdrop-blur-xl border border-border/40 rounded-2xl shadow-2xl overflow-hidden ${
