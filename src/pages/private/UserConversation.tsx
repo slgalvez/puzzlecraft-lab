@@ -355,6 +355,7 @@ const UserConversation = () => {
                     body={msg.body}
                     formatTime={formatTime}
                     createdAt={msg.created_at}
+                    onCallBack={videoCall.callState === "idle" ? videoCall.startCall : undefined}
                   />
                 );
               }
