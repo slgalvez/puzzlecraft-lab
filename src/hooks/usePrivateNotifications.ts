@@ -14,7 +14,7 @@ import {
 export function usePrivateNotifications(token?: string | null) {
   const [bannerPhrase, setBannerPhrase] = useState<string | null>(null);
   const location = useLocation();
-  const prevUnreadRef = useRef<number>(0);
+  const prevUnreadRef = useRef<number>(-1);
   const prevIncomingCallRef = useRef<boolean>(false);
   const lastSubscribedTokenRef = useRef<string | null>(null);
 
