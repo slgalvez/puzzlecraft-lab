@@ -55,6 +55,8 @@ const AdminConversationView = () => {
   const { containerRef: messagesContainerRef, bottomRef: messagesEndRef, markUserSent } = useChatScroll(messageIds);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
   const loadingRef = useRef(true);
+  const fetchInFlightRef = useRef(false);
+  const lastMessagesKeyRef = useRef("");
 
   const handleSessionExpired = useCallback(() => {
     signOut();
@@ -70,17 +72,26 @@ const AdminConversationView = () => {
   });
 
   const fetchConversation = useCallback(async () => {
-    if (!token || !conversationId) return;
+    if (!token || !conversationId || fetchInFlightRef.current) return;
+    fetchInFlightRef.current = true;
+
     try {
       const data = await invokeMessaging("get-conversation", token, { conversation_id: conversationId });
+      const nextMessages = Array.isArray(data.messages) ? data.messages : [];
+      const nextMessagesKey = nextMessages.map((message) => `${message.id}:${message.read_at ?? ""}:${message.body}:${JSON.stringify(message.reactions ?? {})}`).join("|");
+
       setConversation(data.conversation);
-      setMessages(data.messages);
+      if (lastMessagesKeyRef.current !== nextMessagesKey) {
+        lastMessagesKeyRef.current = nextMessagesKey;
+        setMessages(nextMessages);
+      }
       setError(null);
-      console.debug("[admin-conversation] loaded", data.messages?.length, "messages");
+      console.debug("[admin-conversation] loaded", nextMessages.length, "messages");
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
       if (loadingRef.current) setError("Unable to load conversation");
     } finally {
+      fetchInFlightRef.current = false;
       loadingRef.current = false;
       setLoading(false);
     }
@@ -89,7 +100,19 @@ const AdminConversationView = () => {
   useEffect(() => {
     fetchConversation();
     pollRef.current = setInterval(fetchConversation, 3000);
-    return () => clearInterval(pollRef.current);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchConversation();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(pollRef.current);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [fetchConversation]);
 
   // (scroll handled by useChatScroll hook)

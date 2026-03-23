@@ -49,6 +49,8 @@ const UserConversation = () => {
   const { containerRef: messagesContainerRef, bottomRef: messagesEndRef, markUserSent } = useChatScroll(messageIds);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
   const loadingRef = useRef(true);
+  const fetchInFlightRef = useRef(false);
+  const lastMessagesKeyRef = useRef("");
 
   const handleSessionExpired = useCallback(() => {
     signOut();
@@ -64,23 +66,32 @@ const UserConversation = () => {
   });
 
   const fetchConversation = useCallback(async () => {
-    if (!token) return;
+    if (!token || fetchInFlightRef.current) return;
+    fetchInFlightRef.current = true;
+
     try {
       console.debug("[conversation] fetching...");
       const data = await invokeMessaging("get-my-conversation", token);
+      const nextMessages = Array.isArray(data.messages) ? data.messages : [];
+      const nextMessagesKey = nextMessages.map((message) => `${message.id}:${message.read_at ?? ""}:${message.body}:${JSON.stringify(message.reactions ?? {})}`).join("|");
+
       setConversationId(data.conversation.id);
       setAdminProfileId(data.conversation.admin_profile_id);
       setAdminName(data.conversation.admin_name || "Conversation");
-      setMessages(data.messages);
+      if (lastMessagesKeyRef.current !== nextMessagesKey) {
+        lastMessagesKeyRef.current = nextMessagesKey;
+        setMessages(nextMessages);
+      }
       setDisappearingEnabled(data.conversation.disappearing_enabled);
       setDisappearingDuration(data.conversation.disappearing_duration);
       setError(null);
-      console.debug("[conversation] loaded", data.messages?.length, "messages");
+      console.debug("[conversation] loaded", nextMessages.length, "messages");
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
       console.warn("[conversation] fetch error:", e);
       if (loadingRef.current) setError("Unable to load conversation");
     } finally {
+      fetchInFlightRef.current = false;
       loadingRef.current = false;
       setLoading(false);
     }
@@ -102,7 +113,19 @@ const UserConversation = () => {
   useEffect(() => {
     fetchConversation();
     pollRef.current = setInterval(fetchConversation, 3000);
-    return () => clearInterval(pollRef.current);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchConversation();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(pollRef.current);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [fetchConversation]);
 
   // (scroll handled by useChatScroll hook)

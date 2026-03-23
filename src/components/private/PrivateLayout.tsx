@@ -37,7 +37,9 @@ export default function PrivateLayout({ children, title, fullHeight }: PrivateLa
   }, [signOut, navigate]);
 
   // Global incoming call detection (shows banner on ALL Secret Lab pages)
-  const isOnConversationPage = location.pathname.startsWith("/p/conversation");
+  const isOnConversationPage =
+    location.pathname.startsWith("/p/conversation") ||
+    location.pathname.startsWith("/p/conversations");
   const globalCall = useGlobalIncomingCall(
     isOnConversationPage ? null : token, // Don't poll globally when already in a conversation (that page has its own polling)
     handleSessionExpired,
