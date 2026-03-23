@@ -546,7 +546,7 @@ Deno.serve(async (req) => {
 
       const { data: conv } = await sb
         .from("conversations")
-        .select(`id, user_profile_id, admin_profile_id, disappearing_enabled, disappearing_duration, cleared_at_admin, profiles!conversations_user_profile_id_fkey (first_name, last_name)`)
+        .select(`id, user_profile_id, admin_profile_id, user_typing_at, disappearing_enabled, disappearing_duration, cleared_at_admin, profiles!conversations_user_profile_id_fkey (first_name, last_name)`)
         .eq("id", conversation_id)
         .single();
       if (!conv) return err("Not found");
