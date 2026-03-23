@@ -147,7 +147,7 @@ const UserConversation = () => {
         conversation_id: conversationId,
         message: body,
       });
-      setMessages((prev) => [...prev, data.message]);
+      setMessages((prev) => prev.some((m) => m.id === data.message.id) ? prev : [...prev, data.message]);
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
       toast({ title: "Could not send message", description: "Please try again." });
