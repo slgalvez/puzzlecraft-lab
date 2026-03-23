@@ -401,9 +401,9 @@ const Stats = () => {
                             {downs > 0 && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className="flex items-center gap-0.5 text-[10px] text-destructive cursor-default">
+                                  <button type="button" className="flex items-center gap-0.5 text-[10px] text-destructive p-1 -m-1 min-w-[28px] min-h-[28px] justify-center touch-manipulation">
                                     <TrendingDown size={9} /> {downs}
-                                  </span>
+                                  </button>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="text-xs">Slower than your average</TooltipContent>
                               </Tooltip>
