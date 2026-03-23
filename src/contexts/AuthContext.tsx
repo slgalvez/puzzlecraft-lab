@@ -158,9 +158,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const invokePromise = supabase.functions.invoke("private-login", {
         body: { first_name: firstName.trim(), last_name: lastName.trim(), password },
       });
-      // 15s timeout so signIn never hangs forever
+      // 30s timeout so signIn never hangs forever
       const timeoutPromise = new Promise<{ data: null; error: string }>((resolve) =>
-        setTimeout(() => resolve({ data: null, error: "timeout" }), 15_000)
+        setTimeout(() => resolve({ data: null, error: "timeout" }), 30_000)
       );
       const result = await Promise.race([invokePromise, timeoutPromise]);
       const { data, error } = result;
