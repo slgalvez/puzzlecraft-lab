@@ -415,6 +415,8 @@ const UserConversation = () => {
                 );
               }
 
+              const isFailed = failedMessages.has(msg.id);
+
               return (
                 <MessageBubble
                   key={msg.id}
@@ -431,9 +433,12 @@ const UserConversation = () => {
                   groupPosition={group?.groupPosition}
                   senderChanged={group?.senderChanged}
                   showTimestamp={group?.showTimestamp}
-                  onReact={handleReact}
-                  onStartEdit={handleStartEdit}
-                  onUnsend={handleUnsend}
+                  failed={isFailed}
+                  retrying={retryingMessages.has(msg.id)}
+                  onRetry={isFailed ? () => handleRetry(msg.id) : undefined}
+                  onReact={isFailed ? undefined : handleReact}
+                  onStartEdit={isFailed ? undefined : handleStartEdit}
+                  onUnsend={isFailed ? undefined : handleUnsend}
                   allImageUrls={allImageUrls}
                 />
               );
