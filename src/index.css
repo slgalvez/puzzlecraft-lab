@@ -1,7 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
 
-/* PWA safe area support */
-html {
+/* PWA safe area support — only horizontal + bottom on non-private pages.
+   Private app handles its own safe areas internally. */
+html:not(:has(.private-app)) {
   padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
 
@@ -172,10 +173,12 @@ html {
   font-family: 'DM Sans', sans-serif;
   background: hsl(220 14% 10%);
   color: hsl(220 10% 90%);
-  height: 100dvh;
-  height: 100vh;
-  height: 100dvh;
   overflow: hidden;
+  position: fixed;
+  inset: 0;
+  /* Use fixed positioning to fill the visual viewport exactly,
+     avoiding the gap that 100dvh can leave on iOS when the
+     address bar or keyboard changes the layout viewport. */
 }
 
 /* Match overscroll / bounce / root background to private app */
@@ -183,6 +186,8 @@ body:has(.private-app),
 html:has(.private-app) {
   background: hsl(220 14% 10%) !important;
   overflow: hidden;
+  height: 100%;
+  padding: 0 !important;
 }
 
 body:has(.private-app) #root {
@@ -190,6 +195,8 @@ body:has(.private-app) #root {
   max-width: none;
   padding: 0;
   text-align: left;
+  height: 100%;
+  overflow: hidden;
 }
 
 .private-app h1,
@@ -279,25 +286,5 @@ body:has(.private-app) [data-sidebar="sidebar"][data-mobile="true"] {
   }
 }
 
-/* Mobile keyboard: keep conversation stable when virtual keyboard opens */
-@supports (height: 1dvh) {
-  .private-app {
-    height: 100dvh;
-  }
-}
-
-/* Prevent layout thrash on iOS keyboard open/close.
-   The conversation pages already use flex-col + min-h-0
-   so the message list shrinks naturally when dvh changes. */
-.private-app {
-  contain: layout style;
-  height: 100dvh;
-  height: 100vh;
-  overflow: hidden;
-}
-
-@supports (height: 1dvh) {
-  .private-app {
-    height: 100dvh;
-  }
-}
+/* Fallback for browsers without position:fixed support on .private-app
+   (should not happen in modern browsers, but just in case) */
