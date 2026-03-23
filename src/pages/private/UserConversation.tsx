@@ -201,7 +201,14 @@ const UserConversation = () => {
     }
   }, [conversationId, token, failedMessages, handleSessionExpired]);
 
-  const handleReact = async (messageId: string, reaction: string) => {
+  const handleTypingPing = useCallback(() => {
+    if (!conversationId || !token) return;
+    const now = Date.now();
+    if (now - lastTypingPingRef.current < 2000) return; // throttle to 2s
+    lastTypingPingRef.current = now;
+    invokeMessaging("typing-ping", token, { conversation_id: conversationId }).catch(() => {});
+  }, [conversationId, token]);
+
     if (!token) return;
     setMessages((prev) =>
       prev.map((m) => {
