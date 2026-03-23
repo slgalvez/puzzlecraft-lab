@@ -393,25 +393,25 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       const newVideoTrack = newStream.getVideoTracks()[0];
       if (!newVideoTrack) return;
 
-      // Replace the track on the peer connection sender
+      // Replace the track on the peer connection sender so remote sees new camera
       const videoSender = pc.getSenders().find((s) => s.track?.kind === "video");
       if (videoSender) {
         await videoSender.replaceTrack(newVideoTrack);
       }
 
-      // Stop old video track and swap in the new one on local stream
+      // Stop old video track
       const oldStream = localStreamRef.current;
       oldStream.getVideoTracks().forEach((t) => t.stop());
-      oldStream.removeTrack(oldStream.getVideoTracks()[0]);
-      oldStream.addTrack(newVideoTrack);
+
+      // Build a clean new stream with existing audio + new video
+      const audioTracks = oldStream.getAudioTracks();
+      const combinedStream = new MediaStream([...audioTracks, newVideoTrack]);
 
       facingModeRef.current = nextFacing;
-      // Force re-render with new stream reference
-      setLocalStream(new MediaStream([...oldStream.getTracks()]));
-      localStreamRef.current = oldStream;
+      localStreamRef.current = combinedStream;
+      setLocalStream(combinedStream);
     } catch (err) {
       console.warn("[video-call] switchCamera failed:", err);
-      // Gracefully ignore — device may not support rear camera
     }
   }, [getVideoConstraints]);
 

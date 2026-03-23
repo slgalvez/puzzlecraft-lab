@@ -286,7 +286,7 @@ export function VideoCallScreen({
             playsInline
             muted
             className="w-full h-full object-cover"
-            style={{ transform: "scaleX(-1)" }}
+            style={isFrontCamera ? { transform: "scaleX(-1)" } : undefined}
           />
           {isCameraOff && (
             <div className="absolute inset-0 bg-card flex items-center justify-center">
