@@ -256,6 +256,8 @@ const UserConversation = () => {
     [messages]
   );
 
+  const groupInfo = useMemo(() => computeMessageGroups(messages), [messages]);
+
   if (loading) {
     return (
       <PrivateLayout title="Conversation">
