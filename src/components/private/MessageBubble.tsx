@@ -211,7 +211,7 @@ export function MessageBubble({
       )}
       <div className={`relative max-w-[82%] sm:max-w-[70%] transition-all duration-150 ${
         showMenu ? "z-50 scale-[1.03] -translate-y-0.5" : ""
-      } ${reactPop ? "scale-[1.04]" : ""}`}>
+      } ${reactPop ? "scale-[1.04]" : ""} ${failed ? "opacity-70" : ""}`}>
         {/* Reaction overlay */}
         {hasReactions && (
           <div className={`absolute -top-2.5 z-10 flex items-center gap-0.5 ${isMine ? "left-0 -translate-x-1" : "right-0 translate-x-1"}`}>
