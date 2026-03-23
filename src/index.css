@@ -186,6 +186,8 @@ body:has(.private-app),
 html:has(.private-app) {
   background: hsl(220 14% 10%) !important;
   overflow: hidden;
+  height: 100%;
+  padding: 0 !important;
 }
 
 body:has(.private-app) #root {
@@ -193,6 +195,8 @@ body:has(.private-app) #root {
   max-width: none;
   padding: 0;
   text-align: left;
+  height: 100%;
+  overflow: hidden;
 }
 
 .private-app h1,
