@@ -206,7 +206,6 @@ body:has(.private-app) #root {
 .private-app .msg-bubble-mine {
   background: hsl(var(--chat-accent, var(--primary)));
   color: hsl(var(--chat-accent-foreground, var(--primary-foreground)));
-  border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
   word-break: break-word;
   overflow-wrap: break-word;
 }
@@ -214,7 +213,6 @@ body:has(.private-app) #root {
 .private-app .msg-bubble-theirs {
   background: hsl(var(--secondary));
   color: hsl(var(--foreground));
-  border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
   word-break: break-word;
   overflow-wrap: break-word;
 }

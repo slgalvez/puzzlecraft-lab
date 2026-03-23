@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Video } from "lucide-react";
 import { isPuzzleMessage, PuzzleMessageBubble } from "@/components/private/PuzzleMessageBubble";
 import { MessageBubble } from "@/components/private/MessageBubble";
+import { computeMessageGroups } from "@/lib/messageGrouping";
 import { MessageComposer, type EditingMessage, isGifMessage, getGifUrl } from "@/components/private/MessageComposer";
 import { ConversationToolbar } from "@/components/private/ConversationToolbar";
 import { isCallMessage, CallSystemMessage } from "@/components/private/CallSystemMessage";
@@ -255,6 +256,8 @@ const UserConversation = () => {
     [messages]
   );
 
+  const groupInfo = useMemo(() => computeMessageGroups(messages), [messages]);
+
   if (loading) {
     return (
       <PrivateLayout title="Conversation">
@@ -337,7 +340,7 @@ const UserConversation = () => {
         />
 
         {/* Messages */}
-        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 space-y-1 scroll-smooth">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 scroll-smooth">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <p className="text-[13px] text-muted-foreground/40">
@@ -347,6 +350,7 @@ const UserConversation = () => {
           ) : (
             messages.map((msg, i) => {
               const isMine = msg.sender_profile_id === user?.id;
+              const group = groupInfo[i];
 
               if (isCallMessage(msg.body)) {
                 return (
@@ -372,9 +376,6 @@ const UserConversation = () => {
                 );
               }
 
-              const nextMsg = messages[i + 1];
-              const showTail = !nextMsg || nextMsg.sender_profile_id !== msg.sender_profile_id || isPuzzleMessage(nextMsg.body);
-
               return (
                 <MessageBubble
                   key={msg.id}
@@ -388,7 +389,8 @@ const UserConversation = () => {
                   reactions={msg.reactions || {}}
                   currentUserId={user?.id || ""}
                   formatTime={formatTime}
-                  showTail={showTail}
+                  groupPosition={group?.groupPosition}
+                  showTimestamp={group?.showTimestamp}
                   onReact={handleReact}
                   onStartEdit={handleStartEdit}
                   onUnsend={handleUnsend}
