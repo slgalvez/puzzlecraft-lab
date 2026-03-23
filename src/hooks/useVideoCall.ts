@@ -218,6 +218,11 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
           }
           iceCandidateBuffer.current = [];
         } else if (sig.signal_type === "answer" && isCallerRef.current) {
+          // Guard: skip if we already set the remote description (duplicate answer)
+          if (remoteDescSet.current) {
+            console.debug("[video-call] skipping duplicate answer signal");
+            continue;
+          }
           await pc.setRemoteDescription(new RTCSessionDescription(sig.payload as RTCSessionDescriptionInit));
           remoteDescSet.current = true;
           // Process buffered ICE candidates
@@ -268,7 +273,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
         if (e instanceof SessionExpiredError) return;
         // Ignore polling errors
       }
-    }, 800);
+    }, 1500);
   }, [api, processSignals, cleanup]);
 
   // Start an outgoing call
@@ -490,7 +495,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       } catch {
         // Ignore stats errors
       }
-    }, 3000);
+    }, 5000);
     return () => clearInterval(poll);
   }, [callState]);
 
