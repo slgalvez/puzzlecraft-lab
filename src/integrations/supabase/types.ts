@@ -218,6 +218,7 @@ export type Database = {
       conversations: {
         Row: {
           admin_profile_id: string
+          admin_typing_at: string | null
           cleared_at_admin: string | null
           cleared_at_user: string | null
           created_at: string
@@ -227,9 +228,11 @@ export type Database = {
           disappearing_updated_at: string | null
           id: string
           user_profile_id: string
+          user_typing_at: string | null
         }
         Insert: {
           admin_profile_id: string
+          admin_typing_at?: string | null
           cleared_at_admin?: string | null
           cleared_at_user?: string | null
           created_at?: string
@@ -239,9 +242,11 @@ export type Database = {
           disappearing_updated_at?: string | null
           id?: string
           user_profile_id: string
+          user_typing_at?: string | null
         }
         Update: {
           admin_profile_id?: string
+          admin_typing_at?: string | null
           cleared_at_admin?: string | null
           cleared_at_user?: string | null
           created_at?: string
@@ -251,6 +256,7 @@ export type Database = {
           disappearing_updated_at?: string | null
           id?: string
           user_profile_id?: string
+          user_typing_at?: string | null
         }
         Relationships: [
           {

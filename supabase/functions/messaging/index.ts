@@ -105,23 +105,12 @@ async function fetchLatestConversationMessages(
   return messages.reverse();
 }
 
-// ─── EPHEMERAL TYPING STATE (in-memory, not persisted) ───
-// Key: "conversationId:profileId" → timestamp of last typing ping
-const typingState = new Map<string, number>();
+// ─── EPHEMERAL TYPING STATE (DB-backed for cross-isolate reliability) ───
 const TYPING_TTL_MS = 4000; // 4s timeout
 
-function setTyping(conversationId: string, profileId: string) {
-  typingState.set(`${conversationId}:${profileId}`, Date.now());
-}
-
-function isTyping(conversationId: string, profileId: string): boolean {
-  const ts = typingState.get(`${conversationId}:${profileId}`);
-  if (!ts) return false;
-  if (Date.now() - ts > TYPING_TTL_MS) {
-    typingState.delete(`${conversationId}:${profileId}`);
-    return false;
-  }
-  return true;
+function isTypingFromTimestamp(typingAt: string | null): boolean {
+  if (!typingAt) return false;
+  return Date.now() - new Date(typingAt).getTime() < TYPING_TTL_MS;
 }
 
 Deno.serve(async (req) => {
@@ -163,7 +152,13 @@ Deno.serve(async (req) => {
     // ─── TYPING PING (ephemeral, no DB) ───
     if (action === "typing-ping") {
       const { conversation_id } = body;
-      if (conversation_id) setTyping(conversation_id, profileId);
+    if (action === "typing-ping") {
+      const { conversation_id } = body;
+      if (conversation_id) {
+        // Determine which column to update based on role
+        const col = isAdmin ? "admin_typing_at" : "user_typing_at";
+        await sb.from("conversations").update({ [col]: new Date().toISOString() }).eq("id", conversation_id);
+      }
       return json({ ok: true });
     }
 
@@ -173,7 +168,7 @@ Deno.serve(async (req) => {
 
       let { data: conv } = await sb
         .from("conversations")
-        .select("id, admin_profile_id, disappearing_enabled, disappearing_duration, cleared_at_user, cleared_at_admin")
+        .select("id, admin_profile_id, admin_typing_at, disappearing_enabled, disappearing_duration, cleared_at_user, cleared_at_admin")
         .eq("user_profile_id", profileId)
         .maybeSingle();
 
@@ -228,8 +223,8 @@ Deno.serve(async (req) => {
       if (clearedAt) unreadQuery = unreadQuery.gt("created_at", clearedAt);
       const { count: unreadCount } = await unreadQuery;
 
-      // Check if the other party is typing
-      const otherTyping = isTyping(conv.id, conv.admin_profile_id);
+      // Check if the other party (admin) is typing
+      const otherTyping = isTypingFromTimestamp(conv.admin_typing_at);
 
       return json({
         conversation: {
@@ -551,7 +546,7 @@ Deno.serve(async (req) => {
 
       const { data: conv } = await sb
         .from("conversations")
-        .select(`id, user_profile_id, admin_profile_id, disappearing_enabled, disappearing_duration, cleared_at_admin, profiles!conversations_user_profile_id_fkey (first_name, last_name)`)
+        .select(`id, user_profile_id, admin_profile_id, user_typing_at, disappearing_enabled, disappearing_duration, cleared_at_admin, profiles!conversations_user_profile_id_fkey (first_name, last_name)`)
         .eq("id", conversation_id)
         .single();
       if (!conv) return err("Not found");
@@ -574,7 +569,7 @@ Deno.serve(async (req) => {
       const profile = conv.profiles as unknown as { first_name: string; last_name: string } | null;
 
       // Check if the user is typing
-      const otherTyping = isTyping(conversation_id, conv.user_profile_id);
+      const otherTyping = isTypingFromTimestamp(conv.user_typing_at);
 
       return json({
         conversation: {
