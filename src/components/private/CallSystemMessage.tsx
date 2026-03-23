@@ -142,7 +142,6 @@ export function CallSystemMessage({ body, formatTime, createdAt, onCallBack }: C
         >
           {icon}
           <span className="text-[11px] text-muted-foreground">{text}</span>
-          <span className="text-[10px] text-muted-foreground/60">{formatTime(createdAt)}</span>
         </div>
 
         {/* Expanded detail row — stacked below */}
