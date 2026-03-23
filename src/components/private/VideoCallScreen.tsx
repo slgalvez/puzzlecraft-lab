@@ -74,6 +74,7 @@ export function VideoCallScreen({
   remoteStream,
   isMuted,
   isCameraOff,
+  isFrontCamera = true,
   callDuration,
   connectionQuality = "unknown",
   onEndCall,
