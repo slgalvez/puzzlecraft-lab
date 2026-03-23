@@ -488,6 +488,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     endCall,
     toggleMute,
     toggleCamera,
+    switchCamera,
     dismissEnd,
   };
 }
