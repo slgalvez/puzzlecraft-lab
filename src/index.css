@@ -173,10 +173,12 @@ html:not(:has(.private-app)) {
   font-family: 'DM Sans', sans-serif;
   background: hsl(220 14% 10%);
   color: hsl(220 10% 90%);
-  height: 100dvh;
-  height: 100vh;
-  height: 100dvh;
   overflow: hidden;
+  position: fixed;
+  inset: 0;
+  /* Use fixed positioning to fill the visual viewport exactly,
+     avoiding the gap that 100dvh can leave on iOS when the
+     address bar or keyboard changes the layout viewport. */
 }
 
 /* Match overscroll / bounce / root background to private app */
