@@ -56,7 +56,7 @@ const AdminConversationView = () => {
   const [clearing, setClearing] = useState(false);
   const [editingMessage, setEditingMessage] = useState<EditingMessage | null>(null);
   const messageIds = useMemo(() => messages.map((m) => m.id), [messages]);
-  const { containerRef: messagesContainerRef, bottomRef: messagesEndRef, markUserSent } = useChatScroll(messageIds);
+  const { containerRef: messagesContainerRef, bottomRef: messagesEndRef, markUserSent, scrollIfNearBottom } = useChatScroll(messageIds);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
   const loadingRef = useRef(true);
   const fetchInFlightRef = useRef(false);
@@ -124,7 +124,10 @@ const AdminConversationView = () => {
     };
   }, [fetchConversation]);
 
-  // (scroll handled by useChatScroll hook)
+  // Scroll when typing indicator appears
+  useEffect(() => {
+    if (otherTyping) scrollIfNearBottom();
+  }, [otherTyping, scrollIfNearBottom]);
 
   useEffect(() => {
     if (!conversationId || !token) return;

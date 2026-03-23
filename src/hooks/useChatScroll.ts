@@ -85,5 +85,12 @@ export function useChatScroll(messageIds: string[]) {
     prevIdsRef.current = messageIds;
   }, [messageIds, isNearBottom, scrollToBottom]);
 
-  return { containerRef, bottomRef, markUserSent };
+  /** Scroll to bottom only if user is near bottom — call when typing indicator appears */
+  const scrollIfNearBottom = useCallback(() => {
+    if (isNearBottom()) {
+      requestAnimationFrame(() => scrollToBottom("smooth"));
+    }
+  }, [isNearBottom, scrollToBottom]);
+
+  return { containerRef, bottomRef, markUserSent, scrollIfNearBottom };
 }
