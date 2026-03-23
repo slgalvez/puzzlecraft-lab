@@ -199,7 +199,7 @@ export function MessageBubble({
   };
 
   return (
-    <div className={`flex ${isMine ? "justify-end" : "justify-start"} px-1 relative ${getGroupSpacing(groupPosition)}`}>
+    <div className={`flex ${isMine ? "justify-end" : "justify-start"} px-1 relative ${getGroupSpacing(groupPosition, senderChanged)}`}>
       {showMenu && (
         <div className="fixed inset-0 z-40 bg-black/15 backdrop-blur-[2px]" onClick={closeMenu} />
       )}
