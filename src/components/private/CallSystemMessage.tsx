@@ -125,7 +125,7 @@ export function CallSystemMessage({ body, formatTime, createdAt, onCallBack }: C
         {/* Context menu */}
         {menuOpen && (
           <div
-            className="absolute z-[82] top-full mt-1.5 animate-scale-in"
+            className="absolute z-[82] bottom-full mb-1.5 animate-scale-in"
             style={{ animationDuration: "150ms" }}
             onClick={(e) => e.stopPropagation()}
           >
