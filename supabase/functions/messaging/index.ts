@@ -49,6 +49,8 @@ function parseDuration(dur: string): number {
 }
 
 const VALID_DURATIONS = ["view-once", "1h", "24h", "7d"];
+const CALL_RING_TIMEOUT_MS = 30_000;
+const STALE_CONNECTED_CALL_MS = 15 * 60 * 1000;
 
 /** Build a message query that respects cleared_at timestamps */
 function buildMessageQuery(
@@ -1317,12 +1319,18 @@ Deno.serve(async (req) => {
       const calleeId = profileId === conv.admin_profile_id ? conv.user_profile_id : conv.admin_profile_id;
 
       // Auto-expire stale ringing calls (>30s old) and check for truly active calls
-      const { data: existingCalls } = await sb.from("calls").select("id, status, started_at").eq("conversation_id", conversation_id).in("status", ["ringing", "connected"]);
+      const { data: existingCalls } = await sb.from("calls").select("id, status, started_at, connected_at").eq("conversation_id", conversation_id).in("status", ["ringing", "connected"]);
       if (existingCalls && existingCalls.length > 0) {
         const staleIds: string[] = [];
         let hasActive = false;
         for (const ec of existingCalls) {
-          if (ec.status === "ringing" && (Date.now() - new Date(ec.started_at).getTime()) > 30000) {
+          if (ec.status === "ringing" && (Date.now() - new Date(ec.started_at).getTime()) > CALL_RING_TIMEOUT_MS) {
+            staleIds.push(ec.id);
+          } else if (
+            ec.status === "connected" &&
+            ec.connected_at &&
+            (Date.now() - new Date(ec.connected_at).getTime()) > STALE_CONNECTED_CALL_MS
+          ) {
             staleIds.push(ec.id);
           } else {
             hasActive = true;
@@ -1331,7 +1339,7 @@ Deno.serve(async (req) => {
         // Clean up stale ringing calls
         if (staleIds.length > 0) {
           for (const staleId of staleIds) {
-            await sb.from("calls").update({ status: "ended", ended_at: now, end_reason: "missed" }).eq("id", staleId);
+            await sb.from("calls").update({ status: "ended", ended_at: now, end_reason: "stale" }).eq("id", staleId);
             await sb.from("call_signals").delete().eq("call_id", staleId);
           }
         }
@@ -1395,7 +1403,7 @@ Deno.serve(async (req) => {
       // Auto-timeout ringing calls after 30s
       if (call.status === "ringing") {
         const ringDuration = Date.now() - new Date(call.started_at).getTime();
-        if (ringDuration > 30000) {
+        if (ringDuration > CALL_RING_TIMEOUT_MS) {
           await sb.from("calls").update({ status: "ended", ended_at: now, end_reason: "missed" }).eq("id", call_id);
           // Insert system message
           await sb.from("messages").insert({
