@@ -152,7 +152,13 @@ Deno.serve(async (req) => {
     // ─── TYPING PING (ephemeral, no DB) ───
     if (action === "typing-ping") {
       const { conversation_id } = body;
-      if (conversation_id) setTyping(conversation_id, profileId);
+    if (action === "typing-ping") {
+      const { conversation_id } = body;
+      if (conversation_id) {
+        // Determine which column to update based on role
+        const col = isAdmin ? "admin_typing_at" : "user_typing_at";
+        await sb.from("conversations").update({ [col]: new Date().toISOString() }).eq("id", conversation_id);
+      }
       return json({ ok: true });
     }
 
