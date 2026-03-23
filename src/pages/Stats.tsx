@@ -39,7 +39,7 @@ const Stats = () => {
   const dailyStreak = useMemo(() => getDailyStreak(), [dataVersion]);
   const dailyCompleted = useMemo(() => getTotalDailyCompleted(), [dataVersion]);
   const endlessStats = useMemo(() => getEndlessStats(), [dataVersion]);
-  const { account, subscribed } = useUserAccount();
+  const { account, subscribed, loading: accountLoading } = useUserAccount();
   const isAdmin = account?.isAdmin ?? false;
   const premiumAccess = hasPremiumAccess({ isAdmin, subscribed });
   const showUpgrade = shouldShowUpgradeCTA({ isAdmin, subscribed });
