@@ -456,6 +456,7 @@ const UserConversation = () => {
               );
             })
           )}
+          {otherTyping && <TypingIndicator />}
           <div ref={messagesEndRef} />
         </div>
 
@@ -468,6 +469,7 @@ const UserConversation = () => {
           editingMessage={editingMessage}
           onCancelEdit={() => setEditingMessage(null)}
           onSaveEdit={(id, body) => { handleEdit(id, body); setEditingMessage(null); }}
+          onTyping={handleTypingPing}
         />
       </div>
     </PrivateLayout>
