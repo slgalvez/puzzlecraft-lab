@@ -49,6 +49,8 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
   const iceCandidateBuffer = useRef<RTCIceCandidateInit[]>([]);
   const processedSignalIdsRef = useRef<Set<string>>(new Set());
   const remoteDescSet = useRef(false);
+  const hasConnectedRef = useRef(false);
+  const remoteTrackSeenRef = useRef(false);
   const isCallerRef = useRef(false);
   const cleaningUp = useRef(false);
   const sessionExpiredRef = useRef(false);
@@ -88,6 +90,8 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     iceCandidateBuffer.current = [];
     processedSignalIdsRef.current.clear();
     remoteDescSet.current = false;
+    hasConnectedRef.current = false;
+    remoteTrackSeenRef.current = false;
     cleaningUp.current = false;
   }, []); // stable — no state deps
 
@@ -169,7 +173,28 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     setRemoteStream(remote);
 
     pc.ontrack = (event) => {
+      remoteTrackSeenRef.current = true;
       event.streams[0]?.getTracks().forEach((track) => remote.addTrack(track));
+    };
+
+    const scheduleRecoveryGuard = (reason: string, delayMs: number) => {
+      clearTimeout(disconnectTimerRef.current);
+      disconnectTimerRef.current = setTimeout(() => {
+        const currentPc = pcRef.current;
+        if (!currentPc) return;
+
+        const stillUnstable =
+          currentPc.connectionState === "failed" ||
+          currentPc.connectionState === "disconnected" ||
+          currentPc.iceConnectionState === "failed" ||
+          currentPc.iceConnectionState === "disconnected";
+
+        if (!stillUnstable) return;
+
+        setEndReason(reason);
+        setCallState("ended");
+        cleanup();
+      }, delayMs);
     };
 
     pc.onicecandidate = (event) => {
@@ -187,26 +212,41 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       clearTimeout(disconnectTimerRef.current);
 
       if (pc.connectionState === "connected") {
+        hasConnectedRef.current = true;
         setCallState("connected");
         connectedAtRef.current = Date.now();
         durationTimerRef.current = setInterval(() => {
           setCallDuration(Math.floor((Date.now() - connectedAtRef.current) / 1000));
         }, 1000);
       } else if (pc.connectionState === "failed") {
-        // Only end on definitive failure
-        setEndReason("Connection failed");
-        setCallState("ended");
-        cleanup();
+        scheduleRecoveryGuard(
+          "Connection failed",
+          hasConnectedRef.current || remoteTrackSeenRef.current ? 8000 : 15000,
+        );
       } else if (pc.connectionState === "disconnected") {
-        // Temporary — wait 5s before treating as failed
-        disconnectTimerRef.current = setTimeout(() => {
-          if (pcRef.current?.connectionState === "disconnected") {
-            console.debug("[video-call] disconnected for 5s, ending call");
-            setEndReason("Connection lost");
-            setCallState("ended");
-            cleanup();
-          }
-        }, 5000);
+        scheduleRecoveryGuard(
+          "Connection lost",
+          hasConnectedRef.current || remoteTrackSeenRef.current ? 8000 : 15000,
+        );
+      }
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      console.debug("[video-call] iceConnectionState:", pc.iceConnectionState);
+
+      if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
+        hasConnectedRef.current = true;
+        clearTimeout(disconnectTimerRef.current);
+      } else if (pc.iceConnectionState === "failed") {
+        scheduleRecoveryGuard(
+          "Connection failed",
+          hasConnectedRef.current || remoteTrackSeenRef.current ? 8000 : 15000,
+        );
+      } else if (pc.iceConnectionState === "disconnected") {
+        scheduleRecoveryGuard(
+          "Connection lost",
+          hasConnectedRef.current || remoteTrackSeenRef.current ? 8000 : 15000,
+        );
       }
     };
 
