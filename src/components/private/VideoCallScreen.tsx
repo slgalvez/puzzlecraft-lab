@@ -129,8 +129,7 @@ export function VideoCallScreen({
     dragOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     e.preventDefault();
-    resetShrinkTimer();
-  }, [resetShrinkTimer]);
+  }, []);
 
   const handleSelfPointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragging.current) return;
@@ -158,7 +157,7 @@ export function VideoCallScreen({
       setSelfPos(snapToCorner(selfPos.x, selfPos.y, elW, elH));
     }
 
-    // Tap (not drag) interactions
+    // Tap (not drag) — double-tap to switch camera
     if (!dragMoved.current) {
       const now = Date.now();
       if (now - lastSelfTap.current < 300 && onSwitchCamera) {
@@ -167,11 +166,9 @@ export function VideoCallScreen({
         lastSelfTap.current = 0;
       } else {
         lastSelfTap.current = now;
-        setSelfShrunken(false);
-        resetShrinkTimer();
       }
     }
-  }, [selfPos, onSwitchCamera, resetShrinkTimer]);
+  }, [selfPos, onSwitchCamera]);
 
   // ── Attach streams ──
   useEffect(() => {
