@@ -209,6 +209,7 @@ const UserConversation = () => {
     invokeMessaging("typing-ping", token, { conversation_id: conversationId }).catch(() => {});
   }, [conversationId, token]);
 
+  const handleReact = async (messageId: string, reaction: string) => {
     if (!token) return;
     setMessages((prev) =>
       prev.map((m) => {
