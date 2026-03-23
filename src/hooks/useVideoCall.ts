@@ -474,7 +474,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
   const endCall = useCallback(async () => {
     if (!callIdRef.current) return;
     const cid = callIdRef.current;
-    diag("endCall", { callId: cid, duration: callDuration });
+    diag("endCall", { callId: cid });
     // Cleanup FIRST so tracks stop, then notify server
     cleanup();
     setCallState("ended");
