@@ -112,21 +112,13 @@ export function VideoCallScreen({
     }
   }, [callState, controlsVisible, showControls]);
 
-  // ── Draggable self-view with corner snap + shrink ──
+  // ── Draggable self-view with corner snap (always visible) ──
   const selfViewRef = useRef<HTMLDivElement>(null);
   const [selfPos, setSelfPos] = useState<{ x: number; y: number } | null>(null);
-  const [selfShrunken, setSelfShrunken] = useState(false);
   const dragging = useRef(false);
   const dragMoved = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
-  const shrinkTimer = useRef<ReturnType<typeof setTimeout>>();
   const lastSelfTap = useRef(0);
-
-  const resetShrinkTimer = useCallback(() => {
-    setSelfShrunken(false);
-    clearTimeout(shrinkTimer.current);
-    shrinkTimer.current = setTimeout(() => setSelfShrunken(true), 6000);
-  }, []);
 
   useEffect(() => {
     if (callState === "connected") resetShrinkTimer();
