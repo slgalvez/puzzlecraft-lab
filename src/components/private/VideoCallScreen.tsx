@@ -112,26 +112,14 @@ export function VideoCallScreen({
     }
   }, [callState, controlsVisible, showControls]);
 
-  // ── Draggable self-view with corner snap + shrink ──
+  // ── Draggable self-view with corner snap (always visible) ──
   const selfViewRef = useRef<HTMLDivElement>(null);
   const [selfPos, setSelfPos] = useState<{ x: number; y: number } | null>(null);
-  const [selfShrunken, setSelfShrunken] = useState(false);
   const dragging = useRef(false);
   const dragMoved = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
-  const shrinkTimer = useRef<ReturnType<typeof setTimeout>>();
   const lastSelfTap = useRef(0);
 
-  const resetShrinkTimer = useCallback(() => {
-    setSelfShrunken(false);
-    clearTimeout(shrinkTimer.current);
-    shrinkTimer.current = setTimeout(() => setSelfShrunken(true), 6000);
-  }, []);
-
-  useEffect(() => {
-    if (callState === "connected") resetShrinkTimer();
-    return () => clearTimeout(shrinkTimer.current);
-  }, [callState, resetShrinkTimer]);
 
   const handleSelfPointerDown = useCallback((e: React.PointerEvent) => {
     if (!selfViewRef.current) return;
@@ -141,8 +129,7 @@ export function VideoCallScreen({
     dragOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     e.preventDefault();
-    resetShrinkTimer();
-  }, [resetShrinkTimer]);
+  }, []);
 
   const handleSelfPointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragging.current) return;
@@ -170,7 +157,7 @@ export function VideoCallScreen({
       setSelfPos(snapToCorner(selfPos.x, selfPos.y, elW, elH));
     }
 
-    // Tap (not drag) interactions
+    // Tap (not drag) — double-tap to switch camera
     if (!dragMoved.current) {
       const now = Date.now();
       if (now - lastSelfTap.current < 300 && onSwitchCamera) {
@@ -179,11 +166,9 @@ export function VideoCallScreen({
         lastSelfTap.current = 0;
       } else {
         lastSelfTap.current = now;
-        setSelfShrunken(false);
-        resetShrinkTimer();
       }
     }
-  }, [selfPos, onSwitchCamera, resetShrinkTimer]);
+  }, [selfPos, onSwitchCamera]);
 
   // ── Attach streams ──
   useEffect(() => {
@@ -232,13 +217,13 @@ export function VideoCallScreen({
       style={{ height: "100dvh", paddingTop: "env(safe-area-inset-top, 0px)" }}
       onClick={handleScreenTap}
     >
-      {/* Remote video — full viewport, object-contain to prevent crop */}
+      {/* Remote video — full viewport, cover on mobile for minimal black bars, contain on desktop */}
       <div className="absolute inset-0 overflow-hidden flex items-center justify-center bg-black">
         <video
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          className="w-full h-full object-contain"
+          className="w-full h-full object-cover sm:object-contain"
         />
       </div>
 
@@ -265,15 +250,11 @@ export function VideoCallScreen({
         </div>
       )}
 
-      {/* Self-view PIP — draggable, snaps to corners, shrinks on inactivity */}
+      {/* Self-view PIP — always visible, draggable, snaps to corners */}
       {localStream && (
         <div
           ref={selfViewRef}
-          className={`z-20 rounded-2xl overflow-hidden border border-white/20 bg-black touch-none select-none cursor-grab active:cursor-grabbing transition-all duration-300 ${
-            selfShrunken
-              ? "w-20 h-28 sm:w-24 sm:h-32 opacity-60 shadow-lg"
-              : "w-28 h-40 sm:w-32 sm:h-44 opacity-100 shadow-2xl"
-          }`}
+          className="z-20 rounded-2xl overflow-hidden border border-white/20 bg-black touch-none select-none cursor-grab active:cursor-grabbing transition-all duration-300 w-28 h-40 sm:w-32 sm:h-44 opacity-100 shadow-2xl"
           style={selfViewStyle}
           onPointerDown={handleSelfPointerDown}
           onPointerMove={handleSelfPointerMove}
