@@ -25,6 +25,7 @@ interface MessageBubbleProps {
   formatTime: (iso: string) => string;
   showTail?: boolean;
   groupPosition?: GroupPosition;
+  senderChanged?: boolean;
   showTimestamp?: boolean;
   onReact?: (messageId: string, reaction: string) => void;
   onStartEdit?: (messageId: string, body: string) => void;
@@ -50,9 +51,13 @@ function getGroupRadius(isMine: boolean, pos: GroupPosition): string {
   return isMine ? `${full} ${tight} ${tight} ${full}` : `${tight} ${full} ${full} ${tight}`;
 }
 
-// Spacing class based on group position
-export function getGroupSpacing(pos: GroupPosition): string {
-  return pos === "top" || pos === "single" ? "mt-1.5" : "mt-[2px]";
+// Spacing class based on group position and sender change
+export function getGroupSpacing(pos: GroupPosition, senderChanged?: boolean): string {
+  if (pos === "top" || pos === "single") {
+    // Different sender gets more breathing room
+    return senderChanged ? "mt-3" : "mt-1.5";
+  }
+  return "mt-[2px]";
 }
 
 export function MessageBubble({
@@ -68,6 +73,7 @@ export function MessageBubble({
   formatTime,
   showTail = true,
   groupPosition = "single",
+  senderChanged = true,
   showTimestamp = true,
   onReact,
   onStartEdit,
@@ -193,7 +199,7 @@ export function MessageBubble({
   };
 
   return (
-    <div className={`flex ${isMine ? "justify-end" : "justify-start"} px-1 relative ${getGroupSpacing(groupPosition)}`}>
+    <div className={`flex ${isMine ? "justify-end" : "justify-start"} px-1 relative ${getGroupSpacing(groupPosition, senderChanged)}`}>
       {showMenu && (
         <div className="fixed inset-0 z-40 bg-black/15 backdrop-blur-[2px]" onClick={closeMenu} />
       )}

@@ -383,6 +383,7 @@ const AdminConversationView = () => {
                   currentUserId={user?.id || ""}
                   formatTime={formatTime}
                   groupPosition={group?.groupPosition}
+                  senderChanged={group?.senderChanged}
                   showTimestamp={group?.showTimestamp}
                   onReact={handleReact}
                   onStartEdit={handleStartEdit}

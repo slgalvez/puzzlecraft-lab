@@ -14,6 +14,8 @@ interface MinimalMessage {
 export interface MessageGroupInfo {
   groupPosition: GroupPosition;
   showTimestamp: boolean;
+  /** True when the sender differs from the previous message (or is the first message) */
+  senderChanged: boolean;
 }
 
 /** Returns true if the message is a system/special type that breaks grouping */
@@ -35,7 +37,8 @@ export function computeMessageGroups(messages: MinimalMessage[]): MessageGroupIn
 
     // System messages are always single/timestamped
     if (isSystemMessage(msg.body)) {
-      result.push({ groupPosition: "single", showTimestamp: true });
+      const changed = !prev || prev.sender_profile_id !== msg.sender_profile_id || isSystemMessage(prev.body);
+      result.push({ groupPosition: "single", showTimestamp: true, senderChanged: changed });
       continue;
     }
 
@@ -67,9 +70,12 @@ export function computeMessageGroups(messages: MinimalMessage[]): MessageGroupIn
     const hasTimeGap =
       prev && Math.abs(new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime()) > GROUP_TIME_THRESHOLD_MS;
 
+    const senderChanged = !prev || prev.sender_profile_id !== msg.sender_profile_id || isSystemMessage(prev.body);
+
     result.push({
       groupPosition,
       showTimestamp: isLastInGroup || !!hasTimeGap,
+      senderChanged,
     });
   }
 
