@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { Video, VideoOff, Mic, MicOff, PhoneOff } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Video, VideoOff, Mic, MicOff, PhoneOff, SwitchCamera } from "lucide-react";
 import type { CallState } from "@/hooks/useVideoCall";
 import { hapticTap } from "@/lib/haptic";
 
@@ -20,6 +20,7 @@ interface VideoCallScreenProps {
   onEndCall: () => void;
   onToggleMute: () => void;
   onToggleCamera: () => void;
+  onSwitchCamera?: () => void;
 }
 
 export function VideoCallScreen({
@@ -32,9 +33,49 @@ export function VideoCallScreen({
   onEndCall,
   onToggleMute,
   onToggleCamera,
+  onSwitchCamera,
 }: VideoCallScreenProps) {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+
+  // --- Draggable self-view state ---
+  const selfViewRef = useRef<HTMLDivElement>(null);
+  const [selfPos, setSelfPos] = useState<{ x: number; y: number } | null>(null);
+  const dragging = useRef(false);
+  const dragMoved = useRef(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if (!selfViewRef.current) return;
+    dragging.current = true;
+    dragMoved.current = false;
+    const rect = selfViewRef.current.getBoundingClientRect();
+    dragOffset.current = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    e.preventDefault();
+  }, []);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    dragMoved.current = true;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const elW = selfViewRef.current?.offsetWidth || 112;
+    const elH = selfViewRef.current?.offsetHeight || 160;
+    const rawX = e.clientX - dragOffset.current.x;
+    const rawY = e.clientY - dragOffset.current.y;
+    // Clamp within viewport
+    const x = Math.max(8, Math.min(vw - elW - 8, rawX));
+    const y = Math.max(8, Math.min(vh - elH - 8, rawY));
+    setSelfPos({ x, y });
+  }, []);
+
+  const handlePointerUp = useCallback(() => {
+    dragging.current = false;
+  }, []);
 
   useEffect(() => {
     if (localVideoRef.current && localStream) {
@@ -58,6 +99,15 @@ export function VideoCallScreen({
     }
   })();
 
+  // Default self-view position (top-right) if not dragged
+  const selfViewStyle: React.CSSProperties = selfPos
+    ? { position: "absolute", left: selfPos.x, top: selfPos.y }
+    : {
+        position: "absolute",
+        top: "calc(env(safe-area-inset-top, 0px) + 1rem)",
+        right: "1rem",
+      };
+
   return (
     <div
       className="fixed inset-0 z-[100] bg-black flex flex-col"
@@ -66,13 +116,13 @@ export function VideoCallScreen({
         paddingTop: "env(safe-area-inset-top, 0px)",
       }}
     >
-      {/* Remote video — fills entire viewport */}
-      <div className="absolute inset-0 overflow-hidden">
+      {/* Remote video — fills entire viewport, object-contain to prevent zoom/crop */}
+      <div className="absolute inset-0 overflow-hidden flex items-center justify-center bg-black">
         <video
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          className="absolute inset-0 w-full h-full object-cover"
+          className="w-full h-full object-contain"
         />
       </div>
 
@@ -92,14 +142,15 @@ export function VideoCallScreen({
         </div>
       )}
 
-      {/* Self-view PIP */}
+      {/* Self-view PIP — draggable */}
       {localStream && (
         <div
-          className="absolute z-20 w-28 h-40 sm:w-32 sm:h-44 rounded-2xl overflow-hidden border-2 border-white/20 shadow-xl bg-black"
-          style={{
-            top: "calc(env(safe-area-inset-top, 0px) + 1rem)",
-            right: "1rem",
-          }}
+          ref={selfViewRef}
+          className="z-20 w-28 h-40 sm:w-32 sm:h-44 rounded-2xl overflow-hidden border-2 border-white/20 shadow-xl bg-black touch-none select-none cursor-grab active:cursor-grabbing"
+          style={selfViewStyle}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
         >
           <video
             ref={localVideoRef}
@@ -132,7 +183,7 @@ export function VideoCallScreen({
 
       {/* Floating controls — always above safe area, overlaying video */}
       <div
-        className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-center gap-6 px-6 py-5"
+        className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-center gap-5 px-6 py-5"
         style={{
           paddingBottom: "max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem))",
           background: "linear-gradient(transparent, rgba(0,0,0,0.6))",
@@ -140,30 +191,44 @@ export function VideoCallScreen({
       >
         <button
           onClick={onToggleMute}
-          className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors backdrop-blur-sm ${
+          className={`w-13 h-13 rounded-full flex items-center justify-center transition-colors backdrop-blur-sm ${
             isMuted ? "bg-white text-black" : "bg-white/15 text-white hover:bg-white/25"
           }`}
+          style={{ width: 52, height: 52 }}
           aria-label={isMuted ? "Unmute" : "Mute"}
         >
-          {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
+          {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
         </button>
 
         <button
           onClick={onToggleCamera}
-          className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors backdrop-blur-sm ${
+          className={`rounded-full flex items-center justify-center transition-colors backdrop-blur-sm ${
             isCameraOff ? "bg-white text-black" : "bg-white/15 text-white hover:bg-white/25"
           }`}
+          style={{ width: 52, height: 52 }}
           aria-label={isCameraOff ? "Turn camera on" : "Turn camera off"}
         >
-          {isCameraOff ? <VideoOff size={22} /> : <Video size={22} />}
+          {isCameraOff ? <VideoOff size={20} /> : <Video size={20} />}
         </button>
+
+        {onSwitchCamera && (
+          <button
+            onClick={() => { hapticTap(); onSwitchCamera(); }}
+            className="rounded-full flex items-center justify-center transition-colors backdrop-blur-sm bg-white/15 text-white hover:bg-white/25"
+            style={{ width: 52, height: 52 }}
+            aria-label="Switch camera"
+          >
+            <SwitchCamera size={20} />
+          </button>
+        )}
 
         <button
           onClick={() => { hapticTap(); onEndCall(); }}
-          className="w-14 h-14 rounded-full bg-destructive flex items-center justify-center text-white hover:bg-destructive/90 transition-colors"
+          className="rounded-full bg-destructive flex items-center justify-center text-white hover:bg-destructive/90 transition-colors"
+          style={{ width: 52, height: 52 }}
           aria-label="End call"
         >
-          <PhoneOff size={22} />
+          <PhoneOff size={20} />
         </button>
       </div>
     </div>
