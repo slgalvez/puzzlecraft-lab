@@ -86,19 +86,25 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     clearInterval(pollTimerRef.current);
     clearInterval(durationTimerRef.current);
     clearTimeout(disconnectTimerRef.current);
+    pollTimerRef.current = undefined;
+    durationTimerRef.current = undefined;
+    disconnectTimerRef.current = undefined;
 
     if (pcRef.current) {
       pcRef.current.onicecandidate = null;
       pcRef.current.ontrack = null;
       pcRef.current.onconnectionstatechange = null;
-      pcRef.current.close();
+      pcRef.current.oniceconnectionstatechange = null;
+      try { pcRef.current.close(); } catch { /* already closed */ }
       pcRef.current = null;
     }
 
-    // Use ref so we always stop the actual current stream
-    localStreamRef.current?.getTracks().forEach((t) => t.stop());
+    // Stop all tracks and null ref synchronously
+    localStreamRef.current?.getTracks().forEach((t) => { try { t.stop(); } catch { /* */ } });
+    localStreamRef.current = null;
     setLocalStream(null);
     setRemoteStream(null);
+
     callIdRef.current = null;
     lastSignalIdRef.current = null;
     iceCandidateBuffer.current = [];
@@ -106,7 +112,18 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     remoteDescSet.current = false;
     hasConnectedRef.current = false;
     remoteTrackSeenRef.current = false;
+    isCallerRef.current = false;
+
+    // Reset UI state so next call starts fresh
+    setIsMuted(false);
+    setIsCameraOff(false);
+    setIsFrontCamera(true);
+    setCallDuration(0);
+    setConnectionQuality("unknown");
+    facingModeRef.current = "user";
+
     cleaningUp.current = false;
+    diag("cleanup:done");
   }, []); // stable — no state deps
 
   const handleSessionEnded = useCallback(() => {
@@ -457,7 +474,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
   const endCall = useCallback(async () => {
     if (!callIdRef.current) return;
     const cid = callIdRef.current;
-    diag("endCall", { callId: cid, duration: callDuration });
+    diag("endCall", { callId: cid });
     // Cleanup FIRST so tracks stop, then notify server
     cleanup();
     setCallState("ended");
