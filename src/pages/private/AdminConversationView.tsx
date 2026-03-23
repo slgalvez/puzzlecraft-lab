@@ -93,6 +93,7 @@ const AdminConversationView = () => {
           return [...nextMessages, ...failed];
         });
       }
+      setOtherTyping(!!data.other_typing);
       setError(null);
       console.debug("[admin-conversation] loaded", nextMessages.length, "messages");
     } catch (e) {
