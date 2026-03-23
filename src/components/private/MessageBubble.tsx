@@ -73,6 +73,7 @@ export function MessageBubble({
   formatTime,
   showTail = true,
   groupPosition = "single",
+  senderChanged = true,
   showTimestamp = true,
   onReact,
   onStartEdit,
