@@ -157,12 +157,45 @@ const UserConversation = () => {
       setMessages((prev) => prev.some((m) => m.id === data.message.id) ? prev : [...prev, data.message]);
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
-      toast({ title: "Could not send message", description: "Please try again." });
-      throw e;
+      // Add as a failed optimistic message
+      const tempId = `failed-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const failedMsg: Message = {
+        id: tempId,
+        sender_profile_id: user?.id || "",
+        body,
+        created_at: new Date().toISOString(),
+        read_at: null,
+        is_disappearing: false,
+        expires_at: null,
+        reactions: {},
+      };
+      setMessages((prev) => [...prev, failedMsg]);
+      setFailedMessages((prev) => new Map(prev).set(tempId, body));
     } finally {
       setSending(false);
     }
   };
+
+  const handleRetry = useCallback(async (tempId: string) => {
+    if (!conversationId || !token) return;
+    const body = failedMessages.get(tempId);
+    if (!body) return;
+    setRetryingMessages((prev) => new Set(prev).add(tempId));
+    try {
+      const data = await invokeMessaging("send-message", token, {
+        conversation_id: conversationId,
+        message: body,
+      });
+      // Replace failed message with real one
+      setMessages((prev) => prev.map((m) => m.id === tempId ? data.message : m));
+      setFailedMessages((prev) => { const n = new Map(prev); n.delete(tempId); return n; });
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      // Keep failed state
+    } finally {
+      setRetryingMessages((prev) => { const n = new Set(prev); n.delete(tempId); return n; });
+    }
+  }, [conversationId, token, failedMessages, handleSessionExpired]);
 
   const handleReact = async (messageId: string, reaction: string) => {
     if (!token) return;
