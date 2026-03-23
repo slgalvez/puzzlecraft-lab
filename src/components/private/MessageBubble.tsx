@@ -223,7 +223,7 @@ export function MessageBubble({
               );
             })}
           </div>
-        )
+        }
         {showMenu && (
           <div
             className={`absolute z-50 bottom-full mb-2 flex flex-col bg-card/95 backdrop-blur-xl border border-border/40 rounded-2xl shadow-2xl overflow-hidden ${
