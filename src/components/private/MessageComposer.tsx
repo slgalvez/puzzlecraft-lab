@@ -21,6 +21,7 @@ interface MessageComposerProps {
   editingMessage?: EditingMessage | null;
   onCancelEdit?: () => void;
   onSaveEdit?: (messageId: string, newBody: string) => void;
+  onTyping?: () => void;
 }
 
 /** Detect media message format */
