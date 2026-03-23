@@ -168,7 +168,7 @@ Deno.serve(async (req) => {
 
       let { data: conv } = await sb
         .from("conversations")
-        .select("id, admin_profile_id, disappearing_enabled, disappearing_duration, cleared_at_user, cleared_at_admin")
+        .select("id, admin_profile_id, admin_typing_at, disappearing_enabled, disappearing_duration, cleared_at_user, cleared_at_admin")
         .eq("user_profile_id", profileId)
         .maybeSingle();
 
