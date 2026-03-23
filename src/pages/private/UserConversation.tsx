@@ -83,7 +83,11 @@ const UserConversation = () => {
       setAdminName(data.conversation.admin_name || "Conversation");
       if (lastMessagesKeyRef.current !== nextMessagesKey) {
         lastMessagesKeyRef.current = nextMessagesKey;
-        setMessages(nextMessages);
+        // Preserve failed (unsent) messages at the end
+        setMessages((prev) => {
+          const failed = prev.filter((m) => m.id.startsWith("failed-"));
+          return [...nextMessages, ...failed];
+        });
       }
       setDisappearingEnabled(data.conversation.disappearing_enabled);
       setDisappearingDuration(data.conversation.disappearing_duration);
