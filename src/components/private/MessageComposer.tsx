@@ -340,6 +340,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
               onChange={(e) => {
                 setMessage(e.target.value);
                 autoResize(e.target);
+                if (e.target.value.trim()) onTyping?.();
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
