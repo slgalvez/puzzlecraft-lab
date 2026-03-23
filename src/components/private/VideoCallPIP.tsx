@@ -25,10 +25,31 @@ function formatDuration(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+const SNAP_MARGIN = 12;
+function snapToCorner(x: number, y: number, w: number, h: number) {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const corners = [
+    { x: SNAP_MARGIN, y: 80 },
+    { x: vw - w - SNAP_MARGIN, y: 80 },
+    { x: SNAP_MARGIN, y: vh - h - 60 },
+    { x: vw - w - SNAP_MARGIN, y: vh - h - 60 },
+  ];
+  let closest = corners[0];
+  let minDist = Infinity;
+  const cx = x + w / 2, cy = y + h / 2;
+  for (const c of corners) {
+    const d = Math.hypot(cx - (c.x + w / 2), cy - (c.y + h / 2));
+    if (d < minDist) { minDist = d; closest = c; }
+  }
+  return closest;
+}
+
 export function VideoCallPIP() {
   const pip = useContext(PIPContext);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [pos, setPos] = useState({ x: 16, y: 80 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const dragging = useRef(false);
   const dragMoved = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
@@ -43,39 +64,55 @@ export function VideoCallPIP() {
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     dragging.current = true;
     dragMoved.current = false;
+    const rect = containerRef.current?.getBoundingClientRect();
     offset.current = {
-      x: e.clientX - pos.x,
-      y: e.clientY - pos.y,
+      x: e.clientX - (rect?.left ?? 0),
+      y: e.clientY - (rect?.top ?? 0),
     };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  }, [pos]);
+  }, []);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragging.current) return;
     dragMoved.current = true;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const w = containerRef.current?.offsetWidth || 112;
+    const h = containerRef.current?.offsetHeight || 180;
     setPos({
-      x: e.clientX - offset.current.x,
-      y: e.clientY - offset.current.y,
+      x: Math.max(8, Math.min(vw - w - 8, e.clientX - offset.current.x)),
+      y: Math.max(8, Math.min(vh - h - 8, e.clientY - offset.current.y)),
     });
   }, []);
 
   const handlePointerUp = useCallback(() => {
+    if (!dragging.current) return;
     dragging.current = false;
-  }, []);
+    if (dragMoved.current && pos) {
+      const w = containerRef.current?.offsetWidth || 112;
+      const h = containerRef.current?.offsetHeight || 180;
+      setPos(snapToCorner(pos.x, pos.y, w, h));
+    }
+  }, [pos]);
 
   if (!pip || !pip.active) return null;
 
+  const style: React.CSSProperties = pos
+    ? { left: pos.x, top: pos.y, transition: dragging.current ? "none" : "all 0.3s cubic-bezier(0.25,1,0.5,1)" }
+    : { right: 16, top: 80, transition: "all 0.3s cubic-bezier(0.25,1,0.5,1)" };
+
   return (
     <div
+      ref={containerRef}
       className="fixed z-[95] touch-none select-none"
-      style={{ right: pos.x, top: pos.y }}
+      style={style}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
     >
       {/* Video bubble */}
       <div
-        className="w-28 h-40 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 bg-black relative cursor-grab active:cursor-grabbing"
+        className="w-28 h-40 rounded-2xl overflow-hidden shadow-2xl border border-white/20 bg-black relative cursor-grab active:cursor-grabbing"
         onClick={() => {
           if (!dragMoved.current) pip.onExpand();
         }}
@@ -97,7 +134,7 @@ export function VideoCallPIP() {
 
         {/* Duration pill */}
         {pip.callState === "connected" && (
-          <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full bg-black/60 backdrop-blur-sm">
+          <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full bg-black/50 backdrop-blur-sm">
             <span className="text-[9px] text-white/80 font-medium">{formatDuration(pip.callDuration)}</span>
           </div>
         )}
@@ -108,7 +145,7 @@ export function VideoCallPIP() {
         </div>
       </div>
 
-      {/* End call button below bubble */}
+      {/* End call button */}
       <div className="flex justify-center mt-2">
         <button
           onClick={(e) => {
@@ -116,7 +153,7 @@ export function VideoCallPIP() {
             hapticTap();
             pip.onEnd();
           }}
-          className="w-8 h-8 rounded-full bg-destructive flex items-center justify-center text-white shadow-lg"
+          className="w-8 h-8 rounded-full bg-destructive flex items-center justify-center text-white shadow-lg shadow-destructive/30"
           aria-label="End call"
         >
           <PhoneOff size={14} />
