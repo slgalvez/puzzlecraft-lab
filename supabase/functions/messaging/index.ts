@@ -160,6 +160,13 @@ Deno.serve(async (req) => {
     const isAdmin = user.role === "admin";
     const now = new Date().toISOString();
 
+    // ─── TYPING PING (ephemeral, no DB) ───
+    if (action === "typing-ping") {
+      const { conversation_id } = body;
+      if (conversation_id) setTyping(conversation_id, profileId);
+      return json({ ok: true });
+    }
+
     // ─── GET MY CONVERSATION (user) ───
     if (action === "get-my-conversation") {
       if (isAdmin) return err("Use admin actions");
