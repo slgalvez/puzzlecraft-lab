@@ -183,6 +183,14 @@ const AdminConversationView = () => {
     }
   }, [conversationId, token, failedMessages, handleSessionExpired]);
 
+  const handleTypingPing = useCallback(() => {
+    if (!conversationId || !token) return;
+    const now = Date.now();
+    if (now - lastTypingPingRef.current < 2000) return;
+    lastTypingPingRef.current = now;
+    invokeMessaging("typing-ping", token, { conversation_id: conversationId }).catch(() => {});
+  }, [conversationId, token]);
+
   const handleReact = async (messageId: string, reaction: string) => {
     if (!token) return;
     setMessages((prev) =>
