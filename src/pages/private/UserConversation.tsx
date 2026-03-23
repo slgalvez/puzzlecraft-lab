@@ -94,6 +94,7 @@ const UserConversation = () => {
       }
       setDisappearingEnabled(data.conversation.disappearing_enabled);
       setDisappearingDuration(data.conversation.disappearing_duration);
+      setOtherTyping(!!data.other_typing);
       setError(null);
       console.debug("[conversation] loaded", nextMessages.length, "messages");
     } catch (e) {
