@@ -573,6 +573,9 @@ Deno.serve(async (req) => {
 
       const profile = conv.profiles as unknown as { first_name: string; last_name: string } | null;
 
+      // Check if the user is typing
+      const otherTyping = isTyping(conversation_id, conv.user_profile_id);
+
       return json({
         conversation: {
           id: conv.id,
@@ -583,6 +586,7 @@ Deno.serve(async (req) => {
           disappearing_duration: conv.disappearing_duration,
         },
         messages: messages || [],
+        other_typing: otherTyping,
       });
     }
 
