@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { getFocusLossEnabled } from "@/lib/focusLossSettings";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PrivateSidebar } from "@/components/private/PrivateSidebar";
