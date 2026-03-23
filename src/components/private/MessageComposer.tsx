@@ -21,6 +21,7 @@ interface MessageComposerProps {
   editingMessage?: EditingMessage | null;
   onCancelEdit?: () => void;
   onSaveEdit?: (messageId: string, newBody: string) => void;
+  onTyping?: () => void;
 }
 
 /** Detect media message format */
@@ -48,7 +49,7 @@ interface MediaPreview {
   type: "upload" | "gif";
 }
 
-export function MessageComposer({ onSend, sending, placeholder = "Message", token, conversationId, editingMessage, onCancelEdit, onSaveEdit }: MessageComposerProps) {
+export function MessageComposer({ onSend, sending, placeholder = "Message", token, conversationId, editingMessage, onCancelEdit, onSaveEdit, onTyping }: MessageComposerProps) {
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [gifOpen, setGifOpen] = useState(false);
@@ -339,6 +340,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
               onChange={(e) => {
                 setMessage(e.target.value);
                 autoResize(e.target);
+                if (e.target.value.trim()) onTyping?.();
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {

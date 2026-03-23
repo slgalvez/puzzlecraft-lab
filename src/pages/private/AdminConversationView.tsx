@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Video } from "lucide-react";
 import { isPuzzleMessage, PuzzleMessageBubble } from "@/components/private/PuzzleMessageBubble";
 import { MessageBubble } from "@/components/private/MessageBubble";
+import { TypingIndicator } from "@/components/private/TypingIndicator";
 import { computeMessageGroups } from "@/lib/messageGrouping";
 import { MessageComposer, type EditingMessage, isGifMessage, getGifUrl } from "@/components/private/MessageComposer";
 import { ConversationToolbar } from "@/components/private/ConversationToolbar";
@@ -60,7 +61,8 @@ const AdminConversationView = () => {
   const loadingRef = useRef(true);
   const fetchInFlightRef = useRef(false);
   const lastMessagesKeyRef = useRef("");
-
+  const [otherTyping, setOtherTyping] = useState(false);
+  const lastTypingPingRef = useRef(0);
   const handleSessionExpired = useCallback(() => {
     signOut();
     navigate("/");
@@ -91,6 +93,7 @@ const AdminConversationView = () => {
           return [...nextMessages, ...failed];
         });
       }
+      setOtherTyping(!!data.other_typing);
       setError(null);
       console.debug("[admin-conversation] loaded", nextMessages.length, "messages");
     } catch (e) {
@@ -179,6 +182,14 @@ const AdminConversationView = () => {
       setRetryingMessages((prev) => { const n = new Set(prev); n.delete(tempId); return n; });
     }
   }, [conversationId, token, failedMessages, handleSessionExpired]);
+
+  const handleTypingPing = useCallback(() => {
+    if (!conversationId || !token) return;
+    const now = Date.now();
+    if (now - lastTypingPingRef.current < 2000) return;
+    lastTypingPingRef.current = now;
+    invokeMessaging("typing-ping", token, { conversation_id: conversationId }).catch(() => {});
+  }, [conversationId, token]);
 
   const handleReact = async (messageId: string, reaction: string) => {
     if (!token) return;
@@ -433,6 +444,7 @@ const AdminConversationView = () => {
               );
             })
           )}
+          {otherTyping && <TypingIndicator />}
           <div ref={messagesEndRef} />
         </div>
 
@@ -445,6 +457,7 @@ const AdminConversationView = () => {
           editingMessage={editingMessage}
           onCancelEdit={() => setEditingMessage(null)}
           onSaveEdit={(id, body) => { handleEdit(id, body); setEditingMessage(null); }}
+          onTyping={handleTypingPing}
         />
       </div>
     </PrivateLayout>
