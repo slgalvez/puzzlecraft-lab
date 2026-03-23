@@ -1,6 +1,19 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 
+// ── Lightweight call diagnostics ──
+// All logs use console.debug so they're hidden by default in production
+// but visible when DevTools filter is set to "Verbose" / "Debug".
+const LOG_PREFIX = "[call-diag]";
+function diag(event: string, data?: Record<string, unknown>) {
+  const ts = new Date().toISOString().slice(11, 23); // HH:mm:ss.SSS
+  if (data) {
+    console.debug(`${LOG_PREFIX} ${ts} ${event}`, data);
+  } else {
+    console.debug(`${LOG_PREFIX} ${ts} ${event}`);
+  }
+}
+
 const FALLBACK_ICE_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
@@ -68,6 +81,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
   const cleanup = useCallback(() => {
     if (cleaningUp.current) return;
     cleaningUp.current = true;
+    diag("cleanup", { callId: callIdRef.current, hadConnection: hasConnectedRef.current, remoteTrackSeen: remoteTrackSeenRef.current });
 
     clearInterval(pollTimerRef.current);
     clearInterval(durationTimerRef.current);
@@ -126,6 +140,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
   }), []);
 
   const getMedia = useCallback(async (facing: "user" | "environment" = "user") => {
+    diag("getMedia:start", { facing });
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: getVideoConstraints(facing),
@@ -134,16 +149,20 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       facingModeRef.current = facing;
       localStreamRef.current = stream;
       setLocalStream(stream);
+      diag("getMedia:success", { videoTracks: stream.getVideoTracks().length, audioTracks: stream.getAudioTracks().length });
       return stream;
     } catch {
       // Try audio only
+      diag("getMedia:video-failed, trying audio-only");
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
         localStreamRef.current = stream;
         setLocalStream(stream);
         setIsCameraOff(true);
+        diag("getMedia:audio-only-success");
         return stream;
       } catch {
+        diag("getMedia:all-failed");
         throw new Error("Could not access camera or microphone. Please check permissions.");
       }
     }
@@ -165,6 +184,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
   const disconnectTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const createPeerConnection = useCallback((stream: MediaStream, iceServers: RTCIceServer[] = FALLBACK_ICE_SERVERS) => {
+    diag("createPC", { iceServerCount: iceServers.length, tracks: stream.getTracks().map(t => `${t.kind}:${t.readyState}`) });
     const pc = new RTCPeerConnection({ iceServers });
 
     stream.getTracks().forEach((track) => pc.addTrack(track, stream));
@@ -174,10 +194,12 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
     pc.ontrack = (event) => {
       remoteTrackSeenRef.current = true;
+      diag("ontrack", { trackKind: event.track.kind, streamCount: event.streams.length });
       event.streams[0]?.getTracks().forEach((track) => remote.addTrack(track));
     };
 
     const scheduleRecoveryGuard = (reason: string, delayMs: number) => {
+      diag("recoveryGuard:scheduled", { reason, delayMs, hasConnected: hasConnectedRef.current });
       clearTimeout(disconnectTimerRef.current);
       disconnectTimerRef.current = setTimeout(() => {
         const currentPc = pcRef.current;
@@ -189,8 +211,12 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
           currentPc.iceConnectionState === "failed" ||
           currentPc.iceConnectionState === "disconnected";
 
-        if (!stillUnstable) return;
+        if (!stillUnstable) {
+          diag("recoveryGuard:recovered", { connectionState: currentPc.connectionState, iceState: currentPc.iceConnectionState });
+          return;
+        }
 
+        diag("recoveryGuard:ending", { reason, connectionState: currentPc.connectionState, iceState: currentPc.iceConnectionState });
         setEndReason(reason);
         setCallState("ended");
         cleanup();
@@ -208,7 +234,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     };
 
     pc.onconnectionstatechange = () => {
-      console.debug("[video-call] connectionState:", pc.connectionState);
+      diag("connectionState", { state: pc.connectionState, signalingState: pc.signalingState });
       clearTimeout(disconnectTimerRef.current);
 
       if (pc.connectionState === "connected") {
@@ -232,7 +258,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     };
 
     pc.oniceconnectionstatechange = () => {
-      console.debug("[video-call] iceConnectionState:", pc.iceConnectionState);
+      diag("iceConnectionState", { state: pc.iceConnectionState, gatheringState: pc.iceGatheringState });
 
       if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
         hasConnectedRef.current = true;
@@ -263,7 +289,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
       processedSignalIdsRef.current.add(sig.id);
       lastSignalIdRef.current = sig.id;
-      console.debug("[video-call] processing signal:", sig.signal_type, "isCaller:", isCallerRef.current);
+      diag("signal:process", { type: sig.signal_type, isCaller: isCallerRef.current, remoteDescSet: remoteDescSet.current, bufferedICE: iceCandidateBuffer.current.length });
 
       try {
         if (sig.signal_type === "offer" && !isCallerRef.current) {
@@ -303,7 +329,8 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
           }
         }
       } catch (sigErr) {
-        console.error("[video-call] signal processing error:", sigErr);
+        diag("signal:error", { type: sig.signal_type, error: String(sigErr) });
+        console.error("[call-diag] signal processing error:", sigErr);
       }
     }
   }, [api]);
@@ -318,6 +345,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
         });
 
         if (data.status === "ended") {
+          diag("poll:server-ended", { endReason: data.end_reason, callId: callIdRef.current });
           setEndReason(data.end_reason);
           setCallState("ended");
           cleanup();
@@ -330,6 +358,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
         // Use ref to avoid stale callState closure
         if (data.status === "connected" && callStateRef.current === "outgoing-ringing") {
+          diag("poll:callee-answered");
           setCallState("connecting");
         }
       } catch (e) {
@@ -346,18 +375,19 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     setCallState("requesting-media");
     setEndReason(null);
     isCallerRef.current = true;
+    diag("startCall:begin", { conversationId });
 
     try {
       processedSignalIdsRef.current.clear();
       lastSignalIdRef.current = null;
       const stream = await getMedia();
-      console.debug("[video-call] media acquired, fetching TURN credentials & starting call");
+      diag("startCall:media-ok, fetching TURN & creating call");
       const [iceServers, callData] = await Promise.all([
         fetchIceServers(),
         api("start-call", { conversation_id: conversationId }),
       ]);
       callIdRef.current = callData.call_id;
-      console.debug("[video-call] call created:", callData.call_id);
+      diag("startCall:created", { callId: callData.call_id });
 
       setCallState("outgoing-ringing");
 
@@ -370,12 +400,13 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
         signal_type: "offer",
         payload: offer,
       });
-      console.debug("[video-call] offer sent, starting polling");
+      diag("startCall:offer-sent, polling started");
 
       startPolling();
     } catch (e) {
       if (e instanceof SessionExpiredError) return;
-      console.error("[video-call] startCall error:", e);
+      diag("startCall:error", { error: String(e) });
+      console.error("[call-diag] startCall error:", e);
       setEndReason((e as Error).message || "failed");
       setCallState("ended");
       cleanup();
@@ -384,6 +415,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
   // Accept an incoming call
   const acceptCall = useCallback(async (callId: string) => {
+    diag("acceptCall:begin", { callId });
     setCallState("requesting-media");
     setEndReason(null);
     isCallerRef.current = false;
@@ -393,8 +425,9 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       processedSignalIdsRef.current.clear();
       lastSignalIdRef.current = null;
       const [stream, iceServers] = await Promise.all([getMedia(), fetchIceServers()]);
-      console.debug("[video-call] media acquired, answering call:", callId);
+      diag("acceptCall:media-ok, answering", { callId });
       await api("answer-call", { call_id: callId });
+      diag("acceptCall:answered, connecting");
       setCallState("connecting");
 
       createPeerConnection(stream, iceServers);
@@ -402,7 +435,8 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       startPolling();
     } catch (e) {
       if (e instanceof SessionExpiredError) return;
-      console.error("[video-call] acceptCall error:", e);
+      diag("acceptCall:error", { error: String(e) });
+      console.error("[call-diag] acceptCall error:", e);
       setEndReason((e as Error).message || "failed");
       setCallState("ended");
       cleanup();
@@ -423,6 +457,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
   const endCall = useCallback(async () => {
     if (!callIdRef.current) return;
     const cid = callIdRef.current;
+    diag("endCall", { callId: cid, duration: callDuration });
     // Cleanup FIRST so tracks stop, then notify server
     cleanup();
     setCallState("ended");
