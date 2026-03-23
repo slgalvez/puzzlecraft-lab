@@ -155,6 +155,8 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     return FALLBACK_ICE_SERVERS;
   }, [api]);
 
+  const disconnectTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
   const createPeerConnection = useCallback((stream: MediaStream, iceServers: RTCIceServer[] = FALLBACK_ICE_SERVERS) => {
     const pc = new RTCPeerConnection({ iceServers });
 
@@ -179,20 +181,35 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
     pc.onconnectionstatechange = () => {
       console.debug("[video-call] connectionState:", pc.connectionState);
+      clearTimeout(disconnectTimerRef.current);
+
       if (pc.connectionState === "connected") {
         setCallState("connected");
         connectedAtRef.current = Date.now();
         durationTimerRef.current = setInterval(() => {
           setCallDuration(Math.floor((Date.now() - connectedAtRef.current) / 1000));
         }, 1000);
-      } else if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
-        endCall();
+      } else if (pc.connectionState === "failed") {
+        // Only end on definitive failure
+        setEndReason("Connection failed");
+        setCallState("ended");
+        cleanup();
+      } else if (pc.connectionState === "disconnected") {
+        // Temporary — wait 5s before treating as failed
+        disconnectTimerRef.current = setTimeout(() => {
+          if (pcRef.current?.connectionState === "disconnected") {
+            console.debug("[video-call] disconnected for 5s, ending call");
+            setEndReason("Connection lost");
+            setCallState("ended");
+            cleanup();
+          }
+        }, 5000);
       }
     };
 
     pcRef.current = pc;
     return pc;
-  }, [api]);
+  }, [api, cleanup]);
 
   const processSignals = useCallback(async (signals: Array<{ id: string; signal_type: string; payload: unknown }>) => {
     const pc = pcRef.current;
