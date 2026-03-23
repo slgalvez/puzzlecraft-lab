@@ -218,6 +218,11 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
           }
           iceCandidateBuffer.current = [];
         } else if (sig.signal_type === "answer" && isCallerRef.current) {
+          // Guard: skip if we already set the remote description (duplicate answer)
+          if (remoteDescSet.current) {
+            console.debug("[video-call] skipping duplicate answer signal");
+            continue;
+          }
           await pc.setRemoteDescription(new RTCSessionDescription(sig.payload as RTCSessionDescriptionInit));
           remoteDescSet.current = true;
           // Process buffered ICE candidates
