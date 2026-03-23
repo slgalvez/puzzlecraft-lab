@@ -250,15 +250,11 @@ export function VideoCallScreen({
         </div>
       )}
 
-      {/* Self-view PIP — draggable, snaps to corners, shrinks on inactivity */}
+      {/* Self-view PIP — always visible, draggable, snaps to corners */}
       {localStream && (
         <div
           ref={selfViewRef}
-          className={`z-20 rounded-2xl overflow-hidden border border-white/20 bg-black touch-none select-none cursor-grab active:cursor-grabbing transition-all duration-300 ${
-            selfShrunken
-              ? "w-20 h-28 sm:w-24 sm:h-32 opacity-60 shadow-lg"
-              : "w-28 h-40 sm:w-32 sm:h-44 opacity-100 shadow-2xl"
-          }`}
+          className="z-20 rounded-2xl overflow-hidden border border-white/20 bg-black touch-none select-none cursor-grab active:cursor-grabbing transition-all duration-300 w-28 h-40 sm:w-32 sm:h-44 opacity-100 shadow-2xl"
           style={selfViewStyle}
           onPointerDown={handleSelfPointerDown}
           onPointerMove={handleSelfPointerMove}
