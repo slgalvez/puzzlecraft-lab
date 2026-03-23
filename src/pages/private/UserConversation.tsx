@@ -38,6 +38,8 @@ const UserConversation = () => {
   const [adminProfileId, setAdminProfileId] = useState<string | null>(null);
   const [adminName, setAdminName] = useState<string>("Conversation");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [failedMessages, setFailedMessages] = useState<Map<string, string>>(new Map());
+  const [retryingMessages, setRetryingMessages] = useState<Set<string>>(new Set());
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
