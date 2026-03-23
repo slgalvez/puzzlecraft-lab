@@ -139,7 +139,10 @@ const UserConversation = () => {
     };
   }, [fetchConversation]);
 
-  // (scroll handled by useChatScroll hook)
+  // Scroll when typing indicator appears
+  useEffect(() => {
+    if (otherTyping) scrollIfNearBottom();
+  }, [otherTyping, scrollIfNearBottom]);
 
   useEffect(() => {
     if (!conversationId || !token) return;
