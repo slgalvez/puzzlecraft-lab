@@ -14,6 +14,8 @@ interface MinimalMessage {
 export interface MessageGroupInfo {
   groupPosition: GroupPosition;
   showTimestamp: boolean;
+  /** True when the sender differs from the previous message (or is the first message) */
+  senderChanged: boolean;
 }
 
 /** Returns true if the message is a system/special type that breaks grouping */
