@@ -107,9 +107,22 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     }
   }, [handleSessionEnded]);
 
-  const getMedia = useCallback(async () => {
+  const facingModeRef = useRef<"user" | "environment">("user");
+
+  const getVideoConstraints = useCallback((facing: "user" | "environment" = "user"): MediaTrackConstraints => ({
+    facingMode: { ideal: facing },
+    width: { ideal: 960 },
+    height: { ideal: 1280 },
+    aspectRatio: { ideal: 3 / 4 },
+  }), []);
+
+  const getMedia = useCallback(async (facing: "user" | "environment" = "user") => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: getVideoConstraints(facing),
+        audio: true,
+      });
+      facingModeRef.current = facing;
       localStreamRef.current = stream;
       setLocalStream(stream);
       return stream;
@@ -125,7 +138,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
         throw new Error("Could not access camera or microphone. Please check permissions.");
       }
     }
-  }, []);
+  }, [getVideoConstraints]);
 
   const fetchIceServers = useCallback(async (): Promise<RTCIceServer[]> => {
     try {
