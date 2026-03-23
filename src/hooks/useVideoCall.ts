@@ -495,7 +495,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       } catch {
         // Ignore stats errors
       }
-    }, 3000);
+    }, 5000);
     return () => clearInterval(poll);
   }, [callState]);
 
