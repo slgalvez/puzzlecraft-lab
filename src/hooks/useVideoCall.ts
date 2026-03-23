@@ -456,6 +456,44 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     };
   }, []);
 
+  // Connection quality monitoring
+  useEffect(() => {
+    if (callState !== "connected" || !pcRef.current) {
+      setConnectionQuality("unknown");
+      return;
+    }
+    const pc = pcRef.current;
+    const poll = setInterval(async () => {
+      try {
+        const stats = await pc.getStats();
+        let rtt = -1;
+        let lost = 0;
+        let received = 0;
+        stats.forEach((report: any) => {
+          if (report.type === "candidate-pair" && report.currentRoundTripTime !== undefined) {
+            rtt = report.currentRoundTripTime;
+          }
+          if (report.type === "inbound-rtp" && report.kind === "video") {
+            lost = report.packetsLost || 0;
+            received = report.packetsReceived || 0;
+          }
+        });
+        if (rtt < 0 && received === 0) {
+          setConnectionQuality("unknown");
+        } else if (rtt > 0.3 || (received > 0 && lost / received > 0.05)) {
+          setConnectionQuality("poor");
+        } else if (rtt > 0.15 || (received > 0 && lost / received > 0.02)) {
+          setConnectionQuality("fair");
+        } else {
+          setConnectionQuality("good");
+        }
+      } catch {
+        // Ignore stats errors
+      }
+    }, 3000);
+    return () => clearInterval(poll);
+  }, [callState]);
+
   // Auto-dismiss ended state — give enough time for end-call API to complete and user to see result
   useEffect(() => {
     if (callState !== "ended") return;
