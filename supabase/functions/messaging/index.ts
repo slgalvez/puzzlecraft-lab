@@ -228,6 +228,9 @@ Deno.serve(async (req) => {
       if (clearedAt) unreadQuery = unreadQuery.gt("created_at", clearedAt);
       const { count: unreadCount } = await unreadQuery;
 
+      // Check if the other party is typing
+      const otherTyping = isTyping(conv.id, conv.admin_profile_id);
+
       return json({
         conversation: {
           id: conv.id,
@@ -238,6 +241,7 @@ Deno.serve(async (req) => {
         },
         messages: messages || [],
         unread_count: unreadCount || 0,
+        other_typing: otherTyping,
       });
     }
 
