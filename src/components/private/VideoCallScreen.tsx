@@ -120,10 +120,6 @@ export function VideoCallScreen({
   const dragOffset = useRef({ x: 0, y: 0 });
   const lastSelfTap = useRef(0);
 
-  useEffect(() => {
-    if (callState === "connected") resetShrinkTimer();
-    return () => clearTimeout(shrinkTimer.current);
-  }, [callState, resetShrinkTimer]);
 
   const handleSelfPointerDown = useCallback((e: React.PointerEvent) => {
     if (!selfViewRef.current) return;
