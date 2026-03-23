@@ -31,6 +31,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
   const [callState, setCallState] = useState<CallState>("idle");
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
+  const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [callDuration, setCallDuration] = useState(0);
   const [endReason, setEndReason] = useState<string | null>(null);
   const [incomingCall, setIncomingCall] = useState<IncomingCallInfo | null>(null);
@@ -112,9 +113,9 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
   const getVideoConstraints = useCallback((facing: "user" | "environment" = "user"): MediaTrackConstraints => ({
     facingMode: { ideal: facing },
-    width: { ideal: 960 },
-    height: { ideal: 1280 },
-    aspectRatio: { ideal: 3 / 4 },
+    width: { ideal: 640 },
+    height: { ideal: 480 },
+    frameRate: { ideal: 30 },
   }), []);
 
   const getMedia = useCallback(async (facing: "user" | "environment" = "user") => {
@@ -393,25 +394,26 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       const newVideoTrack = newStream.getVideoTracks()[0];
       if (!newVideoTrack) return;
 
-      // Replace the track on the peer connection sender
+      // Replace the track on the peer connection sender so remote sees new camera
       const videoSender = pc.getSenders().find((s) => s.track?.kind === "video");
       if (videoSender) {
         await videoSender.replaceTrack(newVideoTrack);
       }
 
-      // Stop old video track and swap in the new one on local stream
+      // Stop old video track
       const oldStream = localStreamRef.current;
       oldStream.getVideoTracks().forEach((t) => t.stop());
-      oldStream.removeTrack(oldStream.getVideoTracks()[0]);
-      oldStream.addTrack(newVideoTrack);
+
+      // Build a clean new stream with existing audio + new video
+      const audioTracks = oldStream.getAudioTracks();
+      const combinedStream = new MediaStream([...audioTracks, newVideoTrack]);
 
       facingModeRef.current = nextFacing;
-      // Force re-render with new stream reference
-      setLocalStream(new MediaStream([...oldStream.getTracks()]));
-      localStreamRef.current = oldStream;
+      setIsFrontCamera(nextFacing === "user");
+      localStreamRef.current = combinedStream;
+      setLocalStream(combinedStream);
     } catch (err) {
       console.warn("[video-call] switchCamera failed:", err);
-      // Gracefully ignore — device may not support rear camera
     }
   }, [getVideoConstraints]);
 
@@ -523,6 +525,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     remoteStream,
     isMuted,
     isCameraOff,
+    isFrontCamera,
     callDuration,
     endReason,
     incomingCall,

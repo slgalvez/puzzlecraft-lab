@@ -11,6 +11,7 @@ export interface PIPState {
   remoteStream: MediaStream | null;
   localStream: MediaStream | null;
   isCameraOff: boolean;
+  isFrontCamera: boolean;
   callDuration: number;
   callState: string;
   onEnd: () => void;
@@ -123,7 +124,7 @@ export function VideoCallPIP() {
           playsInline
           muted={!pip.remoteStream}
           className="absolute inset-0 w-full h-full object-cover"
-          style={!pip.remoteStream ? { transform: "scaleX(-1)" } : undefined}
+          style={pip.isFrontCamera && !pip.remoteStream ? { transform: "scaleX(-1)" } : undefined}
         />
 
         {pip.isCameraOff && !pip.remoteStream && (

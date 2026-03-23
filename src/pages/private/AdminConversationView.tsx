@@ -325,6 +325,7 @@ const AdminConversationView = () => {
           remoteStream={videoCall.remoteStream}
           isMuted={videoCall.isMuted}
           isCameraOff={videoCall.isCameraOff}
+          isFrontCamera={videoCall.isFrontCamera}
           callDuration={videoCall.callDuration}
           endReason={videoCall.endReason}
           connectionQuality={videoCall.connectionQuality}
