@@ -510,7 +510,9 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
                           {badges.map((b, i) => (
                             <Tooltip key={i}>
                               <TooltipTrigger asChild>
-                                <b.icon size={13} className="text-primary/70" />
+                                <button type="button" className="p-1 -m-0.5 min-w-[28px] min-h-[28px] flex items-center justify-center touch-manipulation">
+                                  <b.icon size={13} className="text-primary/70" />
+                                </button>
                               </TooltipTrigger>
                               <TooltipContent side="top" className="text-xs">
                                 {b.label}

@@ -84,9 +84,6 @@ const Header = () => {
               {link.label}
             </Link>
           ))}
-          <div className="mt-2 px-3">
-            <AccountHeaderButton />
-          </div>
         </nav>
       )}
     </header>

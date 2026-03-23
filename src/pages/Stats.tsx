@@ -559,8 +559,8 @@ const Stats = () => {
           </div>
         )}
 
-        {/* Premium preview for free users — blurred teaser */}
-        {showGeneral && !premiumAccess && (
+        {/* Premium preview for free users — blurred teaser (only after account loaded) */}
+        {showGeneral && !premiumAccess && !accountLoading && (
           <StatsPremiumPreview onUpgrade={() => setUpgradeOpen(true)} />
         )}
       </div>
