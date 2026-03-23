@@ -273,7 +273,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
         if (e instanceof SessionExpiredError) return;
         // Ignore polling errors
       }
-    }, 800);
+    }, 1500);
   }, [api, processSignals, cleanup]);
 
   // Start an outgoing call
