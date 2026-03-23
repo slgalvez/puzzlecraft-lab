@@ -52,10 +52,8 @@ const Header = () => {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 md:ml-2">
-          {/* Account button - desktop */}
-          <div className="hidden md:block">
-            <AccountHeaderButton />
-          </div>
+          {/* Account button - always visible */}
+          <AccountHeaderButton />
 
           {/* Mobile toggle */}
           <button
@@ -86,9 +84,6 @@ const Header = () => {
               {link.label}
             </Link>
           ))}
-          <div className="mt-2 px-3">
-            <AccountHeaderButton />
-          </div>
         </nav>
       )}
     </header>

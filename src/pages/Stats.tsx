@@ -39,7 +39,7 @@ const Stats = () => {
   const dailyStreak = useMemo(() => getDailyStreak(), [dataVersion]);
   const dailyCompleted = useMemo(() => getTotalDailyCompleted(), [dataVersion]);
   const endlessStats = useMemo(() => getEndlessStats(), [dataVersion]);
-  const { account, subscribed } = useUserAccount();
+  const { account, subscribed, loading: accountLoading } = useUserAccount();
   const isAdmin = account?.isAdmin ?? false;
   const premiumAccess = hasPremiumAccess({ isAdmin, subscribed });
   const showUpgrade = shouldShowUpgradeCTA({ isAdmin, subscribed });
@@ -214,7 +214,7 @@ const Stats = () => {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <button className="text-muted-foreground/50 hover:text-muted-foreground transition-colors cursor-default">
+                        <button type="button" className="text-muted-foreground/50 hover:text-muted-foreground transition-colors p-1 -m-1 min-w-[28px] min-h-[28px] flex items-center justify-center touch-manipulation">
                           <Info size={13} />
                         </button>
                       </TooltipTrigger>
@@ -391,9 +391,9 @@ const Stats = () => {
                             {ups > 0 && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className="flex items-center gap-0.5 text-[10px] text-primary cursor-default">
+                                  <button type="button" className="flex items-center gap-0.5 text-[10px] text-primary p-1 -m-1 min-w-[28px] min-h-[28px] justify-center touch-manipulation">
                                     <TrendingUp size={9} /> {ups}
-                                  </span>
+                                  </button>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="text-xs">Faster than your average</TooltipContent>
                               </Tooltip>
@@ -401,9 +401,9 @@ const Stats = () => {
                             {downs > 0 && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className="flex items-center gap-0.5 text-[10px] text-destructive cursor-default">
+                                  <button type="button" className="flex items-center gap-0.5 text-[10px] text-destructive p-1 -m-1 min-w-[28px] min-h-[28px] justify-center touch-manipulation">
                                     <TrendingDown size={9} /> {downs}
-                                  </span>
+                                  </button>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="text-xs">Slower than your average</TooltipContent>
                               </Tooltip>
@@ -559,8 +559,8 @@ const Stats = () => {
           </div>
         )}
 
-        {/* Premium preview for free users — blurred teaser */}
-        {showGeneral && !premiumAccess && (
+        {/* Premium preview for free users — blurred teaser (only after account loaded) */}
+        {showGeneral && !premiumAccess && !accountLoading && (
           <StatsPremiumPreview onUpgrade={() => setUpgradeOpen(true)} />
         )}
       </div>

@@ -53,12 +53,12 @@ function TrendBadge({ trend, invertColor, label }: { trend: "up" | "down" | "fla
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className={cn(
-          "inline-flex items-center gap-0.5 text-[10px] font-medium ml-1 cursor-default",
+        <button type="button" className={cn(
+          "inline-flex items-center gap-0.5 text-[10px] font-medium ml-1 p-1 -m-1 min-w-[28px] min-h-[28px] justify-center touch-manipulation",
           isGood ? "text-primary" : "text-destructive"
         )}>
           {trend === "up" ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-        </span>
+        </button>
       </TooltipTrigger>
       <TooltipContent side="top" className="text-xs">{tooltipText}</TooltipContent>
     </Tooltip>
@@ -510,7 +510,9 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
                           {badges.map((b, i) => (
                             <Tooltip key={i}>
                               <TooltipTrigger asChild>
-                                <b.icon size={13} className="text-primary/70" />
+                                <button type="button" className="p-1 -m-0.5 min-w-[28px] min-h-[28px] flex items-center justify-center touch-manipulation">
+                                  <b.icon size={13} className="text-primary/70" />
+                                </button>
                               </TooltipTrigger>
                               <TooltipContent side="top" className="text-xs">
                                 {b.label}
