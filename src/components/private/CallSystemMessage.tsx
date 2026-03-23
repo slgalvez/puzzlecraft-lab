@@ -127,7 +127,7 @@ export function CallSystemMessage({ body, formatTime, createdAt, onCallBack }: C
         />
       )}
 
-      <div className="flex justify-center py-1.5 relative">
+      <div className="flex flex-col items-center py-1.5 relative">
         <div
           className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 select-none touch-none transition-transform duration-150 ${
             pressed ? "scale-105" : ""
@@ -142,21 +142,18 @@ export function CallSystemMessage({ body, formatTime, createdAt, onCallBack }: C
         >
           {icon}
           <span className="text-[11px] text-muted-foreground">{text}</span>
-          {!expanded && (
-            <span className="text-[10px] text-muted-foreground/60">{formatTime(createdAt)}</span>
-          )}
+          <span className="text-[10px] text-muted-foreground/60">{formatTime(createdAt)}</span>
         </div>
 
-        {/* Expanded detail row */}
+        {/* Expanded detail row — stacked below */}
         {expanded && (
-          <div className="flex items-center justify-center gap-2 mt-1 animate-fade-in" style={{ animationDuration: "150ms" }}>
-            <span className="text-[10px] text-muted-foreground/70">{formatTime(createdAt)}</span>
+          <div
+            className="flex flex-col items-center gap-0.5 mt-1 animate-in fade-in slide-in-from-top-1 duration-150"
+          >
             {type === "ended" && duration > 0 && (
-              <>
-                <span className="text-[10px] text-muted-foreground/30">·</span>
-                <span className="text-[10px] text-muted-foreground/70">Duration: {formatCallDuration(duration)}</span>
-              </>
+              <span className="text-[10px] text-muted-foreground/60">{formatCallDurationLong(duration)}</span>
             )}
+            <span className="text-[10px] text-muted-foreground/50">{formatExpandedTime(createdAt)}</span>
           </div>
         )}
 
