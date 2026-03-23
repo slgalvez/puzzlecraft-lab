@@ -373,7 +373,23 @@ export function MessageBubble({
           </div>
         )}
 
-        {/* Reaction display moved to overlay above */}
+        {/* Failed message indicator */}
+        {failed && (
+          <div className={`flex items-center gap-1.5 mt-1 ${isMine ? "justify-end" : "justify-start"}`}>
+            <AlertCircle size={12} className="text-destructive/80" />
+            <span className="text-[11px] text-destructive/80">Not sent</span>
+            {onRetry && (
+              <button
+                onClick={onRetry}
+                disabled={retrying}
+                className="inline-flex items-center gap-1 text-[11px] text-primary/80 hover:text-primary active:scale-95 transition-all disabled:opacity-50"
+              >
+                <RotateCcw size={11} className={retrying ? "animate-spin" : ""} />
+                {retrying ? "Sending…" : "Retry"}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
