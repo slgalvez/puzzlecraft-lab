@@ -17,6 +17,7 @@ interface VideoCallScreenProps {
   remoteStream: MediaStream | null;
   isMuted: boolean;
   isCameraOff: boolean;
+  isFrontCamera?: boolean;
   callDuration: number;
   endReason: string | null;
   connectionQuality?: ConnectionQuality;
