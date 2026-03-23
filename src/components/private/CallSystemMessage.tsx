@@ -122,8 +122,23 @@ export function CallSystemMessage({ body, formatTime, createdAt, onCallBack }: C
         >
           {icon}
           <span className="text-[11px] text-muted-foreground">{text}</span>
-          <span className="text-[10px] text-muted-foreground/60">{formatTime(createdAt)}</span>
+          {!expanded && (
+            <span className="text-[10px] text-muted-foreground/60">{formatTime(createdAt)}</span>
+          )}
         </div>
+
+        {/* Expanded detail row */}
+        {expanded && (
+          <div className="flex items-center justify-center gap-2 mt-1 animate-fade-in" style={{ animationDuration: "150ms" }}>
+            <span className="text-[10px] text-muted-foreground/70">{formatTime(createdAt)}</span>
+            {type === "ended" && duration > 0 && (
+              <>
+                <span className="text-[10px] text-muted-foreground/30">·</span>
+                <span className="text-[10px] text-muted-foreground/70">Duration: {formatCallDuration(duration)}</span>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Context menu */}
         {menuOpen && (
