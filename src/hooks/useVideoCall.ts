@@ -31,6 +31,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
   const [callState, setCallState] = useState<CallState>("idle");
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
+  const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [callDuration, setCallDuration] = useState(0);
   const [endReason, setEndReason] = useState<string | null>(null);
   const [incomingCall, setIncomingCall] = useState<IncomingCallInfo | null>(null);
