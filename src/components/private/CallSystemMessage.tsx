@@ -1,4 +1,6 @@
+import { useState, useRef, useCallback } from "react";
 import { Phone, PhoneMissed, PhoneOff, Video } from "lucide-react";
+import { hapticTap } from "@/lib/haptic";
 
 /** Detect call system messages */
 export function isCallMessage(body: string): boolean {
@@ -9,6 +11,7 @@ interface CallSystemMessageProps {
   body: string;
   formatTime: (iso: string) => string;
   createdAt: string;
+  onCallBack?: () => void;
 }
 
 function formatCallDuration(seconds: number): string {
@@ -18,10 +21,52 @@ function formatCallDuration(seconds: number): string {
   return s > 0 ? `${m}m ${s}s` : `${m}m`;
 }
 
-export function CallSystemMessage({ body, formatTime, createdAt }: CallSystemMessageProps) {
+export function CallSystemMessage({ body, formatTime, createdAt, onCallBack }: CallSystemMessageProps) {
   const parts = body.replace("__CALL__:", "").split(":");
-  const type = parts[0]; // missed, declined, ended, canceled
+  const type = parts[0];
   const duration = parts[1] ? parseInt(parts[1]) : 0;
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [pressed, setPressed] = useState(false);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
+  const didLongPress = useRef(false);
+
+  const openMenu = useCallback(() => {
+    hapticTap();
+    setMenuOpen(true);
+  }, []);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if (!onCallBack) return;
+    didLongPress.current = false;
+    setPressed(true);
+    longPressTimer.current = setTimeout(() => {
+      didLongPress.current = true;
+      openMenu();
+      setPressed(false);
+    }, 500);
+  }, [onCallBack, openMenu]);
+
+  const handlePointerUp = useCallback(() => {
+    clearTimeout(longPressTimer.current);
+    setPressed(false);
+  }, []);
+
+  const handlePointerCancel = useCallback(() => {
+    clearTimeout(longPressTimer.current);
+    setPressed(false);
+  }, []);
+
+  const handlePointerMove = useCallback(() => {
+    // Cancel long press if finger moves (avoid conflicting with scroll)
+    clearTimeout(longPressTimer.current);
+    setPressed(false);
+  }, []);
+
+  const handleCallBack = useCallback(() => {
+    setMenuOpen(false);
+    onCallBack?.();
+  }, [onCallBack]);
 
   let icon: React.ReactNode;
   let text: string;
@@ -49,12 +94,53 @@ export function CallSystemMessage({ body, formatTime, createdAt }: CallSystemMes
   }
 
   return (
-    <div className="flex justify-center py-1.5">
-      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50">
-        {icon}
-        <span className="text-[11px] text-muted-foreground">{text}</span>
-        <span className="text-[10px] text-muted-foreground/60">{formatTime(createdAt)}</span>
+    <>
+      {/* Backdrop overlay when menu is open */}
+      {menuOpen && (
+        <div
+          className="fixed inset-0 z-[80] bg-black/20 backdrop-blur-[2px] animate-fade-in"
+          style={{ animationDuration: "150ms" }}
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
+
+      <div className="flex justify-center py-1.5 relative">
+        <div
+          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 select-none touch-none transition-transform duration-150 ${
+            pressed ? "scale-105" : ""
+          } ${menuOpen ? "z-[81] scale-105 shadow-lg ring-1 ring-primary/20" : ""} ${
+            onCallBack ? "cursor-pointer" : ""
+          }`}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
+          onPointerMove={handlePointerMove}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          {icon}
+          <span className="text-[11px] text-muted-foreground">{text}</span>
+          <span className="text-[10px] text-muted-foreground/60">{formatTime(createdAt)}</span>
+        </div>
+
+        {/* Context menu */}
+        {menuOpen && (
+          <div
+            className="absolute z-[82] top-full mt-1.5 animate-scale-in"
+            style={{ animationDuration: "150ms" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-popover border border-border rounded-xl shadow-xl overflow-hidden min-w-[140px]">
+              <button
+                onClick={handleCallBack}
+                className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
+              >
+                <Video size={15} className="text-primary" />
+                <span>Call back</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </>
   );
 }
