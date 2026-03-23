@@ -27,6 +27,9 @@ interface MessageBubbleProps {
   groupPosition?: GroupPosition;
   senderChanged?: boolean;
   showTimestamp?: boolean;
+  failed?: boolean;
+  retrying?: boolean;
+  onRetry?: () => void;
   onReact?: (messageId: string, reaction: string) => void;
   onStartEdit?: (messageId: string, body: string) => void;
   onUnsend?: (messageId: string) => void;
