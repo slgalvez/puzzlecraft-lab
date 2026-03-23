@@ -36,6 +36,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
   const [incomingCall, setIncomingCall] = useState<IncomingCallInfo | null>(null);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const [connectionQuality, setConnectionQuality] = useState<"good" | "fair" | "poor" | "unknown">("unknown");
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const callIdRef = useRef<string | null>(null);
