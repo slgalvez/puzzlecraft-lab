@@ -290,6 +290,7 @@ const UserConversation = () => {
           isCameraOff={videoCall.isCameraOff}
           callDuration={videoCall.callDuration}
           endReason={videoCall.endReason}
+          connectionQuality={videoCall.connectionQuality}
           onEndCall={videoCall.endCall}
           onToggleMute={videoCall.toggleMute}
           onToggleCamera={videoCall.toggleCamera}

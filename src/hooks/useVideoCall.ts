@@ -521,6 +521,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     callDuration,
     endReason,
     incomingCall,
+    connectionQuality,
     startCall,
     acceptCall,
     declineCall,
