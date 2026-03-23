@@ -21,6 +21,26 @@ function formatCallDuration(seconds: number): string {
   return s > 0 ? `${m}m ${s}s` : `${m}m`;
 }
 
+function formatCallDurationLong(seconds: number): string {
+  if (seconds < 60) return `${seconds} second${seconds !== 1 ? "s" : ""}`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  if (s === 0) return `${m} minute${m !== 1 ? "s" : ""}`;
+  return `${m} minute${m !== 1 ? "s" : ""} ${s} second${s !== 1 ? "s" : ""}`;
+}
+
+function formatExpandedTime(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (isToday) return `Today at ${time}`;
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return `Yesterday at ${time}`;
+  return d.toLocaleDateString([], { month: "short", day: "numeric" }) + ` at ${time}`;
+}
+
 export function CallSystemMessage({ body, formatTime, createdAt, onCallBack }: CallSystemMessageProps) {
   const parts = body.replace("__CALL__:", "").split(":");
   const type = parts[0];
