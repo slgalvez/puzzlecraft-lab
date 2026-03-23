@@ -214,7 +214,7 @@ const Stats = () => {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <button className="text-muted-foreground/50 hover:text-muted-foreground transition-colors cursor-default">
+                        <button type="button" className="text-muted-foreground/50 hover:text-muted-foreground transition-colors p-1 -m-1 min-w-[28px] min-h-[28px] flex items-center justify-center touch-manipulation">
                           <Info size={13} />
                         </button>
                       </TooltipTrigger>
