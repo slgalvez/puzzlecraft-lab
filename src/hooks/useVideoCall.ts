@@ -68,6 +68,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
     clearInterval(pollTimerRef.current);
     clearInterval(durationTimerRef.current);
+    clearTimeout(disconnectTimerRef.current);
 
     if (pcRef.current) {
       pcRef.current.onicecandidate = null;
