@@ -113,6 +113,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     hasConnectedRef.current = false;
     remoteTrackSeenRef.current = false;
     isCallerRef.current = false;
+    connectedAtRef.current = 0;
 
     // Reset UI state so next call starts fresh
     setIsMuted(false);
