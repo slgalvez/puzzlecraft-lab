@@ -47,6 +47,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
   const durationTimerRef = useRef<ReturnType<typeof setInterval>>();
   const connectedAtRef = useRef<number>(0);
   const iceCandidateBuffer = useRef<RTCIceCandidateInit[]>([]);
+  const processedSignalIdsRef = useRef<Set<string>>(new Set());
   const remoteDescSet = useRef(false);
   const isCallerRef = useRef(false);
   const cleaningUp = useRef(false);
@@ -85,6 +86,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     callIdRef.current = null;
     lastSignalIdRef.current = null;
     iceCandidateBuffer.current = [];
+    processedSignalIdsRef.current.clear();
     remoteDescSet.current = false;
     cleaningUp.current = false;
   }, []); // stable — no state deps
@@ -217,6 +219,9 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     if (!pc) return;
 
     for (const sig of signals) {
+      if (processedSignalIdsRef.current.has(sig.id)) continue;
+
+      processedSignalIdsRef.current.add(sig.id);
       lastSignalIdRef.current = sig.id;
       console.debug("[video-call] processing signal:", sig.signal_type, "isCaller:", isCallerRef.current);
 
@@ -270,7 +275,6 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       try {
         const data = await api("poll-call", {
           call_id: callIdRef.current,
-          last_signal_id: lastSignalIdRef.current,
         });
 
         if (data.status === "ended") {
@@ -304,6 +308,8 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     isCallerRef.current = true;
 
     try {
+      processedSignalIdsRef.current.clear();
+      lastSignalIdRef.current = null;
       const stream = await getMedia();
       console.debug("[video-call] media acquired, fetching TURN credentials & starting call");
       const [iceServers, callData] = await Promise.all([
@@ -344,6 +350,8 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     callIdRef.current = callId;
 
     try {
+      processedSignalIdsRef.current.clear();
+      lastSignalIdRef.current = null;
       const [stream, iceServers] = await Promise.all([getMedia(), fetchIceServers()]);
       console.debug("[video-call] media acquired, answering call:", callId);
       await api("answer-call", { call_id: callId });
