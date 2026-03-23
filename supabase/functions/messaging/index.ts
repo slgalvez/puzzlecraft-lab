@@ -1336,11 +1336,20 @@ Deno.serve(async (req) => {
             hasActive = true;
           }
         }
-        // Clean up stale ringing calls
+        // Clean up stale calls and insert history messages
         if (staleIds.length > 0) {
           for (const staleId of staleIds) {
+            const staleCall = existingCalls.find(c => c.id === staleId);
             await sb.from("calls").update({ status: "ended", ended_at: now, end_reason: "stale" }).eq("id", staleId);
             await sb.from("call_signals").delete().eq("call_id", staleId);
+            // Insert call history message so the thread shows the event
+            const wasConnected = staleCall?.status === "connected";
+            const historyBody = wasConnected ? "__CALL__:ended:0" : "__CALL__:missed";
+            await sb.from("messages").insert({
+              conversation_id,
+              sender_profile_id: profileId,
+              body: historyBody,
+            });
           }
         }
         if (hasActive) return err("A call is already active", 409);
