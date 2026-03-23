@@ -70,9 +70,12 @@ export function computeMessageGroups(messages: MinimalMessage[]): MessageGroupIn
     const hasTimeGap =
       prev && Math.abs(new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime()) > GROUP_TIME_THRESHOLD_MS;
 
+    const senderChanged = !prev || prev.sender_profile_id !== msg.sender_profile_id || isSystemMessage(prev.body);
+
     result.push({
       groupPosition,
       showTimestamp: isLastInGroup || !!hasTimeGap,
+      senderChanged,
     });
   }
 
