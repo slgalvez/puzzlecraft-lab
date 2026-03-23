@@ -49,7 +49,7 @@ interface MediaPreview {
   type: "upload" | "gif";
 }
 
-export function MessageComposer({ onSend, sending, placeholder = "Message", token, conversationId, editingMessage, onCancelEdit, onSaveEdit }: MessageComposerProps) {
+export function MessageComposer({ onSend, sending, placeholder = "Message", token, conversationId, editingMessage, onCancelEdit, onSaveEdit, onTyping }: MessageComposerProps) {
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [gifOpen, setGifOpen] = useState(false);
