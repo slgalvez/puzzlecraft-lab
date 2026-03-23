@@ -107,9 +107,22 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     }
   }, [handleSessionEnded]);
 
-  const getMedia = useCallback(async () => {
+  const facingModeRef = useRef<"user" | "environment">("user");
+
+  const getVideoConstraints = useCallback((facing: "user" | "environment" = "user"): MediaTrackConstraints => ({
+    facingMode: { ideal: facing },
+    width: { ideal: 960 },
+    height: { ideal: 1280 },
+    aspectRatio: { ideal: 3 / 4 },
+  }), []);
+
+  const getMedia = useCallback(async (facing: "user" | "environment" = "user") => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: getVideoConstraints(facing),
+        audio: true,
+      });
+      facingModeRef.current = facing;
       localStreamRef.current = stream;
       setLocalStream(stream);
       return stream;
@@ -125,7 +138,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
         throw new Error("Could not access camera or microphone. Please check permissions.");
       }
     }
-  }, []);
+  }, [getVideoConstraints]);
 
   const fetchIceServers = useCallback(async (): Promise<RTCIceServer[]> => {
     try {
@@ -359,6 +372,43 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     setIsCameraOff((c) => !c);
   }, []);
 
+  // Switch between front and rear camera
+  const switchCamera = useCallback(async () => {
+    const pc = pcRef.current;
+    if (!pc || !localStreamRef.current) return;
+
+    const nextFacing = facingModeRef.current === "user" ? "environment" : "user";
+    try {
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: getVideoConstraints(nextFacing),
+        audio: false, // keep existing audio track
+      });
+
+      const newVideoTrack = newStream.getVideoTracks()[0];
+      if (!newVideoTrack) return;
+
+      // Replace the track on the peer connection sender
+      const videoSender = pc.getSenders().find((s) => s.track?.kind === "video");
+      if (videoSender) {
+        await videoSender.replaceTrack(newVideoTrack);
+      }
+
+      // Stop old video track and swap in the new one on local stream
+      const oldStream = localStreamRef.current;
+      oldStream.getVideoTracks().forEach((t) => t.stop());
+      oldStream.removeTrack(oldStream.getVideoTracks()[0]);
+      oldStream.addTrack(newVideoTrack);
+
+      facingModeRef.current = nextFacing;
+      // Force re-render with new stream reference
+      setLocalStream(new MediaStream([...oldStream.getTracks()]));
+      localStreamRef.current = oldStream;
+    } catch (err) {
+      console.warn("[video-call] switchCamera failed:", err);
+      // Gracefully ignore — device may not support rear camera
+    }
+  }, [getVideoConstraints]);
+
   // Poll for incoming calls
   useEffect(() => {
     if (!conversationId || !token || callState !== "idle") {
@@ -438,6 +488,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     endCall,
     toggleMute,
     toggleCamera,
+    switchCamera,
     dismissEnd,
   };
 }
