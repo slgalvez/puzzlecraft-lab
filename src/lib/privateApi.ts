@@ -21,7 +21,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label?: string): Promis
   });
 }
 
-const DEFAULT_TIMEOUT_MS = 15_000; // 15s max per edge function call
+const DEFAULT_TIMEOUT_MS = 30_000; // 30s max per edge function call
 
 async function getFunctionErrorBody(error: unknown): Promise<{ error?: string } | null> {
   if (!error || typeof error !== "object") return null;
