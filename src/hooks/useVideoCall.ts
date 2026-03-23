@@ -524,6 +524,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     remoteStream,
     isMuted,
     isCameraOff,
+    isFrontCamera,
     callDuration,
     endReason,
     incomingCall,
