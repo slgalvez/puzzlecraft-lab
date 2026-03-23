@@ -172,12 +172,10 @@ html {
   font-family: 'DM Sans', sans-serif;
   background: hsl(220 14% 10%);
   color: hsl(220 10% 90%);
+  height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
-  position: fixed;
-  inset: 0;
-  /* Use fixed positioning to fill the visual viewport exactly,
-     avoiding the gap that 100dvh can leave on iOS when the
-     address bar or keyboard changes the layout viewport. */
 }
 
 /* Match overscroll / bounce / root background to private app */
@@ -185,8 +183,6 @@ body:has(.private-app),
 html:has(.private-app) {
   background: hsl(220 14% 10%) !important;
   overflow: hidden;
-  height: 100%;
-  padding: 0 !important;
 }
 
 body:has(.private-app) #root {
@@ -194,8 +190,6 @@ body:has(.private-app) #root {
   max-width: none;
   padding: 0;
   text-align: left;
-  height: 100%;
-  overflow: hidden;
 }
 
 .private-app h1,
