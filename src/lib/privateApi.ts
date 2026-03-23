@@ -21,7 +21,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label?: string): Promis
   });
 }
 
-const DEFAULT_TIMEOUT_MS = 15_000; // 15s max per edge function call
+const DEFAULT_TIMEOUT_MS = 30_000; // 30s max per edge function call
 
 async function getFunctionErrorBody(error: unknown): Promise<{ error?: string } | null> {
   if (!error || typeof error !== "object") return null;
@@ -95,7 +95,7 @@ function isSessionEndedError(error: unknown, errBody: { error?: string } | null)
   return false;
 }
 
-export async function invokeMessaging(action: string, token: string, extra: Record<string, unknown> = {}) {
+export async function invokeMessaging(action: string, token: string, extra: Record<string, unknown> = {}, retries = 1) {
   if (!token) throw new Error("Not authenticated");
 
   try {
@@ -126,6 +126,12 @@ export async function invokeMessaging(action: string, token: string, extra: Reco
 
     if (isSessionEndedError(error, errBody)) {
       throw new SessionExpiredError();
+    }
+
+    // Silent retry on transient failures (timeout, network)
+    if (retries > 0) {
+      console.debug(`[private-api] retrying ${action} (${retries} left)`);
+      return invokeMessaging(action, token, extra, retries - 1);
     }
 
     throw new Error(errMsg || "Request failed");

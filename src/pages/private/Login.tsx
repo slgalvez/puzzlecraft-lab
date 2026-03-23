@@ -77,14 +77,14 @@ export default function LoginPage() {
     setSubmitting(true);
     console.debug("[login] submitting...");
     try {
-      // Race signIn against a 20s timeout so "Entering" never hangs forever
+      // Race signIn against a 35s timeout so "Entering" never hangs forever
       const result = await Promise.race([
         signIn(firstName, lastName, puzzleCode),
         new Promise<{ error: string }>((resolve) =>
           setTimeout(() => {
-            console.warn("[login] signIn timed out after 20s");
+            console.warn("[login] signIn timed out after 35s");
             resolve({ error: "Connection timed out — please try again" });
-          }, 20_000)
+          }, 35_000)
         ),
       ]);
       if (result.error) {

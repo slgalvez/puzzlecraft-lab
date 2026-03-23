@@ -86,16 +86,16 @@ const UserConversation = () => {
     }
   }, [token, handleSessionExpired]);
 
-  // Loading failsafe: if loading persists more than 20s, show error
+  // Loading failsafe: if loading persists more than 45s, show error
   useEffect(() => {
     if (!loading) return;
     const timer = setTimeout(() => {
       if (loading) {
-        console.warn("[conversation] loading timed out after 20s");
+        console.warn("[conversation] loading timed out after 45s");
         setLoading(false);
         setError("Connection timed out — please try again");
       }
-    }, 20_000);
+    }, 45_000);
     return () => clearTimeout(timer);
   }, [loading]);
 
