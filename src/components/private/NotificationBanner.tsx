@@ -44,8 +44,6 @@ export function NotificationBanner({ phrase, onDismissed }: NotificationBannerPr
     >
       <div className="rounded-xl border border-border/50 bg-card/95 backdrop-blur-sm px-4 py-2.5 shadow-lg">
         <p className="text-sm text-foreground/90 whitespace-nowrap">
-          <span className="font-medium">Puzzlecraft</span>
-          <span className="mx-1.5 text-muted-foreground/50">—</span>
           {currentPhrase}
         </p>
       </div>
