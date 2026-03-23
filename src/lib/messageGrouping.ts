@@ -37,7 +37,8 @@ export function computeMessageGroups(messages: MinimalMessage[]): MessageGroupIn
 
     // System messages are always single/timestamped
     if (isSystemMessage(msg.body)) {
-      result.push({ groupPosition: "single", showTimestamp: true });
+      const changed = !prev || prev.sender_profile_id !== msg.sender_profile_id || isSystemMessage(prev.body);
+      result.push({ groupPosition: "single", showTimestamp: true, senderChanged: changed });
       continue;
     }
 
