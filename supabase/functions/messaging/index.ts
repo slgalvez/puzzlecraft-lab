@@ -105,23 +105,12 @@ async function fetchLatestConversationMessages(
   return messages.reverse();
 }
 
-// ─── EPHEMERAL TYPING STATE (in-memory, not persisted) ───
-// Key: "conversationId:profileId" → timestamp of last typing ping
-const typingState = new Map<string, number>();
+// ─── EPHEMERAL TYPING STATE (DB-backed for cross-isolate reliability) ───
 const TYPING_TTL_MS = 4000; // 4s timeout
 
-function setTyping(conversationId: string, profileId: string) {
-  typingState.set(`${conversationId}:${profileId}`, Date.now());
-}
-
-function isTyping(conversationId: string, profileId: string): boolean {
-  const ts = typingState.get(`${conversationId}:${profileId}`);
-  if (!ts) return false;
-  if (Date.now() - ts > TYPING_TTL_MS) {
-    typingState.delete(`${conversationId}:${profileId}`);
-    return false;
-  }
-  return true;
+function isTypingFromTimestamp(typingAt: string | null): boolean {
+  if (!typingAt) return false;
+  return Date.now() - new Date(typingAt).getTime() < TYPING_TTL_MS;
 }
 
 Deno.serve(async (req) => {
