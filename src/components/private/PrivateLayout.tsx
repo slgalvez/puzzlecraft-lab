@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { getFocusLossEnabled } from "@/lib/focusLossSettings";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PrivateSidebar } from "@/components/private/PrivateSidebar";
@@ -139,28 +139,6 @@ export default function PrivateLayout({ children, title, fullHeight }: PrivateLa
       clearTimeout(escTimerRef.current);
     };
   }, [quickExit]);
-
-  // Use visualViewport to keep the layout flush with the actual visible area
-  // This fixes iOS keyboard offset issues where 100dvh lags behind the viewport
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const root = document.querySelector<HTMLElement>(".private-app");
-    if (!root) return;
-    const sync = () => {
-      root.style.height = `${vv.height}px`;
-      // On iOS, the visual viewport can be offset from the top when the
-      // address bar is showing. Compensate so nothing sits under the status bar.
-      root.style.top = `${vv.offsetTop}px`;
-    };
-    sync();
-    vv.addEventListener("resize", sync);
-    vv.addEventListener("scroll", sync);
-    return () => {
-      vv.removeEventListener("resize", sync);
-      vv.removeEventListener("scroll", sync);
-    };
-  }, []);
 
   return (
     <div className="private-app">
