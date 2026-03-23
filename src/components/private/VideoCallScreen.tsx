@@ -217,13 +217,13 @@ export function VideoCallScreen({
       style={{ height: "100dvh", paddingTop: "env(safe-area-inset-top, 0px)" }}
       onClick={handleScreenTap}
     >
-      {/* Remote video — full viewport, object-contain to prevent crop */}
+      {/* Remote video — full viewport, cover on mobile for minimal black bars, contain on desktop */}
       <div className="absolute inset-0 overflow-hidden flex items-center justify-center bg-black">
         <video
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          className="w-full h-full object-contain"
+          className="w-full h-full object-cover sm:object-contain"
         />
       </div>
 
