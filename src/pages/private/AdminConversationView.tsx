@@ -61,7 +61,8 @@ const AdminConversationView = () => {
   const loadingRef = useRef(true);
   const fetchInFlightRef = useRef(false);
   const lastMessagesKeyRef = useRef("");
-
+  const [otherTyping, setOtherTyping] = useState(false);
+  const lastTypingPingRef = useRef(0);
   const handleSessionExpired = useCallback(() => {
     signOut();
     navigate("/");
