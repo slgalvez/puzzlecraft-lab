@@ -27,6 +27,7 @@ export function CallSystemMessage({ body, formatTime, createdAt, onCallBack }: C
   const duration = parts[1] ? parseInt(parts[1]) : 0;
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [pressed, setPressed] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const didLongPress = useRef(false);
@@ -36,13 +37,12 @@ export function CallSystemMessage({ body, formatTime, createdAt, onCallBack }: C
     setMenuOpen(true);
   }, []);
 
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    if (!onCallBack) return;
+  const handlePointerDown = useCallback(() => {
     didLongPress.current = false;
     setPressed(true);
     longPressTimer.current = setTimeout(() => {
       didLongPress.current = true;
-      openMenu();
+      if (onCallBack) openMenu();
       setPressed(false);
     }, 500);
   }, [onCallBack, openMenu]);
@@ -50,6 +50,9 @@ export function CallSystemMessage({ body, formatTime, createdAt, onCallBack }: C
   const handlePointerUp = useCallback(() => {
     clearTimeout(longPressTimer.current);
     setPressed(false);
+    if (!didLongPress.current) {
+      setExpanded((prev) => !prev);
+    }
   }, []);
 
   const handlePointerCancel = useCallback(() => {
