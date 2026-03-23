@@ -11,6 +11,7 @@ export interface PIPState {
   remoteStream: MediaStream | null;
   localStream: MediaStream | null;
   isCameraOff: boolean;
+  isFrontCamera: boolean;
   callDuration: number;
   callState: string;
   onEnd: () => void;
