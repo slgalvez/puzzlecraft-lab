@@ -3,17 +3,14 @@ import { Menu, X } from "lucide-react";
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import AccountHeaderButton from "@/components/account/AccountHeaderButton";
-import { getSavedCount } from "@/lib/savedPuzzles";
-
 const Header = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const savedCount = useMemo(() => getSavedCount(), []);
 
   const navLinks = [
     { to: "/", label: "Home" },
     { to: "/daily", label: "Daily Challenge" },
-    { to: "/puzzles", label: savedCount > 0 ? `Play · ${savedCount}` : "Play" },
+    { to: "/puzzles", label: "Play" },
     { to: "/generate/sudoku", label: "Puzzle Lab" },
     { to: "/craft", label: "Craft" },
     { to: "/stats", label: "Stats" },
