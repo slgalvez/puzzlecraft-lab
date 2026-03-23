@@ -340,16 +340,12 @@ const PrivateSettings = () => {
                     ? "border-foreground scale-110"
                     : "border-muted-foreground/30 hover:border-muted-foreground/60"
                 }`}
-                style={
-                  activeTheme === "custom"
-                    ? { background: customHex }
-                    : { background: "hsl(var(--secondary))" }
-                }
+                style={{
+                  background: activeTheme === "custom" ? customHex : "hsl(var(--secondary))",
+                }}
                 title="Custom color"
               >
-                {activeTheme !== "custom" && (
-                  <Plus size={14} className="text-muted-foreground" />
-                )}
+                <Plus size={14} className={activeTheme === "custom" ? "text-white/70" : "text-muted-foreground"} />
               </button>
               <input
                 ref={colorInputRef}
