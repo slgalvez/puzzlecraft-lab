@@ -409,6 +409,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       const combinedStream = new MediaStream([...audioTracks, newVideoTrack]);
 
       facingModeRef.current = nextFacing;
+      setIsFrontCamera(nextFacing === "user");
       localStreamRef.current = combinedStream;
       setLocalStream(combinedStream);
     } catch (err) {
