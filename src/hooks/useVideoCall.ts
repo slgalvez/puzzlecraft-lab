@@ -258,10 +258,14 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       if (pc.connectionState === "connected") {
         hasConnectedRef.current = true;
         setCallState("connected");
-        connectedAtRef.current = Date.now();
-        durationTimerRef.current = setInterval(() => {
-          setCallDuration(Math.floor((Date.now() - connectedAtRef.current) / 1000));
-        }, 1000);
+        // Guard: only start duration timer once
+        if (!connectedAtRef.current) {
+          connectedAtRef.current = Date.now();
+          clearInterval(durationTimerRef.current);
+          durationTimerRef.current = setInterval(() => {
+            setCallDuration(Math.floor((Date.now() - connectedAtRef.current) / 1000));
+          }, 1000);
+        }
       } else if (pc.connectionState === "failed") {
         scheduleRecoveryGuard(
           "Connection failed",
