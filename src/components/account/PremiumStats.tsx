@@ -53,12 +53,12 @@ function TrendBadge({ trend, invertColor, label }: { trend: "up" | "down" | "fla
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className={cn(
-          "inline-flex items-center gap-0.5 text-[10px] font-medium ml-1 cursor-default",
+        <button type="button" className={cn(
+          "inline-flex items-center gap-0.5 text-[10px] font-medium ml-1 p-1 -m-1 min-w-[28px] min-h-[28px] justify-center touch-manipulation",
           isGood ? "text-primary" : "text-destructive"
         )}>
           {trend === "up" ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-        </span>
+        </button>
       </TooltipTrigger>
       <TooltipContent side="top" className="text-xs">{tooltipText}</TooltipContent>
     </Tooltip>
