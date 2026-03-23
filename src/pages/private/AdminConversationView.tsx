@@ -281,6 +281,7 @@ const AdminConversationView = () => {
           onEndCall={videoCall.endCall}
           onToggleMute={videoCall.toggleMute}
           onToggleCamera={videoCall.toggleCamera}
+          onSwitchCamera={videoCall.switchCamera}
         />
       )}
       {videoCall.incomingCall && videoCall.callState === "idle" && (
