@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Timer, Check, CheckCheck, Eye, Pencil, Plus, Undo2 } from "lucide-react";
+import { Timer, Check, CheckCheck, Eye, Pencil, Plus, Undo2, AlertCircle, RotateCcw } from "lucide-react";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { isGifMessage, getGifUrl } from "@/components/private/MessageComposer";
 import { ImageViewer } from "@/components/private/ImageViewer";
@@ -27,6 +27,9 @@ interface MessageBubbleProps {
   groupPosition?: GroupPosition;
   senderChanged?: boolean;
   showTimestamp?: boolean;
+  failed?: boolean;
+  retrying?: boolean;
+  onRetry?: () => void;
   onReact?: (messageId: string, reaction: string) => void;
   onStartEdit?: (messageId: string, body: string) => void;
   onUnsend?: (messageId: string) => void;
@@ -75,6 +78,9 @@ export function MessageBubble({
   groupPosition = "single",
   senderChanged = true,
   showTimestamp = true,
+  failed = false,
+  retrying = false,
+  onRetry,
   onReact,
   onStartEdit,
   onUnsend,
@@ -205,7 +211,7 @@ export function MessageBubble({
       )}
       <div className={`relative max-w-[82%] sm:max-w-[70%] transition-all duration-150 ${
         showMenu ? "z-50 scale-[1.03] -translate-y-0.5" : ""
-      } ${reactPop ? "scale-[1.04]" : ""}`}>
+      } ${reactPop ? "scale-[1.04]" : ""} ${failed ? "opacity-70" : ""}`}>
         {/* Reaction overlay */}
         {hasReactions && (
           <div className={`absolute -top-2.5 z-10 flex items-center gap-0.5 ${isMine ? "left-0 -translate-x-1" : "right-0 translate-x-1"}`}>
@@ -367,7 +373,23 @@ export function MessageBubble({
           </div>
         )}
 
-        {/* Reaction display moved to overlay above */}
+        {/* Failed message indicator */}
+        {failed && (
+          <div className={`flex items-center gap-1.5 mt-1 ${isMine ? "justify-end" : "justify-start"}`}>
+            <AlertCircle size={12} className="text-destructive/80" />
+            <span className="text-[11px] text-destructive/80">Not sent</span>
+            {onRetry && (
+              <button
+                onClick={onRetry}
+                disabled={retrying}
+                className="inline-flex items-center gap-1 text-[11px] text-primary/80 hover:text-primary active:scale-95 transition-all disabled:opacity-50"
+              >
+                <RotateCcw size={11} className={retrying ? "animate-spin" : ""} />
+                {retrying ? "Sending…" : "Retry"}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

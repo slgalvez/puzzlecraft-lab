@@ -46,6 +46,8 @@ const AdminConversationView = () => {
   const { toast } = useToast();
   const [conversation, setConversation] = useState<ConversationInfo | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [failedMessages, setFailedMessages] = useState<Map<string, string>>(new Map());
+  const [retryingMessages, setRetryingMessages] = useState<Set<string>>(new Set());
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +86,10 @@ const AdminConversationView = () => {
       setConversation(data.conversation);
       if (lastMessagesKeyRef.current !== nextMessagesKey) {
         lastMessagesKeyRef.current = nextMessagesKey;
-        setMessages(nextMessages);
+        setMessages((prev) => {
+          const failed = prev.filter((m) => m.id.startsWith("failed-"));
+          return [...nextMessages, ...failed];
+        });
       }
       setError(null);
       console.debug("[admin-conversation] loaded", nextMessages.length, "messages");
@@ -138,12 +143,42 @@ const AdminConversationView = () => {
       setMessages((prev) => prev.some((m) => m.id === data.message.id) ? prev : [...prev, data.message]);
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
-      toast({ title: "Could not send message", description: "Please try again." });
-      throw e;
+      const tempId = `failed-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const failedMsg: Message = {
+        id: tempId,
+        sender_profile_id: user?.id || "",
+        body,
+        created_at: new Date().toISOString(),
+        read_at: null,
+        is_disappearing: false,
+        expires_at: null,
+        reactions: {},
+      };
+      setMessages((prev) => [...prev, failedMsg]);
+      setFailedMessages((prev) => new Map(prev).set(tempId, body));
     } finally {
       setSending(false);
     }
   };
+
+  const handleRetry = useCallback(async (tempId: string) => {
+    if (!conversationId || !token) return;
+    const body = failedMessages.get(tempId);
+    if (!body) return;
+    setRetryingMessages((prev) => new Set(prev).add(tempId));
+    try {
+      const data = await invokeMessaging("send-message", token, {
+        conversation_id: conversationId,
+        message: body,
+      });
+      setMessages((prev) => prev.map((m) => m.id === tempId ? data.message : m));
+      setFailedMessages((prev) => { const n = new Map(prev); n.delete(tempId); return n; });
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+    } finally {
+      setRetryingMessages((prev) => { const n = new Set(prev); n.delete(tempId); return n; });
+    }
+  }, [conversationId, token, failedMessages, handleSessionExpired]);
 
   const handleReact = async (messageId: string, reaction: string) => {
     if (!token) return;
@@ -369,6 +404,8 @@ const AdminConversationView = () => {
                 );
               }
 
+              const isFailed = failedMessages.has(msg.id);
+
               return (
                 <MessageBubble
                   key={msg.id}
@@ -385,9 +422,12 @@ const AdminConversationView = () => {
                   groupPosition={group?.groupPosition}
                   senderChanged={group?.senderChanged}
                   showTimestamp={group?.showTimestamp}
-                  onReact={handleReact}
-                  onStartEdit={handleStartEdit}
-                  onUnsend={handleUnsend}
+                  failed={isFailed}
+                  retrying={retryingMessages.has(msg.id)}
+                  onRetry={isFailed ? () => handleRetry(msg.id) : undefined}
+                  onReact={isFailed ? undefined : handleReact}
+                  onStartEdit={isFailed ? undefined : handleStartEdit}
+                  onUnsend={isFailed ? undefined : handleUnsend}
                   allImageUrls={allImageUrls}
                 />
               );
