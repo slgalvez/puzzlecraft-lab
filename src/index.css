@@ -286,25 +286,5 @@ body:has(.private-app) [data-sidebar="sidebar"][data-mobile="true"] {
   }
 }
 
-/* Mobile keyboard: keep conversation stable when virtual keyboard opens */
-@supports (height: 1dvh) {
-  .private-app {
-    height: 100dvh;
-  }
-}
-
-/* Prevent layout thrash on iOS keyboard open/close.
-   The conversation pages already use flex-col + min-h-0
-   so the message list shrinks naturally when dvh changes. */
-.private-app {
-  contain: layout style;
-  height: 100dvh;
-  height: 100vh;
-  overflow: hidden;
-}
-
-@supports (height: 1dvh) {
-  .private-app {
-    height: 100dvh;
-  }
-}
+/* Fallback for browsers without position:fixed support on .private-app
+   (should not happen in modern browsers, but just in case) */
