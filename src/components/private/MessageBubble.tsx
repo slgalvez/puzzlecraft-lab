@@ -25,6 +25,7 @@ interface MessageBubbleProps {
   formatTime: (iso: string) => string;
   showTail?: boolean;
   groupPosition?: GroupPosition;
+  senderChanged?: boolean;
   showTimestamp?: boolean;
   onReact?: (messageId: string, reaction: string) => void;
   onStartEdit?: (messageId: string, body: string) => void;
