@@ -58,15 +58,19 @@ export function useChatScroll(messageIds: string[]) {
     const shouldForceScroll = userSentRef.current;
     userSentRef.current = false;
 
+    // Filter out temporary/failed IDs for comparison (they stay at the end and mask real new messages)
+    const realIds = messageIds.filter((id) => !id.startsWith("failed-"));
+    const prevRealIds = prevIds.filter((id) => !id.startsWith("failed-"));
+
     // Detect: new messages at the END (normal new message flow)
-    const newAtEnd = messageIds.length > prevIds.length &&
-      messageIds[messageIds.length - 1] !== prevIds[prevIds.length - 1];
+    const newAtEnd = realIds.length > prevRealIds.length &&
+      realIds[realIds.length - 1] !== prevRealIds[prevRealIds.length - 1];
 
     // Detect: new messages prepended at START (older messages loaded)
-    const prependedAtStart = messageIds.length > prevIds.length &&
-      prevIds.length > 0 &&
-      messageIds[messageIds.length - 1] === prevIds[prevIds.length - 1] &&
-      messageIds[0] !== prevIds[0];
+    const prependedAtStart = realIds.length > prevRealIds.length &&
+      prevRealIds.length > 0 &&
+      realIds[realIds.length - 1] === prevRealIds[prevRealIds.length - 1] &&
+      realIds[0] !== prevRealIds[0];
 
     if (prependedAtStart) {
       // Preserve scroll position: calculate how much height was added
