@@ -41,14 +41,16 @@ export function useChatScroll(messageIds: string[]) {
     const container = containerRef.current;
     if (!container) return;
 
-    // First load: instant scroll to bottom (with slight delay for DOM paint)
+    // First load: scroll to bottom immediately + safety re-scroll after layout settles
     if (!initialScrollDone.current) {
-      // Double rAF ensures the browser has painted the messages
+      scrollToBottom("instant");
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
+        scrollToBottom("instant");
+        // Safety: re-scroll after a short delay to catch late layout shifts (images, etc.)
+        setTimeout(() => {
           scrollToBottom("instant");
           initialScrollDone.current = true;
-        });
+        }, 150);
       });
       prevIdsRef.current = messageIds;
       return;
