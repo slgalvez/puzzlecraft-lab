@@ -340,11 +340,12 @@ export function sendPushNotification(title: string): void {
 
   try {
     const opts: NotificationOptions & Record<string, unknown> = {
+      body: title,
       icon: "/pwa-icon-192.png",
       tag: "private-notification",
       silent: false,
     };
-    const n = new Notification(title, opts);
+    const n = new Notification("Puzzlecraft", opts);
 
     n.onclick = () => {
       window.focus();
