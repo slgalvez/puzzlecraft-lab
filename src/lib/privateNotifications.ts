@@ -20,28 +20,22 @@ export const VAPID_PUBLIC_KEY =
 // ── Phrase pools ──
 
 const MESSAGE_PHRASES = [
-  "New challenge available",
-  "Your next puzzle is ready",
-  "Time for a quick brain break",
-  "Daily puzzle refreshed",
-  "You've got a new challenge",
-  "Jump back in",
-  "Ready when you are",
+  "Made this one for you 🧩",
+  "Try this one 👀",
+  "Think you can solve this?",
+  "This one's for you",
+  "You've been challenged 😈",
+  "Open this 👀",
+  "You'll want to see this",
+  "This one's different",
+  "Don't miss this one",
 ];
 
 const CALL_PHRASES = [
-  "Continue your session",
-  "Resume where you left off",
-  "Ready when you are",
-  "Pick up where you left off",
-  "Jump back in",
-];
-
-const CALL_CRAFT_PHRASES = [
-  "Craft yours next",
-  "Your next craft is waiting",
-  "Continue crafting",
-  "Start your next craft",
+  "Incoming call 👀",
+  "Jump in",
+  "They're calling you",
+  "Don't miss this",
 ];
 
 // ── Settings ──
