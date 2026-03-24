@@ -9,8 +9,12 @@ self.addEventListener('push', (event) => {
     data = { title: event.data?.text() || 'New update available' };
   }
 
-  const title = phrase;
+  // Use the phrase/title as the notification body, not the title.
+  // The OS/browser supplies the app name automatically ("from Puzzlecraft").
+  const phrase = data.title || 'New update available';
+  const title = '';
   const options = {
+    body: phrase,
     icon: '/pwa-icon-192.png',
     badge: '/pwa-icon-192.png',
     tag: data.tag || 'private-notification',
