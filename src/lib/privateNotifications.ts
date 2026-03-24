@@ -69,10 +69,6 @@ export function getMessagePhrase(count?: number): string {
 }
 
 export function getCallPhrase(): string {
-  // Occasionally use craft variations (~20%)
-  if (Math.random() < 0.2) {
-    return getRotatingPhrase(CALL_CRAFT_PHRASES, "call_craft");
-  }
   return getRotatingPhrase(CALL_PHRASES, "call");
 }
 
