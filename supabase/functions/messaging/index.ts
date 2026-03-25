@@ -277,13 +277,15 @@ Deno.serve(async (req) => {
 
       // Use coded phrases for stealth
       const MESSAGE_PHRASES = [
-        "New challenge available",
-        "Your next puzzle is ready",
-        "Time for a quick brain break",
-        "Daily puzzle refreshed",
-        "You've got a new challenge",
-        "Jump back in",
-        "Ready when you are",
+        "Made this one for you 🧩",
+        "Try this one 👀",
+        "Think you can solve this?",
+        "This one's for you",
+        "You've been challenged 😈",
+        "Open this 👀",
+        "You'll want to see this",
+        "This one's different",
+        "Don't miss this one",
       ];
       const phraseIdx = Math.floor(Math.random() * MESSAGE_PHRASES.length);
 
@@ -298,7 +300,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             action: "send-push",
             target_profile_id: recipientProfileId,
-            title: MESSAGE_PHRASES[phraseIdx],
+            body: MESSAGE_PHRASES[phraseIdx],
             tag: "private-notification",
             url: "/p",
           }),
@@ -1368,11 +1370,10 @@ Deno.serve(async (req) => {
 
       // Send immediate push notification to the callee (no rate limiting for calls)
       const CALL_PHRASES = [
-        "Continue your session",
-        "Resume where you left off",
-        "Ready when you are",
-        "Pick up where you left off",
-        "Jump back in",
+        "Incoming call 👀",
+        "Jump in",
+        "They're calling you",
+        "Don't miss this",
       ];
       const callPhrase = CALL_PHRASES[Math.floor(Math.random() * CALL_PHRASES.length)];
 
@@ -1387,7 +1388,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             action: "send-push",
             target_profile_id: calleeId,
-            title: callPhrase,
+            body: callPhrase,
             tag: "call-notification",
             url: "/p",
             skip_rate_limit: true,

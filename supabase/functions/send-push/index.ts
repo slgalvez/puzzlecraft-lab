@@ -437,8 +437,25 @@ Deno.serve(async (req) => {
         });
       }
 
+      const TEST_PHRASES = [
+        "Made this one for you 🧩",
+        "Try this one 👀",
+        "Think you can solve this?",
+        "This one's for you",
+        "You've been challenged 😈",
+        "Open this 👀",
+        "You'll want to see this",
+        "This one's different",
+        "Don't miss this one",
+        "Incoming call 👀",
+        "Jump in",
+        "They're calling you",
+        "Don't miss this",
+      ];
+      const testPhrase = TEST_PHRASES[Math.floor(Math.random() * TEST_PHRASES.length)];
+
       const payload = JSON.stringify({
-        body: "Push is working!",
+        body: testPhrase,
         tag: "test-notification",
         url: "/p/settings",
       });
