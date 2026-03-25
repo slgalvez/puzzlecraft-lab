@@ -56,6 +56,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
   const timer = usePuzzleTimer(timerKey, { category: "nonogram", difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
   const maxRowClueLen = Math.max(...rowClues.map((c) => c.length));
+  const maxColClueLen = Math.max(...colClues.map((c) => c.length));
 
   const gridRef2 = useRef(grid);
   gridRef2.current = grid;
@@ -177,8 +178,13 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
     clearProgress(timerKey);
   };
 
-  const cellSize = rows <= 10 ? "w-7 h-7 sm:w-9 sm:h-9" : "w-5 h-5 sm:w-6 sm:h-6";
-  const clueTextSize = rows <= 10 ? "text-xs sm:text-sm" : "text-[9px] sm:text-[10px]";
+  // Sizing: use fixed pixel sizes for precise grid
+  const isSmall = rows > 10;
+  const cellPx = isMobile ? (isSmall ? 24 : 30) : (isSmall ? 28 : 36);
+  const clueFontSize = isMobile ? (isSmall ? 9 : 11) : (isSmall ? 10 : 13);
+
+  // Row clue column width: enough for the widest clue set
+  const rowClueWidth = maxRowClueLen * (clueFontSize * 1.1 + 4) + 8;
 
   return (
     <div
@@ -214,61 +220,152 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
         </div>
       )}
 
-      {!isMobile && (
+      {!isMobile && !timer.isSolved && !isRevealed && (
         <p className="mb-3 text-xs text-muted-foreground">
-          Arrow keys to move • Space to fill • X to mark • Delete to clear
+          Arrow keys to move · Space to fill · X to mark · Delete to clear
         </p>
       )}
 
-      <div className="max-w-full overflow-x-auto inline-block">
-        <div className="flex">
-          <div style={{ width: `${maxRowClueLen * 1.5}rem` }} />
+      <div className="max-w-full overflow-x-auto pb-2">
+        <div
+          className="inline-grid"
+          style={{
+            gridTemplateColumns: `${rowClueWidth}px repeat(${cols}, ${cellPx}px)`,
+            gridTemplateRows: `auto repeat(${rows}, ${cellPx}px)`,
+            gap: 0,
+          }}
+        >
+          {/* Top-left corner spacer */}
+          <div style={{ gridColumn: 1, gridRow: 1 }} />
+
+          {/* Column clues — each in its own grid column, perfectly aligned */}
           {colClues.map((clue, c) => (
-            <div key={c} className={cn("flex flex-col items-center justify-end gap-0.5 pb-1", cellSize.split(" ")[0])}>
+            <div
+              key={`col-clue-${c}`}
+              className={cn(
+                "flex flex-col items-center justify-end pb-1 gap-px",
+                // subtle divider every 5 cols
+                c % 5 === 0 && c > 0 && "border-l border-foreground/20"
+              )}
+              style={{
+                gridColumn: c + 2,
+                gridRow: 1,
+                width: cellPx,
+                fontSize: clueFontSize,
+                lineHeight: 1.25,
+                minHeight: maxColClueLen * (clueFontSize * 1.25 + 1),
+              }}
+            >
               {clue.map((n, i) => (
-                <span key={i} className={cn(clueTextSize, "font-medium text-muted-foreground leading-tight")}>{n}</span>
+                <span
+                  key={i}
+                  className={cn(
+                    "font-semibold tabular-nums text-center leading-tight",
+                    cursor[1] === c && !timer.isSolved && !isRevealed
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {n}
+                </span>
               ))}
             </div>
           ))}
+
+          {/* Grid rows: row clues + cells */}
+          {Array.from({ length: rows }, (_, r) => (
+            <>
+              {/* Row clue */}
+              <div
+                key={`row-clue-${r}`}
+                className={cn(
+                  "flex items-center justify-end gap-1 pr-2",
+                  r % 5 === 0 && r > 0 && "border-t border-foreground/20"
+                )}
+                style={{
+                  gridColumn: 1,
+                  gridRow: r + 2,
+                  height: cellPx,
+                  fontSize: clueFontSize,
+                }}
+              >
+                {rowClues[r].map((n, i) => (
+                  <span
+                    key={i}
+                    className={cn(
+                      "font-semibold tabular-nums",
+                      cursor[0] === r && !timer.isSolved && !isRevealed
+                        ? "text-primary"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {n}
+                  </span>
+                ))}
+              </div>
+
+              {/* Cells */}
+              {Array.from({ length: cols }, (_, c) => {
+                const state = grid[r][c];
+                const hasError = errors.has(`${r}-${c}`);
+                const isCursor = cursor[0] === r && cursor[1] === c;
+                const isActiveRow = cursor[0] === r && !timer.isSolved && !isRevealed;
+                const isActiveCol = cursor[1] === c && !timer.isSolved && !isRevealed;
+                const isSolved = timer.isSolved || isRevealed;
+
+                // Border classes for 5-cell dividers
+                const borderRight = c % 5 === 4 && c < cols - 1;
+                const borderBottom = r % 5 === 4 && r < rows - 1;
+                const borderLeft = c % 5 === 0 && c > 0;
+                const borderTop = r % 5 === 0 && r > 0;
+
+                return (
+                  <div
+                    key={`cell-${r}-${c}`}
+                    className={cn(
+                      "relative flex items-center justify-center select-none cursor-pointer touch-manipulation transition-colors duration-75",
+                      // Solved state: clean image reveal
+                      isSolved && state === "filled" && "bg-foreground",
+                      isSolved && state !== "filled" && "bg-puzzle-cell",
+                      // Playing state
+                      !isSolved && hasError && "bg-puzzle-cell-error",
+                      !isSolved && !hasError && state === "filled" && "bg-foreground",
+                      !isSolved && !hasError && state === "empty" && (isActiveRow || isActiveCol ? "bg-puzzle-cell-highlight" : "bg-puzzle-cell"),
+                      !isSolved && !hasError && state === "marked" && "bg-puzzle-cell",
+                      // Hover
+                      !isSolved && "hover:brightness-95 active:animate-cell-pop",
+                      // Cursor ring
+                      isCursor && !isSolved && "ring-2 ring-inset ring-primary z-10"
+                    )}
+                    style={{
+                      gridColumn: c + 2,
+                      gridRow: r + 2,
+                      width: cellPx,
+                      height: cellPx,
+                      // Borders: thin default, thick every 5
+                      borderTop: borderTop ? '2px solid hsl(var(--foreground) / 0.25)' : '1px solid hsl(var(--puzzle-border) / 0.5)',
+                      borderLeft: borderLeft ? '2px solid hsl(var(--foreground) / 0.25)' : '1px solid hsl(var(--puzzle-border) / 0.5)',
+                      borderRight: c === cols - 1 ? '1px solid hsl(var(--puzzle-border) / 0.5)' : borderRight ? '2px solid hsl(var(--foreground) / 0.25)' : undefined,
+                      borderBottom: r === rows - 1 ? '1px solid hsl(var(--puzzle-border) / 0.5)' : borderBottom ? '2px solid hsl(var(--foreground) / 0.25)' : undefined,
+                    }}
+                    onClick={() => handleCellTap(r, c)}
+                  >
+                    {state === "marked" && !isSolved && (
+                      <span
+                        className="text-muted-foreground font-bold leading-none select-none"
+                        style={{ fontSize: clueFontSize }}
+                      >
+                        ✕
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          ))}
         </div>
-
-        {Array.from({ length: rows }, (_, r) => (
-          <div key={r} className="flex items-center">
-            <div className="flex items-center justify-end gap-1 pr-2" style={{ width: `${maxRowClueLen * 1.5}rem` }}>
-              {rowClues[r].map((n, i) => (
-                <span key={i} className={cn(clueTextSize, "font-medium text-muted-foreground")}>{n}</span>
-              ))}
-            </div>
-            {Array.from({ length: cols }, (_, c) => {
-              const state = grid[r][c];
-              const hasError = errors.has(`${r}-${c}`);
-              const isCursor = cursor[0] === r && cursor[1] === c;
-
-              return (
-                <div
-                  key={c}
-                  className={cn(
-                    cellSize,
-                    "border border-puzzle-border cursor-pointer select-none flex items-center justify-center transition-colors touch-manipulation active:animate-cell-pop",
-                    c % 5 === 4 && c < cols - 1 && "border-r-2 border-r-foreground/30",
-                    r % 5 === 4 && r < rows - 1 && "border-b-2 border-b-foreground/30",
-                    hasError && "bg-puzzle-cell-error",
-                    !hasError && state === "filled" && "bg-foreground",
-                    !hasError && state === "marked" && "bg-puzzle-cell",
-                    !hasError && state === "empty" && "bg-puzzle-cell hover:bg-secondary",
-                    isCursor && "ring-2 ring-inset ring-primary"
-                  )}
-                  onClick={() => handleCellTap(r, c)}
-                >
-                  {state === "marked" && (
-                    <span className={cn("text-muted-foreground font-bold", clueTextSize)}>✕</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ))}
       </div>
+
       <PuzzleControls
         onReset={handleReset}
         onCheck={handleCheck}
