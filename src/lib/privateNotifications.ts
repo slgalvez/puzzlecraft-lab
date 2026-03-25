@@ -61,7 +61,7 @@ export function getMessagePhrase(count?: number): string {
 }
 
 export function getCallPhrase(): string {
-  return getRotatingPhrase(CALL_PHRASES, "call");
+  return getRotatingPhrase(MESSAGE_PHRASES, "call");
 }
 
 // ── Batching logic ──
