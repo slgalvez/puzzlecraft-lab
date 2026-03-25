@@ -438,7 +438,7 @@ Deno.serve(async (req) => {
       }
 
       const payload = JSON.stringify({
-        title: "Push is working!",
+        body: "Push is working!",
         tag: "test-notification",
         url: "/p/settings",
       });
@@ -522,7 +522,7 @@ Deno.serve(async (req) => {
       }
 
       const payload = JSON.stringify({
-        title: title || pushBody,
+        body: pushBody || title,
         tag: tag || "private-notification",
         url: url || "/p",
       });
