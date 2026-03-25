@@ -278,14 +278,13 @@ Deno.serve(async (req) => {
       // Use coded phrases for stealth
       const MESSAGE_PHRASES = [
         "Made this one for you 🧩",
-        "Try this one 👀",
         "Think you can solve this?",
-        "This one's for you",
-        "You've been challenged 😈",
-        "Open this 👀",
-        "You'll want to see this",
-        "This one's different",
-        "Don't miss this one",
+        "A new daily challenge loaded 🧩",
+        "Not too late to complete today's challenge ⏳",
+        "Beat your last time ⏱️",
+        "Continue your streak 🔥",
+        "One quick puzzle?",
+        "Just one more 🧩",
       ];
       const phraseIdx = Math.floor(Math.random() * MESSAGE_PHRASES.length);
 
@@ -1370,10 +1369,13 @@ Deno.serve(async (req) => {
 
       // Send immediate push notification to the callee (no rate limiting for calls)
       const CALL_PHRASES = [
-        "Incoming call 👀",
-        "Jump in",
-        "They're calling you",
-        "Don't miss this",
+        "Made this one for you 🧩",
+        "Think you can solve this?",
+        "A new daily challenge loaded 🧩",
+        "Beat your last time ⏱️",
+        "Continue your streak 🔥",
+        "One quick puzzle?",
+        "Just one more 🧩",
       ];
       const callPhrase = CALL_PHRASES[Math.floor(Math.random() * CALL_PHRASES.length)];
 
