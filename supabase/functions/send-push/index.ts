@@ -439,18 +439,13 @@ Deno.serve(async (req) => {
 
       const TEST_PHRASES = [
         "Made this one for you 🧩",
-        "Try this one 👀",
         "Think you can solve this?",
-        "This one's for you",
-        "You've been challenged 😈",
-        "Open this 👀",
-        "You'll want to see this",
-        "This one's different",
-        "Don't miss this one",
-        "Incoming call 👀",
-        "Jump in",
-        "They're calling you",
-        "Don't miss this",
+        "A new daily challenge loaded 🧩",
+        "Not too late to complete today's challenge ⏳",
+        "Beat your last time ⏱️",
+        "Continue your streak 🔥",
+        "One quick puzzle?",
+        "Just one more 🧩",
       ];
       const testPhrase = TEST_PHRASES[Math.floor(Math.random() * TEST_PHRASES.length)];
 
