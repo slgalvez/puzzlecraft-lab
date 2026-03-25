@@ -9,9 +9,8 @@ self.addEventListener('push', (event) => {
     data = { title: event.data?.text() || 'New update available' };
   }
 
-  // Use the phrase/title as the notification body, not the title.
-  // The OS/browser supplies the app name automatically ("from Puzzlecraft").
-  const phrase = data.title || 'New update available';
+  // Use body-only content; let the OS/browser supply the app name automatically.
+  const phrase = data.body || data.title || event.data?.text() || 'New update available';
   const title = '';
   const options = {
     body: phrase,
