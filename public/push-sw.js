@@ -20,7 +20,7 @@ self.addEventListener('push', (event) => {
     data: { url: data.url || '/p' },
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(self.registration.showNotification(phrase, options));
 });
 
 self.addEventListener('notificationclick', (event) => {
