@@ -9,11 +9,10 @@ self.addEventListener('push', (event) => {
     data = { title: event.data?.text() || 'New update available' };
   }
 
-  // Use body-only content; let the OS/browser supply the app name automatically.
+  // Use the phrase as the title so browsers don't substitute the app name
+  // (which would duplicate the OS-provided "from Puzzlecraft" label).
   const phrase = data.body || data.title || event.data?.text() || 'New update available';
-  const title = '';
   const options = {
-    body: phrase,
     icon: '/pwa-icon-192.png',
     badge: '/pwa-icon-192.png',
     tag: data.tag || 'private-notification',
@@ -21,7 +20,7 @@ self.addEventListener('push', (event) => {
     data: { url: data.url || '/p' },
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(self.registration.showNotification(phrase, options));
 });
 
 self.addEventListener('notificationclick', (event) => {
