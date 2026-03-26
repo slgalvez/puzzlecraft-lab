@@ -12,6 +12,21 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import type { Difficulty } from "@/lib/puzzleTypes";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
+function computeLineClue(line: boolean[]): number[] {
+  const clues: number[] = [];
+  let count = 0;
+  for (const cell of line) {
+    if (cell) count++;
+    else if (count > 0) { clues.push(count); count = 0; }
+  }
+  if (count > 0) clues.push(count);
+  return clues.length > 0 ? clues : [0];
+}
+
+function arrEq(a: number[], b: number[]): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+
 interface Props {
   seed: number;
   difficulty: Difficulty;
