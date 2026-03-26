@@ -12,6 +12,21 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import type { Difficulty } from "@/lib/puzzleTypes";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
 
+function computeLineClue(line: boolean[]): number[] {
+  const clues: number[] = [];
+  let count = 0;
+  for (const cell of line) {
+    if (cell) count++;
+    else if (count > 0) { clues.push(count); count = 0; }
+  }
+  if (count > 0) clues.push(count);
+  return clues.length > 0 ? clues : [0];
+}
+
+function arrEq(a: number[], b: number[]): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+
 interface Props {
   seed: number;
   difficulty: Difficulty;
@@ -57,6 +72,26 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
 
   const maxRowClueLen = Math.max(...rowClues.map((c) => c.length));
   const maxColClueLen = Math.max(...colClues.map((c) => c.length));
+
+  // Compute row/column completion: compare filled pattern against solution clues
+  const completedRows = useMemo(() => {
+    const set = new Set<number>();
+    for (let r = 0; r < rows; r++) {
+      const filledClue = computeLineClue(grid[r].map((s) => s === "filled"));
+      if (arrEq(filledClue, rowClues[r])) set.add(r);
+    }
+    return set;
+  }, [grid, rows, rowClues]);
+
+  const completedCols = useMemo(() => {
+    const set = new Set<number>();
+    for (let c = 0; c < cols; c++) {
+      const col = grid.map((row) => row[c] === "filled");
+      const filledClue = computeLineClue(col);
+      if (arrEq(filledClue, colClues[c])) set.add(c);
+    }
+    return set;
+  }, [grid, cols, colClues]);
 
   const gridRef2 = useRef(grid);
   gridRef2.current = grid;
@@ -260,10 +295,12 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
                 <span
                   key={i}
                   className={cn(
-                    "font-semibold tabular-nums text-center leading-tight",
-                    cursor[1] === c && !timer.isSolved && !isRevealed
-                      ? "text-primary"
-                      : "text-muted-foreground"
+                    "font-semibold tabular-nums text-center leading-tight transition-opacity duration-300",
+                    completedCols.has(c) && !timer.isSolved && !isRevealed
+                      ? "opacity-30 line-through decoration-1"
+                      : cursor[1] === c && !timer.isSolved && !isRevealed
+                        ? "text-primary"
+                        : "text-muted-foreground"
                   )}
                 >
                   {n}
@@ -293,10 +330,12 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
                   <span
                     key={i}
                     className={cn(
-                      "font-semibold tabular-nums",
-                      cursor[0] === r && !timer.isSolved && !isRevealed
-                        ? "text-primary"
-                        : "text-muted-foreground"
+                      "font-semibold tabular-nums transition-opacity duration-300",
+                      completedRows.has(r) && !timer.isSolved && !isRevealed
+                        ? "opacity-30 line-through decoration-1"
+                        : cursor[0] === r && !timer.isSolved && !isRevealed
+                          ? "text-primary"
+                          : "text-muted-foreground"
                     )}
                   >
                     {n}
