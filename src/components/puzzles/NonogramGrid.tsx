@@ -58,6 +58,26 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
   const maxRowClueLen = Math.max(...rowClues.map((c) => c.length));
   const maxColClueLen = Math.max(...colClues.map((c) => c.length));
 
+  // Compute row/column completion: compare filled pattern against solution clues
+  const completedRows = useMemo(() => {
+    const set = new Set<number>();
+    for (let r = 0; r < rows; r++) {
+      const filledClue = computeLineClue(grid[r].map((s) => s === "filled"));
+      if (arrEq(filledClue, rowClues[r])) set.add(r);
+    }
+    return set;
+  }, [grid, rows, rowClues]);
+
+  const completedCols = useMemo(() => {
+    const set = new Set<number>();
+    for (let c = 0; c < cols; c++) {
+      const col = grid.map((row) => row[c] === "filled");
+      const filledClue = computeLineClue(col);
+      if (arrEq(filledClue, colClues[c])) set.add(c);
+    }
+    return set;
+  }, [grid, cols, colClues]);
+
   const gridRef2 = useRef(grid);
   gridRef2.current = grid;
   const { status: saveStatus, debouncedSave } = useAutoSave<NonogramState>({
