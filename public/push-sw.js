@@ -9,10 +9,9 @@ self.addEventListener('push', (event) => {
     data = { title: event.data?.text() || 'New update available' };
   }
 
-  // Use the phrase as the title so browsers don't substitute the app name
-  // (which would duplicate the OS-provided "from Puzzlecraft" label).
   const phrase = data.body || data.title || event.data?.text() || 'New update available';
   const options = {
+    body: phrase,
     icon: '/pwa-icon-192.png',
     badge: '/pwa-icon-192.png',
     tag: data.tag || 'private-notification',
@@ -20,7 +19,8 @@ self.addEventListener('push', (event) => {
     data: { url: data.url || '/p' },
   };
 
-  event.waitUntil(self.registration.showNotification(phrase, options));
+  // Use zero-width space as title so the OS label is the only branding shown
+  event.waitUntil(self.registration.showNotification('\u200B', options));
 });
 
 self.addEventListener('notificationclick', (event) => {
