@@ -169,7 +169,7 @@ export function LocationCard({
     onStartSharing();
   };
 
-  const useBottomSheet = isMobile && !isStandalonePwa;
+  
 
   return (
     <div className="space-y-1">
