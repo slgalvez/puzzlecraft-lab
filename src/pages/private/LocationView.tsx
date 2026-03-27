@@ -131,21 +131,24 @@ export default function LocationView() {
     );
   }
 
+  // Responsive map size: larger on desktop, smaller on mobile
+  const mapSize = typeof window !== "undefined" && window.innerWidth >= 640 ? "800x600" : "600x400";
+
   return (
     <PrivateLayout title="Location" fullHeight>
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Map area */}
         {hasData ? (
-          <div className="flex-1 relative min-h-0">
+          <div className="flex-1 relative min-h-0 overflow-hidden">
             <img
-              src={buildStaticMapUrl(allCoords, "800x600")}
+              src={buildStaticMapUrl(allCoords, mapSize)}
               alt="Location map"
               className="w-full h-full object-cover"
               loading="lazy"
             />
 
             {/* Legend */}
-            <div className="absolute bottom-3 left-3 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-2 space-y-1">
+            <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-2 space-y-1" style={{ marginBottom: "env(safe-area-inset-bottom, 0px)" }}>
               {myCoords && (
                 <div className="flex items-center gap-2 text-xs text-foreground">
                   <span className="h-2.5 w-2.5 rounded-full bg-primary shrink-0" />
@@ -169,7 +172,8 @@ export default function LocationView() {
                 href={`https://www.google.com/maps?q=${inCoords.lat},${inCoords.lng}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="absolute bottom-3 right-3 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-primary hover:underline flex items-center gap-1.5"
+                className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-primary hover:underline flex items-center gap-1.5"
+                style={{ marginBottom: "env(safe-area-inset-bottom, 0px)" }}
               >
                 <ExternalLink size={12} />
                 Open in Maps
@@ -191,8 +195,11 @@ export default function LocationView() {
           </div>
         )}
 
-        {/* Bottom controls */}
-        <div className="shrink-0 border-t border-border/30 px-4 py-2.5 flex items-center justify-between">
+        {/* Bottom controls — safe area aware */}
+        <div
+          className="shrink-0 border-t border-border/30 px-4 py-2.5 flex items-center justify-between"
+          style={{ paddingBottom: "max(0.625rem, env(safe-area-inset-bottom, 0px))" }}
+        >
           <div className="flex items-center gap-2">
             {isSharingMine ? (
               <>
