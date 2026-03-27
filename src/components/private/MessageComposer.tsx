@@ -85,6 +85,10 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Double-tap guard — prevent rapid successive sends
+    if (sendGuardRef.current) return;
+    sendGuardRef.current = true;
+    setTimeout(() => { sendGuardRef.current = false; }, 300);
     // Voice note staged — upload and send
     if (voicePreview) {
       await handleSendVoice();
