@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { MapPin, Navigation, Loader2, AlertCircle, ExternalLink, Maximize2, Activity } from "lucide-react";
+import { MapPin, Navigation, Loader2, AlertCircle, ExternalLink, Maximize2, Activity, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { type SharedLocation, getFreshness, type FreshnessStatus } from "@/hooks/useLocationSharing";
 import { distanceMiles, formatDistance, detectMotion, humanTimestamp, type MotionState } from "@/lib/locationUtils";
+import { getLocationLabels } from "@/lib/locationLabels";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { isStandaloneMode } from "@/lib/locationPermission";
+import DarkMap from "@/components/private/DarkMap";
 import {
   Drawer,
   DrawerContent,
@@ -53,32 +55,6 @@ function StatusDot({ status, animated = true }: { status: FreshnessStatus; anima
       <span className="relative inline-flex rounded-full h-2 w-2 bg-muted-foreground/30" />
     </span>
   );
-}
-
-function computeMapCenter(coords: { lat: number; lng: number }[]): { lat: number; lng: number; zoom: number } {
-  if (coords.length === 0) return { lat: 0, lng: 0, zoom: 15 };
-  if (coords.length === 1) return { ...coords[0], zoom: 15 };
-  const center = {
-    lat: (coords[0].lat + coords[1].lat) / 2,
-    lng: (coords[0].lng + coords[1].lng) / 2,
-  };
-  const maxDelta = Math.max(Math.abs(coords[0].lat - coords[1].lat), Math.abs(coords[0].lng - coords[1].lng));
-  let zoom = 15;
-  if (maxDelta > 0.2) zoom = 10;
-  else if (maxDelta > 0.1) zoom = 11;
-  else if (maxDelta > 0.05) zoom = 12;
-  else if (maxDelta > 0.02) zoom = 13;
-  else if (maxDelta > 0.005) zoom = 14;
-  return { ...center, zoom };
-}
-
-function buildOsmEmbedUrl(coords: { lat: number; lng: number }[]): string {
-  const { lat, lng, zoom } = computeMapCenter(coords);
-  // Marker layer via OSM embed; reliable and free
-  const markerParam = coords.length > 0
-    ? `&marker=${coords[0].lat},${coords[0].lng}`
-    : "";
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.01},${lat - 0.01},${lng + 0.01},${lat + 0.01}&layer=mapnik${markerParam}`;
 }
 
 export function LocationCard({
@@ -163,6 +139,12 @@ export function LocationCard({
   const freshness = incomingLocation ? getFreshness(incomingLocation.updated_at) : null;
   const timestamp = incomingLocation ? humanTimestamp(incomingLocation.updated_at) : "";
   const hasAnyLocationActivity = isSharingMine || incomingLocation;
+
+  const mapMarkers = [
+    ...(myCoords ? [{ lat: myCoords.lat, lng: myCoords.lng, type: "me" as const }] : []),
+    ...(inCoords ? [{ lat: inCoords.lat, lng: inCoords.lng, type: "other" as const }] : []),
+  ];
+  const savedLabels = getLocationLabels();
 
   // Distance
   const distance = (myCoords && inCoords) ? distanceMiles(myCoords.lat, myCoords.lng, inCoords.lat, inCoords.lng) : null;
@@ -253,10 +235,11 @@ export function LocationCard({
       {hasAnyLocationActivity && expanded && (
         <div className="rounded-md border border-border/20 bg-card/40 overflow-hidden mt-0.5">
           <button onClick={() => setMapOpen(true)} className="block relative group w-full">
-            <iframe
-              src={buildOsmEmbedUrl(allMapCoords.length > 0 ? allMapCoords : [])}
-              title="Location map"
-              className="w-full h-[110px] border-0 pointer-events-none [filter:invert(100%)_hue-rotate(200deg)_saturate(0.3)_brightness(0.95)_contrast(0.9)]"
+            <DarkMap
+              markers={mapMarkers}
+              labels={savedLabels}
+              className="w-full h-[110px]"
+              interactive={false}
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
               <Maximize2 size={14} className="text-background opacity-0 group-hover:opacity-70 transition-opacity drop-shadow-lg" />
@@ -389,10 +372,11 @@ export function LocationCard({
           </DialogHeader>
 
           <div className="w-full relative">
-            <iframe
-              src={buildOsmEmbedUrl(allMapCoords.length > 0 ? allMapCoords : [])}
-              title="Location map"
-              className="w-full h-[50vh] border-0 [filter:invert(100%)_hue-rotate(200deg)_saturate(0.3)_brightness(0.95)_contrast(0.9)]"
+            <DarkMap
+              markers={mapMarkers}
+              labels={savedLabels}
+              className="w-full h-[50vh]"
+              interactive
             />
             {/* Legend overlay */}
             <div className="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm rounded-md px-2.5 py-1.5 space-y-0.5">
