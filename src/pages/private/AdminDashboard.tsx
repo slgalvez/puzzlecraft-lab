@@ -6,6 +6,7 @@ import PrivateLayout from "@/components/private/PrivateLayout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Timer, Trash2, MessageSquare, Puzzle, Plus, MapPin, ArrowRight } from "lucide-react";
+import { distanceMiles, formatDistance, humanTimestamp } from "@/lib/locationUtils";
 import { OverviewHeaderControls } from "@/components/private/OverviewHeaderControls";
 import { useNicknames } from "@/hooks/useNicknames";
 import { WhatsNewBanner } from "@/components/private/WhatsNewBanner";
@@ -49,6 +50,7 @@ const AdminDashboard = () => {
   const [showClearAll, setShowClearAll] = useState(false);
   const [clearingAll, setClearingAll] = useState(false);
   const [hasLocationActivity, setHasLocationActivity] = useState(false);
+  const [locationMeta, setLocationMeta] = useState<{ name: string; dist: string | null; time: string } | null>(null);
 
   const handleSessionExpired = useCallback(() => {
     signOut();
@@ -73,8 +75,22 @@ const AdminDashboard = () => {
       if (convs.length > 0) {
         try {
           const locData = await invokeMessaging("get-shared-location", token, { conversation_id: convs[0].id });
-          setHasLocationActivity(!!locData.incoming);
-        } catch { setHasLocationActivity(false); }
+          if (locData.incoming) {
+            setHasLocationActivity(true);
+            const inc = locData.incoming;
+            setLocationMeta({
+              name: convs[0].user_name || "them",
+              dist: null,
+              time: humanTimestamp(inc.updated_at),
+            });
+          } else {
+            setHasLocationActivity(false);
+            setLocationMeta(null);
+          }
+        } catch {
+          setHasLocationActivity(false);
+          setLocationMeta(null);
+        }
       }
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
@@ -131,11 +147,14 @@ const AdminDashboard = () => {
     });
   }
 
-  if (hasLocationActivity) {
+  if (hasLocationActivity && locationMeta) {
+    const locLabel = locationMeta.dist
+      ? `${locationMeta.name} · ${locationMeta.dist}`
+      : `${locationMeta.name} sharing location`;
     activeItems.push({
       icon: <MapPin size={13} className="text-primary" />,
-      label: "Live location active",
-      detail: "",
+      label: locLabel,
+      detail: locationMeta.time,
       action: () => navigate("/p/location"),
     });
   }
