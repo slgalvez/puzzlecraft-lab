@@ -332,6 +332,13 @@ export function PrivateSidebar() {
                         {"badgeKey" in item && item.badgeKey === "puzzles" && unsolvedPuzzles > 0 && collapsed && (
                           <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-destructive ring-1 ring-sidebar" />
                         )}
+                        {/* Location dot — pulsing primary when active */}
+                        {"badgeKey" in item && item.badgeKey === "location" && hasLocationActivity && (
+                          <span className="absolute -top-0.5 -right-0.5 h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                          </span>
+                        )}
                       </div>
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
