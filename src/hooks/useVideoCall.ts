@@ -75,7 +75,12 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
   // Keep refs in sync with state
   useEffect(() => { localStreamRef.current = localStream; }, [localStream]);
-  useEffect(() => { callStateRef.current = callState; }, [callState]);
+  useEffect(() => {
+    callStateRef.current = callState;
+    // Keep global call-active flag in sync so focus-loss protection doesn't kill the session mid-call
+    const active = callState !== "idle" && callState !== "ended";
+    setCallActive(active);
+  }, [callState]);
   useEffect(() => { tokenRef.current = token; }, [token]);
 
   // Stable cleanup — uses ref instead of stale localStream closure
