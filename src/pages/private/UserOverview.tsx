@@ -140,7 +140,12 @@ const UserOverview = () => {
       ? `${locationMeta.name} · ${locationMeta.dist}`
       : `${locationMeta.name} sharing location`;
     activeItems.push({
-      icon: <MapPin size={13} className="text-primary" />,
+      icon: (
+        <span className="relative flex h-[13px] w-[13px] items-center justify-center">
+          <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-primary opacity-60" />
+          <MapPin size={13} className="text-primary relative" />
+        </span>
+      ),
       label: locLabel,
       detail: locationMeta.time,
       action: () => navigate("/p/location"),
