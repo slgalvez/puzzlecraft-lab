@@ -219,7 +219,7 @@ export function LocationCard({
 
       {/* ── Thread location card (visible when any location activity) ── */}
       {hasAnyLocationActivity && (
-        <div className="rounded-lg border border-border/40 bg-card/60 overflow-hidden">
+        <div className="rounded-lg border border-border/25 bg-card/50 overflow-hidden">
           <button onClick={() => setMapOpen(true)} className="block relative group w-full">
             <img
               src={buildStaticMapUrl(allMapCoords.length > 0 ? allMapCoords : [], "400x160")}
