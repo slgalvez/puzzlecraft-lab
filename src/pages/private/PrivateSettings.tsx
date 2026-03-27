@@ -383,7 +383,7 @@ const PrivateSettings = () => {
                 ))}
               </div>
             </div>
-          );
+          )}
         </div>
 
         <div className="border-t border-border" />
