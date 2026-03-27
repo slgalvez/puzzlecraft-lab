@@ -75,8 +75,22 @@ const AdminDashboard = () => {
       if (convs.length > 0) {
         try {
           const locData = await invokeMessaging("get-shared-location", token, { conversation_id: convs[0].id });
-          setHasLocationActivity(!!locData.incoming);
-        } catch { setHasLocationActivity(false); }
+          if (locData.incoming) {
+            setHasLocationActivity(true);
+            const inc = locData.incoming;
+            setLocationMeta({
+              name: convs[0].user_name || "them",
+              dist: null,
+              time: humanTimestamp(inc.updated_at),
+            });
+          } else {
+            setHasLocationActivity(false);
+            setLocationMeta(null);
+          }
+        } catch {
+          setHasLocationActivity(false);
+          setLocationMeta(null);
+        }
       }
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
