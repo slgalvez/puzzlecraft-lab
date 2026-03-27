@@ -374,30 +374,30 @@ export function LocationCard({
           <div className="p-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               {incomingLocation?.accuracy && (
-                <p className="text-[11px] text-muted-foreground">±{Math.round(incomingLocation.accuracy)}m</p>
-              )}
-              {isSharingMine && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={onStopSharing}
-                  className="text-xs h-7 text-muted-foreground hover:text-destructive"
-                >
-                  Stop sharing
-                </Button>
+                <p className="text-[10px] text-muted-foreground">±{Math.round(incomingLocation.accuracy)}m</p>
               )}
             </div>
-            {inCoords && (
-              <a
-                href={`https://www.google.com/maps?q=${inCoords.lat},${inCoords.lng}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-primary hover:underline flex items-center gap-1"
-              >
-                <ExternalLink size={12} />
-                Google Maps
-              </a>
-            )}
+            <div className="flex items-center gap-3">
+              {isSharingMine && (
+                <button
+                  onClick={onStopSharing}
+                  className="text-[10px] text-muted-foreground/40 hover:text-destructive transition-colors"
+                >
+                  Stop sharing
+                </button>
+              )}
+              {inCoords && (
+                <a
+                  href={`https://www.google.com/maps?q=${inCoords.lat},${inCoords.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-primary hover:underline flex items-center gap-1"
+                >
+                  <ExternalLink size={10} />
+                  Maps
+                </a>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
