@@ -266,6 +266,7 @@ export function useLocationSharing(
   const stopSharing = useCallback(async () => {
     sharingRef.current = false;
     setIsSharingMine(false);
+    sessionStorage.removeItem(SHARING_KEY);
 
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
@@ -283,19 +284,58 @@ export function useLocationSharing(
     }
   }, [onSessionExpired]);
 
-  // Cleanup on unmount
+  // Auto-resume sharing if it was active before navigation
+  const resumedRef = useRef(false);
+  useEffect(() => {
+    if (resumedRef.current) return;
+    if (!token || !conversationId) return;
+    if (sessionStorage.getItem(SHARING_KEY) !== "1") return;
+    resumedRef.current = true;
+    // Silently re-start the GPS watch without calling start-location-sharing again
+    setIsSharingMine(true);
+    sharingRef.current = true;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setMyLocation({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          updated_at: new Date().toISOString(),
+        });
+        sendUpdate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+        watchIdRef.current = navigator.geolocation.watchPosition(
+          (watchPos) => {
+            if (!sharingRef.current) return;
+            setMyLocation({
+              latitude: watchPos.coords.latitude,
+              longitude: watchPos.coords.longitude,
+              accuracy: watchPos.coords.accuracy,
+              updated_at: new Date().toISOString(),
+            });
+            sendUpdate(watchPos.coords.latitude, watchPos.coords.longitude, watchPos.coords.accuracy);
+          },
+          () => {},
+          { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 },
+        );
+      },
+      () => {
+        // Can't resume — clear flag
+        sessionStorage.removeItem(SHARING_KEY);
+        sharingRef.current = false;
+        setIsSharingMine(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000 },
+    );
+  }, [token, conversationId, sendUpdate]);
+
+  // Cleanup on unmount — only clear watch, don't stop backend sharing
   useEffect(() => {
     return () => {
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;
       }
-      if (sharingRef.current && tokenRef.current && convRef.current) {
-        sharingRef.current = false;
-        invokeMessaging("stop-location-sharing", tokenRef.current, {
-          conversation_id: convRef.current,
-        }).catch(() => {});
-      }
+      // Don't call stop-location-sharing on unmount — sharing persists across navigation
     };
   }, []);
 
