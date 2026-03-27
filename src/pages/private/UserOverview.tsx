@@ -76,8 +76,26 @@ const UserOverview = () => {
       if (convData.conversation_id) {
         try {
           const locData = await invokeMessaging("get-shared-location", token, { conversation_id: convData.conversation_id });
-          setHasLocationActivity(!!locData.incoming);
-        } catch { setHasLocationActivity(false); }
+          if (locData.incoming) {
+            setHasLocationActivity(true);
+            const inc = locData.incoming;
+            let dist: string | null = null;
+            if (myLat !== null && myLng !== null) {
+              dist = formatDistance(distanceMiles(myLat, myLng, inc.latitude, inc.longitude));
+            }
+            setLocationMeta({
+              name: convData.admin_name || "them",
+              dist,
+              time: humanTimestamp(inc.updated_at),
+            });
+          } else {
+            setHasLocationActivity(false);
+            setLocationMeta(null);
+          }
+        } catch {
+          setHasLocationActivity(false);
+          setLocationMeta(null);
+        }
       }
     } catch (e) {
       if (e instanceof SessionExpiredError) return handleSessionExpired();
