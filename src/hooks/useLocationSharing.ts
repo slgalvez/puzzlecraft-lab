@@ -201,11 +201,11 @@ export function useLocationSharing(
       (posErr) => {
         setLoading(false);
         if (posErr.code === 1) {
-          setError("Location permission denied");
+          setError("Location permission denied — check your browser or device settings to allow location access for this site");
         } else if (posErr.code === 2) {
-          setError("Location unavailable");
+          setError("Location unavailable — make sure Location Services are enabled in your device settings");
         } else {
-          setError("Location request timed out");
+          setError("Location request timed out — try again");
         }
       },
       { enableHighAccuracy: true, timeout: 15000 },
