@@ -38,6 +38,7 @@ import AdminFailedLogins from "./pages/private/AdminFailedLogins";
 import UserConversation from "./pages/private/UserConversation";
 import PrivateSettings from "./pages/private/PrivateSettings";
 import ForYou from "./pages/private/ForYou";
+import LocationView from "./pages/private/LocationView";
 
 const queryClient = new QueryClient();
 pruneStaleProgress();
@@ -111,6 +112,7 @@ function PrivateRoutes() {
         <Route path="users" element={<PrivateRoute><AdminUsers /></PrivateRoute>} />
         <Route path="failed-logins" element={<PrivateRoute><AdminFailedLogins /></PrivateRoute>} />
         <Route path="for-you" element={<PrivateRoute><ForYou /></PrivateRoute>} />
+        <Route path="location" element={<PrivateRoute><LocationView /></PrivateRoute>} />
         <Route path="settings" element={<PrivateRoute><PrivateSettings /></PrivateRoute>} />
       </Routes>
     </AuthProvider>
