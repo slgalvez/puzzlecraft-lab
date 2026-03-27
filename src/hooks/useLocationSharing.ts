@@ -61,6 +61,8 @@ export function useLocationSharing(
   tokenRef.current = token;
   convRef.current = conversationId;
 
+  const SHARING_KEY = "location_sharing_active";
+
   // Poll for the other user's shared location
   const fetchSharedLocation = useCallback(async () => {
     if (!token || !conversationId) return;
