@@ -1,6 +1,8 @@
 /** Minimal chat theme storage — bubble accent color */
 const STORAGE_KEY = "private_chat_theme";
 const CUSTOM_COLOR_KEY = "private_chat_custom_color";
+const SAVED_COLORS_KEY = "private_chat_saved_colors";
+const MAX_SAVED = 6;
 
 export const CHAT_THEMES = [
   { id: "default", label: "Teal", hue: "172 50% 45%" },
@@ -24,7 +26,21 @@ export function getCustomColor(): string {
 export function setCustomColor(hex: string) {
   localStorage.setItem(CUSTOM_COLOR_KEY, hex);
   localStorage.setItem(STORAGE_KEY, "custom");
+  saveColorToHistory(hex);
   applyChatTheme("custom");
+}
+
+export function getSavedColors(): string[] {
+  try {
+    const raw = localStorage.getItem(SAVED_COLORS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveColorToHistory(hex: string) {
+  const colors = getSavedColors().filter((c) => c.toLowerCase() !== hex.toLowerCase());
+  colors.unshift(hex);
+  localStorage.setItem(SAVED_COLORS_KEY, JSON.stringify(colors.slice(0, MAX_SAVED)));
 }
 
 export function setChatTheme(id: ChatThemeId) {

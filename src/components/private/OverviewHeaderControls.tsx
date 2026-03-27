@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
-import { CHAT_THEMES, getChatTheme, setChatTheme, getCustomColor, setCustomColor, type ChatThemeId } from "@/lib/chatTheme";
+import { CHAT_THEMES, getChatTheme, setChatTheme, getCustomColor, setCustomColor, getSavedColors, type ChatThemeId } from "@/lib/chatTheme";
 import { getFocusLossEnabled, setFocusLossEnabled } from "@/lib/focusLossSettings";
 
 interface Props {
@@ -11,6 +11,7 @@ interface Props {
 export function OverviewHeaderControls({ token }: Props) {
   const [activeTheme, setActiveTheme] = useState<ChatThemeId>(getChatTheme);
   const [customHex, setCustomHex] = useState(getCustomColor);
+  const [savedColors, setSavedColors] = useState(getSavedColors);
   const [focusLoss, setFocusLoss] = useState(getFocusLossEnabled);
   const colorRef = useRef<HTMLInputElement>(null);
 
@@ -23,6 +24,7 @@ export function OverviewHeaderControls({ token }: Props) {
     const hex = e.target.value;
     setCustomHex(hex);
     setCustomColor(hex);
+    setSavedColors(getSavedColors());
     setActiveTheme("custom");
   }, []);
 
@@ -57,7 +59,7 @@ export function OverviewHeaderControls({ token }: Props) {
             />
           </button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-48 p-3 space-y-2">
+        <PopoverContent align="end" className="w-48 p-3 space-y-2.5">
           <p className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">Accent</p>
           <div className="flex flex-wrap gap-2">
             {CHAT_THEMES.map((t) => (
@@ -78,6 +80,26 @@ export function OverviewHeaderControls({ token }: Props) {
               {activeTheme !== "custom" && "+"}
             </button>
           </div>
+          {savedColors.length > 0 && (
+            <>
+              <p className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">Saved</p>
+              <div className="flex flex-wrap gap-2">
+                {savedColors.map((hex) => (
+                  <button
+                    key={hex}
+                    onClick={() => {
+                      setCustomHex(hex);
+                      setCustomColor(hex);
+                      setActiveTheme("custom");
+                    }}
+                    className={`h-7 w-7 rounded-full transition-all ${activeTheme === "custom" && customHex.toLowerCase() === hex.toLowerCase() ? "ring-2 ring-foreground/60 ring-offset-1 ring-offset-background scale-110" : "hover:scale-105 active:scale-95"}`}
+                    style={{ background: hex }}
+                    title={hex}
+                  />
+                ))}
+              </div>
+            </>
+          )}
           <input
             ref={colorRef}
             type="color"
