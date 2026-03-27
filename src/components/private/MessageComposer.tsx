@@ -384,7 +384,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
               type="submit"
               size="icon"
               disabled={sending || uploading || uploadingVoice || !canSend}
-              className="h-9 w-9 rounded-full shrink-0 transition-transform active:scale-95"
+              className="h-9 w-9 rounded-full shrink-0 ml-0.5 transition-transform active:scale-95"
             >
               {uploadingVoice ? (
                 <Loader2 size={15} className="animate-spin" />
