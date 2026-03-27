@@ -37,6 +37,11 @@ export function getSavedColors(): string[] {
   } catch { return []; }
 }
 
+export function removeSavedColor(hex: string) {
+  const colors = getSavedColors().filter((c) => c.toLowerCase() !== hex.toLowerCase());
+  localStorage.setItem(SAVED_COLORS_KEY, JSON.stringify(colors));
+}
+
 function saveColorToHistory(hex: string) {
   const colors = getSavedColors().filter((c) => c.toLowerCase() !== hex.toLowerCase());
   colors.unshift(hex);
