@@ -6,6 +6,7 @@ import PrivateLayout from "@/components/private/PrivateLayout";
 import { MessageSquare, Puzzle, Plus, MapPin, ArrowRight } from "lucide-react";
 import { OverviewHeaderControls } from "@/components/private/OverviewHeaderControls";
 import { WhatsNewBanner } from "@/components/private/WhatsNewBanner";
+import { distanceMiles, formatDistance, humanTimestamp } from "@/lib/locationUtils";
 
 interface PuzzleSummary {
   id: string;
