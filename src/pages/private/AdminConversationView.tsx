@@ -19,6 +19,8 @@ import { VideoCallScreen } from "@/components/private/VideoCallScreen";
 import { IncomingCallBanner } from "@/components/private/IncomingCallBanner";
 import { useNicknames } from "@/hooks/useNicknames";
 import { NicknameEditor } from "@/components/private/NicknameEditor";
+import { useLocationSharing } from "@/hooks/useLocationSharing";
+import { LocationCard } from "@/components/private/LocationCard";
 
 interface Message {
   id: string;
