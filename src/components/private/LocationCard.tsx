@@ -231,7 +231,7 @@ export function LocationCard({
               <Maximize2 size={16} className="text-background opacity-0 group-hover:opacity-80 transition-opacity drop-shadow-lg" />
             </div>
           </button>
-          <div className="px-2.5 py-2 flex items-center justify-between">
+          <div className="px-2 py-1.5 flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <MapPin size={12} className="text-primary" />
               {incomingLocation && freshness ? (
