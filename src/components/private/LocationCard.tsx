@@ -156,11 +156,13 @@ export function LocationCard({
   if (myCoords) allMapCoords.push(myCoords);
   if (inCoords) allMapCoords.push(inCoords);
 
+  const [expanded, setExpanded] = useState(false);
+
   const handleTopTap = () => {
     if (isSharingMine || incomingLocation) {
-      setMapOpen(true);
+      setExpanded((v) => !v);
     } else {
-      setDrawerOpen(true);
+      setDrawerOpen((v) => !v);
     }
   };
 
