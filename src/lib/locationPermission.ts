@@ -73,7 +73,7 @@ export function getDeniedGuidance(): string {
 
 export function getUnavailableGuidance(): string {
   if (isIOS()) {
-    return "Location Services are turned off. Go to Settings → Privacy & Security → Location Services and turn them on.";
+    return "Location Services are turned off. Go to Settings → Privacy & Security → Location Services and turn them on. Also ensure Safari Websites is set to \"While Using\" under Location Services.";
   }
   return "Location is unavailable. Make sure Location Services are enabled in your device settings and try again.";
 }
