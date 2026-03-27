@@ -229,6 +229,25 @@ export function PrivateSidebar() {
       setUnreadCount(msgUnread);
       setUnsolvedPuzzles(unsolved);
 
+      // Check for incoming location activity
+      try {
+        const convId = isAdmin
+          ? (data?.conversations?.[0]?.id || Object.keys(prevConvsRef.current)[0])
+          : prevConvsRef.current.user ? Object.keys(prevConvsRef.current)[0] : null;
+        // We stored conversation data above; for user role it's in the `data` from get-my-conversation
+        const locConvId = isAdmin
+          ? ((await invokeMessaging("list-conversations", token)).conversations?.[0]?.id)
+          : conversationIdRef.current;
+        if (locConvId) {
+          const locData = await invokeMessaging("get-shared-location", token, { conversation_id: locConvId });
+          setHasLocationActivity(!!locData.incoming);
+        } else {
+          setHasLocationActivity(false);
+        }
+      } catch {
+        // Don't fail the whole poll for location
+      }
+
       // Only trigger push/browser notifications if user is NOT currently viewing a conversation
       const isInConversation =
         location.pathname === "/p/conversation" ||
