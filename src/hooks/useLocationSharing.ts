@@ -223,6 +223,7 @@ export function useLocationSharing(
         setMyLocation(myLoc);
         setIsSharingMine(true);
         sharingRef.current = true;
+        sessionStorage.setItem(SHARING_KEY, "1");
         setLoading(false);
         sendUpdate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, true);
 
