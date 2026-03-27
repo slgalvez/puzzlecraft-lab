@@ -36,6 +36,7 @@ export default function LocationView() {
   const [labelName, setLabelName] = useState("");
   const [labelIcon, setLabelIcon] = useState("⭐");
   const [showLabels, setShowLabels] = useState(true);
+  const [editingLabel, setEditingLabel] = useState<LocationLabel | null>(null);
 
   // Load labels
   useEffect(() => {
@@ -146,6 +147,20 @@ export default function LocationView() {
   const handleDeleteLabel = (id: string) => {
     deleteLocationLabel(id);
     setLabels(getLocationLabels());
+    setEditingLabel(null);
+  };
+
+  const handleStartEdit = (label: LocationLabel) => {
+    setEditingLabel(label);
+    setLabelName(label.name);
+    setLabelIcon(label.icon);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingLabel || !labelName.trim()) return;
+    saveLocationLabel({ ...editingLabel, name: labelName.trim(), icon: labelIcon });
+    setLabels(getLocationLabels());
+    setEditingLabel(null);
   };
 
   // Re-render for freshness
@@ -307,7 +322,11 @@ export default function LocationView() {
         {labels.length > 0 && (
           <div className="shrink-0 border-t border-border/20 px-4 py-1.5 flex gap-2 overflow-x-auto scrollbar-none">
             {labels.map((l) => (
-              <div key={l.id} className="flex items-center gap-1.5 shrink-0 bg-muted/20 rounded-full px-2.5 py-0.5 group">
+              <button
+                key={l.id}
+                onClick={() => handleStartEdit(l)}
+                className="flex items-center gap-1.5 shrink-0 bg-muted/20 hover:bg-muted/30 rounded-full px-2.5 py-0.5 group transition-colors"
+              >
                 <span className="text-xs">{l.icon}</span>
                 <span className="text-[10px] text-foreground/80">{l.name}</span>
                 {myCoords && (
@@ -315,14 +334,55 @@ export default function LocationView() {
                     {formatDistance(distanceMiles(myCoords.lat, myCoords.lng, l.lat, l.lng))}
                   </span>
                 )}
-                <button
-                  onClick={() => handleDeleteLabel(l.id)}
-                  className="text-muted-foreground/30 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100 ml-0.5"
-                >
-                  <X size={8} />
-                </button>
-              </div>
+              </button>
             ))}
+          </div>
+        )}
+
+        {/* Edit label panel */}
+        {editingLabel && (
+          <div className="shrink-0 border-t border-border/20 px-4 py-2 bg-card/60 backdrop-blur-sm space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium text-foreground">Edit label</span>
+              <button onClick={() => setEditingLabel(null)} className="text-muted-foreground hover:text-foreground">
+                <X size={12} />
+              </button>
+            </div>
+            <div className="flex gap-1 flex-wrap">
+              {getDefaultIcons().map((icon) => (
+                <button
+                  key={icon}
+                  onClick={() => setLabelIcon(icon)}
+                  className={`text-base p-0.5 rounded ${labelIcon === icon ? "bg-primary/20 ring-1 ring-primary" : "hover:bg-muted/30"}`}
+                >
+                  {icon}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={labelName}
+                onChange={(e) => setLabelName(e.target.value)}
+                className="flex-1 bg-muted/30 border border-border/30 rounded-md px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary/50"
+                maxLength={20}
+                autoFocus
+                onKeyDown={(e) => e.key === "Enter" && handleSaveEdit()}
+              />
+              <button
+                onClick={handleSaveEdit}
+                disabled={!labelName.trim()}
+                className="text-[10px] bg-primary text-primary-foreground rounded-md px-3 py-1 disabled:opacity-40"
+              >
+                Save
+              </button>
+            </div>
+            <button
+              onClick={() => handleDeleteLabel(editingLabel.id)}
+              className="text-[10px] text-destructive/60 hover:text-destructive transition-colors"
+            >
+              Delete label
+            </button>
           </div>
         )}
 
