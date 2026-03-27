@@ -55,38 +55,30 @@ function StatusDot({ status, animated = true }: { status: FreshnessStatus; anima
   );
 }
 
-function buildStaticMapUrl(
-  coords: { lat: number; lng: number }[],
-  size: string,
-  zoom?: number,
-) {
-  if (coords.length === 0) return "";
-  let center: { lat: number; lng: number };
-  let z = zoom ?? 15;
+function computeMapCenter(coords: { lat: number; lng: number }[]): { lat: number; lng: number; zoom: number } {
+  if (coords.length === 0) return { lat: 0, lng: 0, zoom: 15 };
+  if (coords.length === 1) return { ...coords[0], zoom: 15 };
+  const center = {
+    lat: (coords[0].lat + coords[1].lat) / 2,
+    lng: (coords[0].lng + coords[1].lng) / 2,
+  };
+  const maxDelta = Math.max(Math.abs(coords[0].lat - coords[1].lat), Math.abs(coords[0].lng - coords[1].lng));
+  let zoom = 15;
+  if (maxDelta > 0.2) zoom = 10;
+  else if (maxDelta > 0.1) zoom = 11;
+  else if (maxDelta > 0.05) zoom = 12;
+  else if (maxDelta > 0.02) zoom = 13;
+  else if (maxDelta > 0.005) zoom = 14;
+  return { ...center, zoom };
+}
 
-  if (coords.length === 2) {
-    center = {
-      lat: (coords[0].lat + coords[1].lat) / 2,
-      lng: (coords[0].lng + coords[1].lng) / 2,
-    };
-    const dlat = Math.abs(coords[0].lat - coords[1].lat);
-    const dlng = Math.abs(coords[0].lng - coords[1].lng);
-    const maxDelta = Math.max(dlat, dlng);
-    if (maxDelta > 0.2) z = 10;
-    else if (maxDelta > 0.1) z = 11;
-    else if (maxDelta > 0.05) z = 12;
-    else if (maxDelta > 0.02) z = 13;
-    else if (maxDelta > 0.005) z = 14;
-    else z = 15;
-  } else {
-    center = coords[0];
-  }
-
-  const markers = coords
-    .map((c) => `${c.lat},${c.lng},red-pushpin`)
-    .join("|");
-
-  return `https://staticmap.openstreetmap.de/staticmap.php?center=${center.lat},${center.lng}&zoom=${z}&size=${size}&markers=${markers}`;
+function buildOsmEmbedUrl(coords: { lat: number; lng: number }[]): string {
+  const { lat, lng, zoom } = computeMapCenter(coords);
+  // Marker layer via OSM embed; reliable and free
+  const markerParam = coords.length > 0
+    ? `&marker=${coords[0].lat},${coords[0].lng}`
+    : "";
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.01},${lat - 0.01},${lng + 0.01},${lat + 0.01}&layer=mapnik${markerParam}`;
 }
 
 export function LocationCard({
