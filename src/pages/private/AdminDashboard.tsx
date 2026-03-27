@@ -149,10 +149,11 @@ const AdminDashboard = () => {
         <WhatsNewBanner />
 
         {/* Header */}
-        <div className="px-0.5">
+        <div className="px-0.5 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-foreground tracking-tight">
             Hi, {user?.first_name}
           </h2>
+          <OverviewHeaderControls token={token} />
         </div>
 
         {/* Active now — only when relevant */}
