@@ -24,6 +24,7 @@ export function OverviewHeaderControls({ token }: Props) {
     const hex = e.target.value;
     setCustomHex(hex);
     setCustomColor(hex);
+    setSavedColors(getSavedColors());
     setActiveTheme("custom");
   }, []);
 
