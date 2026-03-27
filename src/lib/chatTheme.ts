@@ -1,6 +1,8 @@
 /** Minimal chat theme storage — bubble accent color */
 const STORAGE_KEY = "private_chat_theme";
 const CUSTOM_COLOR_KEY = "private_chat_custom_color";
+const SAVED_COLORS_KEY = "private_chat_saved_colors";
+const MAX_SAVED = 6;
 
 export const CHAT_THEMES = [
   { id: "default", label: "Teal", hue: "172 50% 45%" },
