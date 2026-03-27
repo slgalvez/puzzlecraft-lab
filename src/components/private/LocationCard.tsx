@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { MapPin, Navigation, Loader2, AlertCircle, ExternalLink, Maximize2, Square } from "lucide-react";
+import { MapPin, Navigation, Loader2, AlertCircle, ExternalLink, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { type SharedLocation, getFreshness, freshnessLabel, type FreshnessStatus } from "@/hooks/useLocationSharing";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -156,11 +156,13 @@ export function LocationCard({
   if (myCoords) allMapCoords.push(myCoords);
   if (inCoords) allMapCoords.push(inCoords);
 
+  const [expanded, setExpanded] = useState(false);
+
   const handleTopTap = () => {
     if (isSharingMine || incomingLocation) {
-      setMapOpen(true);
+      setExpanded((v) => !v);
     } else {
-      setDrawerOpen(true);
+      setDrawerOpen((v) => !v);
     }
   };
 
@@ -172,93 +174,85 @@ export function LocationCard({
   
 
   return (
-    <div className="space-y-1">
-      {/* ── Top status bar ── */}
+    <div>
+      {/* ── Thin inline status row ── */}
       <button
         onClick={handleTopTap}
-        className={`flex min-h-5 w-full items-center gap-1 px-1 py-0.5 text-left text-[10px] leading-none transition-colors rounded-sm ${
+        className={`flex w-full items-center gap-1 px-1 py-px text-left text-[9px] leading-tight transition-colors ${
           isSharingMine
             ? "text-primary"
             : incomingLocation
               ? "text-foreground"
-              : "text-muted-foreground/60 hover:text-muted-foreground"
+              : "text-muted-foreground/50 hover:text-muted-foreground"
         }`}
       >
         {isSharingMine ? (
           <>
             <StatusDot status="live" />
-            <span className="font-medium leading-none">Sharing location…</span>
-            <button
-              onClick={(e) => { e.stopPropagation(); onStopSharing(); }}
-              className="ml-auto flex items-center gap-0.5 text-[8px] leading-none text-muted-foreground/55 transition-colors hover:text-destructive"
-            >
-              <Square size={8} />
-              Stop
-            </button>
+            <span className="font-medium">Sharing location</span>
           </>
         ) : incomingLocation ? (
           <>
             <StatusDot status={freshness!} />
-            <span className="font-medium leading-none">{otherName} — {label}</span>
-            <Maximize2 size={9} className="ml-auto text-muted-foreground/25" />
+            <span className="font-medium">{otherName} — {label}</span>
           </>
         ) : (
           <>
-            <MapPin size={11} />
-            <span className="leading-none">Location sharing</span>
+            <MapPin size={9} />
+            <span>Location</span>
           </>
         )}
       </button>
 
       {/* ── Error ── */}
       {error && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-2.5 flex items-start gap-2">
-          <AlertCircle size={14} className="text-destructive mt-0.5 shrink-0" />
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2 flex items-start gap-2 mt-0.5">
+          <AlertCircle size={12} className="text-destructive mt-0.5 shrink-0" />
           <div className="space-y-1 flex-1">
-            <p className="text-xs text-destructive">{error}</p>
-            <Button size="sm" variant="outline" onClick={onStartSharing} className="text-xs h-7">
+            <p className="text-[10px] text-destructive">{error}</p>
+            <Button size="sm" variant="outline" onClick={onStartSharing} className="text-[10px] h-6">
               Try again
             </Button>
           </div>
         </div>
       )}
 
-      {/* ── Thread location card (visible when any location activity) ── */}
-      {hasAnyLocationActivity && (
-        <div className="rounded-lg border border-border/25 bg-card/50 overflow-hidden">
+      {/* ── Collapsible map card ── */}
+      {hasAnyLocationActivity && expanded && (
+        <div className="rounded-md border border-border/20 bg-card/40 overflow-hidden mt-0.5">
           <button onClick={() => setMapOpen(true)} className="block relative group w-full">
             <img
-              src={buildStaticMapUrl(allMapCoords.length > 0 ? allMapCoords : [], "400x160")}
+              src={buildStaticMapUrl(allMapCoords.length > 0 ? allMapCoords : [], "400x140")}
               alt="Location map"
-              className="w-full h-[130px] object-cover"
+              className="w-full h-[110px] object-cover"
               loading="lazy"
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-              <Maximize2 size={16} className="text-background opacity-0 group-hover:opacity-80 transition-opacity drop-shadow-lg" />
+              <Maximize2 size={14} className="text-background opacity-0 group-hover:opacity-70 transition-opacity drop-shadow-lg" />
             </div>
           </button>
-          <div className="px-2 py-1.5 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <MapPin size={12} className="text-primary" />
+          <div className="px-2 py-1 flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <MapPin size={10} className="text-primary" />
               {incomingLocation && freshness ? (
-                <span className="text-[11px] text-foreground">
-                  📍 {freshness === "live" ? "Live now" : label}
+                <span className="text-[10px] text-foreground">
+                  {freshness === "live" ? "Live" : label}
                 </span>
               ) : isSharingMine ? (
-                <span className="text-[11px] text-primary">📍 Sharing live</span>
+                <span className="text-[10px] text-primary">Live</span>
               ) : null}
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setMapOpen(true)}
-                className="text-[10px] text-primary hover:underline"
+                className="text-[9px] text-primary hover:underline"
               >
                 Open Map
               </button>
               {isSharingMine && (
                 <button
                   onClick={onStopSharing}
-                  className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+                  className="text-[9px] text-muted-foreground/40 hover:text-destructive transition-colors"
                 >
                   Stop
                 </button>
@@ -380,30 +374,30 @@ export function LocationCard({
           <div className="p-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               {incomingLocation?.accuracy && (
-                <p className="text-[11px] text-muted-foreground">±{Math.round(incomingLocation.accuracy)}m</p>
-              )}
-              {isSharingMine && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={onStopSharing}
-                  className="text-xs h-7 text-muted-foreground hover:text-destructive"
-                >
-                  Stop sharing
-                </Button>
+                <p className="text-[10px] text-muted-foreground">±{Math.round(incomingLocation.accuracy)}m</p>
               )}
             </div>
-            {inCoords && (
-              <a
-                href={`https://www.google.com/maps?q=${inCoords.lat},${inCoords.lng}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-primary hover:underline flex items-center gap-1"
-              >
-                <ExternalLink size={12} />
-                Google Maps
-              </a>
-            )}
+            <div className="flex items-center gap-3">
+              {isSharingMine && (
+                <button
+                  onClick={onStopSharing}
+                  className="text-[10px] text-muted-foreground/40 hover:text-destructive transition-colors"
+                >
+                  Stop sharing
+                </button>
+              )}
+              {inCoords && (
+                <a
+                  href={`https://www.google.com/maps?q=${inCoords.lat},${inCoords.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-primary hover:underline flex items-center gap-1"
+                >
+                  <ExternalLink size={10} />
+                  Maps
+                </a>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
