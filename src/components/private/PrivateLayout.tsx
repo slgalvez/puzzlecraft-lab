@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { getFocusLossEnabled } from "@/lib/focusLossSettings";
+import { isCallActive } from "@/lib/callActive";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PrivateSidebar } from "@/components/private/PrivateSidebar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -78,6 +79,7 @@ export default function PrivateLayout({ children, title, fullHeight }: PrivateLa
     const handleVisibilityChange = () => {
       if (!armed) return;
       if (!getFocusLossEnabled()) return;
+      if (isCallActive()) return; // Don't exit during an active video call
       if (document.visibilityState === "hidden") {
         quickExit();
       }
@@ -86,6 +88,7 @@ export default function PrivateLayout({ children, title, fullHeight }: PrivateLa
     const handlePageHide = () => {
       if (!armed) return;
       if (!getFocusLossEnabled()) return;
+      if (isCallActive()) return; // Don't exit during an active video call
       quickExit();
     };
 

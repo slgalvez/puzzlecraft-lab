@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
+import { setCallActive } from "@/lib/callActive";
 
 // ── Lightweight call diagnostics ──
 // All logs use console.debug so they're hidden by default in production
@@ -74,7 +75,12 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
   // Keep refs in sync with state
   useEffect(() => { localStreamRef.current = localStream; }, [localStream]);
-  useEffect(() => { callStateRef.current = callState; }, [callState]);
+  useEffect(() => {
+    callStateRef.current = callState;
+    // Keep global call-active flag in sync so focus-loss protection doesn't kill the session mid-call
+    const active = callState !== "idle" && callState !== "ended";
+    setCallActive(active);
+  }, [callState]);
   useEffect(() => { tokenRef.current = token; }, [token]);
 
   // Stable cleanup — uses ref instead of stale localStream closure
@@ -583,6 +589,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       }
       // Stop tracks on unmount
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
+      setCallActive(false);
     };
   }, []);
 
