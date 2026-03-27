@@ -56,11 +56,11 @@ export function getDeniedGuidance(): string {
   const ios = isIOS();
 
   if (ios && standalone) {
-    return "Location is blocked for this app. Go to Settings → Privacy & Security → Location Services → find this app and set to \"While Using\".";
+    return "Location is blocked. This app uses Safari's location permission on iPhone. Go to Settings → Privacy & Security → Location Services → Safari Websites, and set to \"While Using the App\". Make sure Location Services is on. Then close and reopen the app.";
   }
 
   if (ios) {
-    return "Location is blocked. In Safari, tap the \"aA\" menu → Website Settings → Location, and set to \"Allow\". Also check Settings → Privacy & Security → Location Services is on.";
+    return "Location is blocked. In Safari, tap the \"aA\" menu → Website Settings → Location, and set to \"Allow\". Also check Settings → Privacy & Security → Location Services → Safari Websites is set to \"While Using\".";
   }
 
   if (standalone) {
