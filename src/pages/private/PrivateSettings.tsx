@@ -48,6 +48,7 @@ const PrivateSettings = () => {
   const [focusLossOn, setFocusLossOn] = useState(getFocusLossEnabled);
   const [activeTheme, setActiveTheme] = useState<ChatThemeId>(getChatTheme);
   const [customHex, setCustomHex] = useState(getCustomColor);
+  const [savedColors, setSavedColors] = useState(getSavedColors);
   const colorInputRef = useRef<HTMLInputElement>(null);
   const [notificationsOn, setNotificationsOn] = useState(getNotificationsEnabled);
 
