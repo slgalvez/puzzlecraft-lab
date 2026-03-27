@@ -164,6 +164,13 @@ export function useLocationSharing(
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        const myLoc: SharedLocation = {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          updated_at: new Date().toISOString(),
+        };
+        setMyLocation(myLoc);
         setIsSharingMine(true);
         sharingRef.current = true;
         setLoading(false);
