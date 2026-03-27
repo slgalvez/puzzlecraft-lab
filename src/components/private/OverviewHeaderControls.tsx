@@ -101,7 +101,10 @@ export function OverviewHeaderControls({ token }: Props) {
                     style={{ background: hex }}
                     title="Tap to use · right-click to remove"
                   >
-                    <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-background text-[8px] text-muted-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">×</span>
+                    <span
+                      className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-background text-[8px] text-muted-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:text-foreground"
+                      onClick={(e) => { e.stopPropagation(); removeSavedColor(hex); setSavedColors(getSavedColors()); }}
+                    >×</span>
                   </button>
                 ))}
               </div>
