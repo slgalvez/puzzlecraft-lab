@@ -170,7 +170,7 @@ export function LocationCard({
       {/* ── Top status bar ── */}
       <button
         onClick={handleTopTap}
-        className={`flex items-center gap-2 text-xs px-1 py-0.5 transition-colors w-full text-left rounded ${
+        className={`flex items-center gap-1.5 text-[11px] px-1.5 py-px transition-colors w-full text-left rounded ${
           isSharingMine
             ? "text-primary"
             : incomingLocation
