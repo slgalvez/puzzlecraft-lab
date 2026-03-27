@@ -112,6 +112,7 @@ function PrivateRoutes() {
         <Route path="users" element={<PrivateRoute><AdminUsers /></PrivateRoute>} />
         <Route path="failed-logins" element={<PrivateRoute><AdminFailedLogins /></PrivateRoute>} />
         <Route path="for-you" element={<PrivateRoute><ForYou /></PrivateRoute>} />
+        <Route path="location" element={<PrivateRoute><LocationView /></PrivateRoute>} />
         <Route path="settings" element={<PrivateRoute><PrivateSettings /></PrivateRoute>} />
       </Routes>
     </AuthProvider>
