@@ -1,10 +1,13 @@
 import { useRef, useEffect, useCallback } from "react";
 
+const SCROLL_CACHE_KEY = "chat_scroll_offset";
+
 /**
  * iMessage-like chat scroll behavior:
  * - Instant scroll to bottom on first load
  * - Smooth scroll to bottom when new messages arrive (only if user is near bottom)
  * - Preserve scroll position when older messages are prepended via polling
+ * - Cache/restore scroll position across tab switches (e.g. Location ↔ Conversation)
  */
 export function useChatScroll(messageIds: string[]) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -12,6 +15,7 @@ export function useChatScroll(messageIds: string[]) {
   const initialScrollDone = useRef(false);
   const prevIdsRef = useRef<string[]>([]);
   const userSentRef = useRef(false);
+  const restoredRef = useRef(false);
 
   /** Call this right before sending a message to force scroll-to-bottom */
   const markUserSent = useCallback(() => {
@@ -35,14 +39,51 @@ export function useChatScroll(messageIds: string[]) {
     }
   }, []);
 
+  // Cache scroll offset on unmount
+  useEffect(() => {
+    const container = containerRef.current;
+    return () => {
+      if (container && initialScrollDone.current) {
+        // Store distance from bottom so we can restore relative to new content
+        const distFromBottom = container.scrollHeight - container.scrollTop;
+        try {
+          sessionStorage.setItem(SCROLL_CACHE_KEY, String(distFromBottom));
+        } catch {}
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (messageIds.length === 0) return;
 
     const container = containerRef.current;
     if (!container) return;
 
-    // First load: scroll to bottom immediately + safety re-scroll after layout settles
+    // First load: try to restore cached scroll, otherwise scroll to bottom
     if (!initialScrollDone.current) {
+      if (!restoredRef.current) {
+        restoredRef.current = true;
+        const cached = sessionStorage.getItem(SCROLL_CACHE_KEY);
+        if (cached) {
+          const distFromBottom = parseInt(cached, 10);
+          if (!isNaN(distFromBottom) && distFromBottom > 0) {
+            // Restore after layout
+            requestAnimationFrame(() => {
+              container.scrollTop = container.scrollHeight - distFromBottom;
+              // If we ended up near bottom anyway, snap to exact bottom
+              if (container.scrollHeight - container.scrollTop - container.clientHeight < 60) {
+                scrollToBottom("instant");
+              }
+              setTimeout(() => { initialScrollDone.current = true; }, 150);
+            });
+            try { sessionStorage.removeItem(SCROLL_CACHE_KEY); } catch {}
+            prevIdsRef.current = messageIds;
+            return;
+          }
+          try { sessionStorage.removeItem(SCROLL_CACHE_KEY); } catch {}
+        }
+      }
+
       scrollToBottom("instant");
       requestAnimationFrame(() => {
         scrollToBottom("instant");
