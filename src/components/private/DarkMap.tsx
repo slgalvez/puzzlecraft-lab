@@ -93,14 +93,30 @@ export default function DarkMap({ markers, labels, className = "", interactive =
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
   const labelMarkersRef = useRef<L.Marker[]>([]);
-  const initialFitDone = useRef(false);
   const userInteracted = useRef(false);
   const [showRecenter, setShowRecenter] = useState(false);
+  // Track the number of distinct marker types we've seen to detect when second user appears
+  const prevMarkerCountRef = useRef(0);
 
   // Track if user has panned/zoomed
   const onUserInteraction = useCallback(() => {
     userInteracted.current = true;
     setShowRecenter(true);
+  }, []);
+
+  const fitMapToBounds = useCallback((map: L.Map, bounds: L.LatLngExpression[], animate = false) => {
+    if (bounds.length === 0) return;
+    (map as any)._programmaticZoom = true;
+    if (bounds.length > 1) {
+      map.fitBounds(L.latLngBounds(bounds), {
+        padding: [60, 60],
+        maxZoom: 15,
+        animate,
+      });
+    } else {
+      map.setView(bounds[0], 15, { animate });
+    }
+    setTimeout(() => { (map as any)._programmaticZoom = false; }, 300);
   }, []);
 
   const handleRecenter = useCallback(() => {
@@ -111,12 +127,8 @@ export default function DarkMap({ markers, labels, className = "", interactive =
 
     const bounds: L.LatLngExpression[] = [];
     markersRef.current.forEach((m) => bounds.push(m.getLatLng()));
-    if (bounds.length > 1) {
-      map.fitBounds(L.latLngBounds(bounds), { padding: [40, 40], maxZoom: 16, animate: true });
-    } else if (bounds.length === 1) {
-      map.setView(bounds[0], 15, { animate: true });
-    }
-  }, []);
+    fitMapToBounds(map, bounds, true);
+  }, [fitMapToBounds]);
 
   // Initialize map
   useEffect(() => {
@@ -144,7 +156,6 @@ export default function DarkMap({ markers, labels, className = "", interactive =
     if (interactive) {
       map.on("dragstart", onUserInteraction);
       map.on("zoomstart", () => {
-        // Only count as user interaction if it's not programmatic (typed loosely)
         if (!(map as any)._programmaticZoom) onUserInteraction();
       });
     }
@@ -176,12 +187,12 @@ export default function DarkMap({ markers, labels, className = "", interactive =
     return () => {
       map.remove();
       mapRef.current = null;
-      initialFitDone.current = false;
+      prevMarkerCountRef.current = 0;
       userInteracted.current = false;
     };
   }, [interactive, onMapLongPress, onUserInteraction]);
 
-  // Update markers — only auto-fit on first load or when user hasn't interacted
+  // Update markers
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -207,20 +218,29 @@ export default function DarkMap({ markers, labels, className = "", interactive =
       bounds.push([m.lat, m.lng]);
     });
 
-    // Only auto-fit on first load or if user hasn't interacted
-    if (!userInteracted.current) {
-      if (bounds.length > 1) {
-        (map as any)._programmaticZoom = true;
-        map.fitBounds(L.latLngBounds(bounds), { padding: [40, 40], maxZoom: 16, animate: initialFitDone.current });
-        setTimeout(() => { (map as any)._programmaticZoom = false; }, 300);
-      } else if (bounds.length === 1) {
-        (map as any)._programmaticZoom = true;
-        map.setView(bounds[0], 15, { animate: initialFitDone.current });
-        setTimeout(() => { (map as any)._programmaticZoom = false; }, 300);
+    const currentCount = markers.length;
+    const prevCount = prevMarkerCountRef.current;
+
+    // Auto-fit when:
+    // 1. First markers appear (0 → N)
+    // 2. Second marker appears (1 → 2) — always refit to show both users
+    // 3. User hasn't interacted with the map
+    const shouldAutoFit =
+      (prevCount === 0 && currentCount > 0) ||  // first data
+      (prevCount === 1 && currentCount === 2) || // second user appeared
+      (!userInteracted.current && currentCount > 0);
+
+    if (shouldAutoFit && bounds.length > 0) {
+      // Reset user interaction when going from 1→2 so both are visible
+      if (prevCount === 1 && currentCount === 2) {
+        userInteracted.current = false;
+        setShowRecenter(false);
       }
-      initialFitDone.current = true;
+      fitMapToBounds(map, bounds, prevCount > 0);
     }
-  }, [markers]);
+
+    prevMarkerCountRef.current = currentCount;
+  }, [markers, fitMapToBounds]);
 
   // Update label markers
   useEffect(() => {
