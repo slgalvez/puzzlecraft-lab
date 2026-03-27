@@ -184,7 +184,7 @@ export function LocationCard({
             <span className="font-medium">Sharing location…</span>
             <button
               onClick={(e) => { e.stopPropagation(); onStopSharing(); }}
-              className="ml-auto text-[10px] text-muted-foreground/70 hover:text-destructive transition-colors flex items-center gap-0.5"
+              className="ml-auto text-[9px] text-muted-foreground/60 hover:text-destructive transition-colors flex items-center gap-0.5"
             >
               <Square size={8} />
               Stop
