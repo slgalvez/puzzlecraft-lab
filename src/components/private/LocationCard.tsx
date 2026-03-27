@@ -3,7 +3,7 @@ import { MapPin, Navigation, Loader2, AlertCircle, ExternalLink, Maximize2, Squa
 import { Button } from "@/components/ui/button";
 import { type SharedLocation, getFreshness, freshnessLabel, type FreshnessStatus } from "@/hooks/useLocationSharing";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
+import { isStandaloneMode } from "@/lib/locationPermission";
   Drawer,
   DrawerContent,
   DrawerHeader,
