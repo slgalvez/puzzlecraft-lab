@@ -307,12 +307,10 @@ export function useLocationSharing(
   }, [onSessionExpired]);
 
   // Auto-resume sharing if it was active before navigation
-  const resumedRef = useRef(false);
   useEffect(() => {
-    if (resumedRef.current) return;
     if (!token || !conversationId) return;
+    if (sharingRef.current) return; // already sharing
     if (sessionStorage.getItem(SHARING_KEY) !== "1") return;
-    resumedRef.current = true;
     // Resume silently — permission was already granted
     permissionGrantedRef.current = true;
     setIsSharingMine(true);
