@@ -44,7 +44,7 @@ const PrivateSettings = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMsg, setPwMsg] = useState("");
-  const [focusLossOn, setFocusLossOn] = useState(() => user?.focus_loss_protection !== false);
+  const [focusLossOn, setFocusLossOn] = useState(getFocusLossEnabled);
   const [activeTheme, setActiveTheme] = useState<ChatThemeId>(getChatTheme);
   const [customHex, setCustomHex] = useState(getCustomColor);
   const colorInputRef = useRef<HTMLInputElement>(null);
