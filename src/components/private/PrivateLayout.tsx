@@ -79,6 +79,7 @@ export default function PrivateLayout({ children, title, fullHeight }: PrivateLa
     const handleVisibilityChange = () => {
       if (!armed) return;
       if (!getFocusLossEnabled()) return;
+      if (isCallActive()) return; // Don't exit during an active video call
       if (document.visibilityState === "hidden") {
         quickExit();
       }
