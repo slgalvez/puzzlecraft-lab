@@ -25,6 +25,7 @@ import {
   setChatTheme,
   setCustomColor,
   getCustomColor,
+  getSavedColors,
   type ChatThemeId,
 } from "@/lib/chatTheme";
 
@@ -47,6 +48,7 @@ const PrivateSettings = () => {
   const [focusLossOn, setFocusLossOn] = useState(getFocusLossEnabled);
   const [activeTheme, setActiveTheme] = useState<ChatThemeId>(getChatTheme);
   const [customHex, setCustomHex] = useState(getCustomColor);
+  const [savedColors, setSavedColors] = useState(getSavedColors);
   const colorInputRef = useRef<HTMLInputElement>(null);
   const [notificationsOn, setNotificationsOn] = useState(getNotificationsEnabled);
 
@@ -155,6 +157,7 @@ const PrivateSettings = () => {
     const hex = e.target.value;
     setCustomHex(hex);
     setCustomColor(hex);
+    setSavedColors(getSavedColors());
     setActiveTheme("custom");
   };
 
@@ -357,6 +360,30 @@ const PrivateSettings = () => {
               />
             </div>
           </div>
+          {savedColors.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">Saved colors</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                {savedColors.map((hex) => (
+                  <button
+                    key={hex}
+                    onClick={() => {
+                      setCustomHex(hex);
+                      setCustomColor(hex);
+                      setActiveTheme("custom");
+                    }}
+                    className={`w-8 h-8 rounded-full border-2 transition-all ${
+                      activeTheme === "custom" && customHex.toLowerCase() === hex.toLowerCase()
+                        ? "border-foreground scale-110"
+                        : "border-transparent hover:border-muted-foreground/40"
+                    }`}
+                    style={{ background: hex }}
+                    title={hex}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="border-t border-border" />
