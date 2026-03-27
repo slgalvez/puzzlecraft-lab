@@ -116,7 +116,10 @@ export default function LocationView() {
     prevInRef.current = curr;
   }, [incomingLocation?.latitude, incomingLocation?.longitude, incomingLocation?.updated_at]);
 
-  const myCoords = myLocation ? { lat: myLocation.latitude, lng: myLocation.longitude } : null;
+  // Use shared location if actively sharing, otherwise use viewer's silent GPS position
+  const myCoords = myLocation
+    ? { lat: myLocation.latitude, lng: myLocation.longitude }
+    : viewerPos;
   const inCoords = incomingLocation ? { lat: incomingLocation.latitude, lng: incomingLocation.longitude } : null;
   const freshness = incomingLocation ? getFreshness(incomingLocation.updated_at) : null;
   const timestamp = incomingLocation ? humanTimestamp(incomingLocation.updated_at) : "";
