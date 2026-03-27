@@ -18,9 +18,9 @@ export type FreshnessStatus = "live" | "recent" | "stale";
 
 export function getFreshness(updatedAt: string): FreshnessStatus {
   const age = Date.now() - new Date(updatedAt).getTime();
-  if (age < 30_000) return "live";      // <30s = live
-  if (age < 120_000) return "recent";   // <2min = recent
-  return "stale";                        // >2min = stale
+  if (age < 30_000) return "live";
+  if (age < 120_000) return "recent";
+  return "stale";
 }
 
 export function freshnessLabel(updatedAt: string): string {
@@ -58,6 +58,8 @@ export function useLocationSharing(
   const sharingRef = useRef(false);
   const tokenRef = useRef(token);
   const convRef = useRef(conversationId);
+  // Track if permission was already granted this session — avoid re-prompting
+  const permissionGrantedRef = useRef(false);
   tokenRef.current = token;
   convRef.current = conversationId;
 
@@ -72,7 +74,6 @@ export function useLocationSharing(
       });
       if (data.incoming) {
         setIncomingLocation((prev) => {
-          // Only update if coords actually changed or freshness differs
           if (
             prev &&
             prev.latitude === data.incoming.latitude &&
@@ -112,6 +113,7 @@ export function useLocationSharing(
     return () => clearInterval(timer);
   }, [incomingLocation]);
 
+  // Listen for permission changes (visibility/focus) — but DON'T re-prompt
   useEffect(() => {
     let cancelled = false;
 
@@ -119,7 +121,8 @@ export function useLocationSharing(
       const state = await queryLocationPermission();
       if (cancelled) return;
 
-      if (state === "granted" || state === "prompt" || state === "unknown") {
+      if (state === "granted") {
+        permissionGrantedRef.current = true;
         setError((prev) => (prev && prev.toLowerCase().includes("location") ? null : prev));
       }
     };
@@ -165,17 +168,15 @@ export function useLocationSharing(
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden" && sharingRef.current) {
-        // Send a last-known location snapshot
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             sendUpdate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
           },
-          () => {}, // silently fail
+          () => {},
           { enableHighAccuracy: false, maximumAge: 30000, timeout: 3000 },
         );
       }
       if (document.visibilityState === "visible" && sharingRef.current) {
-        // Re-entry refresh: immediately get fresh location
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             sendUpdate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
@@ -190,28 +191,9 @@ export function useLocationSharing(
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [sendUpdate]);
 
-  const startSharing = useCallback(async () => {
-    if (!("geolocation" in navigator)) {
-      setError("Location is not supported on this device");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    // Preflight: check permission state before requesting GPS
-    const permState = await queryLocationPermission();
-    if (permState === "unsupported") {
-      setLoading(false);
-      setError("Location is not supported on this device");
-      return;
-    }
-    if (permState === "denied") {
-      setLoading(false);
-      setError(getDeniedGuidance());
-      return;
-    }
-
+  /** Start the GPS watch — called only from explicit user action or resume */
+  const startGpsWatch = useCallback((sendStartAction: boolean) => {
+    // Get initial position then start watching
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const myLoc: SharedLocation = {
@@ -223,11 +205,18 @@ export function useLocationSharing(
         setMyLocation(myLoc);
         setIsSharingMine(true);
         sharingRef.current = true;
+        permissionGrantedRef.current = true;
         sessionStorage.setItem(SHARING_KEY, "1");
         setLoading(false);
-        sendUpdate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, true);
+        setError(null);
 
-        // Start watching
+        if (sendStartAction) {
+          sendUpdate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, true);
+        } else {
+          sendUpdate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+        }
+
+        // Start watching — no further permission prompts since already granted
         watchIdRef.current = navigator.geolocation.watchPosition(
           (watchPos) => {
             if (!sharingRef.current) return;
@@ -252,6 +241,7 @@ export function useLocationSharing(
       (posErr) => {
         setLoading(false);
         if (posErr.code === 1) {
+          permissionGrantedRef.current = false;
           setError(getDeniedGuidance());
         } else if (posErr.code === 2) {
           setError(getUnavailableGuidance());
@@ -262,6 +252,34 @@ export function useLocationSharing(
       { enableHighAccuracy: true, timeout: 15000 },
     );
   }, [sendUpdate]);
+
+  /** User-initiated start — the ONLY place we request permission */
+  const startSharing = useCallback(async () => {
+    if (!("geolocation" in navigator)) {
+      setError("Location is not supported on this device");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    // If permission was already granted this session, skip preflight check
+    if (!permissionGrantedRef.current) {
+      const permState = await queryLocationPermission();
+      if (permState === "unsupported") {
+        setLoading(false);
+        setError("Location is not supported on this device");
+        return;
+      }
+      if (permState === "denied") {
+        setLoading(false);
+        setError(getDeniedGuidance());
+        return;
+      }
+    }
+
+    startGpsWatch(true);
+  }, [startGpsWatch]);
 
   const stopSharing = useCallback(async () => {
     sharingRef.current = false;
@@ -291,42 +309,12 @@ export function useLocationSharing(
     if (!token || !conversationId) return;
     if (sessionStorage.getItem(SHARING_KEY) !== "1") return;
     resumedRef.current = true;
-    // Silently re-start the GPS watch without calling start-location-sharing again
+    // Resume silently — permission was already granted
+    permissionGrantedRef.current = true;
     setIsSharingMine(true);
     sharingRef.current = true;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setMyLocation({
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
-          updated_at: new Date().toISOString(),
-        });
-        sendUpdate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
-        watchIdRef.current = navigator.geolocation.watchPosition(
-          (watchPos) => {
-            if (!sharingRef.current) return;
-            setMyLocation({
-              latitude: watchPos.coords.latitude,
-              longitude: watchPos.coords.longitude,
-              accuracy: watchPos.coords.accuracy,
-              updated_at: new Date().toISOString(),
-            });
-            sendUpdate(watchPos.coords.latitude, watchPos.coords.longitude, watchPos.coords.accuracy);
-          },
-          () => {},
-          { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 },
-        );
-      },
-      () => {
-        // Can't resume — clear flag
-        sessionStorage.removeItem(SHARING_KEY);
-        sharingRef.current = false;
-        setIsSharingMine(false);
-      },
-      { enableHighAccuracy: true, timeout: 15000 },
-    );
-  }, [token, conversationId, sendUpdate]);
+    startGpsWatch(false);
+  }, [token, conversationId, startGpsWatch]);
 
   // Cleanup on unmount — only clear watch, don't stop backend sharing
   useEffect(() => {
@@ -335,7 +323,6 @@ export function useLocationSharing(
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;
       }
-      // Don't call stop-location-sharing on unmount — sharing persists across navigation
     };
   }, []);
 
