@@ -170,7 +170,7 @@ export default function LocationView() {
             <iframe
               src={buildOsmEmbedUrl(allCoords)}
               title="Location map"
-              className="w-full h-full border-0 [filter:invert(90%)_hue-rotate(180deg)_saturate(0.6)_brightness(0.8)_contrast(1.1)]"
+              className="w-full h-full border-0 [filter:invert(100%)_hue-rotate(200deg)_saturate(0.3)_brightness(0.95)_contrast(0.9)]"
             />
 
             {/* Legend */}
