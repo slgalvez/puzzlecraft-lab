@@ -355,6 +355,15 @@ export function PrivateSidebar() {
                       {unsolvedPuzzles}
                     </SidebarMenuBadge>
                   )}
+                  {/* Location: live dot */}
+                  {"badgeKey" in item && item.badgeKey === "location" && hasLocationActivity && !collapsed && (
+                    <SidebarMenuBadge>
+                      <span className="relative h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                      </span>
+                    </SidebarMenuBadge>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
