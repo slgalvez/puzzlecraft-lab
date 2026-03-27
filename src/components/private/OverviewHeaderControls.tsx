@@ -11,6 +11,7 @@ interface Props {
 export function OverviewHeaderControls({ token }: Props) {
   const [activeTheme, setActiveTheme] = useState<ChatThemeId>(getChatTheme);
   const [customHex, setCustomHex] = useState(getCustomColor);
+  const [savedColors, setSavedColors] = useState(getSavedColors);
   const [focusLoss, setFocusLoss] = useState(getFocusLossEnabled);
   const colorRef = useRef<HTMLInputElement>(null);
 
