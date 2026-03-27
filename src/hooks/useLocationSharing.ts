@@ -250,6 +250,7 @@ export function useLocationSharing(
 
   return {
     isSharingMine,
+    myLocation,
     incomingLocation,
     loading,
     error,
