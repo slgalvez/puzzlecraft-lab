@@ -88,6 +88,18 @@ export default function LocationView() {
     stopSharing,
   } = useLocationSharing(token, conversationId, handleSessionExpired);
 
+  // Get viewer's own position for map display even when not sharing
+  const [viewerPos, setViewerPos] = useState<{ lat: number; lng: number } | null>(null);
+  useEffect(() => {
+    if (!("geolocation" in navigator)) return;
+    // Attempt a single silent position request (won't prompt if already denied)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setViewerPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {}, // silently fail — don't block UI
+      { enableHighAccuracy: false, maximumAge: 60000, timeout: 8000 },
+    );
+  }, []);
+
   // Motion detection
   const prevInRef = useRef<{ lat: number; lng: number; time: number } | null>(null);
   const [motionState, setMotionState] = useState<MotionState>("unknown");
@@ -104,7 +116,10 @@ export default function LocationView() {
     prevInRef.current = curr;
   }, [incomingLocation?.latitude, incomingLocation?.longitude, incomingLocation?.updated_at]);
 
-  const myCoords = myLocation ? { lat: myLocation.latitude, lng: myLocation.longitude } : null;
+  // Use shared location if actively sharing, otherwise use viewer's silent GPS position
+  const myCoords = myLocation
+    ? { lat: myLocation.latitude, lng: myLocation.longitude }
+    : viewerPos;
   const inCoords = incomingLocation ? { lat: incomingLocation.latitude, lng: incomingLocation.longitude } : null;
   const freshness = incomingLocation ? getFreshness(incomingLocation.updated_at) : null;
   const timestamp = incomingLocation ? humanTimestamp(incomingLocation.updated_at) : "";
