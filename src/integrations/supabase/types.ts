@@ -409,6 +409,67 @@ export type Database = {
         }
         Relationships: []
       }
+      location_shares: {
+        Row: {
+          accuracy: number | null
+          active: boolean
+          conversation_id: string
+          created_at: string
+          id: string
+          latitude: number
+          longitude: number
+          sharer_profile_id: string
+          updated_at: string
+          viewer_profile_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          active?: boolean
+          conversation_id: string
+          created_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+          sharer_profile_id: string
+          updated_at?: string
+          viewer_profile_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          active?: boolean
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          sharer_profile_id?: string
+          updated_at?: string
+          viewer_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_shares_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "location_shares_sharer_profile_id_fkey"
+            columns: ["sharer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "location_shares_viewer_profile_id_fkey"
+            columns: ["viewer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           body: string
