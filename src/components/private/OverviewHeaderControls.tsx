@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
-import { CHAT_THEMES, getChatTheme, setChatTheme, getCustomColor, setCustomColor, getSavedColors, type ChatThemeId } from "@/lib/chatTheme";
+import { CHAT_THEMES, getChatTheme, setChatTheme, getCustomColor, setCustomColor, getSavedColors, removeSavedColor, type ChatThemeId } from "@/lib/chatTheme";
 import { getFocusLossEnabled, setFocusLossEnabled } from "@/lib/focusLossSettings";
 
 interface Props {
@@ -92,10 +92,17 @@ export function OverviewHeaderControls({ token }: Props) {
                       setCustomColor(hex);
                       setActiveTheme("custom");
                     }}
-                    className={`h-7 w-7 rounded-full transition-all ${activeTheme === "custom" && customHex.toLowerCase() === hex.toLowerCase() ? "ring-2 ring-foreground/60 ring-offset-1 ring-offset-background scale-110" : "hover:scale-105 active:scale-95"}`}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      removeSavedColor(hex);
+                      setSavedColors(getSavedColors());
+                    }}
+                    className={`h-7 w-7 rounded-full transition-all relative group ${activeTheme === "custom" && customHex.toLowerCase() === hex.toLowerCase() ? "ring-2 ring-foreground/60 ring-offset-1 ring-offset-background scale-110" : "hover:scale-105 active:scale-95"}`}
                     style={{ background: hex }}
-                    title={hex}
-                  />
+                    title="Tap to use · right-click to remove"
+                  >
+                    <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-background text-[8px] text-muted-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">×</span>
+                  </button>
                 ))}
               </div>
             </>

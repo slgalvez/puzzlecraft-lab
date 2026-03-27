@@ -26,6 +26,7 @@ import {
   setCustomColor,
   getCustomColor,
   getSavedColors,
+  removeSavedColor,
   type ChatThemeId,
 } from "@/lib/chatTheme";
 
@@ -372,14 +373,21 @@ const PrivateSettings = () => {
                       setCustomColor(hex);
                       setActiveTheme("custom");
                     }}
-                    className={`w-8 h-8 rounded-full border-2 transition-all ${
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      removeSavedColor(hex);
+                      setSavedColors(getSavedColors());
+                    }}
+                    className={`w-8 h-8 rounded-full border-2 transition-all relative group ${
                       activeTheme === "custom" && customHex.toLowerCase() === hex.toLowerCase()
                         ? "border-foreground scale-110"
                         : "border-transparent hover:border-muted-foreground/40"
                     }`}
                     style={{ background: hex }}
-                    title={hex}
-                  />
+                    title="Tap to use · right-click to remove"
+                  >
+                    <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-background text-[8px] text-muted-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">×</span>
+                  </button>
                 ))}
               </div>
             </div>
