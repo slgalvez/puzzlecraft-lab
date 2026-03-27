@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { GifPicker } from "@/components/private/GifPicker";
 import { VoiceRecorder, VoicePreviewBar, type VoicePreview } from "@/components/private/VoiceRecorder";
 import { hapticTap } from "@/lib/haptic";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export interface EditingMessage {
   id: string;
@@ -58,7 +59,9 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
   const [uploadingVoice, setUploadingVoice] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const sendGuardRef = useRef(false); // prevent double-tap sends
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // When entering edit mode, populate the textarea
   useEffect(() => {
@@ -82,6 +85,10 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Double-tap guard — prevent rapid successive sends
+    if (sendGuardRef.current) return;
+    sendGuardRef.current = true;
+    setTimeout(() => { sendGuardRef.current = false; }, 300);
     // Voice note staged — upload and send
     if (voicePreview) {
       await handleSendVoice();
@@ -300,7 +307,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
         onSubmit={handleSubmit}
         className={`border-t border-border/20 px-2.5 sm:px-4 py-1.5 composer-form ${isEditing ? "border-t-0" : ""}`}
       >
-        <div className="flex items-end gap-2">
+        <div className="flex items-end gap-1.5 sm:gap-2">
           {!hasVoiceOrMedia && !isEditing && (
             <>
               <button
@@ -343,7 +350,9 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
                 if (e.target.value.trim()) onTyping?.();
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                // On mobile, Enter inserts newline — send via button only.
+                // On desktop, Enter sends (Shift+Enter for newline).
+                if (e.key === "Enter" && !e.shiftKey && !isMobile) {
                   e.preventDefault();
                   handleSubmit(e);
                 }
@@ -375,7 +384,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
               type="submit"
               size="icon"
               disabled={sending || uploading || uploadingVoice || !canSend}
-              className="h-9 w-9 rounded-full shrink-0 transition-transform active:scale-95"
+              className="h-9 w-9 rounded-full shrink-0 ml-0.5 transition-transform active:scale-95"
             >
               {uploadingVoice ? (
                 <Loader2 size={15} className="animate-spin" />
