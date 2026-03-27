@@ -256,7 +256,7 @@ export function LocationCard({
             <iframe
               src={buildOsmEmbedUrl(allMapCoords.length > 0 ? allMapCoords : [])}
               title="Location map"
-              className="w-full h-[110px] border-0 pointer-events-none [filter:invert(90%)_hue-rotate(180deg)_saturate(0.6)_brightness(0.8)_contrast(1.1)]"
+              className="w-full h-[110px] border-0 pointer-events-none [filter:invert(100%)_hue-rotate(200deg)_saturate(0.3)_brightness(0.95)_contrast(0.9)]"
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
               <Maximize2 size={14} className="text-background opacity-0 group-hover:opacity-70 transition-opacity drop-shadow-lg" />
@@ -392,7 +392,7 @@ export function LocationCard({
             <iframe
               src={buildOsmEmbedUrl(allMapCoords.length > 0 ? allMapCoords : [])}
               title="Location map"
-              className="w-full h-[50vh] border-0 [filter:invert(90%)_hue-rotate(180deg)_saturate(0.6)_brightness(0.8)_contrast(1.1)]"
+              className="w-full h-[50vh] border-0 [filter:invert(100%)_hue-rotate(200deg)_saturate(0.3)_brightness(0.95)_contrast(0.9)]"
             />
             {/* Legend overlay */}
             <div className="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm rounded-md px-2.5 py-1.5 space-y-0.5">
