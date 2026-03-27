@@ -59,7 +59,7 @@ export function OverviewHeaderControls({ token }: Props) {
             />
           </button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-48 p-3 space-y-2">
+        <PopoverContent align="end" className="w-48 p-3 space-y-2.5">
           <p className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">Accent</p>
           <div className="flex flex-wrap gap-2">
             {CHAT_THEMES.map((t) => (
@@ -80,6 +80,26 @@ export function OverviewHeaderControls({ token }: Props) {
               {activeTheme !== "custom" && "+"}
             </button>
           </div>
+          {savedColors.length > 0 && (
+            <>
+              <p className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">Saved</p>
+              <div className="flex flex-wrap gap-2">
+                {savedColors.map((hex) => (
+                  <button
+                    key={hex}
+                    onClick={() => {
+                      setCustomHex(hex);
+                      setCustomColor(hex);
+                      setActiveTheme("custom");
+                    }}
+                    className={`h-7 w-7 rounded-full transition-all ${activeTheme === "custom" && customHex.toLowerCase() === hex.toLowerCase() ? "ring-2 ring-foreground/60 ring-offset-1 ring-offset-background scale-110" : "hover:scale-105 active:scale-95"}`}
+                    style={{ background: hex }}
+                    title={hex}
+                  />
+                ))}
+              </div>
+            </>
+          )}
           <input
             ref={colorRef}
             type="color"
