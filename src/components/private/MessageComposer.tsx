@@ -350,7 +350,9 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
                 if (e.target.value.trim()) onTyping?.();
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                // On mobile, Enter inserts newline — send via button only.
+                // On desktop, Enter sends (Shift+Enter for newline).
+                if (e.key === "Enter" && !e.shiftKey && !isMobile) {
                   e.preventDefault();
                   handleSubmit(e);
                 }
