@@ -19,6 +19,8 @@ import { VideoCallScreen } from "@/components/private/VideoCallScreen";
 import { IncomingCallBanner } from "@/components/private/IncomingCallBanner";
 import { useNicknames } from "@/hooks/useNicknames";
 import { NicknameEditor } from "@/components/private/NicknameEditor";
+import { useLocationSharing } from "@/hooks/useLocationSharing";
+import { LocationCard } from "@/components/private/LocationCard";
 
 interface Message {
   id: string;
@@ -75,6 +77,8 @@ const AdminConversationView = () => {
     conversationId: conversationId || null,
     onSessionExpired: handleSessionExpired,
   });
+
+  const locationSharing = useLocationSharing(token, conversationId || null, handleSessionExpired);
 
   const fetchConversation = useCallback(async () => {
     if (!token || !conversationId || fetchInFlightRef.current) return;
@@ -383,6 +387,19 @@ const AdminConversationView = () => {
           clearing={clearing}
           togglingDisappearing={togglingDisappearing}
         />
+
+        {/* Location sharing */}
+        <div className="px-3 sm:px-4 shrink-0">
+          <LocationCard
+            isSharingMine={locationSharing.isSharingMine}
+            loading={locationSharing.loading}
+            error={locationSharing.error}
+            incomingLocation={locationSharing.incomingLocation}
+            otherName={conversation ? resolve(conversation.user_profile_id, conversation.user_name) : "them"}
+            onStartSharing={locationSharing.startSharing}
+            onStopSharing={locationSharing.stopSharing}
+          />
+        </div>
 
         {/* Messages */}
         <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 scroll-smooth">
