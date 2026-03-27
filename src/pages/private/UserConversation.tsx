@@ -73,6 +73,8 @@ const UserConversation = () => {
     onSessionExpired: handleSessionExpired,
   });
 
+  const locationSharing = useLocationSharing(token, conversationId, handleSessionExpired);
+
   const fetchConversation = useCallback(async () => {
     if (!token || fetchInFlightRef.current) return;
     fetchInFlightRef.current = true;
