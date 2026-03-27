@@ -245,7 +245,11 @@ export function LocationCard({
         <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2 flex items-start gap-2 mt-0.5">
           <AlertCircle size={12} className="text-destructive mt-0.5 shrink-0" />
           <div className="space-y-1 flex-1">
-            <p className="text-[10px] text-destructive">{error}</p>
+            <div className="text-[10px] text-destructive space-y-0.5">
+              {error.split("\n").map((line, i) => (
+                <p key={i} className={i === 0 ? "font-medium" : "text-destructive/80 pl-1"}>{line}</p>
+              ))}
+            </div>
             <Button size="sm" variant="outline" onClick={onStartSharing} className="text-[10px] h-6">
               Try again
             </Button>
