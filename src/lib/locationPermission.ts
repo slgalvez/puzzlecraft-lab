@@ -60,24 +60,24 @@ export function getDeniedGuidance(): string {
   const ios = isIOS();
 
   if (ios && standalone) {
-    return "Location is blocked. This app uses Safari's location permission on iPhone. Go to Settings → Privacy & Security → Location Services → Safari Websites, and set to \"While Using the App\". Make sure Location Services is on. Then close and reopen the app.";
+    return "Location is blocked — this app uses Safari's permission.\n1. Open Settings → Privacy & Security → Location Services\n2. Make sure Location Services is ON\n3. Scroll to Safari Websites → set to \"While Using\"\n4. Close and reopen this app";
   }
 
   if (ios) {
-    return "Location is blocked. In Safari, tap the \"aA\" menu → Website Settings → Location, and set to \"Allow\". Also check Settings → Privacy & Security → Location Services → Safari Websites is set to \"While Using\".";
+    return "Location is blocked in Safari.\n1. Tap the \"aA\" menu in the address bar\n2. Website Settings → Location → Allow\n3. If still blocked: Settings → Privacy & Security → Location Services → Safari Websites → \"While Using\"";
   }
 
   if (standalone) {
-    return "Location is blocked for this app. Open your browser settings → Site Settings → Location, and allow this site. Then reopen the app.";
+    return "Location is blocked.\n1. Open browser settings → Site Settings → Location\n2. Allow this site\n3. Reopen the app";
   }
 
   // Desktop / Android browser
-  return "Location is blocked. Click the lock/info icon in your address bar → Site settings → Location → Allow. Then refresh the page.";
+  return "Location is blocked.\n1. Tap the lock/info icon in the address bar\n2. Site settings → Location → Allow\n3. Refresh the page";
 }
 
 export function getUnavailableGuidance(): string {
   if (isIOS()) {
-    return "Location Services are turned off. Go to Settings → Privacy & Security → Location Services and turn them on. Also ensure Safari Websites is set to \"While Using\" under Location Services.";
+    return "Location Services are off.\n1. Open Settings → Privacy & Security → Location Services\n2. Turn Location Services ON\n3. Scroll to Safari Websites → \"While Using\"";
   }
-  return "Location is unavailable. Make sure Location Services are enabled in your device settings and try again.";
+  return "Location is unavailable.\n1. Enable Location Services in device settings\n2. Try again";
 }
