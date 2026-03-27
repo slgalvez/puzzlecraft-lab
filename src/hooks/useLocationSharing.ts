@@ -110,6 +110,36 @@ export function useLocationSharing(
     return () => clearInterval(timer);
   }, [incomingLocation]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const syncPermissionState = async () => {
+      const state = await queryLocationPermission();
+      if (cancelled) return;
+
+      if (state === "granted" || state === "prompt" || state === "unknown") {
+        setError((prev) => (prev && prev.toLowerCase().includes("location") ? null : prev));
+      }
+    };
+
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === "visible") {
+        void syncPermissionState();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityOrFocus);
+    window.addEventListener("focus", handleVisibilityOrFocus);
+
+    void syncPermissionState();
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", handleVisibilityOrFocus);
+      window.removeEventListener("focus", handleVisibilityOrFocus);
+    };
+  }, []);
+
   const sendUpdate = useCallback(
     async (latitude: number, longitude: number, accuracy: number | null, isStart = false) => {
       if (!tokenRef.current || !convRef.current) return;

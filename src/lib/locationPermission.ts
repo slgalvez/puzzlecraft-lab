@@ -34,6 +34,10 @@ export type LocationPermissionState =
 export async function queryLocationPermission(): Promise<LocationPermissionState> {
   if (!("geolocation" in navigator)) return "unsupported";
 
+  // iPhone/iPad Safari and Home Screen apps are unreliable here.
+  // Let getCurrentPosition determine the real state instead of caching a stale denial.
+  if (isIOS()) return "unknown";
+
   // Permissions API — supported on Chrome, Firefox, Edge; NOT on Safari/iOS
   if ("permissions" in navigator) {
     try {
