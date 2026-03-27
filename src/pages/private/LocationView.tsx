@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, ExternalLink, Navigation, Loader2, Activity } from "lucide-react";
+import { MapPin, ExternalLink, Navigation, Loader2, Activity, Plus, X, Tag } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import { useLocationSharing, getFreshness, type FreshnessStatus } from "@/hooks/useLocationSharing";
 import { distanceMiles, formatDistance, detectMotion, humanTimestamp, type MotionState } from "@/lib/locationUtils";
+import { getLocationLabels, saveLocationLabel, deleteLocationLabel, getDefaultIcons, type LocationLabel } from "@/lib/locationLabels";
 import PrivateLayout from "@/components/private/PrivateLayout";
+import DarkMap from "@/components/private/DarkMap";
 
 function StatusDot({ status }: { status: FreshnessStatus }) {
   if (status === "live") {
@@ -22,31 +24,6 @@ function StatusDot({ status }: { status: FreshnessStatus }) {
   return <span className="inline-flex rounded-full h-2.5 w-2.5 bg-muted-foreground/30" />;
 }
 
-function computeMapBbox(coords: { lat: number; lng: number }[]): string {
-  if (coords.length === 0) return "";
-  let center: { lat: number; lng: number };
-  let span = 0.005;
-  if (coords.length === 2) {
-    center = {
-      lat: (coords[0].lat + coords[1].lat) / 2,
-      lng: (coords[0].lng + coords[1].lng) / 2,
-    };
-    const maxDelta = Math.max(Math.abs(coords[0].lat - coords[1].lat), Math.abs(coords[0].lng - coords[1].lng));
-    span = Math.max(maxDelta * 1.5, 0.005);
-  } else {
-    center = coords[0];
-  }
-  return `${center.lng - span},${center.lat - span},${center.lng + span},${center.lat + span}`;
-}
-
-function buildOsmEmbedUrl(coords: { lat: number; lng: number }[]): string {
-  const bbox = computeMapBbox(coords);
-  const markerParam = coords.length > 0
-    ? `&marker=${coords[0].lat},${coords[0].lng}`
-    : "";
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik${markerParam}`;
-}
-
 export default function LocationView() {
   const { user, token, signOut } = useAuth();
   const navigate = useNavigate();
@@ -54,6 +31,16 @@ export default function LocationView() {
   const [otherName, setOtherName] = useState("them");
   const [loadingConv, setLoadingConv] = useState(true);
   const [stopConfirm, setStopConfirm] = useState(false);
+  const [labels, setLabels] = useState<LocationLabel[]>([]);
+  const [addingLabel, setAddingLabel] = useState<{ lat: number; lng: number } | null>(null);
+  const [labelName, setLabelName] = useState("");
+  const [labelIcon, setLabelIcon] = useState("⭐");
+  const [showLabels, setShowLabels] = useState(true);
+
+  // Load labels
+  useEffect(() => {
+    setLabels(getLocationLabels());
+  }, []);
 
   const handleSessionExpired = useCallback(async () => {
     await signOut();
@@ -131,6 +118,36 @@ export default function LocationView() {
 
   const hasData = allCoords.length > 0;
 
+  const mapMarkers = [
+    ...(myCoords ? [{ lat: myCoords.lat, lng: myCoords.lng, type: "me" as const, label: "You" }] : []),
+    ...(inCoords ? [{ lat: inCoords.lat, lng: inCoords.lng, type: "other" as const, label: otherName }] : []),
+  ];
+
+  const handleMapLongPress = useCallback((lat: number, lng: number) => {
+    setAddingLabel({ lat, lng });
+    setLabelName("");
+    setLabelIcon("⭐");
+  }, []);
+
+  const handleSaveLabel = () => {
+    if (!addingLabel || !labelName.trim()) return;
+    const label: LocationLabel = {
+      id: Date.now().toString(36),
+      name: labelName.trim(),
+      icon: labelIcon,
+      lat: addingLabel.lat,
+      lng: addingLabel.lng,
+    };
+    saveLocationLabel(label);
+    setLabels(getLocationLabels());
+    setAddingLabel(null);
+  };
+
+  const handleDeleteLabel = (id: string) => {
+    deleteLocationLabel(id);
+    setLabels(getLocationLabels());
+  };
+
   // Re-render for freshness
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -167,10 +184,12 @@ export default function LocationView() {
         {/* Map area */}
         {hasData ? (
           <div className="flex-1 relative min-h-0 overflow-hidden">
-            <iframe
-              src={buildOsmEmbedUrl(allCoords)}
-              title="Location map"
-              className="w-full h-full border-0 [filter:invert(100%)_hue-rotate(200deg)_saturate(0.3)_brightness(0.95)_contrast(0.9)]"
+            <DarkMap
+              markers={mapMarkers}
+              labels={showLabels ? labels : []}
+              className="w-full h-full"
+              interactive
+              onMapLongPress={handleMapLongPress}
             />
 
             {/* Legend */}
@@ -205,6 +224,57 @@ export default function LocationView() {
               )}
             </div>
 
+            {/* Labels toggle */}
+            {labels.length > 0 && (
+              <button
+                onClick={() => setShowLabels((v) => !v)}
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-background/80 backdrop-blur-sm rounded-lg px-2.5 py-1.5 text-[10px] text-foreground flex items-center gap-1.5"
+              >
+                <Tag size={10} className={showLabels ? "text-primary" : "text-muted-foreground"} />
+                {showLabels ? "Labels" : "Labels off"}
+              </button>
+            )}
+
+            {/* Add label panel */}
+            {addingLabel && (
+              <div className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-background/90 backdrop-blur-md rounded-lg p-3 space-y-2 shadow-lg max-w-[200px]" style={{ zIndex: 1000 }}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-medium text-foreground">Add label</span>
+                  <button onClick={() => setAddingLabel(null)} className="text-muted-foreground hover:text-foreground">
+                    <X size={12} />
+                  </button>
+                </div>
+                <div className="flex gap-1 flex-wrap">
+                  {getDefaultIcons().map((icon) => (
+                    <button
+                      key={icon}
+                      onClick={() => setLabelIcon(icon)}
+                      className={`text-base p-0.5 rounded ${labelIcon === icon ? "bg-primary/20 ring-1 ring-primary" : "hover:bg-muted/30"}`}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  value={labelName}
+                  onChange={(e) => setLabelName(e.target.value)}
+                  placeholder="e.g. Home, Work..."
+                  className="w-full bg-muted/30 border border-border/30 rounded-md px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary/50"
+                  maxLength={20}
+                  autoFocus
+                  onKeyDown={(e) => e.key === "Enter" && handleSaveLabel()}
+                />
+                <button
+                  onClick={handleSaveLabel}
+                  disabled={!labelName.trim()}
+                  className="w-full text-[10px] bg-primary text-primary-foreground rounded-md py-1 disabled:opacity-40"
+                >
+                  Save
+                </button>
+              </div>
+            )}
+
             {/* External link */}
             {inCoords && (
               <a
@@ -230,6 +300,24 @@ export default function LocationView() {
                 Start sharing from the chat to see locations here
               </p>
             </div>
+          </div>
+        )}
+
+        {/* Saved labels list */}
+        {labels.length > 0 && (
+          <div className="shrink-0 border-t border-border/20 px-4 py-1.5 flex gap-2 overflow-x-auto scrollbar-none">
+            {labels.map((l) => (
+              <div key={l.id} className="flex items-center gap-1 shrink-0 bg-muted/20 rounded-full px-2 py-0.5 group">
+                <span className="text-xs">{l.icon}</span>
+                <span className="text-[10px] text-foreground/80">{l.name}</span>
+                <button
+                  onClick={() => handleDeleteLabel(l.id)}
+                  className="text-muted-foreground/30 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100 ml-0.5"
+                >
+                  <X size={8} />
+                </button>
+              </div>
+            ))}
           </div>
         )}
 
