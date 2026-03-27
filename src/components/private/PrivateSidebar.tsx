@@ -34,7 +34,7 @@ const userNav = [
   { title: "Overview", url: "/p", icon: LayoutDashboard, badgeKey: "overview" as const },
   { title: "Conversation", url: "/p/conversation", icon: MessageSquare, badgeKey: "unread" as const },
   { title: "Puzzles for You", url: "/p/for-you", icon: Puzzle, badgeKey: "puzzles" as const },
-  { title: "Location", url: "/p/location", icon: MapPin },
+  { title: "Location", url: "/p/location", icon: MapPin, badgeKey: "location" as const },
   { title: "Settings", url: "/p/settings", icon: Settings },
 ];
 
