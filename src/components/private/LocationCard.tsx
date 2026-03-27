@@ -194,7 +194,7 @@ export function LocationCard({
           <>
             <StatusDot status={freshness!} />
             <span className="font-medium">{otherName} — {label}</span>
-            <Maximize2 size={12} className="ml-auto text-muted-foreground/40" />
+            <Maximize2 size={10} className="ml-auto text-muted-foreground/30" />
           </>
         ) : (
           <>
