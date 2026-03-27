@@ -6,7 +6,7 @@ import PrivateLayout from "@/components/private/PrivateLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { setFocusLossEnabled } from "@/lib/focusLossSettings";
+import { getFocusLossEnabled, setFocusLossEnabled } from "@/lib/focusLossSettings";
 import { Plus, Loader2 } from "lucide-react";
 import { FeatureHint } from "@/components/private/FeatureHint";
 import {
@@ -44,7 +44,7 @@ const PrivateSettings = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMsg, setPwMsg] = useState("");
-  const [focusLossOn, setFocusLossOn] = useState(() => user?.focus_loss_protection !== false);
+  const [focusLossOn, setFocusLossOn] = useState(getFocusLossEnabled);
   const [activeTheme, setActiveTheme] = useState<ChatThemeId>(getChatTheme);
   const [customHex, setCustomHex] = useState(getCustomColor);
   const colorInputRef = useRef<HTMLInputElement>(null);
