@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
+import { setCallActive } from "@/lib/callActive";
 
 // ── Lightweight call diagnostics ──
 // All logs use console.debug so they're hidden by default in production
