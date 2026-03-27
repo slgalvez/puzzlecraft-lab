@@ -369,25 +369,37 @@ const UserConversation = () => {
       )}
 
       <div className="flex flex-col h-full">
-        {/* Header with nickname + video call */}
-        <div className="flex items-center gap-2 px-3 sm:px-4 py-1.5 shrink-0 justify-end">
-          {adminProfileId && (
-            <NicknameEditor
-              contactProfileId={adminProfileId}
-              currentNickname={nicknames[adminProfileId]}
-              defaultName={adminName}
-              onSave={setNickname}
-              onRemove={removeNickname}
-            />
-          )}
-          <button
-            onClick={videoCall.startCall}
-            disabled={videoCall.callState !== "idle"}
-            className="p-2 rounded-full text-muted-foreground/50 hover:text-foreground hover:bg-secondary/30 transition-colors disabled:opacity-30"
-            title="Start video call"
-          >
-            <Video size={18} />
-          </button>
+        {/* Header with nickname + video call + location */}
+        <div className="shrink-0 px-3 sm:px-4">
+          <div className="flex items-center gap-2 py-1.5 justify-end">
+            {adminProfileId && (
+              <NicknameEditor
+                contactProfileId={adminProfileId}
+                currentNickname={nicknames[adminProfileId]}
+                defaultName={adminName}
+                onSave={setNickname}
+                onRemove={removeNickname}
+              />
+            )}
+            <button
+              onClick={videoCall.startCall}
+              disabled={videoCall.callState !== "idle"}
+              className="p-2 rounded-full text-muted-foreground/50 hover:text-foreground hover:bg-secondary/30 transition-colors disabled:opacity-30"
+              title="Start video call"
+            >
+              <Video size={18} />
+            </button>
+          </div>
+          <LocationCard
+            isSharingMine={locationSharing.isSharingMine}
+            myLocation={locationSharing.myLocation}
+            loading={locationSharing.loading}
+            error={locationSharing.error}
+            incomingLocation={locationSharing.incomingLocation}
+            otherName={adminProfileId ? resolve(adminProfileId, adminName) : "them"}
+            onStartSharing={locationSharing.startSharing}
+            onStopSharing={locationSharing.stopSharing}
+          />
         </div>
         <ConversationToolbar
           disappearingEnabled={disappearingEnabled}
