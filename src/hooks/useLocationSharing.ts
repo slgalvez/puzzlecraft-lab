@@ -1,5 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
+import {
+  queryLocationPermission,
+  getDeniedGuidance,
+  getUnavailableGuidance,
+} from "@/lib/locationPermission";
 
 export interface SharedLocation {
   latitude: number;
@@ -153,14 +158,27 @@ export function useLocationSharing(
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [sendUpdate]);
 
-  const startSharing = useCallback(() => {
+  const startSharing = useCallback(async () => {
     if (!("geolocation" in navigator)) {
-      setError("Location not supported on this device");
+      setError("Location is not supported on this device");
       return;
     }
 
     setLoading(true);
     setError(null);
+
+    // Preflight: check permission state before requesting GPS
+    const permState = await queryLocationPermission();
+    if (permState === "unsupported") {
+      setLoading(false);
+      setError("Location is not supported on this device");
+      return;
+    }
+    if (permState === "denied") {
+      setLoading(false);
+      setError(getDeniedGuidance());
+      return;
+    }
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -201,9 +219,9 @@ export function useLocationSharing(
       (posErr) => {
         setLoading(false);
         if (posErr.code === 1) {
-          setError("Location permission denied — check your browser or device settings to allow location access for this site");
+          setError(getDeniedGuidance());
         } else if (posErr.code === 2) {
-          setError("Location unavailable — make sure Location Services are enabled in your device settings");
+          setError(getUnavailableGuidance());
         } else {
           setError("Location request timed out — try again");
         }
