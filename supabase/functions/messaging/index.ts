@@ -1750,14 +1750,30 @@ Deno.serve(async (req) => {
       const { conversation_id } = body;
       if (!conversation_id) return err("Missing conversation_id", 400);
 
-      // Get location shared WITH me (I'm the viewer)
-      const { data: incoming } = await sb
+      // Get location shared WITH me (I'm the viewer) — check specific conversation first,
+      // then fall back to ANY active share where I'm the viewer (handles admin with multiple convos)
+      let incoming = null;
+      const { data: inConv } = await sb
         .from("location_shares")
         .select("*")
         .eq("viewer_profile_id", profileId)
         .eq("conversation_id", conversation_id)
         .eq("active", true)
-        .single();
+        .maybeSingle();
+      incoming = inConv;
+
+      if (!incoming) {
+        // Fallback: check any conversation where someone is sharing with me
+        const { data: inAny } = await sb
+          .from("location_shares")
+          .select("*")
+          .eq("viewer_profile_id", profileId)
+          .eq("active", true)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        incoming = inAny;
+      }
 
       // Get my own sharing status
       const { data: outgoing } = await sb
@@ -1766,7 +1782,7 @@ Deno.serve(async (req) => {
         .eq("sharer_profile_id", profileId)
         .eq("conversation_id", conversation_id)
         .eq("active", true)
-        .single();
+        .maybeSingle();
 
       return json({
         incoming: incoming || null,
