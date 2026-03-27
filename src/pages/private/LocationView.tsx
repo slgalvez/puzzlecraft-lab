@@ -195,10 +195,10 @@ export default function LocationView() {
 
   return (
     <PrivateLayout title="Location" fullHeight>
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+       <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative" style={{ isolation: "isolate" }}>
         {/* Map area */}
         {hasData ? (
-          <div className="flex-1 relative min-h-0 overflow-hidden">
+          <div className="flex-1 relative min-h-0 overflow-hidden" style={{ zIndex: 0 }}>
             <DarkMap
               markers={mapMarkers}
               labels={showLabels ? labels : []}

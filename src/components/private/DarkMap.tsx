@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { getLocationLabels, type LocationLabel } from "@/lib/locationLabels";
+import { Crosshair } from "lucide-react";
 
 interface Marker {
   lat: number;
@@ -92,6 +93,30 @@ export default function DarkMap({ markers, labels, className = "", interactive =
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
   const labelMarkersRef = useRef<L.Marker[]>([]);
+  const initialFitDone = useRef(false);
+  const userInteracted = useRef(false);
+  const [showRecenter, setShowRecenter] = useState(false);
+
+  // Track if user has panned/zoomed
+  const onUserInteraction = useCallback(() => {
+    userInteracted.current = true;
+    setShowRecenter(true);
+  }, []);
+
+  const handleRecenter = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    userInteracted.current = false;
+    setShowRecenter(false);
+
+    const bounds: L.LatLngExpression[] = [];
+    markersRef.current.forEach((m) => bounds.push(m.getLatLng()));
+    if (bounds.length > 1) {
+      map.fitBounds(L.latLngBounds(bounds), { padding: [40, 40], maxZoom: 16, animate: true });
+    } else if (bounds.length === 1) {
+      map.setView(bounds[0], 15, { animate: true });
+    }
+  }, []);
 
   // Initialize map
   useEffect(() => {
@@ -114,6 +139,15 @@ export default function DarkMap({ markers, labels, className = "", interactive =
       subdomains: "abcd",
       maxZoom: 19,
     }).addTo(map);
+
+    // Detect user interaction to pause auto-follow
+    if (interactive) {
+      map.on("dragstart", onUserInteraction);
+      map.on("zoomstart", () => {
+        // Only count as user interaction if it's not programmatic (typed loosely)
+        if (!(map as any)._programmaticZoom) onUserInteraction();
+      });
+    }
 
     mapRef.current = map;
 
@@ -142,10 +176,12 @@ export default function DarkMap({ markers, labels, className = "", interactive =
     return () => {
       map.remove();
       mapRef.current = null;
+      initialFitDone.current = false;
+      userInteracted.current = false;
     };
-  }, [interactive, onMapLongPress]);
+  }, [interactive, onMapLongPress, onUserInteraction]);
 
-  // Update markers
+  // Update markers — only auto-fit on first load or when user hasn't interacted
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -171,10 +207,18 @@ export default function DarkMap({ markers, labels, className = "", interactive =
       bounds.push([m.lat, m.lng]);
     });
 
-    if (bounds.length > 1) {
-      map.fitBounds(L.latLngBounds(bounds), { padding: [40, 40], maxZoom: 16, animate: true });
-    } else if (bounds.length === 1) {
-      map.setView(bounds[0], 15, { animate: true });
+    // Only auto-fit on first load or if user hasn't interacted
+    if (!userInteracted.current) {
+      if (bounds.length > 1) {
+        (map as any)._programmaticZoom = true;
+        map.fitBounds(L.latLngBounds(bounds), { padding: [40, 40], maxZoom: 16, animate: initialFitDone.current });
+        setTimeout(() => { (map as any)._programmaticZoom = false; }, 300);
+      } else if (bounds.length === 1) {
+        (map as any)._programmaticZoom = true;
+        map.setView(bounds[0], 15, { animate: initialFitDone.current });
+        setTimeout(() => { (map as any)._programmaticZoom = false; }, 300);
+      }
+      initialFitDone.current = true;
     }
   }, [markers]);
 
@@ -197,10 +241,22 @@ export default function DarkMap({ markers, labels, className = "", interactive =
   }, [labels]);
 
   return (
-    <div
-      ref={containerRef}
-      className={`dark-map-container ${className}`}
-      style={{ background: "#1a1a2e" }}
-    />
+    <div className={`relative ${className}`} style={{ overflow: "hidden" }}>
+      <div
+        ref={containerRef}
+        className="dark-map-container w-full h-full"
+        style={{ background: "#1a1a2e", position: "relative", zIndex: 0 }}
+      />
+      {/* Re-center button */}
+      {interactive && showRecenter && (
+        <button
+          onClick={handleRecenter}
+          className="absolute bottom-3 right-3 z-[500] bg-background/80 backdrop-blur-sm rounded-full p-2 shadow-lg border border-border/30 hover:bg-background/90 transition-colors"
+          title="Re-center"
+        >
+          <Crosshair size={16} className="text-primary" />
+        </button>
+      )}
+    </div>
   );
 }
