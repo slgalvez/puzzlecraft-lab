@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { MessageSquare, Puzzle, Plus, MapPin, ArrowRight } from "lucide-react";
+import { OverviewHeaderControls } from "@/components/private/OverviewHeaderControls";
 import { WhatsNewBanner } from "@/components/private/WhatsNewBanner";
 
 interface PuzzleSummary {
@@ -133,10 +134,11 @@ const UserOverview = () => {
         <WhatsNewBanner />
 
         {/* Header */}
-        <div className="px-0.5">
+        <div className="px-0.5 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-foreground tracking-tight">
             Hi, {user?.first_name}
           </h2>
+          <OverviewHeaderControls token={token} />
         </div>
 
         {/* Active now — only when relevant */}

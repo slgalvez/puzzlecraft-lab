@@ -6,6 +6,7 @@ import PrivateLayout from "@/components/private/PrivateLayout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Timer, Trash2, MessageSquare, Puzzle, Plus, MapPin, ArrowRight } from "lucide-react";
+import { OverviewHeaderControls } from "@/components/private/OverviewHeaderControls";
 import { useNicknames } from "@/hooks/useNicknames";
 import { WhatsNewBanner } from "@/components/private/WhatsNewBanner";
 
@@ -148,10 +149,11 @@ const AdminDashboard = () => {
         <WhatsNewBanner />
 
         {/* Header */}
-        <div className="px-0.5">
+        <div className="px-0.5 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-foreground tracking-tight">
             Hi, {user?.first_name}
           </h2>
+          <OverviewHeaderControls token={token} />
         </div>
 
         {/* Active now — only when relevant */}
