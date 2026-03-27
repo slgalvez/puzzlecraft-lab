@@ -89,12 +89,15 @@ export function OverviewHeaderControls({ token }: Props) {
       </Popover>
 
       {/* Privacy switch */}
-      <Switch
-        checked={focusLoss}
-        onCheckedChange={handlePrivacyToggle}
-        className="scale-75"
-        title={focusLoss ? "Privacy protection on" : "Privacy protection off"}
-      />
+      <div className="flex items-center gap-1.5">
+        <span className="text-[10px] text-muted-foreground/50">Privacy</span>
+        <Switch
+          checked={focusLoss}
+          onCheckedChange={handlePrivacyToggle}
+          className="scale-75"
+          title={focusLoss ? "Privacy protection on" : "Privacy protection off"}
+        />
+      </div>
     </div>
   );
 }
