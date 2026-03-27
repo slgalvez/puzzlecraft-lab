@@ -78,6 +78,8 @@ const AdminConversationView = () => {
     onSessionExpired: handleSessionExpired,
   });
 
+  const locationSharing = useLocationSharing(token, conversationId || null, handleSessionExpired);
+
   const fetchConversation = useCallback(async () => {
     if (!token || !conversationId || fetchInFlightRef.current) return;
     fetchInFlightRef.current = true;
