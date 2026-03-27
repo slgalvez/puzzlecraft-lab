@@ -24,7 +24,7 @@ const adminNav = [
   { title: "Overview", url: "/p", icon: LayoutDashboard, badgeKey: "overview" as const },
   { title: "Conversations", url: "/p/conversations", icon: MessageSquare, badgeKey: "unread" as const },
   { title: "Puzzles for You", url: "/p/for-you", icon: Puzzle, badgeKey: "puzzles" as const },
-  { title: "Location", url: "/p/location", icon: MapPin },
+  { title: "Location", url: "/p/location", icon: MapPin, badgeKey: "location" as const },
   { title: "Users", url: "/p/users", icon: Users },
   { title: "Failed Logins", url: "/p/failed-logins", icon: ShieldAlert },
   { title: "Settings", url: "/p/settings", icon: Settings },
@@ -34,7 +34,7 @@ const userNav = [
   { title: "Overview", url: "/p", icon: LayoutDashboard, badgeKey: "overview" as const },
   { title: "Conversation", url: "/p/conversation", icon: MessageSquare, badgeKey: "unread" as const },
   { title: "Puzzles for You", url: "/p/for-you", icon: Puzzle, badgeKey: "puzzles" as const },
-  { title: "Location", url: "/p/location", icon: MapPin },
+  { title: "Location", url: "/p/location", icon: MapPin, badgeKey: "location" as const },
   { title: "Settings", url: "/p/settings", icon: Settings },
 ];
 
@@ -60,6 +60,7 @@ export function PrivateSidebar() {
   const { user, token, signOut } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [unsolvedPuzzles, setUnsolvedPuzzles] = useState(0);
+  const [hasLocationActivity, setHasLocationActivity] = useState(false);
   const [hasOverviewActivity, setHasOverviewActivity] = useState(false);
   const prevPathRef = useRef(location.pathname);
   const { checkUnread, checkIncomingCall } = usePrivateNotifications(token);
@@ -107,10 +108,12 @@ export function PrivateSidebar() {
     try {
       let msgUnread = 0;
       let latestMessageTime = 0;
+      let primaryConvId: string | null = null;
 
       if (isAdmin) {
         const data = await invokeMessaging("list-conversations", token);
         const convs = data.conversations || [];
+        if (convs.length > 0) primaryConvId = convs[0].id;
         msgUnread = convs.reduce(
           (sum: number, c: { unread_count: number }) => sum + c.unread_count,
           0
@@ -157,6 +160,7 @@ export function PrivateSidebar() {
         }
       } else {
         const data = await invokeMessaging("get-my-conversation", token);
+        primaryConvId = data.conversation_id || null;
         msgUnread = data.unread_count || 0;
         const msgs = data.messages || [];
 
@@ -227,6 +231,18 @@ export function PrivateSidebar() {
 
       setUnreadCount(msgUnread);
       setUnsolvedPuzzles(unsolved);
+
+      // Check for incoming location activity
+      if (primaryConvId) {
+        try {
+          const locData = await invokeMessaging("get-shared-location", token, { conversation_id: primaryConvId });
+          setHasLocationActivity(!!locData.incoming);
+        } catch {
+          // Don't fail the whole poll for location
+        }
+      } else {
+        setHasLocationActivity(false);
+      }
 
       // Only trigger push/browser notifications if user is NOT currently viewing a conversation
       const isInConversation =
@@ -316,6 +332,13 @@ export function PrivateSidebar() {
                         {"badgeKey" in item && item.badgeKey === "puzzles" && unsolvedPuzzles > 0 && collapsed && (
                           <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-destructive ring-1 ring-sidebar" />
                         )}
+                        {/* Location dot — pulsing primary when active */}
+                        {"badgeKey" in item && item.badgeKey === "location" && hasLocationActivity && (
+                          <span className="absolute -top-0.5 -right-0.5 h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                          </span>
+                        )}
                       </div>
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
@@ -330,6 +353,15 @@ export function PrivateSidebar() {
                   {"badgeKey" in item && item.badgeKey === "puzzles" && unsolvedPuzzles > 0 && !collapsed && (
                     <SidebarMenuBadge className="bg-destructive text-destructive-foreground text-[10px] min-w-[18px] h-[18px] flex items-center justify-center rounded-full">
                       {unsolvedPuzzles}
+                    </SidebarMenuBadge>
+                  )}
+                  {/* Location: live dot */}
+                  {"badgeKey" in item && item.badgeKey === "location" && hasLocationActivity && !collapsed && (
+                    <SidebarMenuBadge>
+                      <span className="relative h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                      </span>
                     </SidebarMenuBadge>
                   )}
                 </SidebarMenuItem>
