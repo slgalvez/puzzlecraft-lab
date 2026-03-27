@@ -262,19 +262,54 @@ export function LocationCard({
         </div>
       )}
 
-      {/* ── Bottom sheet to start sharing ── */}
-      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <DrawerContent>
-          <DrawerHeader className="text-left">
-            <DrawerTitle className="flex items-center gap-2">
-              <MapPin size={18} className="text-primary" />
-              Share your location
-            </DrawerTitle>
-            <DrawerDescription className="text-sm">
+      {/* ── Bottom sheet / dialog to start sharing ── */}
+      {isMobile ? (
+        <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+          <DrawerContent>
+            <DrawerHeader className="text-left">
+              <DrawerTitle className="flex items-center gap-2">
+                <MapPin size={18} className="text-primary" />
+                Share your location
+              </DrawerTitle>
+              <DrawerDescription className="text-sm">
+                Share your current location with {otherName} in real time. You can stop at any time.
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 pb-2 space-y-3">
+              <button
+                onClick={handleStartFromSheet}
+                disabled={loading}
+                className="w-full flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card hover:bg-secondary/30 transition-colors text-left"
+              >
+                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Navigation size={16} className="text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">Share live location</p>
+                  <p className="text-xs text-muted-foreground">Updates while the app is open</p>
+                </div>
+                {loading && <Loader2 size={16} className="animate-spin text-muted-foreground" />}
+              </button>
+            </div>
+            <DrawerFooter>
+              <DrawerClose asChild>
+                <Button variant="outline" size="sm">Cancel</Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={drawerOpen} onOpenChange={setDrawerOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-sm">
+                <MapPin size={16} className="text-primary" />
+                Share your location
+              </DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
               Share your current location with {otherName} in real time. You can stop at any time.
-            </DrawerDescription>
-          </DrawerHeader>
-          <div className="px-4 pb-2 space-y-3">
+            </p>
             <button
               onClick={handleStartFromSheet}
               disabled={loading}
@@ -289,14 +324,10 @@ export function LocationCard({
               </div>
               {loading && <Loader2 size={16} className="animate-spin text-muted-foreground" />}
             </button>
-          </div>
-          <DrawerFooter>
-            <DrawerClose asChild>
-              <Button variant="outline" size="sm">Cancel</Button>
-            </DrawerClose>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+            <Button variant="outline" size="sm" onClick={() => setDrawerOpen(false)}>Cancel</Button>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* ── Full-screen map modal (shows BOTH users) ── */}
       <Dialog open={mapOpen} onOpenChange={setMapOpen}>
