@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
-import { CHAT_THEMES, getChatTheme, setChatTheme, getCustomColor, setCustomColor, getSavedColors, type ChatThemeId } from "@/lib/chatTheme";
+import { CHAT_THEMES, getChatTheme, setChatTheme, getCustomColor, setCustomColor, getSavedColors, removeSavedColor, type ChatThemeId } from "@/lib/chatTheme";
 import { getFocusLossEnabled, setFocusLossEnabled } from "@/lib/focusLossSettings";
 
 interface Props {
