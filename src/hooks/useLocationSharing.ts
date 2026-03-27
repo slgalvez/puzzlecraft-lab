@@ -44,6 +44,7 @@ export function useLocationSharing(
   onSessionExpired: () => void,
 ): LocationSharingState {
   const [isSharingMine, setIsSharingMine] = useState(false);
+  const [myLocation, setMyLocation] = useState<SharedLocation | null>(null);
   const [incomingLocation, setIncomingLocation] = useState<SharedLocation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
