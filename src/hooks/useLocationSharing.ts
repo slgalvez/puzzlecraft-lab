@@ -260,26 +260,30 @@ export function useLocationSharing(
       return;
     }
 
+    // Prevent double-tap issues — if already sharing or already loading, bail
+    if (sharingRef.current || loading) return;
+
     setLoading(true);
     setError(null);
 
-    // If permission was already granted this session, skip preflight check
+    // Only check permission state if NOT already granted.
+    // If permission is "denied", show guidance immediately without calling getCurrentPosition
+    // (which would silently fail on some browsers).
+    // If "prompt" or "granted", proceed directly to startGpsWatch — getCurrentPosition
+    // will trigger the native prompt if needed, and we handle success/failure there.
     if (!permissionGrantedRef.current) {
       const permState = await queryLocationPermission();
-      if (permState === "unsupported") {
-        setLoading(false);
-        setError("Location is not supported on this device");
-        return;
-      }
       if (permState === "denied") {
         setLoading(false);
         setError(getDeniedGuidance());
         return;
       }
+      // For "prompt", "granted", or "unsupported" (Permissions API not available),
+      // fall through — getCurrentPosition is the source of truth.
     }
 
     startGpsWatch(true);
-  }, [startGpsWatch]);
+  }, [startGpsWatch, loading]);
 
   const stopSharing = useCallback(async () => {
     sharingRef.current = false;
