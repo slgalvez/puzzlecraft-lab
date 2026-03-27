@@ -24,6 +24,7 @@ const adminNav = [
   { title: "Overview", url: "/p", icon: LayoutDashboard, badgeKey: "overview" as const },
   { title: "Conversations", url: "/p/conversations", icon: MessageSquare, badgeKey: "unread" as const },
   { title: "Puzzles for You", url: "/p/for-you", icon: Puzzle, badgeKey: "puzzles" as const },
+  { title: "Location", url: "/p/location", icon: MapPin },
   { title: "Users", url: "/p/users", icon: Users },
   { title: "Failed Logins", url: "/p/failed-logins", icon: ShieldAlert },
   { title: "Settings", url: "/p/settings", icon: Settings },
@@ -33,6 +34,7 @@ const userNav = [
   { title: "Overview", url: "/p", icon: LayoutDashboard, badgeKey: "overview" as const },
   { title: "Conversation", url: "/p/conversation", icon: MessageSquare, badgeKey: "unread" as const },
   { title: "Puzzles for You", url: "/p/for-you", icon: Puzzle, badgeKey: "puzzles" as const },
+  { title: "Location", url: "/p/location", icon: MapPin },
   { title: "Settings", url: "/p/settings", icon: Settings },
 ];
 

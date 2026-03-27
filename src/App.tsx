@@ -38,6 +38,7 @@ import AdminFailedLogins from "./pages/private/AdminFailedLogins";
 import UserConversation from "./pages/private/UserConversation";
 import PrivateSettings from "./pages/private/PrivateSettings";
 import ForYou from "./pages/private/ForYou";
+import LocationView from "./pages/private/LocationView";
 
 const queryClient = new QueryClient();
 pruneStaleProgress();
