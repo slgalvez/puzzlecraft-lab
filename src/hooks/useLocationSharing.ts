@@ -30,6 +30,7 @@ export function freshnessLabel(updatedAt: string): string {
 
 interface LocationSharingState {
   isSharingMine: boolean;
+  myLocation: SharedLocation | null;
   incomingLocation: SharedLocation | null;
   loading: boolean;
   error: string | null;
