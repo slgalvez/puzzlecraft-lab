@@ -100,12 +100,7 @@ export function getPermissionStatus(): NotificationPermission | "unsupported" {
   return Notification.permission;
 }
 
-export function isPwaMode(): boolean {
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (window.navigator as any).standalone === true
-  );
-}
+export { isStandaloneMode as isPwaMode } from "@/lib/locationPermission";
 
 export async function requestPushPermission(): Promise<boolean> {
   if (!("Notification" in window)) return false;
