@@ -379,26 +379,29 @@ const AdminConversationView = () => {
               <Video size={18} />
             </button>
           </div>
-          <LocationCard
-            isSharingMine={locationSharing.isSharingMine}
-            myLocation={locationSharing.myLocation}
-            loading={locationSharing.loading}
-            error={locationSharing.error}
-            incomingLocation={locationSharing.incomingLocation}
-            otherName={conversation ? resolve(conversation.user_profile_id, conversation.user_name) : "them"}
-            onStartSharing={locationSharing.startSharing}
-            onStopSharing={locationSharing.stopSharing}
-          />
+          <div className="flex items-start gap-1">
+            <div className="flex-1 min-w-0">
+              <LocationCard
+                isSharingMine={locationSharing.isSharingMine}
+                myLocation={locationSharing.myLocation}
+                loading={locationSharing.loading}
+                error={locationSharing.error}
+                incomingLocation={locationSharing.incomingLocation}
+                otherName={conversation ? resolve(conversation.user_profile_id, conversation.user_name) : "them"}
+                onStartSharing={locationSharing.startSharing}
+                onStopSharing={locationSharing.stopSharing}
+              />
+            </div>
+            <ConversationToolbar
+              disappearingEnabled={conversation?.disappearing_enabled ?? false}
+              disappearingDuration={conversation?.disappearing_duration ?? "24h"}
+              onToggleDisappearing={handleToggleDisappearing}
+              onClear={handleClear}
+              clearing={clearing}
+              togglingDisappearing={togglingDisappearing}
+            />
+          </div>
         </div>
-
-        <ConversationToolbar
-          disappearingEnabled={conversation?.disappearing_enabled ?? false}
-          disappearingDuration={conversation?.disappearing_duration ?? "24h"}
-          onToggleDisappearing={handleToggleDisappearing}
-          onClear={handleClear}
-          clearing={clearing}
-          togglingDisappearing={togglingDisappearing}
-        />
 
 
         {/* Messages */}
