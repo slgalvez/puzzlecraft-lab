@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { MapPin, Navigation, Loader2, AlertCircle, ExternalLink, Maximize2 } from "lucide-react";
+import { MapPin, Navigation, Loader2, AlertCircle, ExternalLink, Maximize2, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { type SharedLocation, getFreshness, freshnessLabel, type FreshnessStatus } from "@/hooks/useLocationSharing";
+import { type SharedLocation, getFreshness, type FreshnessStatus } from "@/hooks/useLocationSharing";
+import { distanceMiles, formatDistance, detectMotion, humanTimestamp, type MotionState } from "@/lib/locationUtils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { isStandaloneMode } from "@/lib/locationPermission";
 import {
@@ -31,11 +32,11 @@ interface LocationCardProps {
   onStopSharing: () => void;
 }
 
-function StatusDot({ status }: { status: FreshnessStatus }) {
+function StatusDot({ status, animated = true }: { status: FreshnessStatus; animated?: boolean }) {
   if (status === "live") {
     return (
       <span className="relative flex h-2 w-2">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+        {animated && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />}
         <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
       </span>
     );
@@ -54,15 +55,12 @@ function StatusDot({ status }: { status: FreshnessStatus }) {
   );
 }
 
-/** Build an OpenStreetMap static map URL with one or two markers */
 function buildStaticMapUrl(
   coords: { lat: number; lng: number }[],
   size: string,
   zoom?: number,
 ) {
   if (coords.length === 0) return "";
-
-  // If two markers, compute center and appropriate zoom
   let center: { lat: number; lng: number };
   let z = zoom ?? 15;
 
@@ -71,11 +69,11 @@ function buildStaticMapUrl(
       lat: (coords[0].lat + coords[1].lat) / 2,
       lng: (coords[0].lng + coords[1].lng) / 2,
     };
-    // Rough zoom based on distance
     const dlat = Math.abs(coords[0].lat - coords[1].lat);
     const dlng = Math.abs(coords[0].lng - coords[1].lng);
     const maxDelta = Math.max(dlat, dlng);
-    if (maxDelta > 0.1) z = 11;
+    if (maxDelta > 0.2) z = 10;
+    else if (maxDelta > 0.1) z = 11;
     else if (maxDelta > 0.05) z = 12;
     else if (maxDelta > 0.02) z = 13;
     else if (maxDelta > 0.005) z = 14;
@@ -103,11 +101,27 @@ export function LocationCard({
 }: LocationCardProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
+  const [stopConfirm, setStopConfirm] = useState(false);
   const [, setTick] = useState(0);
   const isMobile = useIsMobile();
   const isStandalone = isStandaloneMode();
-
   const useBottomSheet = isMobile && !isStandalone;
+
+  // Motion detection
+  const prevIncomingRef = useRef<{ lat: number; lng: number; time: number } | null>(null);
+  const [motionState, setMotionState] = useState<MotionState>("unknown");
+
+  useEffect(() => {
+    if (!incomingLocation) {
+      prevIncomingRef.current = null;
+      setMotionState("unknown");
+      return;
+    }
+    const curr = { lat: incomingLocation.latitude, lng: incomingLocation.longitude, time: new Date(incomingLocation.updated_at).getTime() };
+    const motion = detectMotion(prevIncomingRef.current, curr);
+    if (motion !== "unknown") setMotionState(motion);
+    prevIncomingRef.current = curr;
+  }, [incomingLocation?.latitude, incomingLocation?.longitude, incomingLocation?.updated_at]);
 
   // Smooth coordinate interpolation for incoming
   const prevCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -145,11 +159,22 @@ export function LocationCard({
     return () => clearInterval(timer);
   }, [incomingLocation, isSharingMine]);
 
+  // Stop confirmation fade
+  useEffect(() => {
+    if (!stopConfirm) return;
+    const t = setTimeout(() => setStopConfirm(false), 2000);
+    return () => clearTimeout(t);
+  }, [stopConfirm]);
+
   const inCoords = displayCoords || (incomingLocation ? { lat: incomingLocation.latitude, lng: incomingLocation.longitude } : null);
   const myCoords = myLocation ? { lat: myLocation.latitude, lng: myLocation.longitude } : null;
   const freshness = incomingLocation ? getFreshness(incomingLocation.updated_at) : null;
-  const label = incomingLocation ? freshnessLabel(incomingLocation.updated_at) : "";
+  const timestamp = incomingLocation ? humanTimestamp(incomingLocation.updated_at) : "";
   const hasAnyLocationActivity = isSharingMine || incomingLocation;
+
+  // Distance
+  const distance = (myCoords && inCoords) ? distanceMiles(myCoords.lat, myCoords.lng, inCoords.lat, inCoords.lng) : null;
+  const distLabel = distance !== null ? formatDistance(distance) : null;
 
   // Build markers list for maps
   const allMapCoords: { lat: number; lng: number }[] = [];
@@ -171,7 +196,11 @@ export function LocationCard({
     onStartSharing();
   };
 
-  
+  const handleStop = () => {
+    onStopSharing();
+    setStopConfirm(true);
+    setExpanded(false);
+  };
 
   return (
     <div>
@@ -186,15 +215,22 @@ export function LocationCard({
               : "text-muted-foreground/50 hover:text-muted-foreground"
         }`}
       >
-        {isSharingMine ? (
+        {stopConfirm ? (
+          <span className="text-muted-foreground animate-fade-in">Location sharing stopped</span>
+        ) : isSharingMine ? (
           <>
             <StatusDot status="live" />
             <span className="font-medium">Sharing location</span>
+            {distLabel && <span className="text-muted-foreground ml-0.5">· {distLabel}</span>}
           </>
         ) : incomingLocation ? (
           <>
-            <StatusDot status={freshness!} />
-            <span className="font-medium">{otherName} — {label}</span>
+            <StatusDot status={freshness!} animated={freshness === "live"} />
+            <span className="font-medium">{otherName} — {timestamp}</span>
+            {distLabel && <span className="text-muted-foreground ml-0.5">· {distLabel}</span>}
+            {motionState === "moving" && freshness === "live" && (
+              <Activity size={8} className="text-primary ml-0.5" />
+            )}
           </>
         ) : (
           <>
@@ -236,7 +272,14 @@ export function LocationCard({
               <MapPin size={10} className="text-primary" />
               {incomingLocation && freshness ? (
                 <span className="text-[10px] text-foreground">
-                  {freshness === "live" ? "Live" : label}
+                  {freshness === "live" ? "Live" : timestamp}
+                  {distLabel && <span className="text-muted-foreground"> · {distLabel}</span>}
+                  {motionState === "moving" && freshness === "live" && (
+                    <span className="text-primary"> · On the move</span>
+                  )}
+                  {motionState === "stopped" && freshness === "live" && (
+                    <span className="text-muted-foreground"> · Stopped</span>
+                  )}
                 </span>
               ) : isSharingMine ? (
                 <span className="text-[10px] text-primary">Live</span>
@@ -251,7 +294,7 @@ export function LocationCard({
               </button>
               {isSharingMine && (
                 <button
-                  onClick={onStopSharing}
+                  onClick={handleStop}
                   className="text-[9px] text-muted-foreground/40 hover:text-destructive transition-colors"
                 >
                   Stop
@@ -329,18 +372,21 @@ export function LocationCard({
         </Dialog>
       )}
 
-      {/* ── Full-screen map modal (shows BOTH users) ── */}
+      {/* ── Full-screen map modal ── */}
       <Dialog open={mapOpen} onOpenChange={setMapOpen}>
         <DialogContent className="max-w-[95vw] w-full sm:max-w-lg p-0 overflow-hidden">
           <DialogHeader className="p-4 pb-2">
             <DialogTitle className="flex items-center gap-2 text-sm">
               <MapPin size={15} className="text-primary" />
               Live location
+              {distLabel && (
+                <span className="text-[10px] text-muted-foreground font-normal ml-1">· {distLabel}</span>
+              )}
               {incomingLocation && (
                 <span className="ml-auto flex items-center gap-1.5">
                   <StatusDot status={freshness!} />
                   <span className={`text-[10px] ${freshness === "live" ? "text-primary" : "text-muted-foreground"}`}>
-                    {label}
+                    {timestamp}
                   </span>
                 </span>
               )}
@@ -364,8 +410,14 @@ export function LocationCard({
               )}
               {inCoords && (
                 <div className="flex items-center gap-1.5 text-[10px] text-foreground">
-                  <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
-                  {otherName}
+                  <StatusDot status={freshness ?? "stale"} />
+                  <span>{otherName}</span>
+                  {motionState === "moving" && freshness === "live" && (
+                    <span className="text-primary text-[9px]">· On the move</span>
+                  )}
+                  {motionState === "stopped" && freshness === "live" && (
+                    <span className="text-muted-foreground text-[9px]">· Stopped</span>
+                  )}
                 </div>
               )}
             </div>
@@ -380,7 +432,7 @@ export function LocationCard({
             <div className="flex items-center gap-3">
               {isSharingMine && (
                 <button
-                  onClick={onStopSharing}
+                  onClick={handleStop}
                   className="text-[10px] text-muted-foreground/40 hover:text-destructive transition-colors"
                 >
                   Stop sharing

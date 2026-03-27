@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, ExternalLink, Navigation, Loader2 } from "lucide-react";
+import { MapPin, ExternalLink, Navigation, Loader2, Activity } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
-import { useLocationSharing, getFreshness, freshnessLabel, type FreshnessStatus } from "@/hooks/useLocationSharing";
+import { useLocationSharing, getFreshness, type FreshnessStatus } from "@/hooks/useLocationSharing";
+import { distanceMiles, formatDistance, detectMotion, humanTimestamp, type MotionState } from "@/lib/locationUtils";
 import PrivateLayout from "@/components/private/PrivateLayout";
 
 function StatusDot({ status }: { status: FreshnessStatus }) {
@@ -36,7 +37,8 @@ function buildStaticMapUrl(
     const dlat = Math.abs(coords[0].lat - coords[1].lat);
     const dlng = Math.abs(coords[0].lng - coords[1].lng);
     const maxDelta = Math.max(dlat, dlng);
-    if (maxDelta > 0.1) z = 11;
+    if (maxDelta > 0.2) z = 10;
+    else if (maxDelta > 0.1) z = 11;
     else if (maxDelta > 0.05) z = 12;
     else if (maxDelta > 0.02) z = 13;
     else if (maxDelta > 0.005) z = 14;
@@ -54,13 +56,13 @@ export default function LocationView() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [otherName, setOtherName] = useState("them");
   const [loadingConv, setLoadingConv] = useState(true);
+  const [stopConfirm, setStopConfirm] = useState(false);
 
   const handleSessionExpired = useCallback(async () => {
     await signOut();
     navigate("/");
   }, [signOut, navigate]);
 
-  // Load conversation context
   useEffect(() => {
     if (!token || !user) return;
     let cancelled = false;
@@ -71,7 +73,6 @@ export default function LocationView() {
           const data = await invokeMessaging("list-conversations", token);
           const convs = data.conversations || [];
           if (!cancelled && convs.length > 0) {
-            // Use first conversation (most recent)
             setConversationId(convs[0].id);
             setOtherName(convs[0].user_name || "them");
           }
@@ -102,10 +103,30 @@ export default function LocationView() {
     stopSharing,
   } = useLocationSharing(token, conversationId, handleSessionExpired);
 
+  // Motion detection
+  const prevInRef = useRef<{ lat: number; lng: number; time: number } | null>(null);
+  const [motionState, setMotionState] = useState<MotionState>("unknown");
+
+  useEffect(() => {
+    if (!incomingLocation) {
+      prevInRef.current = null;
+      setMotionState("unknown");
+      return;
+    }
+    const curr = { lat: incomingLocation.latitude, lng: incomingLocation.longitude, time: new Date(incomingLocation.updated_at).getTime() };
+    const motion = detectMotion(prevInRef.current, curr);
+    if (motion !== "unknown") setMotionState(motion);
+    prevInRef.current = curr;
+  }, [incomingLocation?.latitude, incomingLocation?.longitude, incomingLocation?.updated_at]);
+
   const myCoords = myLocation ? { lat: myLocation.latitude, lng: myLocation.longitude } : null;
   const inCoords = incomingLocation ? { lat: incomingLocation.latitude, lng: incomingLocation.longitude } : null;
   const freshness = incomingLocation ? getFreshness(incomingLocation.updated_at) : null;
-  const label = incomingLocation ? freshnessLabel(incomingLocation.updated_at) : "";
+  const timestamp = incomingLocation ? humanTimestamp(incomingLocation.updated_at) : "";
+
+  // Distance
+  const distance = (myCoords && inCoords) ? distanceMiles(myCoords.lat, myCoords.lng, inCoords.lat, inCoords.lng) : null;
+  const distLabel = distance !== null ? formatDistance(distance) : null;
 
   const allCoords: { lat: number; lng: number }[] = [];
   if (myCoords) allCoords.push(myCoords);
@@ -121,6 +142,18 @@ export default function LocationView() {
     return () => clearInterval(t);
   }, [incomingLocation, isSharingMine]);
 
+  // Stop confirmation
+  useEffect(() => {
+    if (!stopConfirm) return;
+    const t = setTimeout(() => setStopConfirm(false), 2000);
+    return () => clearTimeout(t);
+  }, [stopConfirm]);
+
+  const handleStop = () => {
+    stopSharing();
+    setStopConfirm(true);
+  };
+
   if (loadingConv) {
     return (
       <PrivateLayout title="Location" fullHeight>
@@ -131,7 +164,6 @@ export default function LocationView() {
     );
   }
 
-  // Responsive map size: larger on desktop, smaller on mobile
   const mapSize = typeof window !== "undefined" && window.innerWidth >= 640 ? "800x600" : "600x400";
 
   return (
@@ -160,8 +192,21 @@ export default function LocationView() {
                   <StatusDot status={freshness!} />
                   <span>{otherName}</span>
                   <span className={`text-[10px] ${freshness === "live" ? "text-primary" : "text-muted-foreground"}`}>
-                    · {freshness === "live" ? "Live" : label}
+                    · {timestamp}
                   </span>
+                  {motionState === "moving" && freshness === "live" && (
+                    <span className="flex items-center gap-0.5 text-[10px] text-primary">
+                      <Activity size={9} /> Moving
+                    </span>
+                  )}
+                  {motionState === "stopped" && freshness === "live" && (
+                    <span className="text-[10px] text-muted-foreground">· Stopped</span>
+                  )}
+                </div>
+              )}
+              {distLabel && (
+                <div className="text-[10px] text-muted-foreground pl-4">
+                  📍 {distLabel}
                 </div>
               )}
             </div>
@@ -181,7 +226,6 @@ export default function LocationView() {
             )}
           </div>
         ) : (
-          /* Empty state */
           <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-6">
             <div className="h-14 w-14 rounded-full bg-muted/30 flex items-center justify-center">
               <MapPin size={24} className="text-muted-foreground/50" />
@@ -195,16 +239,19 @@ export default function LocationView() {
           </div>
         )}
 
-        {/* Bottom controls — safe area aware */}
+        {/* Bottom controls */}
         <div
           className="shrink-0 border-t border-border/30 px-4 py-2.5 flex items-center justify-between"
           style={{ paddingBottom: "max(0.625rem, env(safe-area-inset-bottom, 0px))" }}
         >
           <div className="flex items-center gap-2">
-            {isSharingMine ? (
+            {stopConfirm ? (
+              <span className="text-xs text-muted-foreground animate-fade-in">Sharing stopped</span>
+            ) : isSharingMine ? (
               <>
                 <StatusDot status="live" />
                 <span className="text-xs text-primary font-medium">Sharing your location</span>
+                {distLabel && <span className="text-[10px] text-muted-foreground">· {distLabel}</span>}
               </>
             ) : (
               <span className="text-xs text-muted-foreground">Not sharing</span>
@@ -213,7 +260,7 @@ export default function LocationView() {
           <div className="flex items-center gap-3">
             {isSharingMine ? (
               <button
-                onClick={stopSharing}
+                onClick={handleStop}
                 className="text-[11px] text-muted-foreground/50 hover:text-destructive transition-colors"
               >
                 Stop
