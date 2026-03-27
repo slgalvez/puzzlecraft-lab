@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { MapPin, Navigation, Loader2, AlertCircle, ExternalLink, Maximize2, Square } from "lucide-react";
+import { MapPin, Navigation, Loader2, AlertCircle, ExternalLink, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { type SharedLocation, getFreshness, freshnessLabel, type FreshnessStatus } from "@/hooks/useLocationSharing";
 import { useIsMobile } from "@/hooks/use-mobile";
