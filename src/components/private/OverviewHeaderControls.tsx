@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { Shield, ShieldOff } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 import { CHAT_THEMES, getChatTheme, setChatTheme, getCustomColor, setCustomColor, type ChatThemeId } from "@/lib/chatTheme";
 import { getFocusLossEnabled, setFocusLossEnabled } from "@/lib/focusLossSettings";
 
@@ -10,7 +9,6 @@ interface Props {
 }
 
 export function OverviewHeaderControls({ token }: Props) {
-  const navigate = useNavigate();
   const [activeTheme, setActiveTheme] = useState<ChatThemeId>(getChatTheme);
   const [customHex, setCustomHex] = useState(getCustomColor);
   const [focusLoss, setFocusLoss] = useState(getFocusLossEnabled);
@@ -28,45 +26,10 @@ export function OverviewHeaderControls({ token }: Props) {
     setActiveTheme("custom");
   }, []);
 
-  const handlePrivacyTap = useCallback(() => {
-    if (focusLoss) {
-      // Privacy mode active — quick exit
-      sessionStorage.removeItem("private_view_state");
-      sessionStorage.removeItem("private_access_grant");
-      navigate("/");
-    } else {
-      // Enable focus-loss protection and confirm
-      if (token) setFocusLossEnabled(true, token);
-      setFocusLoss(true);
-    }
-  }, [focusLoss, token, navigate]);
-
-  const handlePrivacyLongPress = useCallback(() => {
-    const next = !focusLoss;
-    setFocusLoss(next);
-    if (token) setFocusLossEnabled(next, token);
-  }, [focusLoss, token]);
-
-  // Long-press support
-  const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
-  const didLongPress = useRef(false);
-
-  const onPointerDown = useCallback(() => {
-    didLongPress.current = false;
-    longPressTimer.current = setTimeout(() => {
-      didLongPress.current = true;
-      handlePrivacyLongPress();
-    }, 600);
-  }, [handlePrivacyLongPress]);
-
-  const onPointerUp = useCallback(() => {
-    clearTimeout(longPressTimer.current);
-    if (!didLongPress.current) handlePrivacyTap();
-  }, [handlePrivacyTap]);
-
-  const onPointerCancel = useCallback(() => {
-    clearTimeout(longPressTimer.current);
-  }, []);
+  const handlePrivacyToggle = useCallback((checked: boolean) => {
+    setFocusLoss(checked);
+    if (token) setFocusLossEnabled(checked, token);
+  }, [token]);
 
   // Current theme color for the dot
   const currentHsl = activeTheme === "custom"
@@ -74,16 +37,16 @@ export function OverviewHeaderControls({ token }: Props) {
     : CHAT_THEMES.find((t) => t.id === activeTheme)?.hue;
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       {/* Theme color dot */}
       <Popover>
         <PopoverTrigger asChild>
           <button
-            className="h-7 w-7 rounded-full flex items-center justify-center hover:bg-secondary/30 transition-colors"
+            className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-secondary/30 active:bg-secondary/40 transition-colors"
             title="Theme color"
           >
             <span
-              className="h-3 w-3 rounded-full ring-1 ring-border/30"
+              className="h-4 w-4 rounded-full ring-1 ring-border/30"
               style={{
                 background: activeTheme === "custom"
                   ? customHex
@@ -94,21 +57,21 @@ export function OverviewHeaderControls({ token }: Props) {
             />
           </button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-44 p-2.5 space-y-2">
+        <PopoverContent align="end" className="w-48 p-3 space-y-2">
           <p className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">Accent</p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {CHAT_THEMES.map((t) => (
               <button
                 key={t.id}
                 onClick={() => handlePreset(t.id)}
-                className={`h-6 w-6 rounded-full transition-all ${activeTheme === t.id ? "ring-2 ring-foreground/60 ring-offset-1 ring-offset-background scale-110" : "hover:scale-105"}`}
+                className={`h-8 w-8 rounded-full transition-all ${activeTheme === t.id ? "ring-2 ring-foreground/60 ring-offset-1 ring-offset-background scale-110" : "hover:scale-105 active:scale-95"}`}
                 style={{ background: `hsl(${t.hue})` }}
                 title={t.label}
               />
             ))}
             <button
               onClick={() => colorRef.current?.click()}
-              className={`h-6 w-6 rounded-full border border-dashed border-muted-foreground/30 flex items-center justify-center text-[10px] text-muted-foreground/50 hover:border-muted-foreground/60 transition-colors ${activeTheme === "custom" ? "ring-2 ring-foreground/60 ring-offset-1 ring-offset-background" : ""}`}
+              className={`h-8 w-8 rounded-full border border-dashed border-muted-foreground/30 flex items-center justify-center text-xs text-muted-foreground/50 hover:border-muted-foreground/60 active:scale-95 transition-all ${activeTheme === "custom" ? "ring-2 ring-foreground/60 ring-offset-1 ring-offset-background" : ""}`}
               style={activeTheme === "custom" ? { background: customHex } : undefined}
               title="Custom color"
             >
@@ -125,21 +88,13 @@ export function OverviewHeaderControls({ token }: Props) {
         </PopoverContent>
       </Popover>
 
-      {/* Privacy quick toggle */}
-      <button
-        onPointerDown={onPointerDown}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerCancel}
-        onPointerLeave={onPointerCancel}
-        className="h-7 w-7 rounded-full flex items-center justify-center hover:bg-secondary/30 transition-colors select-none"
-        title={focusLoss ? "Privacy on — tap to exit" : "Privacy off — tap to exit, hold to enable"}
-      >
-        {focusLoss ? (
-          <Shield size={13} className="text-primary" />
-        ) : (
-          <ShieldOff size={13} className="text-muted-foreground/40" />
-        )}
-      </button>
+      {/* Privacy switch */}
+      <Switch
+        checked={focusLoss}
+        onCheckedChange={handlePrivacyToggle}
+        className="scale-75"
+        title={focusLoss ? "Privacy protection on" : "Privacy protection off"}
+      />
     </div>
   );
 }
