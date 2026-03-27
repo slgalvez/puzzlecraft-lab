@@ -26,7 +26,21 @@ export function getCustomColor(): string {
 export function setCustomColor(hex: string) {
   localStorage.setItem(CUSTOM_COLOR_KEY, hex);
   localStorage.setItem(STORAGE_KEY, "custom");
+  saveColorToHistory(hex);
   applyChatTheme("custom");
+}
+
+export function getSavedColors(): string[] {
+  try {
+    const raw = localStorage.getItem(SAVED_COLORS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveColorToHistory(hex: string) {
+  const colors = getSavedColors().filter((c) => c.toLowerCase() !== hex.toLowerCase());
+  colors.unshift(hex);
+  localStorage.setItem(SAVED_COLORS_KEY, JSON.stringify(colors.slice(0, MAX_SAVED)));
 }
 
 export function setChatTheme(id: ChatThemeId) {
