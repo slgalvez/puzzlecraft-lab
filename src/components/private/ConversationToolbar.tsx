@@ -39,7 +39,7 @@ export function ConversationToolbar({
   return (
     <>
       {/* Compact toolbar — single overflow button for secondary actions */}
-      <div className="flex items-center justify-end px-3 sm:px-4 py-1 shrink-0">
+      <div className="flex items-center shrink-0">
         <div className="flex items-center gap-1">
           {/* Disappearing indicator (always visible when active) */}
           {disappearingEnabled && !showDisappearingMenu && !showClearConfirm && (
