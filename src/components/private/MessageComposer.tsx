@@ -307,7 +307,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
         onSubmit={handleSubmit}
         className={`border-t border-border/20 px-2.5 sm:px-4 py-1.5 composer-form ${isEditing ? "border-t-0" : ""}`}
       >
-        <div className="flex items-end gap-2">
+        <div className="flex items-end gap-1.5 sm:gap-2">
           {!hasVoiceOrMedia && !isEditing && (
             <>
               <button
