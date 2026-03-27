@@ -113,6 +113,7 @@ export function PrivateSidebar() {
       if (isAdmin) {
         const data = await invokeMessaging("list-conversations", token);
         const convs = data.conversations || [];
+        if (convs.length > 0) primaryConvId = convs[0].id;
         msgUnread = convs.reduce(
           (sum: number, c: { unread_count: number }) => sum + c.unread_count,
           0
