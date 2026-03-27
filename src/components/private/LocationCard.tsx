@@ -57,12 +57,6 @@ function StatusDot({ status, animated = true }: { status: FreshnessStatus; anima
   );
 }
 
-  const mapMarkers = [
-    ...(myCoords ? [{ lat: myCoords.lat, lng: myCoords.lng, type: "me" as const }] : []),
-    ...(inCoords ? [{ lat: inCoords.lat, lng: inCoords.lng, type: "other" as const }] : []),
-  ];
-  const savedLabels = getLocationLabels();
-
 export function LocationCard({
   isSharingMine,
   myLocation,
@@ -145,6 +139,12 @@ export function LocationCard({
   const freshness = incomingLocation ? getFreshness(incomingLocation.updated_at) : null;
   const timestamp = incomingLocation ? humanTimestamp(incomingLocation.updated_at) : "";
   const hasAnyLocationActivity = isSharingMine || incomingLocation;
+
+  const mapMarkers = [
+    ...(myCoords ? [{ lat: myCoords.lat, lng: myCoords.lng, type: "me" as const }] : []),
+    ...(inCoords ? [{ lat: inCoords.lat, lng: inCoords.lng, type: "other" as const }] : []),
+  ];
+  const savedLabels = getLocationLabels();
 
   // Distance
   const distance = (myCoords && inCoords) ? distanceMiles(myCoords.lat, myCoords.lng, inCoords.lat, inCoords.lng) : null;
