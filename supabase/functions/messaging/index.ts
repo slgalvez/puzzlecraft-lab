@@ -1676,6 +1676,104 @@ Deno.serve(async (req) => {
       return json({ nicknames: map });
     }
 
+    // ─── START LOCATION SHARING ───
+    if (action === "start-location-sharing") {
+      const { conversation_id, latitude, longitude, accuracy } = body;
+      if (!conversation_id || latitude == null || longitude == null) return err("Missing fields", 400);
+
+      // Verify user is part of the conversation
+      const { data: conv } = await sb
+        .from("conversations")
+        .select("user_profile_id, admin_profile_id")
+        .eq("id", conversation_id)
+        .single();
+      if (!conv) return err("Conversation not found", 404);
+      if (conv.user_profile_id !== profileId && conv.admin_profile_id !== profileId) return err("Not in conversation", 403);
+
+      const viewerId = conv.user_profile_id === profileId ? conv.admin_profile_id : conv.user_profile_id;
+
+      // Upsert location share
+      const { error: upsertErr } = await sb
+        .from("location_shares")
+        .upsert({
+          sharer_profile_id: profileId,
+          viewer_profile_id: viewerId,
+          conversation_id,
+          latitude,
+          longitude,
+          accuracy: accuracy ?? null,
+          active: true,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "sharer_profile_id,conversation_id" });
+
+      if (upsertErr) return err("Failed to start sharing", 500);
+      return json({ ok: true });
+    }
+
+    // ─── UPDATE LOCATION ───
+    if (action === "update-location") {
+      const { conversation_id, latitude, longitude, accuracy } = body;
+      if (!conversation_id || latitude == null || longitude == null) return err("Missing fields", 400);
+
+      const { error: updateErr } = await sb
+        .from("location_shares")
+        .update({
+          latitude,
+          longitude,
+          accuracy: accuracy ?? null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("sharer_profile_id", profileId)
+        .eq("conversation_id", conversation_id)
+        .eq("active", true);
+
+      if (updateErr) return err("Failed to update location", 500);
+      return json({ ok: true });
+    }
+
+    // ─── STOP LOCATION SHARING ───
+    if (action === "stop-location-sharing") {
+      const { conversation_id } = body;
+      if (!conversation_id) return err("Missing conversation_id", 400);
+
+      await sb
+        .from("location_shares")
+        .update({ active: false })
+        .eq("sharer_profile_id", profileId)
+        .eq("conversation_id", conversation_id);
+
+      return json({ ok: true });
+    }
+
+    // ─── GET SHARED LOCATION ───
+    if (action === "get-shared-location") {
+      const { conversation_id } = body;
+      if (!conversation_id) return err("Missing conversation_id", 400);
+
+      // Get location shared WITH me (I'm the viewer)
+      const { data: incoming } = await sb
+        .from("location_shares")
+        .select("*")
+        .eq("viewer_profile_id", profileId)
+        .eq("conversation_id", conversation_id)
+        .eq("active", true)
+        .single();
+
+      // Get my own sharing status
+      const { data: outgoing } = await sb
+        .from("location_shares")
+        .select("*")
+        .eq("sharer_profile_id", profileId)
+        .eq("conversation_id", conversation_id)
+        .eq("active", true)
+        .single();
+
+      return json({
+        incoming: incoming || null,
+        outgoing: outgoing ? { active: true, updated_at: outgoing.updated_at } : null,
+      });
+    }
+
     return err("Unknown action", 400);
   } catch (e) {
     console.error("Messaging error:", e);
