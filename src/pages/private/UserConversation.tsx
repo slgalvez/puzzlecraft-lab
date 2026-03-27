@@ -398,6 +398,19 @@ const UserConversation = () => {
           togglingDisappearing={togglingDisappearing}
         />
 
+        {/* Location sharing */}
+        <div className="px-3 sm:px-4 shrink-0">
+          <LocationCard
+            isSharingMine={locationSharing.isSharingMine}
+            loading={locationSharing.loading}
+            error={locationSharing.error}
+            incomingLocation={locationSharing.incomingLocation}
+            otherName={adminProfileId ? resolve(adminProfileId, adminName) : "them"}
+            onStartSharing={locationSharing.startSharing}
+            onStopSharing={locationSharing.stopSharing}
+          />
+        </div>
+
         {/* Messages */}
         <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 scroll-smooth">
           {messages.length === 0 ? (
