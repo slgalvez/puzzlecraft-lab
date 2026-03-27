@@ -6,7 +6,7 @@ import PrivateLayout from "@/components/private/PrivateLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { setFocusLossEnabled } from "@/lib/focusLossSettings";
+import { getFocusLossEnabled, setFocusLossEnabled } from "@/lib/focusLossSettings";
 import { Plus, Loader2 } from "lucide-react";
 import { FeatureHint } from "@/components/private/FeatureHint";
 import {
