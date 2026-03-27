@@ -161,19 +161,16 @@ export default function LocationView() {
     );
   }
 
-  const mapSize = typeof window !== "undefined" && window.innerWidth >= 640 ? "800x600" : "600x400";
-
   return (
     <PrivateLayout title="Location" fullHeight>
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Map area */}
         {hasData ? (
           <div className="flex-1 relative min-h-0 overflow-hidden">
-            <img
-              src={buildStaticMapUrl(allCoords, mapSize)}
-              alt="Location map"
-              className="w-full h-full object-cover"
-              loading="lazy"
+            <iframe
+              src={buildOsmEmbedUrl(allCoords)}
+              title="Location map"
+              className="w-full h-full border-0"
             />
 
             {/* Legend */}

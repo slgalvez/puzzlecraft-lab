@@ -253,11 +253,10 @@ export function LocationCard({
       {hasAnyLocationActivity && expanded && (
         <div className="rounded-md border border-border/20 bg-card/40 overflow-hidden mt-0.5">
           <button onClick={() => setMapOpen(true)} className="block relative group w-full">
-            <img
-              src={buildStaticMapUrl(allMapCoords.length > 0 ? allMapCoords : [], "400x140")}
-              alt="Location map"
-              className="w-full h-[110px] object-cover"
-              loading="lazy"
+            <iframe
+              src={buildOsmEmbedUrl(allMapCoords.length > 0 ? allMapCoords : [])}
+              title="Location map"
+              className="w-full h-[110px] border-0 pointer-events-none"
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
               <Maximize2 size={14} className="text-background opacity-0 group-hover:opacity-70 transition-opacity drop-shadow-lg" />
@@ -390,11 +389,10 @@ export function LocationCard({
           </DialogHeader>
 
           <div className="w-full relative">
-            <img
-              src={buildStaticMapUrl(allMapCoords.length > 0 ? allMapCoords : [], "600x400")}
-              alt="Location map"
-              className="w-full h-[50vh] object-cover"
-              loading="lazy"
+            <iframe
+              src={buildOsmEmbedUrl(allMapCoords.length > 0 ? allMapCoords : [])}
+              title="Location map"
+              className="w-full h-[50vh] border-0"
             />
             {/* Legend overlay */}
             <div className="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm rounded-md px-2.5 py-1.5 space-y-0.5">
