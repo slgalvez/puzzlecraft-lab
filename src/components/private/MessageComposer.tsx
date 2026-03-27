@@ -59,7 +59,9 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
   const [uploadingVoice, setUploadingVoice] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const sendGuardRef = useRef(false); // prevent double-tap sends
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // When entering edit mode, populate the textarea
   useEffect(() => {
