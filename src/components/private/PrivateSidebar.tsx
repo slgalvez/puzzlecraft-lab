@@ -108,6 +108,7 @@ export function PrivateSidebar() {
     try {
       let msgUnread = 0;
       let latestMessageTime = 0;
+      let primaryConvId: string | null = null;
 
       if (isAdmin) {
         const data = await invokeMessaging("list-conversations", token);
