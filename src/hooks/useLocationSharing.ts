@@ -1,25 +1,39 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 
-interface SharedLocation {
+export interface SharedLocation {
   latitude: number;
   longitude: number;
   accuracy: number | null;
   updated_at: string;
 }
 
+/** Freshness status derived from updated_at */
+export type FreshnessStatus = "live" | "recent" | "stale";
+
+export function getFreshness(updatedAt: string): FreshnessStatus {
+  const age = Date.now() - new Date(updatedAt).getTime();
+  if (age < 30_000) return "live";      // <30s = live
+  if (age < 120_000) return "recent";   // <2min = recent
+  return "stale";                        // >2min = stale
+}
+
+export function freshnessLabel(updatedAt: string): string {
+  const age = Date.now() - new Date(updatedAt).getTime();
+  if (age < 10_000) return "Live now";
+  if (age < 30_000) return "Updated just now";
+  if (age < 60_000) return `Updated ${Math.floor(age / 1000)}s ago`;
+  if (age < 3_600_000) return `Updated ${Math.floor(age / 60_000)} min ago`;
+  if (age < 86_400_000) return `Last seen ${Math.floor(age / 3_600_000)}h ago`;
+  return "Last seen recently";
+}
+
 interface LocationSharingState {
-  /** Whether I am currently sharing my location */
   isSharingMine: boolean;
-  /** The other user's shared location (if they are sharing) */
   incomingLocation: SharedLocation | null;
-  /** Whether location is being fetched */
   loading: boolean;
-  /** Error message */
   error: string | null;
-  /** Start sharing my location */
   startSharing: () => void;
-  /** Stop sharing my location */
   stopSharing: () => void;
 }
 
@@ -35,6 +49,10 @@ export function useLocationSharing(
   const watchIdRef = useRef<number | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
   const sharingRef = useRef(false);
+  const tokenRef = useRef(token);
+  const convRef = useRef(conversationId);
+  tokenRef.current = token;
+  convRef.current = conversationId;
 
   // Poll for the other user's shared location
   const fetchSharedLocation = useCallback(async () => {
@@ -44,22 +62,28 @@ export function useLocationSharing(
         conversation_id: conversationId,
       });
       if (data.incoming) {
-        setIncomingLocation({
-          latitude: data.incoming.latitude,
-          longitude: data.incoming.longitude,
-          accuracy: data.incoming.accuracy,
-          updated_at: data.incoming.updated_at,
+        setIncomingLocation((prev) => {
+          // Only update if coords actually changed or freshness differs
+          if (
+            prev &&
+            prev.latitude === data.incoming.latitude &&
+            prev.longitude === data.incoming.longitude &&
+            prev.updated_at === data.incoming.updated_at
+          ) {
+            return prev;
+          }
+          return {
+            latitude: data.incoming.latitude,
+            longitude: data.incoming.longitude,
+            accuracy: data.incoming.accuracy,
+            updated_at: data.incoming.updated_at,
+          };
         });
       } else {
         setIncomingLocation(null);
       }
-      // Sync our own sharing status from backend
-      if (data.outgoing?.active && !sharingRef.current) {
-        // Backend says we're sharing but local state disagrees — reconcile
-      }
     } catch (e) {
       if (e instanceof SessionExpiredError) return onSessionExpired();
-      // Silent fail for polling
     }
   }, [token, conversationId, onSessionExpired]);
 
@@ -71,13 +95,21 @@ export function useLocationSharing(
     return () => clearInterval(pollRef.current);
   }, [fetchSharedLocation, token, conversationId]);
 
+  // Force re-render every 10s to update freshness labels
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!incomingLocation) return;
+    const timer = setInterval(() => setTick((t) => t + 1), 10_000);
+    return () => clearInterval(timer);
+  }, [incomingLocation]);
+
   const sendUpdate = useCallback(
     async (latitude: number, longitude: number, accuracy: number | null, isStart = false) => {
-      if (!token || !conversationId) return;
+      if (!tokenRef.current || !convRef.current) return;
       try {
         const action = isStart ? "start-location-sharing" : "update-location";
-        await invokeMessaging(action, token, {
-          conversation_id: conversationId,
+        await invokeMessaging(action, tokenRef.current, {
+          conversation_id: convRef.current,
           latitude,
           longitude,
           accuracy,
@@ -87,8 +119,37 @@ export function useLocationSharing(
         console.warn("[location] update failed:", e);
       }
     },
-    [token, conversationId, onSessionExpired],
+    [onSessionExpired],
   );
+
+  // Exit snapshot: send final location when page hides
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden" && sharingRef.current) {
+        // Send a last-known location snapshot
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            sendUpdate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+          },
+          () => {}, // silently fail
+          { enableHighAccuracy: false, maximumAge: 30000, timeout: 3000 },
+        );
+      }
+      if (document.visibilityState === "visible" && sharingRef.current) {
+        // Re-entry refresh: immediately get fresh location
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            sendUpdate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+          },
+          () => {},
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 },
+        );
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [sendUpdate]);
 
   const startSharing = useCallback(() => {
     if (!("geolocation" in navigator)) {
@@ -145,16 +206,16 @@ export function useLocationSharing(
       watchIdRef.current = null;
     }
 
-    if (token && conversationId) {
+    if (tokenRef.current && convRef.current) {
       try {
-        await invokeMessaging("stop-location-sharing", token, {
-          conversation_id: conversationId,
+        await invokeMessaging("stop-location-sharing", tokenRef.current, {
+          conversation_id: convRef.current,
         });
       } catch (e) {
         if (e instanceof SessionExpiredError) return onSessionExpired();
       }
     }
-  }, [token, conversationId, onSessionExpired]);
+  }, [onSessionExpired]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -163,15 +224,14 @@ export function useLocationSharing(
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;
       }
-      // Auto-stop sharing when leaving conversation
-      if (sharingRef.current && token && conversationId) {
+      if (sharingRef.current && tokenRef.current && convRef.current) {
         sharingRef.current = false;
-        invokeMessaging("stop-location-sharing", token, {
-          conversation_id: conversationId,
+        invokeMessaging("stop-location-sharing", tokenRef.current, {
+          conversation_id: convRef.current,
         }).catch(() => {});
       }
     };
-  }, [token, conversationId]);
+  }, []);
 
   return {
     isSharingMine,
