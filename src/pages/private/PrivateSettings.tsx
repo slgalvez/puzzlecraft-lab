@@ -25,6 +25,7 @@ import {
   setChatTheme,
   setCustomColor,
   getCustomColor,
+  getSavedColors,
   type ChatThemeId,
 } from "@/lib/chatTheme";
 
