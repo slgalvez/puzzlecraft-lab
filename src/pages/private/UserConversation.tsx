@@ -390,25 +390,29 @@ const UserConversation = () => {
               <Video size={18} />
             </button>
           </div>
-          <LocationCard
-            isSharingMine={locationSharing.isSharingMine}
-            myLocation={locationSharing.myLocation}
-            loading={locationSharing.loading}
-            error={locationSharing.error}
-            incomingLocation={locationSharing.incomingLocation}
-            otherName={adminProfileId ? resolve(adminProfileId, adminName) : "them"}
-            onStartSharing={locationSharing.startSharing}
-            onStopSharing={locationSharing.stopSharing}
-          />
+          <div className="flex items-start gap-1">
+            <div className="flex-1 min-w-0">
+              <LocationCard
+                isSharingMine={locationSharing.isSharingMine}
+                myLocation={locationSharing.myLocation}
+                loading={locationSharing.loading}
+                error={locationSharing.error}
+                incomingLocation={locationSharing.incomingLocation}
+                otherName={adminProfileId ? resolve(adminProfileId, adminName) : "them"}
+                onStartSharing={locationSharing.startSharing}
+                onStopSharing={locationSharing.stopSharing}
+              />
+            </div>
+            <ConversationToolbar
+              disappearingEnabled={disappearingEnabled}
+              disappearingDuration={disappearingDuration}
+              onToggleDisappearing={handleToggleDisappearing}
+              onClear={handleClear}
+              clearing={clearing}
+              togglingDisappearing={togglingDisappearing}
+            />
+          </div>
         </div>
-        <ConversationToolbar
-          disappearingEnabled={disappearingEnabled}
-          disappearingDuration={disappearingDuration}
-          onToggleDisappearing={handleToggleDisappearing}
-          onClear={handleClear}
-          clearing={clearing}
-          togglingDisappearing={togglingDisappearing}
-        />
 
 
         {/* Messages */}
