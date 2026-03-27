@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { GifPicker } from "@/components/private/GifPicker";
 import { VoiceRecorder, VoicePreviewBar, type VoicePreview } from "@/components/private/VoiceRecorder";
 import { hapticTap } from "@/lib/haptic";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export interface EditingMessage {
   id: string;
