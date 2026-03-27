@@ -145,7 +145,7 @@ export default function DarkMap({ markers, labels, className = "", interactive =
       map.on("dragstart", onUserInteraction);
       map.on("zoomstart", () => {
         // Only count as user interaction if it's not programmatic (typed loosely)
-        if (!map._programmaticZoom) onUserInteraction();
+        if (!(map as any)._programmaticZoom) onUserInteraction();
       });
     }
 
