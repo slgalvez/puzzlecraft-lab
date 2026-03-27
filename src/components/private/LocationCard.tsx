@@ -104,6 +104,22 @@ export function LocationCard({
   const [mapOpen, setMapOpen] = useState(false);
   const [, setTick] = useState(0);
   const isMobile = useIsMobile();
+  const [isStandalonePwa, setIsStandalonePwa] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia?.("(display-mode: standalone)");
+    const updateStandaloneState = () => {
+      const iosStandalone = typeof navigator !== "undefined" && "standalone" in navigator
+        ? Boolean((navigator as Navigator & { standalone?: boolean }).standalone)
+        : false;
+      setIsStandalonePwa(Boolean(mediaQuery?.matches) || iosStandalone);
+    };
+
+    updateStandaloneState();
+    mediaQuery?.addEventListener?.("change", updateStandaloneState);
+
+    return () => mediaQuery?.removeEventListener?.("change", updateStandaloneState);
+  }, []);
 
   // Smooth coordinate interpolation for incoming
   const prevCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -165,12 +181,14 @@ export function LocationCard({
     onStartSharing();
   };
 
+  const useBottomSheet = isMobile && !isStandalonePwa;
+
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1">
       {/* ── Top status bar ── */}
       <button
         onClick={handleTopTap}
-        className={`flex items-center gap-1.5 text-[11px] px-1.5 py-px transition-colors w-full text-left rounded ${
+        className={`flex min-h-5 w-full items-center gap-1 px-1 py-0.5 text-left text-[10px] leading-none transition-colors rounded-sm ${
           isSharingMine
             ? "text-primary"
             : incomingLocation
@@ -181,10 +199,10 @@ export function LocationCard({
         {isSharingMine ? (
           <>
             <StatusDot status="live" />
-            <span className="font-medium">Sharing location…</span>
+            <span className="font-medium leading-none">Sharing location…</span>
             <button
               onClick={(e) => { e.stopPropagation(); onStopSharing(); }}
-              className="ml-auto text-[9px] text-muted-foreground/60 hover:text-destructive transition-colors flex items-center gap-0.5"
+              className="ml-auto flex items-center gap-0.5 text-[8px] leading-none text-muted-foreground/55 transition-colors hover:text-destructive"
             >
               <Square size={8} />
               Stop
@@ -193,13 +211,13 @@ export function LocationCard({
         ) : incomingLocation ? (
           <>
             <StatusDot status={freshness!} />
-            <span className="font-medium">{otherName} — {label}</span>
-            <Maximize2 size={10} className="ml-auto text-muted-foreground/30" />
+            <span className="font-medium leading-none">{otherName} — {label}</span>
+            <Maximize2 size={9} className="ml-auto text-muted-foreground/25" />
           </>
         ) : (
           <>
-            <MapPin size={12} />
-            <span>Location sharing</span>
+            <MapPin size={11} />
+            <span className="leading-none">Location sharing</span>
           </>
         )}
       </button>
@@ -263,7 +281,7 @@ export function LocationCard({
       )}
 
       {/* ── Bottom sheet / dialog to start sharing ── */}
-      {isMobile ? (
+      {useBottomSheet ? (
         <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
           <DrawerContent>
             <DrawerHeader className="text-left">
