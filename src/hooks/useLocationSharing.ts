@@ -30,6 +30,7 @@ export function freshnessLabel(updatedAt: string): string {
 
 interface LocationSharingState {
   isSharingMine: boolean;
+  myLocation: SharedLocation | null;
   incomingLocation: SharedLocation | null;
   loading: boolean;
   error: string | null;
@@ -43,6 +44,7 @@ export function useLocationSharing(
   onSessionExpired: () => void,
 ): LocationSharingState {
   const [isSharingMine, setIsSharingMine] = useState(false);
+  const [myLocation, setMyLocation] = useState<SharedLocation | null>(null);
   const [incomingLocation, setIncomingLocation] = useState<SharedLocation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -162,6 +164,13 @@ export function useLocationSharing(
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        const myLoc: SharedLocation = {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          updated_at: new Date().toISOString(),
+        };
+        setMyLocation(myLoc);
         setIsSharingMine(true);
         sharingRef.current = true;
         setLoading(false);
@@ -171,6 +180,12 @@ export function useLocationSharing(
         watchIdRef.current = navigator.geolocation.watchPosition(
           (watchPos) => {
             if (!sharingRef.current) return;
+            setMyLocation({
+              latitude: watchPos.coords.latitude,
+              longitude: watchPos.coords.longitude,
+              accuracy: watchPos.coords.accuracy,
+              updated_at: new Date().toISOString(),
+            });
             sendUpdate(
               watchPos.coords.latitude,
               watchPos.coords.longitude,
@@ -235,6 +250,7 @@ export function useLocationSharing(
 
   return {
     isSharingMine,
+    myLocation,
     incomingLocation,
     loading,
     error,

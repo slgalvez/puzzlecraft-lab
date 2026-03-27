@@ -392,6 +392,7 @@ const AdminConversationView = () => {
         <div className="px-3 sm:px-4 shrink-0">
           <LocationCard
             isSharingMine={locationSharing.isSharingMine}
+            myLocation={locationSharing.myLocation}
             loading={locationSharing.loading}
             error={locationSharing.error}
             incomingLocation={locationSharing.incomingLocation}
