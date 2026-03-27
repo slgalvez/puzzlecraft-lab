@@ -103,6 +103,7 @@ export function LocationCard({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [, setTick] = useState(0);
+  const isMobile = useIsMobile();
 
   // Smooth coordinate interpolation for incoming
   const prevCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
