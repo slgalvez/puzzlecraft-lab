@@ -104,22 +104,9 @@ export function LocationCard({
   const [mapOpen, setMapOpen] = useState(false);
   const [, setTick] = useState(0);
   const isMobile = useIsMobile();
-  const [isStandalonePwa, setIsStandalonePwa] = useState(false);
+  const isStandalone = isStandaloneMode();
 
-  useEffect(() => {
-    const mediaQuery = window.matchMedia?.("(display-mode: standalone)");
-    const updateStandaloneState = () => {
-      const iosStandalone = typeof navigator !== "undefined" && "standalone" in navigator
-        ? Boolean((navigator as Navigator & { standalone?: boolean }).standalone)
-        : false;
-      setIsStandalonePwa(Boolean(mediaQuery?.matches) || iosStandalone);
-    };
-
-    updateStandaloneState();
-    mediaQuery?.addEventListener?.("change", updateStandaloneState);
-
-    return () => mediaQuery?.removeEventListener?.("change", updateStandaloneState);
-  }, []);
+  const useBottomSheet = isMobile && !isStandalone;
 
   // Smooth coordinate interpolation for incoming
   const prevCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
