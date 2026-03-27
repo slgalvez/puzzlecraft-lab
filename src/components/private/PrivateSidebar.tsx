@@ -160,6 +160,7 @@ export function PrivateSidebar() {
         }
       } else {
         const data = await invokeMessaging("get-my-conversation", token);
+        primaryConvId = data.conversation_id || null;
         msgUnread = data.unread_count || 0;
         const msgs = data.messages || [];
 
