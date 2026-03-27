@@ -198,7 +198,7 @@ export function LocationCard({
           </>
         ) : (
           <>
-            <MapPin size={14} />
+            <MapPin size={12} />
             <span>Location sharing</span>
           </>
         )}
