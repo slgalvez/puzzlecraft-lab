@@ -22,32 +22,29 @@ function StatusDot({ status }: { status: FreshnessStatus }) {
   return <span className="inline-flex rounded-full h-2.5 w-2.5 bg-muted-foreground/30" />;
 }
 
-function buildStaticMapUrl(
-  coords: { lat: number; lng: number }[],
-  size: string,
-) {
+function computeMapBbox(coords: { lat: number; lng: number }[]): string {
   if (coords.length === 0) return "";
   let center: { lat: number; lng: number };
-  let z = 15;
+  let span = 0.005;
   if (coords.length === 2) {
     center = {
       lat: (coords[0].lat + coords[1].lat) / 2,
       lng: (coords[0].lng + coords[1].lng) / 2,
     };
-    const dlat = Math.abs(coords[0].lat - coords[1].lat);
-    const dlng = Math.abs(coords[0].lng - coords[1].lng);
-    const maxDelta = Math.max(dlat, dlng);
-    if (maxDelta > 0.2) z = 10;
-    else if (maxDelta > 0.1) z = 11;
-    else if (maxDelta > 0.05) z = 12;
-    else if (maxDelta > 0.02) z = 13;
-    else if (maxDelta > 0.005) z = 14;
-    else z = 15;
+    const maxDelta = Math.max(Math.abs(coords[0].lat - coords[1].lat), Math.abs(coords[0].lng - coords[1].lng));
+    span = Math.max(maxDelta * 1.5, 0.005);
   } else {
     center = coords[0];
   }
-  const markers = coords.map((c) => `${c.lat},${c.lng},red-pushpin`).join("|");
-  return `https://staticmap.openstreetmap.de/staticmap.php?center=${center.lat},${center.lng}&zoom=${z}&size=${size}&markers=${markers}`;
+  return `${center.lng - span},${center.lat - span},${center.lng + span},${center.lat + span}`;
+}
+
+function buildOsmEmbedUrl(coords: { lat: number; lng: number }[]): string {
+  const bbox = computeMapBbox(coords);
+  const markerParam = coords.length > 0
+    ? `&marker=${coords[0].lat},${coords[0].lng}`
+    : "";
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik${markerParam}`;
 }
 
 export default function LocationView() {
@@ -164,19 +161,16 @@ export default function LocationView() {
     );
   }
 
-  const mapSize = typeof window !== "undefined" && window.innerWidth >= 640 ? "800x600" : "600x400";
-
   return (
     <PrivateLayout title="Location" fullHeight>
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Map area */}
         {hasData ? (
           <div className="flex-1 relative min-h-0 overflow-hidden">
-            <img
-              src={buildStaticMapUrl(allCoords, mapSize)}
-              alt="Location map"
-              className="w-full h-full object-cover"
-              loading="lazy"
+            <iframe
+              src={buildOsmEmbedUrl(allCoords)}
+              title="Location map"
+              className="w-full h-full border-0"
             />
 
             {/* Legend */}
