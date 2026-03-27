@@ -174,13 +174,13 @@ export function LocationCard({
                 </span>
               </div>
               <div className="flex items-center gap-1">
-                {!isStale(incomingLocation.updated_at) && (
+              {!isStale(incomingLocation.updated_at) && (
                   <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
                   </span>
                 )}
-                <span className={`text-[10px] ${isStale(incomingLocation.updated_at) ? "text-amber-500" : "text-muted-foreground"}`}>
+                <span className={`text-[10px] ${isStale(incomingLocation.updated_at) ? "text-destructive" : "text-muted-foreground"}`}>
                   {isStale(incomingLocation.updated_at) ? "Paused · " : ""}
                   {timeAgo(incomingLocation.updated_at)}
                 </span>
