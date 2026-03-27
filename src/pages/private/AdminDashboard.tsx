@@ -147,11 +147,14 @@ const AdminDashboard = () => {
     });
   }
 
-  if (hasLocationActivity) {
+  if (hasLocationActivity && locationMeta) {
+    const locLabel = locationMeta.dist
+      ? `${locationMeta.name} · ${locationMeta.dist}`
+      : `${locationMeta.name} sharing location`;
     activeItems.push({
       icon: <MapPin size={13} className="text-primary" />,
-      label: "Live location active",
-      detail: "",
+      label: locLabel,
+      detail: locationMeta.time,
       action: () => navigate("/p/location"),
     });
   }
