@@ -307,9 +307,14 @@ export default function LocationView() {
         {labels.length > 0 && (
           <div className="shrink-0 border-t border-border/20 px-4 py-1.5 flex gap-2 overflow-x-auto scrollbar-none">
             {labels.map((l) => (
-              <div key={l.id} className="flex items-center gap-1 shrink-0 bg-muted/20 rounded-full px-2 py-0.5 group">
+              <div key={l.id} className="flex items-center gap-1.5 shrink-0 bg-muted/20 rounded-full px-2.5 py-0.5 group">
                 <span className="text-xs">{l.icon}</span>
                 <span className="text-[10px] text-foreground/80">{l.name}</span>
+                {myCoords && (
+                  <span className="text-[9px] text-muted-foreground">
+                    {formatDistance(distanceMiles(myCoords.lat, myCoords.lng, l.lat, l.lng))}
+                  </span>
+                )}
                 <button
                   onClick={() => handleDeleteLabel(l.id)}
                   className="text-muted-foreground/30 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100 ml-0.5"
