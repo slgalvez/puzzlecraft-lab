@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import { MessageSquare, Puzzle, Plus, MapPin, ArrowRight } from "lucide-react";
+import { OverviewHeaderControls } from "@/components/private/OverviewHeaderControls";
 import { WhatsNewBanner } from "@/components/private/WhatsNewBanner";
 
 interface PuzzleSummary {
