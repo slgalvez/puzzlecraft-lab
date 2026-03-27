@@ -170,7 +170,7 @@ export function LocationCard({
       {/* ── Top status bar ── */}
       <button
         onClick={handleTopTap}
-        className={`flex items-center gap-2 text-xs px-1 py-0.5 transition-colors w-full text-left rounded ${
+        className={`flex items-center gap-1.5 text-[11px] px-1.5 py-px transition-colors w-full text-left rounded ${
           isSharingMine
             ? "text-primary"
             : incomingLocation
@@ -184,7 +184,7 @@ export function LocationCard({
             <span className="font-medium">Sharing location…</span>
             <button
               onClick={(e) => { e.stopPropagation(); onStopSharing(); }}
-              className="ml-auto text-[10px] text-muted-foreground/70 hover:text-destructive transition-colors flex items-center gap-0.5"
+              className="ml-auto text-[9px] text-muted-foreground/60 hover:text-destructive transition-colors flex items-center gap-0.5"
             >
               <Square size={8} />
               Stop
@@ -194,11 +194,11 @@ export function LocationCard({
           <>
             <StatusDot status={freshness!} />
             <span className="font-medium">{otherName} — {label}</span>
-            <Maximize2 size={12} className="ml-auto text-muted-foreground/40" />
+            <Maximize2 size={10} className="ml-auto text-muted-foreground/30" />
           </>
         ) : (
           <>
-            <MapPin size={14} />
+            <MapPin size={12} />
             <span>Location sharing</span>
           </>
         )}
@@ -219,7 +219,7 @@ export function LocationCard({
 
       {/* ── Thread location card (visible when any location activity) ── */}
       {hasAnyLocationActivity && (
-        <div className="rounded-lg border border-border/40 bg-card/60 overflow-hidden">
+        <div className="rounded-lg border border-border/25 bg-card/50 overflow-hidden">
           <button onClick={() => setMapOpen(true)} className="block relative group w-full">
             <img
               src={buildStaticMapUrl(allMapCoords.length > 0 ? allMapCoords : [], "400x160")}
@@ -231,7 +231,7 @@ export function LocationCard({
               <Maximize2 size={16} className="text-background opacity-0 group-hover:opacity-80 transition-opacity drop-shadow-lg" />
             </div>
           </button>
-          <div className="px-2.5 py-2 flex items-center justify-between">
+          <div className="px-2 py-1.5 flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <MapPin size={12} className="text-primary" />
               {incomingLocation && freshness ? (
