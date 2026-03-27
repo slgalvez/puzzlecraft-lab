@@ -1,40 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MapPin, Navigation, X, Loader2, AlertCircle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-interface SharedLocation {
-  latitude: number;
-  longitude: number;
-  accuracy: number | null;
-  updated_at: string;
-}
+import { type SharedLocation, getFreshness, freshnessLabel, type FreshnessStatus } from "@/hooks/useLocationSharing";
 
 interface LocationCardProps {
-  /** Whether the current user is sharing their location */
   isSharingMine: boolean;
-  /** Loading state for starting location */
   loading: boolean;
-  /** Error message */
   error: string | null;
-  /** Incoming location from the other user */
   incomingLocation: SharedLocation | null;
-  /** Other user's display name */
   otherName: string;
   onStartSharing: () => void;
   onStopSharing: () => void;
 }
 
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  if (diff < 10_000) return "just now";
-  if (diff < 60_000) return `${Math.floor(diff / 1000)}s ago`;
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
-  return `${Math.floor(diff / 86_400_000)}d ago`;
-}
-
-function isStale(iso: string): boolean {
-  return Date.now() - new Date(iso).getTime() > 120_000; // 2 min
+/** Dot color by freshness */
+function StatusDot({ status }: { status: FreshnessStatus }) {
+  if (status === "live") {
+    return (
+      <span className="relative flex h-2 w-2">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+      </span>
+    );
+  }
+  if (status === "recent") {
+    return (
+      <span className="relative flex h-2 w-2">
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-foreground/50" />
+      </span>
+    );
+  }
+  return (
+    <span className="relative flex h-2 w-2">
+      <span className="relative inline-flex rounded-full h-2 w-2 bg-muted-foreground/30" />
+    </span>
+  );
 }
 
 export function LocationCard({
@@ -47,8 +47,60 @@ export function LocationCard({
   onStopSharing,
 }: LocationCardProps) {
   const [expanded, setExpanded] = useState(false);
+  // Force tick for freshness label updates
+  const [, setTick] = useState(0);
+  // Smooth coordinate interpolation
+  const prevCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
+  const [displayCoords, setDisplayCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (!incomingLocation) {
+      prevCoordsRef.current = null;
+      setDisplayCoords(null);
+      return;
+    }
+    const target = { lat: incomingLocation.latitude, lng: incomingLocation.longitude };
+    const prev = prevCoordsRef.current;
+
+    if (!prev) {
+      prevCoordsRef.current = target;
+      setDisplayCoords(target);
+      return;
+    }
+
+    // Animate over ~600ms in 6 steps
+    const steps = 6;
+    let step = 0;
+    const dLat = (target.lat - prev.lat) / steps;
+    const dLng = (target.lng - prev.lng) / steps;
+
+    const timer = setInterval(() => {
+      step++;
+      const current = {
+        lat: prev.lat + dLat * step,
+        lng: prev.lng + dLng * step,
+      };
+      setDisplayCoords(current);
+      if (step >= steps) {
+        clearInterval(timer);
+        prevCoordsRef.current = target;
+      }
+    }, 100);
+
+    return () => clearInterval(timer);
+  }, [incomingLocation?.latitude, incomingLocation?.longitude]);
+
+  // Tick for freshness updates
+  useEffect(() => {
+    if (!incomingLocation) return;
+    const timer = setInterval(() => setTick((t) => t + 1), 10_000);
+    return () => clearInterval(timer);
+  }, [incomingLocation]);
 
   const hasAnything = isSharingMine || incomingLocation || error;
+  const freshness = incomingLocation ? getFreshness(incomingLocation.updated_at) : null;
+  const label = incomingLocation ? freshnessLabel(incomingLocation.updated_at) : "";
+  const coords = displayCoords || (incomingLocation ? { lat: incomingLocation.latitude, lng: incomingLocation.longitude } : null);
 
   return (
     <div className="space-y-2">
@@ -124,10 +176,7 @@ export function LocationCard({
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-              </span>
+              <StatusDot status="live" />
               <span className="text-xs font-medium text-primary">Sharing live location</span>
             </div>
             <Button
@@ -146,23 +195,23 @@ export function LocationCard({
       )}
 
       {/* Incoming location from other user */}
-      {incomingLocation && (
+      {incomingLocation && coords && (
         <div className="rounded-lg border border-border/50 bg-card/50 overflow-hidden">
-          {/* Map preview - static image from OpenStreetMap */}
+          {/* Map preview */}
           <a
-            href={`https://www.google.com/maps?q=${incomingLocation.latitude},${incomingLocation.longitude}`}
+            href={`https://www.google.com/maps?q=${coords.lat},${coords.lng}`}
             target="_blank"
             rel="noopener noreferrer"
             className="block relative group"
           >
             <img
-              src={`https://staticmap.openstreetmap.de/staticmap.php?center=${incomingLocation.latitude},${incomingLocation.longitude}&zoom=15&size=400x200&markers=${incomingLocation.latitude},${incomingLocation.longitude},red-pushpin`}
+              src={`https://staticmap.openstreetmap.de/staticmap.php?center=${coords.lat},${coords.lng}&zoom=15&size=400x200&markers=${coords.lat},${coords.lng},red-pushpin`}
               alt="Location map"
-              className="w-full h-[140px] object-cover"
+              className="w-full h-[140px] object-cover transition-opacity duration-300"
               loading="lazy"
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-              <ExternalLink size={20} className="text-white opacity-0 group-hover:opacity-80 transition-opacity drop-shadow-lg" />
+              <ExternalLink size={20} className="text-background opacity-0 group-hover:opacity-80 transition-opacity drop-shadow-lg" />
             </div>
           </a>
           <div className="p-2.5 space-y-1">
@@ -173,16 +222,18 @@ export function LocationCard({
                   {otherName}'s location
                 </span>
               </div>
-              <div className="flex items-center gap-1">
-              {!isStale(incomingLocation.updated_at) && (
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
-                  </span>
-                )}
-                <span className={`text-[10px] ${isStale(incomingLocation.updated_at) ? "text-destructive" : "text-muted-foreground"}`}>
-                  {isStale(incomingLocation.updated_at) ? "Paused · " : ""}
-                  {timeAgo(incomingLocation.updated_at)}
+              <div className="flex items-center gap-1.5">
+                <StatusDot status={freshness!} />
+                <span
+                  className={`text-[10px] ${
+                    freshness === "live"
+                      ? "text-primary"
+                      : freshness === "recent"
+                        ? "text-muted-foreground"
+                        : "text-muted-foreground/60"
+                  }`}
+                >
+                  {label}
                 </span>
               </div>
             </div>
