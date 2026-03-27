@@ -180,6 +180,12 @@ export function useLocationSharing(
         watchIdRef.current = navigator.geolocation.watchPosition(
           (watchPos) => {
             if (!sharingRef.current) return;
+            setMyLocation({
+              latitude: watchPos.coords.latitude,
+              longitude: watchPos.coords.longitude,
+              accuracy: watchPos.coords.accuracy,
+              updated_at: new Date().toISOString(),
+            });
             sendUpdate(
               watchPos.coords.latitude,
               watchPos.coords.longitude,
