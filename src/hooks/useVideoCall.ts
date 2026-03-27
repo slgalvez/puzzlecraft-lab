@@ -589,6 +589,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
       }
       // Stop tracks on unmount
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
+      setCallActive(false);
     };
   }, []);
 
