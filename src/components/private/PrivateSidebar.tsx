@@ -60,6 +60,7 @@ export function PrivateSidebar() {
   const { user, token, signOut } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [unsolvedPuzzles, setUnsolvedPuzzles] = useState(0);
+  const [hasLocationActivity, setHasLocationActivity] = useState(false);
   const [hasOverviewActivity, setHasOverviewActivity] = useState(false);
   const prevPathRef = useRef(location.pathname);
   const { checkUnread, checkIncomingCall } = usePrivateNotifications(token);
