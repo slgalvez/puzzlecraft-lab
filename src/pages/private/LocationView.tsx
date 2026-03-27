@@ -88,6 +88,18 @@ export default function LocationView() {
     stopSharing,
   } = useLocationSharing(token, conversationId, handleSessionExpired);
 
+  // Get viewer's own position for map display even when not sharing
+  const [viewerPos, setViewerPos] = useState<{ lat: number; lng: number } | null>(null);
+  useEffect(() => {
+    if (!("geolocation" in navigator)) return;
+    // Attempt a single silent position request (won't prompt if already denied)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setViewerPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {}, // silently fail — don't block UI
+      { enableHighAccuracy: false, maximumAge: 60000, timeout: 8000 },
+    );
+  }, []);
+
   // Motion detection
   const prevInRef = useRef<{ lat: number; lng: number; time: number } | null>(null);
   const [motionState, setMotionState] = useState<MotionState>("unknown");
