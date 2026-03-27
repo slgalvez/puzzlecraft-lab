@@ -353,43 +353,32 @@ const AdminConversationView = () => {
 
       <div className="flex flex-col h-full">
         {/* Back + name bar */}
-        <div className="flex items-center gap-3 px-3 sm:px-4 py-2.5 shrink-0">
-          <Link to="/p/conversations" className="text-muted-foreground/60 hover:text-foreground transition-colors p-1 -ml-1">
-            <ArrowLeft size={18} />
-          </Link>
-          <span className="text-[15px] font-semibold text-foreground flex-1 tracking-tight">
-            {conversation ? resolve(conversation.user_profile_id, conversation.user_name) : "Conversation"}
-          </span>
-          {conversation && (
-            <NicknameEditor
-              contactProfileId={conversation.user_profile_id}
-              currentNickname={nicknames[conversation.user_profile_id]}
-              defaultName={conversation.user_name}
-              onSave={setNickname}
-              onRemove={removeNickname}
-            />
-          )}
-          <button
-            onClick={videoCall.startCall}
-            disabled={videoCall.callState !== "idle"}
-            className="p-2 rounded-full text-muted-foreground/50 hover:text-foreground hover:bg-secondary/30 transition-colors disabled:opacity-30"
-            title="Start video call"
-          >
-            <Video size={18} />
-          </button>
-        </div>
-
-        <ConversationToolbar
-          disappearingEnabled={conversation?.disappearing_enabled ?? false}
-          disappearingDuration={conversation?.disappearing_duration ?? "24h"}
-          onToggleDisappearing={handleToggleDisappearing}
-          onClear={handleClear}
-          clearing={clearing}
-          togglingDisappearing={togglingDisappearing}
-        />
-
-        {/* Location sharing */}
-        <div className="px-3 sm:px-4 shrink-0">
+        <div className="shrink-0 px-3 sm:px-4">
+          <div className="flex items-center gap-3 py-2.5">
+            <Link to="/p/conversations" className="text-muted-foreground/60 hover:text-foreground transition-colors p-1 -ml-1">
+              <ArrowLeft size={18} />
+            </Link>
+            <span className="text-[15px] font-semibold text-foreground flex-1 tracking-tight">
+              {conversation ? resolve(conversation.user_profile_id, conversation.user_name) : "Conversation"}
+            </span>
+            {conversation && (
+              <NicknameEditor
+                contactProfileId={conversation.user_profile_id}
+                currentNickname={nicknames[conversation.user_profile_id]}
+                defaultName={conversation.user_name}
+                onSave={setNickname}
+                onRemove={removeNickname}
+              />
+            )}
+            <button
+              onClick={videoCall.startCall}
+              disabled={videoCall.callState !== "idle"}
+              className="p-2 rounded-full text-muted-foreground/50 hover:text-foreground hover:bg-secondary/30 transition-colors disabled:opacity-30"
+              title="Start video call"
+            >
+              <Video size={18} />
+            </button>
+          </div>
           <LocationCard
             isSharingMine={locationSharing.isSharingMine}
             myLocation={locationSharing.myLocation}
@@ -401,6 +390,16 @@ const AdminConversationView = () => {
             onStopSharing={locationSharing.stopSharing}
           />
         </div>
+
+        <ConversationToolbar
+          disappearingEnabled={conversation?.disappearing_enabled ?? false}
+          disappearingDuration={conversation?.disappearing_duration ?? "24h"}
+          onToggleDisappearing={handleToggleDisappearing}
+          onClear={handleClear}
+          clearing={clearing}
+          togglingDisappearing={togglingDisappearing}
+        />
+
 
         {/* Messages */}
         <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 scroll-smooth">
