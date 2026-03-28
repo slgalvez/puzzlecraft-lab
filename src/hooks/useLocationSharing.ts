@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
+import { supabase } from "@/integrations/supabase/client";
 import {
   queryLocationPermission,
   getDeniedGuidance,
@@ -80,6 +81,9 @@ export function useLocationSharing(
   tokenRef.current = token;
   convRef.current = conversationId;
 
+  // Ref for the broadcast channel
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
   const sendUpdate = useCallback(
     async (latitude: number, longitude: number, accuracy: number | null, isStart = false) => {
       if (!tokenRef.current || !convRef.current) return false;
@@ -91,6 +95,14 @@ export function useLocationSharing(
           longitude,
           accuracy,
         });
+
+        // Broadcast via realtime so the other side gets it instantly
+        channelRef.current?.send({
+          type: "broadcast",
+          event: "location-update",
+          payload: { latitude, longitude, accuracy, updated_at: new Date().toISOString() },
+        });
+
         return true;
       } catch (e) {
         if (e instanceof SessionExpiredError) {
@@ -197,13 +209,63 @@ export function useLocationSharing(
     }
   }, [token, conversationId, onSessionExpired, recoverMissingOutgoingShare]);
 
-  // Start polling
+  // Start polling (reduced frequency — realtime handles instant updates)
   useEffect(() => {
     if (!token || !conversationId) return;
     fetchSharedLocation();
-    pollRef.current = setInterval(fetchSharedLocation, 5000);
+    pollRef.current = setInterval(fetchSharedLocation, 15_000);
     return () => clearInterval(pollRef.current);
   }, [fetchSharedLocation, token, conversationId]);
+
+  // Realtime broadcast subscription for instant location updates
+  useEffect(() => {
+    if (!conversationId) return;
+
+    const channel = supabase.channel(`location:${conversationId}`, {
+      config: { broadcast: { self: false } },
+    });
+
+    channel
+      .on("broadcast", { event: "location-update" }, (payload) => {
+        const loc = payload.payload as {
+          latitude: number;
+          longitude: number;
+          accuracy: number | null;
+          updated_at: string;
+        };
+        if (loc?.latitude != null && loc?.longitude != null) {
+          setIncomingLocation((prev) => {
+            if (
+              prev &&
+              prev.latitude === loc.latitude &&
+              prev.longitude === loc.longitude &&
+              prev.updated_at === loc.updated_at
+            ) {
+              return prev;
+            }
+            return {
+              latitude: loc.latitude,
+              longitude: loc.longitude,
+              accuracy: loc.accuracy,
+              updated_at: loc.updated_at,
+            };
+          });
+          setBackendIncoming(true);
+        }
+      })
+      .on("broadcast", { event: "location-stop" }, () => {
+        setIncomingLocation(null);
+        setBackendIncoming(false);
+      })
+      .subscribe();
+
+    channelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      channelRef.current = null;
+    };
+  }, [conversationId]);
 
   // Force re-render every 10s to update freshness labels
   const [, setTick] = useState(0);
@@ -425,6 +487,13 @@ export function useLocationSharing(
     setIsSharingMine(false);
     setMyLocation(null); // Clear immediately so all views update
     sessionStorage.removeItem(SHARING_KEY);
+
+    // Broadcast stop instantly so the other side clears immediately
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "location-stop",
+      payload: {},
+    });
 
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
