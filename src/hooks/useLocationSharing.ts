@@ -488,6 +488,13 @@ export function useLocationSharing(
     setMyLocation(null); // Clear immediately so all views update
     sessionStorage.removeItem(SHARING_KEY);
 
+    // Broadcast stop instantly so the other side clears immediately
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "location-stop",
+      payload: {},
+    });
+
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
