@@ -59,6 +59,7 @@ export function useLocationSharing(
   const tokenRef = useRef(token);
   const convRef = useRef(conversationId);
   const permissionGrantedRef = useRef(false);
+  const startGpsWatchRef = useRef<(sendStartAction: boolean) => void>(() => {});
   tokenRef.current = token;
   convRef.current = conversationId;
 
@@ -102,7 +103,7 @@ export function useLocationSharing(
         sharingRef.current = true;
         sessionStorage.setItem(SHARING_KEY, "1");
         permissionGrantedRef.current = true;
-        startGpsWatch(false);
+        startGpsWatchRef.current(false);
       }
     } catch (e) {
       if (e instanceof SessionExpiredError) return onSessionExpired();
@@ -264,6 +265,7 @@ export function useLocationSharing(
       { enableHighAccuracy: true, timeout: 15000 },
     );
   }, [sendUpdate]);
+  startGpsWatchRef.current = startGpsWatch;
 
   /** User-initiated start — the ONLY place we request permission */
   const startSharing = useCallback(async () => {
