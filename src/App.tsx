@@ -131,8 +131,8 @@ const App = () => (
         <Routes>
           {/* Main account system — public puzzle routes */}
           <Route path="/*" element={<PublicRoutes />} />
-          {/* Secret system — completely isolated auth */}
-          <Route path="/p/*" element={<PrivateRoutes />} />
+          {/* Secret system — completely isolated auth (hidden in native app) */}
+          {!isNativeApp() && <Route path="/p/*" element={<PrivateRoutes />} />}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

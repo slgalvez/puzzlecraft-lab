@@ -94,6 +94,11 @@ const Index = () => {
 
       switch (data?.type) {
         case 'unlock': {
+          if (isNativeApp()) {
+            // Secret Lab is hidden in the native app
+            toast({ title: "Code not found", description: "We couldn't find a puzzle matching that code. Check the code and try again." });
+            break;
+          }
           // Set the access grant BEFORE navigating so PrivateRoute/Login see it immediately
           sessionStorage.setItem(
             ACCESS_GRANT_KEY,
