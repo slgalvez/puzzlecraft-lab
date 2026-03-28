@@ -7,6 +7,8 @@ import { MessageSquare, Puzzle, Plus, MapPin, ArrowRight } from "lucide-react";
 import { OverviewHeaderControls } from "@/components/private/OverviewHeaderControls";
 import { WhatsNewBanner } from "@/components/private/WhatsNewBanner";
 import { distanceMiles, formatDistance, humanTimestamp } from "@/lib/locationUtils";
+import { getLocationLabels } from "@/lib/locationLabels";
+import { getFreshness } from "@/hooks/useLocationSharing";
 
 interface PuzzleSummary {
   id: string;
