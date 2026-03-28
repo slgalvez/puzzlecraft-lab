@@ -304,6 +304,38 @@ const UserConversation = () => {
     }
   };
 
+  const [acceptingLocationRequest, setAcceptingLocationRequest] = useState(false);
+
+  const handleAcceptLocationRequest = useCallback(async (messageId: string) => {
+    if (!token || !conversationId) return;
+    setAcceptingLocationRequest(true);
+    try {
+      // Update message to accepted
+      await invokeMessaging("edit-message", token, { message_id: messageId, body: LOCATION_REQUEST_ACCEPTED });
+      setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, body: LOCATION_REQUEST_ACCEPTED } : m));
+      // Auto-start sharing
+      locationSharing.startSharing();
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+    } finally {
+      setAcceptingLocationRequest(false);
+    }
+  }, [token, conversationId, handleSessionExpired, locationSharing]);
+
+  const handleDeclineLocationRequest = useCallback(async (messageId: string) => {
+    if (!token) return;
+    try {
+      await invokeMessaging("edit-message", token, { message_id: messageId, body: LOCATION_REQUEST_DECLINED });
+      setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, body: LOCATION_REQUEST_DECLINED } : m));
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+    }
+  }, [token, handleSessionExpired]);
+
+  const handleSendLocationRequest = useCallback(async () => {
+    if (!conversationId || !token) return;
+    await handleSend(LOCATION_REQUEST_PREFIX);
+  }, [conversationId, token, handleSend]);
   const formatTime = (iso: string) => {
     const d = new Date(iso);
     const now = new Date();
