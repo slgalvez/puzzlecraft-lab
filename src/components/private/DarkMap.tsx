@@ -185,10 +185,10 @@ export default function DarkMap({ markers, labels, className = "", interactive =
       keyboard: false,
     }).setView([0, 0], 15);
 
-    // Standard OSM tiles — includes POIs (shops, restaurants, landmarks)
+    // CartoDB Voyager — clean POIs (shops, restaurants, landmarks) without house numbers
     // Dark theme applied via CSS filter on .leaflet-tile-pane
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      subdomains: "abc",
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+      subdomains: "abcd",
       maxZoom: 19,
     }).addTo(map);
 
