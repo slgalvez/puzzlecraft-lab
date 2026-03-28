@@ -11,6 +11,7 @@ import { getTodaysChallenge, getDailyCompletion, getDailyStreak } from "@/lib/da
 import { getProgressStats } from "@/lib/progressTracker";
 import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
+import { isNativeApp } from "@/lib/appMode";
 
 
 
@@ -30,6 +31,7 @@ const Index = () => {
   const challengeInfo = CATEGORY_INFO[challenge.category];
 
   const checkPrivateStatus = useCallback(() => {
+    if (isNativeApp()) return; // Secret Lab hidden in native app
     try {
       const raw = localStorage.getItem("private_session");
       if (!raw) return;
@@ -93,6 +95,11 @@ const Index = () => {
 
       switch (data?.type) {
         case 'unlock': {
+          if (isNativeApp()) {
+            // Secret Lab is hidden in the native app
+            toast({ title: "Code not found", description: "We couldn't find a puzzle matching that code. Check the code and try again." });
+            break;
+          }
           // Set the access grant BEFORE navigating so PrivateRoute/Login see it immediately
           sessionStorage.setItem(
             ACCESS_GRANT_KEY,

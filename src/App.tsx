@@ -27,6 +27,7 @@ import Account from "./pages/Account";
 import { UserAccountProvider } from "./contexts/UserAccountContext";
 import DataMergeModal from "./components/account/DataMergeModal";
 // Private app — completely separate auth system (custom JWT, separate DB tables)
+import { isNativeApp } from "./lib/appMode";
 import { AuthProvider } from "./contexts/AuthContext";
 import PrivateRoute from "./components/private/PrivateRoute";
 import Login from "./pages/private/Login";
@@ -130,8 +131,8 @@ const App = () => (
         <Routes>
           {/* Main account system — public puzzle routes */}
           <Route path="/*" element={<PublicRoutes />} />
-          {/* Secret system — completely isolated auth */}
-          <Route path="/p/*" element={<PrivateRoutes />} />
+          {/* Secret system — completely isolated auth (hidden in native app) */}
+          {!isNativeApp() && <Route path="/p/*" element={<PrivateRoutes />} />}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
