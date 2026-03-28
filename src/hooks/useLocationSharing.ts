@@ -209,13 +209,63 @@ export function useLocationSharing(
     }
   }, [token, conversationId, onSessionExpired, recoverMissingOutgoingShare]);
 
-  // Start polling
+  // Start polling (reduced frequency — realtime handles instant updates)
   useEffect(() => {
     if (!token || !conversationId) return;
     fetchSharedLocation();
-    pollRef.current = setInterval(fetchSharedLocation, 5000);
+    pollRef.current = setInterval(fetchSharedLocation, 15_000);
     return () => clearInterval(pollRef.current);
   }, [fetchSharedLocation, token, conversationId]);
+
+  // Realtime broadcast subscription for instant location updates
+  useEffect(() => {
+    if (!conversationId) return;
+
+    const channel = supabase.channel(`location:${conversationId}`, {
+      config: { broadcast: { self: false } },
+    });
+
+    channel
+      .on("broadcast", { event: "location-update" }, (payload) => {
+        const loc = payload.payload as {
+          latitude: number;
+          longitude: number;
+          accuracy: number | null;
+          updated_at: string;
+        };
+        if (loc?.latitude != null && loc?.longitude != null) {
+          setIncomingLocation((prev) => {
+            if (
+              prev &&
+              prev.latitude === loc.latitude &&
+              prev.longitude === loc.longitude &&
+              prev.updated_at === loc.updated_at
+            ) {
+              return prev;
+            }
+            return {
+              latitude: loc.latitude,
+              longitude: loc.longitude,
+              accuracy: loc.accuracy,
+              updated_at: loc.updated_at,
+            };
+          });
+          setBackendIncoming(true);
+        }
+      })
+      .on("broadcast", { event: "location-stop" }, () => {
+        setIncomingLocation(null);
+        setBackendIncoming(false);
+      })
+      .subscribe();
+
+    channelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      channelRef.current = null;
+    };
+  }, [conversationId]);
 
   // Force re-render every 10s to update freshness labels
   const [, setTick] = useState(0);
