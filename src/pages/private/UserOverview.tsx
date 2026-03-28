@@ -85,10 +85,23 @@ const UserOverview = () => {
             if (myLat !== null && myLng !== null) {
               dist = formatDistance(distanceMiles(myLat, myLng, inc.latitude, inc.longitude));
             }
+            // Find nearest saved label for human-readable place name
+            const labels = getLocationLabels();
+            let placeName: string | null = null;
+            let minDist = Infinity;
+            for (const l of labels) {
+              const d = distanceMiles(inc.latitude, inc.longitude, l.lat, l.lng);
+              if (d < minDist) { minDist = d; placeName = `${l.icon} ${l.name}`; }
+            }
+            // Only use label if within ~0.5 miles
+            if (minDist > 0.5) placeName = null;
+            const freshness = getFreshness(inc.updated_at);
             setLocationMeta({
               name: convData.admin_name || "them",
               dist,
               time: humanTimestamp(inc.updated_at),
+              isLive: freshness === "live",
+              placeName,
             });
           } else {
             setHasLocationActivity(false);
