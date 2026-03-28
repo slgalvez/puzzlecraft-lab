@@ -80,10 +80,22 @@ const AdminDashboard = () => {
           if (locData.incoming) {
             setHasLocationActivity(true);
             const inc = locData.incoming;
+            // Find nearest saved label
+            const labels = getLocationLabels();
+            let placeName: string | null = null;
+            let minDist = Infinity;
+            for (const l of labels) {
+              const d = distanceMiles(inc.latitude, inc.longitude, l.lat, l.lng);
+              if (d < minDist) { minDist = d; placeName = `${l.icon} ${l.name}`; }
+            }
+            if (minDist > 0.5) placeName = null;
+            const freshness = getFreshness(inc.updated_at);
             setLocationMeta({
               name: convs[0].user_name || "them",
               dist: null,
               time: humanTimestamp(inc.updated_at),
+              isLive: freshness === "live",
+              placeName,
             });
           } else {
             setHasLocationActivity(false);
