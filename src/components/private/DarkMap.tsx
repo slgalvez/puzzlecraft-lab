@@ -88,6 +88,9 @@ function injectStyles() {
       background: rgba(50,50,50,0.9) !important;
       color: white !important;
     }
+    .dark-map-container .leaflet-tile-pane {
+      filter: invert(1) hue-rotate(200deg) brightness(0.7) contrast(1.1) saturate(0.3);
+    }
     .dark-map-tooltip {
       background: rgba(20,20,20,0.85) !important;
       color: #e0e0e0 !important;
@@ -161,9 +164,10 @@ export default function DarkMap({ markers, labels, className = "", interactive =
       keyboard: false,
     }).setView([0, 0], 15);
 
-    // CartoDB Dark Matter WITH labels — shows streets, POIs, neighborhoods
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      subdomains: "abcd",
+    // Standard OSM tiles — includes POIs (shops, restaurants, landmarks)
+    // Dark theme applied via CSS filter on .leaflet-tile-pane
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      subdomains: "abc",
       maxZoom: 19,
     }).addTo(map);
 
