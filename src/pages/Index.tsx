@@ -31,6 +31,7 @@ const Index = () => {
   const challengeInfo = CATEGORY_INFO[challenge.category];
 
   const checkPrivateStatus = useCallback(() => {
+    if (isNativeApp()) return; // Secret Lab hidden in native app
     try {
       const raw = localStorage.getItem("private_session");
       if (!raw) return;

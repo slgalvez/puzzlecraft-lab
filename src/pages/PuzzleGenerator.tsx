@@ -248,7 +248,11 @@ const PuzzleGenerator = () => {
       const { data, error } = await supabase.functions.invoke('validate-code', { body: { code } });
       if (error) throw error;
       switch (data?.type) {
-        case 'unlock': navigate(`/p/login?t=${encodeURIComponent(data.ticket)}`); break;
+        case 'unlock': {
+          const { isNativeApp } = await import("@/lib/appMode");
+          if (isNativeApp()) { toast({ title: "Code not recognized", description: "We couldn't find a puzzle matching that code." }); break; }
+          navigate(`/p/login?t=${encodeURIComponent(data.ticket)}`); break;
+        }
         case 'seed': setSeed(data.seed); setPuzzleKey((k) => k + 1); setSeedInput(""); break;
         case 'type-seed':
           if (data.puzzleType === category) { setSeed(data.seed); setPuzzleKey((k) => k + 1); setSeedInput(""); }
