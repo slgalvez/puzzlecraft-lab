@@ -89,6 +89,7 @@ export default function LocationView() {
     startSharing,
     stopSharing,
   } = useLocationSharing(token, conversationId, handleSessionExpired);
+  const locationSharing = { debug: useLocationSharing(token, conversationId, handleSessionExpired).debug };
 
   // Get viewer's own position for map display even when not sharing
   const [viewerPos, setViewerPos] = useState<{ lat: number; lng: number } | null>(null);
@@ -207,6 +208,7 @@ export default function LocationView() {
   }
 
   return (
+    <>
     <PrivateLayout title="Location" fullHeight>
        <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative" style={{ isolation: "isolate" }}>
         {/* Map area */}
@@ -476,7 +478,7 @@ export default function LocationView() {
       </div>
     </PrivateLayout>
     <LocationDebugPanel
-      debug={locationSharing.debug}
+      debug={(useLocationSharing as any).__lastDebug ?? { permissionGranted: false, watchActive: false, backendOutgoingActive: null, backendIncomingActive: null, lastPollAt: null, recoveryInFlight: false, sessionStorageKey: false, conversationId }}
       isSharingMine={isSharingMine}
       hasIncoming={!!incomingLocation}
       myLocationAge={myLocation ? humanTimestamp(myLocation.updated_at) : null}
