@@ -223,11 +223,8 @@ export function useLocationSharing(
         setLoading(false);
         setError(null);
 
-        if (sendStartAction) {
-          sendUpdate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, true);
-        } else {
-          sendUpdate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
-        }
+        // Always use start-location-sharing (upsert) to ensure the row exists
+        sendUpdate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, true);
 
         // Start watching
         watchIdRef.current = navigator.geolocation.watchPosition(
