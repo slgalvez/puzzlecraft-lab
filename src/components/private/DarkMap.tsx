@@ -182,17 +182,11 @@ export default function DarkMap({ markers, labels, className = "", interactive =
       keyboard: false,
     }).setView([0, 0], 15);
 
-    // CartoDB Voyager (has business POIs) with dark filter for Find My aesthetic
-    const tileLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png", {
+    // CartoDB Dark Matter — natively dark, clean, minimal
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png", {
       subdomains: "abcd",
       maxZoom: 19,
     }).addTo(map);
-    
-    // Apply dark filter to tile pane for Apple Find My look
-    const tilePane = map.getPane("tilePane");
-    if (tilePane) {
-      tilePane.style.filter = "invert(1) hue-rotate(180deg) brightness(0.95) contrast(1.1) saturate(0.3)";
-    }
 
     // Detect user interaction to pause auto-follow
     if (interactive) {
