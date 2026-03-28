@@ -9,6 +9,7 @@ import { distanceMiles, formatDistance, detectMotion, humanTimestamp, type Motio
 import { getLocationLabels, saveLocationLabel, deleteLocationLabel, getDefaultIcons, type LocationLabel } from "@/lib/locationLabels";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import DarkMap from "@/components/private/DarkMap";
+import { LocationDebugPanel } from "@/components/private/LocationDebugPanel";
 
 function StatusDot({ status }: { status: FreshnessStatus }) {
   if (status === "live") {
@@ -474,5 +475,13 @@ export default function LocationView() {
         )}
       </div>
     </PrivateLayout>
+    <LocationDebugPanel
+      debug={locationSharing.debug}
+      isSharingMine={isSharingMine}
+      hasIncoming={!!incomingLocation}
+      myLocationAge={myLocation ? humanTimestamp(myLocation.updated_at) : null}
+      incomingAge={incomingLocation ? humanTimestamp(incomingLocation.updated_at) : null}
+    />
+    </>
   );
 }
