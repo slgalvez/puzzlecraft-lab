@@ -46,7 +46,7 @@ const UserOverview = () => {
   const [lastMessageAt, setLastMessageAt] = useState<string | null>(null);
   const [puzzles, setPuzzles] = useState<PuzzleSummary[]>([]);
   const [hasLocationActivity, setHasLocationActivity] = useState(false);
-  const [locationMeta, setLocationMeta] = useState<{ name: string; dist: string | null; time: string } | null>(null);
+  const [locationMeta, setLocationMeta] = useState<{ name: string; dist: string | null; time: string; isLive: boolean; placeName: string | null } | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [myLat, setMyLat] = useState<number | null>(null);
   const [myLng, setMyLng] = useState<number | null>(null);
