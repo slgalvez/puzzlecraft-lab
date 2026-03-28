@@ -461,6 +461,25 @@ const AdminConversationView = () => {
                 );
               }
 
+              if (isLocationRequestMessage(msg.body)) {
+                return (
+                  <LocationRequestBubble
+                    key={msg.id}
+                    messageId={msg.id}
+                    body={msg.body}
+                    isMine={isMine}
+                    createdAt={msg.created_at}
+                    formatTime={formatTime}
+                    groupPosition={group?.groupPosition}
+                    senderChanged={group?.senderChanged}
+                    showTimestamp={group?.showTimestamp}
+                    onAccept={() => handleAcceptLocationRequest(msg.id)}
+                    onDecline={() => handleDeclineLocationRequest(msg.id)}
+                    accepting={acceptingLocationRequest}
+                  />
+                );
+              }
+
               if (isPuzzleMessage(msg.body)) {
                 return (
                   <PuzzleMessageBubble
