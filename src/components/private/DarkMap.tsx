@@ -19,14 +19,34 @@ interface DarkMapProps {
   onMapLongPress?: (lat: number, lng: number) => void;
 }
 
-// iOS-style glowing blue dot for "You"
+/** Read the current --primary HSL value from .private-app and return as css hsl() */
+function getThemeColor(): string {
+  const el = document.querySelector(".private-app") as HTMLElement | null;
+  const hsl = el?.style.getPropertyValue("--primary")?.trim();
+  if (hsl) return `hsl(${hsl})`;
+  return "#007AFF";
+}
+
+function getThemeColorRgba(alpha: number): string {
+  const el = document.querySelector(".private-app") as HTMLElement | null;
+  const hsl = el?.style.getPropertyValue("--primary")?.trim();
+  if (!hsl) return `rgba(0,122,255,${alpha})`;
+  // parse "H S% L%" and return hsla
+  return `hsla(${hsl.replace(/%/g, "%,")} ${alpha})`;
+}
+
+// iOS-style glowing dot for "You" — uses theme color
 function createMeDotIcon(): L.DivIcon {
+  const c = getThemeColor();
+  const c12 = getThemeColorRgba(0.12);
+  const c20 = getThemeColorRgba(0.2);
+  const c60 = getThemeColorRgba(0.6);
   return L.divIcon({
     className: "",
     html: `<div style="position:relative;width:32px;height:32px;display:flex;align-items:center;justify-content:center">
-      <div style="position:absolute;width:32px;height:32px;border-radius:50%;background:rgba(0,122,255,0.12);animation:iosPulse 2s ease-out infinite"></div>
-      <div style="position:absolute;width:18px;height:18px;border-radius:50%;background:rgba(0,122,255,0.2)"></div>
-      <div style="width:12px;height:12px;border-radius:50%;background:#007AFF;border:2.5px solid white;box-shadow:0 0 10px rgba(0,122,255,0.6);position:relative;z-index:1"></div>
+      <div style="position:absolute;width:32px;height:32px;border-radius:50%;background:${c12};animation:iosPulse 2s ease-out infinite"></div>
+      <div style="position:absolute;width:18px;height:18px;border-radius:50%;background:${c20}"></div>
+      <div style="width:12px;height:12px;border-radius:50%;background:${c};border:2.5px solid white;box-shadow:0 0 10px ${c60};position:relative;z-index:1"></div>
     </div>`,
     iconSize: [32, 32],
     iconAnchor: [16, 16],
