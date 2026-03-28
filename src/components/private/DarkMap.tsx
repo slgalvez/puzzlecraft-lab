@@ -110,7 +110,7 @@ function injectStyles() {
       color: white !important;
     }
     .dark-map-container .leaflet-tile-pane {
-      filter: invert(1) hue-rotate(200deg) brightness(1.05) contrast(1.25) saturate(0.45);
+      filter: invert(1) hue-rotate(200deg) brightness(1.6) contrast(1.3) saturate(0.5);
     }
     .dark-map-tooltip {
       background: rgba(20,20,20,0.85) !important;
