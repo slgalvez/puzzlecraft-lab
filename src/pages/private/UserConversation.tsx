@@ -22,8 +22,6 @@ import { useNicknames } from "@/hooks/useNicknames";
 import { NicknameEditor } from "@/components/private/NicknameEditor";
 import { useLocationSharing } from "@/hooks/useLocationSharing";
 import { LocationCard } from "@/components/private/LocationCard";
-import { LocationDebugPanel } from "@/components/private/LocationDebugPanel";
-import { humanTimestamp } from "@/lib/locationUtils";
 
 interface Message {
   id: string;
