@@ -324,7 +324,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
               >
                 {uploading ? <Loader2 size={18} className="animate-spin" /> : <ImageIcon size={18} />}
               </button>
-              <button
+               <button
                 type="button"
                 onClick={() => setGifOpen((v) => !v)}
                 disabled={uploading || !conversationId}
@@ -337,6 +337,17 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
               >
                 GIF
               </button>
+              {onRequestLocation && (
+                <button
+                  type="button"
+                  onClick={onRequestLocation}
+                  disabled={uploading || !conversationId}
+                  className="shrink-0 p-2 rounded-full transition-colors text-muted-foreground/50 hover:text-foreground hover:bg-secondary/30"
+                  title="Request location"
+                >
+                  <MapPin size={18} />
+                </button>
+              )}
             </>
           )}
 
