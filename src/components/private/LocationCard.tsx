@@ -364,87 +364,105 @@ export function LocationCard({
         </Dialog>
       )}
 
-      {/* ── Full-screen map modal — dark themed ── */}
-      <Dialog open={mapOpen} onOpenChange={setMapOpen}>
-        <DialogContent className="max-w-[95vw] w-full sm:max-w-lg p-0 overflow-hidden border-white/[0.06] shadow-2xl shadow-black/60" style={{ background: "#111111" }}>
-          <DialogHeader className="px-4 pt-3 pb-1.5" style={{ background: "transparent" }}>
-            <DialogTitle className="flex items-center gap-2 text-sm text-white">
-              <MapPin size={15} className="text-primary" />
-              Live location
-              {distLabel && (
-                <span className="text-[10px] text-white/40 font-normal ml-1">· {distLabel}</span>
-              )}
-              {incomingLocation && (
-                <span className="ml-auto flex items-center gap-1.5">
-                  <StatusDot status={freshness!} />
-                  <span className={`text-[10px] ${freshness === "live" ? "text-primary" : "text-white/40"}`}>
-                    {timestamp}
-                  </span>
-                </span>
-              )}
-            </DialogTitle>
-          </DialogHeader>
+      {/* ── Full-screen immersive map — swipe-to-close drawer ── */}
+      <Drawer open={mapOpen} onOpenChange={setMapOpen} direction="bottom">
+        <DrawerContent
+          className="h-[100dvh] max-h-[100dvh] rounded-none border-none p-0 overflow-hidden"
+          style={{ background: "#0a0a0a" }}
+        >
+          {/* Visually hidden title for accessibility */}
+          <DrawerHeader className="sr-only">
+            <DrawerTitle>Live location</DrawerTitle>
+            <DrawerDescription>Map showing shared locations</DrawerDescription>
+          </DrawerHeader>
 
-          <div className="w-full relative">
+          {/* Swipe handle */}
+          <div className="absolute top-0 left-0 right-0 z-[600] flex justify-center pt-2 pb-1">
+            <div className="w-8 h-1 rounded-full bg-white/20" />
+          </div>
+
+          {/* Floating close button */}
+          <button
+            onClick={() => setMapOpen(false)}
+            className="absolute top-3 right-3 z-[600] h-8 w-8 rounded-full flex items-center justify-center transition-colors"
+            style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}
+          >
+            <span className="text-white/70 text-sm font-medium">✕</span>
+          </button>
+
+          {/* Full-screen map */}
+          <div className="w-full h-full relative">
             <DarkMap
               markers={mapMarkers}
               labels={savedLabels}
-              className="w-full h-[55vh]"
+              className="w-full h-full"
               interactive
             />
-            {/* Legend overlay */}
-            <div className="absolute bottom-2 left-2 rounded-md px-2.5 py-1.5 space-y-0.5" style={{ background: "rgba(17,17,17,0.8)", backdropFilter: "blur(8px)" }}>
+
+            {/* Floating legend — bottom left */}
+            <div className="absolute bottom-20 left-3 z-[500] rounded-lg px-3 py-2 space-y-1" style={{ background: "rgba(10,10,10,0.8)", backdropFilter: "blur(12px)" }}>
+              {distLabel && (
+                <p className="text-[11px] font-medium text-white/90">{distLabel}</p>
+              )}
               {myCoords && (
-                <div className="flex items-center gap-1.5 text-[10px] text-white/80">
+                <div className="flex items-center gap-1.5 text-[10px] text-white/70">
                   <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
                   You
                 </div>
               )}
               {inCoords && (
-                <div className="flex items-center gap-1.5 text-[10px] text-white/80">
+                <div className="flex items-center gap-1.5 text-[10px] text-white/70">
                   <StatusDot status={freshness ?? "stale"} />
                   <span>{otherName}</span>
-                  {motionState === "moving" && freshness === "live" && (
+                  {freshness === "live" && motionState === "moving" && (
                     <span className="text-primary text-[9px]">· Moving</span>
                   )}
-                  {motionState === "stopped" && freshness === "live" && (
+                  {freshness === "live" && motionState === "stopped" && (
                     <span className="text-white/30 text-[9px]">· Stopped</span>
                   )}
                 </div>
               )}
+              {incomingLocation && (
+                <p className="text-[9px] text-white/30">
+                  {freshness === "live" ? "Live" : timestamp}
+                  {incomingLocation.accuracy ? ` · ±${Math.round(incomingLocation.accuracy)}m` : ""}
+                </p>
+              )}
             </div>
-          </div>
 
-          <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: "transparent" }}>
-            <div className="flex items-center gap-3">
-              {incomingLocation?.accuracy && (
-                <p className="text-[10px] text-white/25">±{Math.round(incomingLocation.accuracy)}m</p>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              {isSharingMine && (
-                <button
-                  onClick={handleStop}
-                  className="text-[10px] text-white/20 hover:text-red-400 transition-colors"
-                >
-                  Stop sharing
-                </button>
-              )}
-              {inCoords && (
-                <a
-                  href={`https://www.google.com/maps?q=${inCoords.lat},${inCoords.lng}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[10px] text-primary hover:underline flex items-center gap-1"
-                >
-                  <ExternalLink size={10} />
-                  Maps
-                </a>
-              )}
+            {/* Floating bottom controls */}
+            <div className="absolute bottom-4 left-3 right-3 z-[500] flex items-center justify-between">
+              <div>
+                {isSharingMine && (
+                  <button
+                    onClick={handleStop}
+                    className="text-[11px] px-3 py-1.5 rounded-full transition-colors"
+                    style={{ background: "rgba(10,10,10,0.7)", backdropFilter: "blur(8px)", color: "rgba(255,255,255,0.35)" }}
+                    onMouseOver={(e) => (e.currentTarget.style.color = "#f87171")}
+                    onMouseOut={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}
+                  >
+                    Stop sharing
+                  </button>
+                )}
+              </div>
+              <div>
+                {inCoords && (
+                  <a
+                    href={`https://www.google.com/maps?q=${inCoords.lat},${inCoords.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-[11px] px-3 py-1.5 rounded-full text-primary"
+                    style={{ background: "rgba(10,10,10,0.7)", backdropFilter: "blur(8px)" }}
+                  >
+                    <ExternalLink size={11} />
+                    Maps
+                  </a>
+                )}
+              </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }
