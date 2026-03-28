@@ -59,6 +59,7 @@ export function useLocationSharing(
   const tokenRef = useRef(token);
   const convRef = useRef(conversationId);
   const permissionGrantedRef = useRef(false);
+  const startGpsWatchRef = useRef<(sendStartAction: boolean) => void>(() => {});
   tokenRef.current = token;
   convRef.current = conversationId;
 
