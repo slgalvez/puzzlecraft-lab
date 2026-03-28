@@ -80,16 +80,8 @@ export default function LocationView() {
     return () => { cancelled = true; };
   }, [token, user, handleSessionExpired]);
 
-  const {
-    isSharingMine,
-    myLocation,
-    incomingLocation,
-    loading,
-    error,
-    startSharing,
-    stopSharing,
-  } = useLocationSharing(token, conversationId, handleSessionExpired);
   const locationSharingFull = useLocationSharing(token, conversationId, handleSessionExpired);
+  const { isSharingMine, myLocation, incomingLocation, loading, error, startSharing, stopSharing } = locationSharingFull;
 
   // Get viewer's own position for map display even when not sharing
   const [viewerPos, setViewerPos] = useState<{ lat: number; lng: number } | null>(null);
