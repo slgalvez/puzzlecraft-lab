@@ -265,6 +265,7 @@ export function useLocationSharing(
       { enableHighAccuracy: true, timeout: 15000 },
     );
   }, [sendUpdate]);
+  startGpsWatchRef.current = startGpsWatch;
 
   /** User-initiated start — the ONLY place we request permission */
   const startSharing = useCallback(async () => {
