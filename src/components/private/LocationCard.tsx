@@ -406,7 +406,7 @@ export function LocationCard({
               )}
               {myCoords && (
                 <div className="flex items-center gap-1.5 text-[10px] text-white/70">
-                  <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
+                  <span className="h-2 w-2 rounded-full shrink-0" style={{ background: "hsl(var(--chat-accent, var(--primary)))" }} />
                   You
                 </div>
               )}
