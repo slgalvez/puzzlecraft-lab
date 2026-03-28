@@ -550,6 +550,7 @@ const UserConversation = () => {
           onCancelEdit={() => setEditingMessage(null)}
           onSaveEdit={(id, body) => { handleEdit(id, body); setEditingMessage(null); }}
           onTyping={handleTypingPing}
+          onRequestLocation={handleSendLocationRequest}
         />
       </div>
     </PrivateLayout>
