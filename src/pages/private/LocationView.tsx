@@ -224,7 +224,7 @@ export default function LocationView() {
               {myCoords && (
                 <div className="flex items-center gap-2 text-xs text-foreground">
                   <span className="h-2.5 w-2.5 rounded-full bg-primary shrink-0" />
-                  You {isSharingMine && <span className="text-primary text-[10px]">· Live</span>}
+                  You {isSharingMine && <span className="text-primary text-[10px]">· Sharing live</span>}
                 </div>
               )}
               {inCoords && (
@@ -253,8 +253,8 @@ export default function LocationView() {
 
             {/* Fix #6: Show waiting message when only viewer position */}
             {myCoords && !inCoords && (
-              <div className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-muted-foreground max-w-[200px]">
-                Waiting for {otherName} to share their location
+              <div className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-muted-foreground">
+                Waiting for {otherName}…
               </div>
             )}
 
@@ -426,7 +426,7 @@ export default function LocationView() {
             ) : isSharingMine ? (
               <>
                 <StatusDot status="live" />
-                <span className="text-xs text-primary font-medium">Sharing your location</span>
+                <span className="text-xs text-primary font-medium">Sharing live location</span>
                 {distLabel && <span className="text-[10px] text-muted-foreground">· {distLabel}</span>}
               </>
             ) : (
