@@ -224,7 +224,7 @@ export default function LocationView() {
               {myCoords && (
                 <div className="flex items-center gap-2 text-xs text-foreground">
                   <span className="h-2.5 w-2.5 rounded-full bg-primary shrink-0" />
-                  You {isSharingMine && <span className="text-primary text-[10px]">· Live</span>}
+                  You {isSharingMine && <span className="text-primary text-[10px]">· Sharing live</span>}
                 </div>
               )}
               {inCoords && (
