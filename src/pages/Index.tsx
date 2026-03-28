@@ -11,6 +11,7 @@ import { getTodaysChallenge, getDailyCompletion, getDailyStreak } from "@/lib/da
 import { getProgressStats } from "@/lib/progressTracker";
 import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
+import { isNativeApp } from "@/lib/appMode";
 
 
 
