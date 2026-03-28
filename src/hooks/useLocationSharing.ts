@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
+import { supabase } from "@/integrations/supabase/client";
 import {
   queryLocationPermission,
   getDeniedGuidance,
