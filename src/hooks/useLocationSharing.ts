@@ -48,22 +48,22 @@ export function useLocationSharing(
   conversationId: string | null,
   onSessionExpired: () => void,
 ): LocationSharingState {
-  const [isSharingMine, setIsSharingMine] = useState(false);
+  const SHARING_KEY = "location_sharing_active";
+  const initiallySharing = sessionStorage.getItem(SHARING_KEY) === "1";
+  const [isSharingMine, setIsSharingMine] = useState(initiallySharing);
   const [myLocation, setMyLocation] = useState<SharedLocation | null>(null);
   const [incomingLocation, setIncomingLocation] = useState<SharedLocation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
-  const sharingRef = useRef(false);
+  const sharingRef = useRef(initiallySharing);
   const tokenRef = useRef(token);
   const convRef = useRef(conversationId);
   const permissionGrantedRef = useRef(false);
   const startGpsWatchRef = useRef<(sendStartAction: boolean) => void>(() => {});
   tokenRef.current = token;
   convRef.current = conversationId;
-
-  const SHARING_KEY = "location_sharing_active";
 
   // Poll for the other user's shared location + sync outgoing state (Fix #1)
   const fetchSharedLocation = useCallback(async () => {
