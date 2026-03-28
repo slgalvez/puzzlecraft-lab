@@ -182,9 +182,8 @@ export default function DarkMap({ markers, labels, className = "", interactive =
       keyboard: false,
     }).setView([0, 0], 15);
 
-    // CartoDB Voyager — includes POI labels (businesses, landmarks, neighborhoods)
-    // Dark theme achieved via CSS invert filter on .leaflet-tile-pane
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    // CartoDB Dark Matter — natively dark, clean, minimal
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png", {
       subdomains: "abcd",
       maxZoom: 19,
     }).addTo(map);
