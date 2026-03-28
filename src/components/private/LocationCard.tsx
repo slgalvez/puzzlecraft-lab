@@ -206,7 +206,7 @@ export function LocationCard({
         ) : isSharingMine ? (
           <>
             <StatusDot status="live" />
-            <span className="font-medium">Sharing location</span>
+            <span className="font-medium">Sharing live location</span>
             {distLabel && <span className="text-muted-foreground ml-0.5">· {distLabel}</span>}
           </>
         ) : incomingLocation ? (
