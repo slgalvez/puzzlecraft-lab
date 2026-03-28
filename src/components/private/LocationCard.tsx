@@ -32,6 +32,7 @@ interface LocationCardProps {
   otherName: string;
   onStartSharing: () => void;
   onStopSharing: () => void;
+  onRequestLocation?: () => void;
 }
 
 function StatusDot({ status, animated = true }: { status: FreshnessStatus; animated?: boolean }) {
