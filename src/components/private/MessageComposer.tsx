@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, ImageIcon, Loader2, X } from "lucide-react";
+import { Send, ImageIcon, Loader2, X, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +23,7 @@ interface MessageComposerProps {
   onCancelEdit?: () => void;
   onSaveEdit?: (messageId: string, newBody: string) => void;
   onTyping?: () => void;
+  onRequestLocation?: () => void;
 }
 
 /** Detect media message format */
@@ -50,7 +51,7 @@ interface MediaPreview {
   type: "upload" | "gif";
 }
 
-export function MessageComposer({ onSend, sending, placeholder = "Message", token, conversationId, editingMessage, onCancelEdit, onSaveEdit, onTyping }: MessageComposerProps) {
+export function MessageComposer({ onSend, sending, placeholder = "Message", token, conversationId, editingMessage, onCancelEdit, onSaveEdit, onTyping, onRequestLocation }: MessageComposerProps) {
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [gifOpen, setGifOpen] = useState(false);
@@ -323,7 +324,7 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
               >
                 {uploading ? <Loader2 size={18} className="animate-spin" /> : <ImageIcon size={18} />}
               </button>
-              <button
+               <button
                 type="button"
                 onClick={() => setGifOpen((v) => !v)}
                 disabled={uploading || !conversationId}
@@ -336,6 +337,17 @@ export function MessageComposer({ onSend, sending, placeholder = "Message", toke
               >
                 GIF
               </button>
+              {onRequestLocation && (
+                <button
+                  type="button"
+                  onClick={onRequestLocation}
+                  disabled={uploading || !conversationId}
+                  className="shrink-0 p-2 rounded-full transition-colors text-muted-foreground/50 hover:text-foreground hover:bg-secondary/30"
+                  title="Request location"
+                >
+                  <MapPin size={18} />
+                </button>
+              )}
             </>
           )}
 

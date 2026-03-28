@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Video } from "lucide-react";
 import { isPuzzleMessage, PuzzleMessageBubble } from "@/components/private/PuzzleMessageBubble";
+import { isLocationRequestMessage, LocationRequestBubble, LOCATION_REQUEST_PREFIX, LOCATION_REQUEST_ACCEPTED, LOCATION_REQUEST_DECLINED } from "@/components/private/LocationRequestBubble";
 import { MessageBubble } from "@/components/private/MessageBubble";
 import { TypingIndicator } from "@/components/private/TypingIndicator";
 import { computeMessageGroups } from "@/lib/messageGrouping";
@@ -303,6 +304,38 @@ const UserConversation = () => {
     }
   };
 
+  const [acceptingLocationRequest, setAcceptingLocationRequest] = useState(false);
+
+  const handleAcceptLocationRequest = useCallback(async (messageId: string) => {
+    if (!token || !conversationId) return;
+    setAcceptingLocationRequest(true);
+    try {
+      // Update message to accepted
+      await invokeMessaging("edit-message", token, { message_id: messageId, body: LOCATION_REQUEST_ACCEPTED });
+      setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, body: LOCATION_REQUEST_ACCEPTED } : m));
+      // Auto-start sharing
+      locationSharing.startSharing();
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+    } finally {
+      setAcceptingLocationRequest(false);
+    }
+  }, [token, conversationId, handleSessionExpired, locationSharing]);
+
+  const handleDeclineLocationRequest = useCallback(async (messageId: string) => {
+    if (!token) return;
+    try {
+      await invokeMessaging("edit-message", token, { message_id: messageId, body: LOCATION_REQUEST_DECLINED });
+      setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, body: LOCATION_REQUEST_DECLINED } : m));
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+    }
+  }, [token, handleSessionExpired]);
+
+  const handleSendLocationRequest = useCallback(async () => {
+    if (!conversationId || !token) return;
+    await handleSend(LOCATION_REQUEST_PREFIX);
+  }, [conversationId, token, handleSend]);
   const formatTime = (iso: string) => {
     const d = new Date(iso);
     const now = new Date();
@@ -404,6 +437,7 @@ const UserConversation = () => {
                 otherName={adminProfileId ? resolve(adminProfileId, adminName) : "them"}
                 onStartSharing={locationSharing.startSharing}
                 onStopSharing={locationSharing.stopSharing}
+                onRequestLocation={handleSendLocationRequest}
               />
             </div>
             <ConversationToolbar
@@ -439,6 +473,25 @@ const UserConversation = () => {
                     formatTime={formatTime}
                     createdAt={msg.created_at}
                     onCallBack={videoCall.callState === "idle" ? videoCall.startCall : undefined}
+                  />
+                );
+              }
+
+              if (isLocationRequestMessage(msg.body)) {
+                return (
+                  <LocationRequestBubble
+                    key={msg.id}
+                    messageId={msg.id}
+                    body={msg.body}
+                    isMine={isMine}
+                    createdAt={msg.created_at}
+                    formatTime={formatTime}
+                    groupPosition={group?.groupPosition}
+                    senderChanged={group?.senderChanged}
+                    showTimestamp={group?.showTimestamp}
+                    onAccept={() => handleAcceptLocationRequest(msg.id)}
+                    onDecline={() => handleDeclineLocationRequest(msg.id)}
+                    accepting={acceptingLocationRequest}
                   />
                 );
               }
@@ -498,6 +551,7 @@ const UserConversation = () => {
           onCancelEdit={() => setEditingMessage(null)}
           onSaveEdit={(id, body) => { handleEdit(id, body); setEditingMessage(null); }}
           onTyping={handleTypingPing}
+          onRequestLocation={handleSendLocationRequest}
         />
       </div>
     </PrivateLayout>

@@ -32,6 +32,7 @@ interface LocationCardProps {
   otherName: string;
   onStartSharing: () => void;
   onStopSharing: () => void;
+  onRequestLocation?: () => void;
 }
 
 function StatusDot({ status, animated = true }: { status: FreshnessStatus; animated?: boolean }) {
@@ -66,6 +67,7 @@ export function LocationCard({
   otherName,
   onStartSharing,
   onStopSharing,
+  onRequestLocation,
 }: LocationCardProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
@@ -325,6 +327,20 @@ export function LocationCard({
                 </div>
                 {loading && <Loader2 size={16} className="animate-spin text-muted-foreground" />}
               </button>
+              {onRequestLocation && (
+                <button
+                  onClick={() => { setDrawerOpen(false); onRequestLocation(); }}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card hover:bg-secondary/30 transition-colors text-left"
+                >
+                  <div className="h-9 w-9 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+                    <MapPin size={16} className="text-accent-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">Request their location</p>
+                    <p className="text-xs text-muted-foreground">Send {otherName} a request</p>
+                  </div>
+                </button>
+              )}
             </div>
             <DrawerFooter>
               <DrawerClose asChild>
@@ -359,6 +375,20 @@ export function LocationCard({
               </div>
               {loading && <Loader2 size={16} className="animate-spin text-muted-foreground" />}
             </button>
+            {onRequestLocation && (
+              <button
+                onClick={() => { setDrawerOpen(false); onRequestLocation(); }}
+                className="w-full flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card hover:bg-secondary/30 transition-colors text-left"
+              >
+                <div className="h-9 w-9 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+                  <MapPin size={16} className="text-accent-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">Request their location</p>
+                  <p className="text-xs text-muted-foreground">Send {otherName} a request</p>
+                </div>
+              </button>
+            )}
             <Button variant="outline" size="sm" onClick={() => setDrawerOpen(false)}>Cancel</Button>
           </DialogContent>
         </Dialog>
