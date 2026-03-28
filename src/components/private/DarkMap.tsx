@@ -109,9 +109,6 @@ function injectStyles() {
       background: rgba(50,50,50,0.9) !important;
       color: white !important;
     }
-    .dark-map-container .leaflet-tile-pane {
-      filter: invert(1) hue-rotate(200deg) brightness(1.6) contrast(1.3) saturate(0.5);
-    }
     .dark-map-tooltip {
       background: rgba(20,20,20,0.85) !important;
       color: #e0e0e0 !important;
@@ -187,7 +184,7 @@ export default function DarkMap({ markers, labels, className = "", interactive =
 
     // CartoDB Voyager — includes POI labels (businesses, landmarks, neighborhoods)
     // Dark theme achieved via CSS invert filter on .leaflet-tile-pane
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
       subdomains: "abcd",
       maxZoom: 19,
     }).addTo(map);
