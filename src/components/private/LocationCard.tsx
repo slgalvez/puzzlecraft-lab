@@ -67,6 +67,7 @@ export function LocationCard({
   otherName,
   onStartSharing,
   onStopSharing,
+  onRequestLocation,
 }: LocationCardProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
