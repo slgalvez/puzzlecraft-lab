@@ -58,20 +58,21 @@ export function useLocationSharing(
   const sharingRef = useRef(false);
   const tokenRef = useRef(token);
   const convRef = useRef(conversationId);
-  // Track if permission was already granted this session — avoid re-prompting
   const permissionGrantedRef = useRef(false);
   tokenRef.current = token;
   convRef.current = conversationId;
 
   const SHARING_KEY = "location_sharing_active";
 
-  // Poll for the other user's shared location
+  // Poll for the other user's shared location + sync outgoing state (Fix #1)
   const fetchSharedLocation = useCallback(async () => {
     if (!token || !conversationId) return;
     try {
       const data = await invokeMessaging("get-shared-location", token, {
         conversation_id: conversationId,
       });
+
+      // Incoming location
       if (data.incoming) {
         setIncomingLocation((prev) => {
           if (
@@ -91,6 +92,17 @@ export function useLocationSharing(
         });
       } else {
         setIncomingLocation(null);
+      }
+
+      // Fix #1: Sync outgoing state from backend
+      // If backend says we're sharing but local state doesn't know, restore it
+      if (data.outgoing?.active && !sharingRef.current) {
+        // Backend says sharing is active — restore local state and restart GPS
+        setIsSharingMine(true);
+        sharingRef.current = true;
+        sessionStorage.setItem(SHARING_KEY, "1");
+        permissionGrantedRef.current = true;
+        startGpsWatch(false);
       }
     } catch (e) {
       if (e instanceof SessionExpiredError) return onSessionExpired();
@@ -113,7 +125,7 @@ export function useLocationSharing(
     return () => clearInterval(timer);
   }, [incomingLocation]);
 
-  // Listen for permission changes (visibility/focus) — but DON'T re-prompt
+  // Listen for permission changes (visibility/focus)
   useEffect(() => {
     let cancelled = false;
 
@@ -216,7 +228,7 @@ export function useLocationSharing(
           sendUpdate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
         }
 
-        // Start watching — no further permission prompts since already granted
+        // Start watching
         watchIdRef.current = navigator.geolocation.watchPosition(
           (watchPos) => {
             if (!sharingRef.current) return;
@@ -260,34 +272,91 @@ export function useLocationSharing(
       return;
     }
 
-    // Prevent double-tap issues — if already sharing or already loading, bail
+    // Prevent double-tap
     if (sharingRef.current || loading) return;
 
     setLoading(true);
     setError(null);
 
-    // Only check permission state if NOT already granted.
-    // If permission is "denied", show guidance immediately without calling getCurrentPosition
-    // (which would silently fail on some browsers).
-    // If "prompt" or "granted", proceed directly to startGpsWatch — getCurrentPosition
-    // will trigger the native prompt if needed, and we handle success/failure there.
+    // Fix #2: Safety timeout — if getCurrentPosition never resolves (e.g. dismissed prompt)
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+      if (!sharingRef.current) {
+        setError("Location request timed out — try again");
+      }
+    }, 20_000);
+
+    const originalStartGps = () => {
+      clearTimeout(safetyTimer);
+      startGpsWatch(true);
+    };
+
     if (!permissionGrantedRef.current) {
       const permState = await queryLocationPermission();
       if (permState === "denied") {
+        clearTimeout(safetyTimer);
         setLoading(false);
         setError(getDeniedGuidance());
         return;
       }
-      // For "prompt", "granted", or "unsupported" (Permissions API not available),
-      // fall through — getCurrentPosition is the source of truth.
     }
 
-    startGpsWatch(true);
-  }, [startGpsWatch, loading]);
+    // Wrap startGpsWatch to clear the safety timer on success/error
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        clearTimeout(safetyTimer);
+        const myLoc: SharedLocation = {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          updated_at: new Date().toISOString(),
+        };
+        setMyLocation(myLoc);
+        setIsSharingMine(true);
+        sharingRef.current = true;
+        permissionGrantedRef.current = true;
+        sessionStorage.setItem(SHARING_KEY, "1");
+        setLoading(false);
+        setError(null);
 
+        sendUpdate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, true);
+
+        watchIdRef.current = navigator.geolocation.watchPosition(
+          (watchPos) => {
+            if (!sharingRef.current) return;
+            setMyLocation({
+              latitude: watchPos.coords.latitude,
+              longitude: watchPos.coords.longitude,
+              accuracy: watchPos.coords.accuracy,
+              updated_at: new Date().toISOString(),
+            });
+            sendUpdate(watchPos.coords.latitude, watchPos.coords.longitude, watchPos.coords.accuracy);
+          },
+          (watchErr) => console.warn("[location] watch error:", watchErr.message),
+          { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 },
+        );
+      },
+      (posErr) => {
+        clearTimeout(safetyTimer);
+        setLoading(false);
+        if (posErr.code === 1) {
+          permissionGrantedRef.current = false;
+          setError(getDeniedGuidance());
+        } else if (posErr.code === 2) {
+          setError(getUnavailableGuidance());
+        } else {
+          setError("Location request timed out — try again");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 15000 },
+    );
+  }, [startGpsWatch, loading, sendUpdate]);
+
+  // Fix #10: Clear myLocation immediately on stop
   const stopSharing = useCallback(async () => {
     sharingRef.current = false;
     setIsSharingMine(false);
+    setMyLocation(null); // Clear immediately so all views update
     sessionStorage.removeItem(SHARING_KEY);
 
     if (watchIdRef.current !== null) {
@@ -309,9 +378,8 @@ export function useLocationSharing(
   // Auto-resume sharing if it was active before navigation
   useEffect(() => {
     if (!token || !conversationId) return;
-    if (sharingRef.current) return; // already sharing
+    if (sharingRef.current) return;
     if (sessionStorage.getItem(SHARING_KEY) !== "1") return;
-    // Resume silently — permission was already granted
     permissionGrantedRef.current = true;
     setIsSharingMine(true);
     sharingRef.current = true;

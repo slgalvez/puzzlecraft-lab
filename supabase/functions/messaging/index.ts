@@ -1764,11 +1764,14 @@ Deno.serve(async (req) => {
 
       if (!incoming) {
         // Fallback: check any conversation where someone is sharing with me
+        // Fix #8: Only match shares updated within last 30 minutes to avoid stale data
+        const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
         const { data: inAny } = await sb
           .from("location_shares")
           .select("*")
           .eq("viewer_profile_id", profileId)
           .eq("active", true)
+          .gte("updated_at", thirtyMinAgo)
           .order("updated_at", { ascending: false })
           .limit(1)
           .maybeSingle();
