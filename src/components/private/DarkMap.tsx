@@ -88,6 +88,9 @@ function injectStyles() {
       background: rgba(50,50,50,0.9) !important;
       color: white !important;
     }
+    .dark-map-container .leaflet-tile-pane {
+      filter: invert(1) hue-rotate(200deg) brightness(0.7) contrast(1.1) saturate(0.3);
+    }
     .dark-map-tooltip {
       background: rgba(20,20,20,0.85) !important;
       color: #e0e0e0 !important;
