@@ -151,13 +151,23 @@ const UserOverview = () => {
   }
 
   if (hasLocationActivity && locationMeta) {
-    const locLabel = locationMeta.dist
-      ? `${locationMeta.name} · ${locationMeta.dist}`
-      : `${locationMeta.name} sharing location`;
+    // Build natural-language location status
+    let locLabel: string;
+    if (locationMeta.isLive) {
+      locLabel = locationMeta.placeName
+        ? `${locationMeta.name} live near ${locationMeta.placeName}`
+        : `${locationMeta.name} sharing live location`;
+    } else {
+      locLabel = locationMeta.placeName
+        ? `${locationMeta.name} last seen at ${locationMeta.placeName}`
+        : locationMeta.dist
+          ? `${locationMeta.name} last seen ${locationMeta.dist}`
+          : `${locationMeta.name} last seen nearby`;
+    }
     activeItems.push({
       icon: (
         <span className="relative flex h-[13px] w-[13px] items-center justify-center">
-          <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-primary opacity-60" />
+          {locationMeta.isLive && <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-primary opacity-60" />}
           <MapPin size={13} className="text-primary relative" />
         </span>
       ),
