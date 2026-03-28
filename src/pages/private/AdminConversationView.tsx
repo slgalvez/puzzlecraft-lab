@@ -540,13 +540,6 @@ const AdminConversationView = () => {
         />
       </div>
     </PrivateLayout>
-    <LocationDebugPanel
-      debug={locationSharing.debug}
-      isSharingMine={locationSharing.isSharingMine}
-      hasIncoming={!!locationSharing.incomingLocation}
-      myLocationAge={locationSharing.myLocation ? humanTimestamp(locationSharing.myLocation.updated_at) : null}
-      incomingAge={locationSharing.incomingLocation ? humanTimestamp(locationSharing.incomingLocation.updated_at) : null}
-    />
     </>
   );
 };
