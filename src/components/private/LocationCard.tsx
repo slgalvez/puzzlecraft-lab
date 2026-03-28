@@ -364,20 +364,20 @@ export function LocationCard({
         </Dialog>
       )}
 
-      {/* ── Full-screen map modal ── */}
+      {/* ── Full-screen map modal — dark themed ── */}
       <Dialog open={mapOpen} onOpenChange={setMapOpen}>
-        <DialogContent className="max-w-[95vw] w-full sm:max-w-lg p-0 overflow-hidden">
-          <DialogHeader className="p-4 pb-2">
-            <DialogTitle className="flex items-center gap-2 text-sm">
+        <DialogContent className="max-w-[95vw] w-full sm:max-w-lg p-0 overflow-hidden border-white/[0.06] shadow-2xl shadow-black/60" style={{ background: "#111111" }}>
+          <DialogHeader className="px-4 pt-3 pb-1.5" style={{ background: "transparent" }}>
+            <DialogTitle className="flex items-center gap-2 text-sm text-white">
               <MapPin size={15} className="text-primary" />
               Live location
               {distLabel && (
-                <span className="text-[10px] text-muted-foreground font-normal ml-1">· {distLabel}</span>
+                <span className="text-[10px] text-white/40 font-normal ml-1">· {distLabel}</span>
               )}
               {incomingLocation && (
                 <span className="ml-auto flex items-center gap-1.5">
                   <StatusDot status={freshness!} />
-                  <span className={`text-[10px] ${freshness === "live" ? "text-primary" : "text-muted-foreground"}`}>
+                  <span className={`text-[10px] ${freshness === "live" ? "text-primary" : "text-white/40"}`}>
                     {timestamp}
                   </span>
                 </span>
@@ -389,43 +389,43 @@ export function LocationCard({
             <DarkMap
               markers={mapMarkers}
               labels={savedLabels}
-              className="w-full h-[50vh]"
+              className="w-full h-[55vh]"
               interactive
             />
             {/* Legend overlay */}
-            <div className="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm rounded-md px-2.5 py-1.5 space-y-0.5">
+            <div className="absolute bottom-2 left-2 rounded-md px-2.5 py-1.5 space-y-0.5" style={{ background: "rgba(17,17,17,0.8)", backdropFilter: "blur(8px)" }}>
               {myCoords && (
-                <div className="flex items-center gap-1.5 text-[10px] text-foreground">
+                <div className="flex items-center gap-1.5 text-[10px] text-white/80">
                   <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
                   You
                 </div>
               )}
               {inCoords && (
-                <div className="flex items-center gap-1.5 text-[10px] text-foreground">
+                <div className="flex items-center gap-1.5 text-[10px] text-white/80">
                   <StatusDot status={freshness ?? "stale"} />
                   <span>{otherName}</span>
                   {motionState === "moving" && freshness === "live" && (
-                    <span className="text-primary text-[9px]">· On the move</span>
+                    <span className="text-primary text-[9px]">· Moving</span>
                   )}
                   {motionState === "stopped" && freshness === "live" && (
-                    <span className="text-muted-foreground text-[9px]">· Stopped</span>
+                    <span className="text-white/30 text-[9px]">· Stopped</span>
                   )}
                 </div>
               )}
             </div>
           </div>
 
-          <div className="p-3 flex items-center justify-between">
+          <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: "transparent" }}>
             <div className="flex items-center gap-3">
               {incomingLocation?.accuracy && (
-                <p className="text-[10px] text-muted-foreground">±{Math.round(incomingLocation.accuracy)}m</p>
+                <p className="text-[10px] text-white/25">±{Math.round(incomingLocation.accuracy)}m</p>
               )}
             </div>
             <div className="flex items-center gap-3">
               {isSharingMine && (
                 <button
                   onClick={handleStop}
-                  className="text-[10px] text-muted-foreground/40 hover:text-destructive transition-colors"
+                  className="text-[10px] text-white/20 hover:text-red-400 transition-colors"
                 >
                   Stop sharing
                 </button>
