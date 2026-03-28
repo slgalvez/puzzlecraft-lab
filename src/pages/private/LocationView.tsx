@@ -253,8 +253,8 @@ export default function LocationView() {
 
             {/* Fix #6: Show waiting message when only viewer position */}
             {myCoords && !inCoords && (
-              <div className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-muted-foreground max-w-[200px]">
-                Waiting for {otherName} to share their location
+              <div className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-muted-foreground">
+                Waiting for {otherName}…
               </div>
             )}
 
