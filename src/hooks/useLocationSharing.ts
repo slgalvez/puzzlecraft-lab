@@ -103,12 +103,12 @@ export function useLocationSharing(
         sharingRef.current = true;
         sessionStorage.setItem(SHARING_KEY, "1");
         permissionGrantedRef.current = true;
-        startGpsWatch(false);
+        startGpsWatchRef.current(false);
       }
     } catch (e) {
       if (e instanceof SessionExpiredError) return onSessionExpired();
     }
-  }, [token, conversationId, onSessionExpired, startGpsWatch]);
+  }, [token, conversationId, onSessionExpired]);
 
   // Start polling
   useEffect(() => {
