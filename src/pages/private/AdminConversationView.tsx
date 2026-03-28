@@ -424,6 +424,7 @@ const AdminConversationView = () => {
                 otherName={conversation ? resolve(conversation.user_profile_id, conversation.user_name) : "them"}
                 onStartSharing={locationSharing.startSharing}
                 onStopSharing={locationSharing.stopSharing}
+                onRequestLocation={handleSendLocationRequest}
               />
             </div>
             <ConversationToolbar

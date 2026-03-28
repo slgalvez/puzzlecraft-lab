@@ -437,6 +437,7 @@ const UserConversation = () => {
                 otherName={adminProfileId ? resolve(adminProfileId, adminName) : "them"}
                 onStartSharing={locationSharing.startSharing}
                 onStopSharing={locationSharing.stopSharing}
+                onRequestLocation={handleSendLocationRequest}
               />
             </div>
             <ConversationToolbar
