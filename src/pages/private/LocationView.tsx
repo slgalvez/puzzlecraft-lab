@@ -9,6 +9,7 @@ import { distanceMiles, formatDistance, detectMotion, humanTimestamp, type Motio
 import { getLocationLabels, saveLocationLabel, deleteLocationLabel, getDefaultIcons, type LocationLabel } from "@/lib/locationLabels";
 import PrivateLayout from "@/components/private/PrivateLayout";
 import DarkMap from "@/components/private/DarkMap";
+import { LocationDebugPanel } from "@/components/private/LocationDebugPanel";
 
 function StatusDot({ status }: { status: FreshnessStatus }) {
   if (status === "live") {
@@ -79,15 +80,8 @@ export default function LocationView() {
     return () => { cancelled = true; };
   }, [token, user, handleSessionExpired]);
 
-  const {
-    isSharingMine,
-    myLocation,
-    incomingLocation,
-    loading,
-    error,
-    startSharing,
-    stopSharing,
-  } = useLocationSharing(token, conversationId, handleSessionExpired);
+  const locationSharingFull = useLocationSharing(token, conversationId, handleSessionExpired);
+  const { isSharingMine, myLocation, incomingLocation, loading, error, startSharing, stopSharing } = locationSharingFull;
 
   // Get viewer's own position for map display even when not sharing
   const [viewerPos, setViewerPos] = useState<{ lat: number; lng: number } | null>(null);
@@ -206,6 +200,7 @@ export default function LocationView() {
   }
 
   return (
+    <>
     <PrivateLayout title="Location" fullHeight>
        <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative" style={{ isolation: "isolate" }}>
         {/* Map area */}
@@ -474,5 +469,13 @@ export default function LocationView() {
         )}
       </div>
     </PrivateLayout>
+    <LocationDebugPanel
+      debug={locationSharingFull.debug}
+      isSharingMine={isSharingMine}
+      hasIncoming={!!incomingLocation}
+      myLocationAge={myLocation ? humanTimestamp(myLocation.updated_at) : null}
+      incomingAge={incomingLocation ? humanTimestamp(incomingLocation.updated_at) : null}
+    />
+    </>
   );
 }

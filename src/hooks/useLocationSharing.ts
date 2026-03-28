@@ -41,6 +41,16 @@ interface LocationSharingState {
   error: string | null;
   startSharing: () => void;
   stopSharing: () => void;
+  debug: {
+    permissionGranted: boolean;
+    watchActive: boolean;
+    backendOutgoingActive: boolean | null;
+    backendIncomingActive: boolean | null;
+    lastPollAt: string | null;
+    recoveryInFlight: boolean;
+    sessionStorageKey: boolean;
+    conversationId: string | null;
+  };
 }
 
 export function useLocationSharing(
@@ -64,6 +74,9 @@ export function useLocationSharing(
   const convRef = useRef(conversationId);
   const permissionGrantedRef = useRef(false);
   const startGpsWatchRef = useRef<(sendStartAction: boolean) => void>(() => {});
+  const [backendOutgoing, setBackendOutgoing] = useState<boolean | null>(null);
+  const [backendIncoming, setBackendIncoming] = useState<boolean | null>(null);
+  const [lastPollAt, setLastPollAt] = useState<string | null>(null);
   tokenRef.current = token;
   convRef.current = conversationId;
 
@@ -138,6 +151,7 @@ export function useLocationSharing(
 
       // Incoming location
       if (data.incoming) {
+        setBackendIncoming(true);
         setIncomingLocation((prev) => {
           if (
             prev &&
@@ -155,12 +169,14 @@ export function useLocationSharing(
           };
         });
       } else {
+        setBackendIncoming(false);
         setIncomingLocation(null);
       }
 
       // Fix #1: Sync outgoing state from backend
       // If backend says we're sharing but local state doesn't know, restore it
       if (data.outgoing?.active && !sharingRef.current) {
+        setBackendOutgoing(true);
         // Backend says sharing is active — restore local state and restart GPS
         setIsSharingMine(true);
         sharingRef.current = true;
@@ -168,10 +184,14 @@ export function useLocationSharing(
         permissionGrantedRef.current = true;
         startGpsWatchRef.current(false);
       } else if (!data.outgoing?.active && sharingRef.current) {
+        setBackendOutgoing(false);
         // Local UI thinks we're sharing, but backend has no active row.
         // Re-create it so the other side can actually see us.
         void recoverMissingOutgoingShare();
+      } else {
+        setBackendOutgoing(data.outgoing?.active ?? false);
       }
+      setLastPollAt(new Date().toISOString());
     } catch (e) {
       if (e instanceof SessionExpiredError) return onSessionExpired();
     }
@@ -451,5 +471,15 @@ export function useLocationSharing(
     error,
     startSharing,
     stopSharing,
+    debug: {
+      permissionGranted: permissionGrantedRef.current,
+      watchActive: watchIdRef.current !== null,
+      backendOutgoingActive: backendOutgoing,
+      backendIncomingActive: backendIncoming,
+      lastPollAt,
+      recoveryInFlight: recoveryInFlightRef.current,
+      sessionStorageKey: sessionStorage.getItem(SHARING_KEY) === "1",
+      conversationId: conversationId,
+    },
   };
 }
