@@ -69,11 +69,12 @@ function createOtherIcon(name?: string): L.DivIcon {
 }
 
 function createLabelIcon(emoji: string, name: string): L.DivIcon {
+  const c30 = getThemeColorRgba(0.3);
   return L.divIcon({
     className: "",
     html: `<div style="display:flex;flex-direction:column;align-items:center;gap:1px;pointer-events:none">
       <div style="font-size:18px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5))">${emoji}</div>
-      <div style="font-size:9px;color:white;background:rgba(0,0,0,0.6);padding:1px 4px;border-radius:3px;white-space:nowrap;backdrop-filter:blur(4px)">${name}</div>
+      <div style="font-size:9px;color:white;background:rgba(0,0,0,0.6);padding:1px 4px;border-radius:3px;white-space:nowrap;backdrop-filter:blur(4px);border-bottom:1.5px solid ${c30}">${name}</div>
     </div>`,
     iconSize: [40, 36],
     iconAnchor: [20, 18],
