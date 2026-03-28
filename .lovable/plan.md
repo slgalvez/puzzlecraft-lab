@@ -1,69 +1,42 @@
 
 
-## Location Sharing — Full Diagnostic Report
+## Auto-Accept Location Sharing for Previously Approved Users
 
-### Files Reviewed
-- `DarkMap.tsx` — map component, tile layer, markers, labels
-- `LocationCard.tsx` — conversation view map modal + status
-- `LocationView.tsx` — full-page location tab
-- `useLocationSharing.ts` — core sharing hook
-- `locationPermission.ts`, `locationLabels.ts`, `locationUtils.ts` — utilities
-- `messaging/index.ts` — backend location actions
-- `AdminConversationView.tsx`, `UserConversation.tsx` — conversation pages
-- `AdminDashboard.tsx`, `UserOverview.tsx` — overview pages
-- `PrivateSidebar.tsx` — sidebar badge
+### Problem
+When a user has already approved location sharing (backend has an active share), they still briefly see "Not sharing" / "Start sharing" until the first poll response arrives (~5s). The user wants it to feel instant — if sharing was previously approved, show their location immediately without requiring another tap.
 
----
+### Current State
+The auto-resume logic already exists in two places:
+1. **sessionStorage resume** (line ~380 in `useLocationSharing.ts`) — works within the same browser session
+2. **Backend sync** (line 100) — polls `get-shared-location`, and if `outgoing.active` is true, restarts GPS
 
-### Issues Found
+Both work, but there's a visible delay before the first poll completes where the UI shows "Not sharing".
 
-**1. Map tiles may fail to load (white map)**
-The tile URL `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png` is correct and should work. However, the previous report of a white map suggests the tiles may not load in the preview iframe due to CSP or network restrictions. The `@2x.png` suffix is fine for retina. If tiles still fail, this is an environment issue, not a code issue.
+### Solution
+Two small changes in `src/hooks/useLocationSharing.ts`:
 
-**Status: Monitor — no code change needed unless tiles fail again.**
-
-**2. `fetchSharedLocation` missing `startGpsWatch` in dependency array**
-Line 110: `fetchSharedLocation` uses `startGpsWatch` (line 105) but its `useCallback` deps are `[token, conversationId, onSessionExpired]`. This is a stale closure risk. If `sendUpdate` changes (which `startGpsWatch` depends on), the old `startGpsWatch` reference would be used.
-
-**Impact: Low — `sendUpdate` is stable, but this is technically incorrect.**
-**Fix: Add `startGpsWatch` to the dependency array on line 110.**
-
-**3. No other functional issues found**
-
-Everything else checks out:
-- **Both sides see each other**: Backend `get-shared-location` correctly queries `viewer_profile_id = profileId` for incoming, and `sharer_profile_id = profileId` for outgoing. Both admin and user set `viewer_profile_id` to the other party (line 1693).
-- **Admin conversation view**: Uses `useLocationSharing` with `conversationId` from URL params — correct.
-- **User conversation view**: Uses `useLocationSharing` with `conversationId` from `get-my-conversation` — correct.
-- **LocationCard**: Properly receives and displays both `myLocation` and `incomingLocation`, shows status dot, distance, motion, freshness — all correct.
-- **LocationView (full page)**: Shows map with both markers, legend, distance, motion, waiting state, labels — all correct.
-- **Overview pages**: Both admin and user overview pages check `get-shared-location` and show location activity — correct.
-- **Sidebar**: Checks location activity and shows badge dot — correct.
-- **Sharing persistence**: `sessionStorage` + backend sync ensures sharing survives navigation — correct.
-- **Stop sharing**: Clears watch, sends backend stop, clears state — correct.
-- **Labels**: CRUD operations with localStorage — correct.
-- **Map markers**: "me" dot uses theme color, "other" uses red with initial — correct.
-- **Distance/motion/freshness**: All computed correctly from coordinates and timestamps.
-
----
-
-### Summary
-
-Only one minor code fix needed:
-
-**File: `src/hooks/useLocationSharing.ts`, line 110**
-Add `startGpsWatch` to the `fetchSharedLocation` dependency array:
+**1. Initialize `isSharingMine` from sessionStorage** (not just `false`)
+Instead of `useState(false)`, check sessionStorage immediately so the UI never flashes "Not sharing" for returning users:
 ```ts
-// Change from:
-}, [token, conversationId, onSessionExpired]);
-// To:
-}, [token, conversationId, onSessionExpired, startGpsWatch]);
+const [isSharingMine, setIsSharingMine] = useState(
+  () => sessionStorage.getItem(SHARING_KEY) === "1"
+);
 ```
 
-Everything else — both-side visibility, map rendering, conversation integration, overview status, sidebar badges, labels, distance, motion, freshness, start/stop flow, permission handling — is working correctly.
+**2. Initialize `sharingRef` from sessionStorage too:**
+```ts
+const initiallySharing = sessionStorage.getItem(SHARING_KEY) === "1";
+const sharingRef = useRef(initiallySharing);
+```
 
-### No changes needed for:
-- Messaging — untouched, working
-- Calls — untouched, working
-- Navigation — untouched, working
-- Auth/login — untouched, working
+This means:
+- On first render, if sessionStorage says sharing was active, `isSharingMine` is already `true` → UI shows "Sharing live location" immediately
+- The existing auto-resume `useEffect` (line ~380) will start GPS watch on mount
+- The existing backend sync poll (line 100) serves as a fallback for cases where sessionStorage was cleared but backend still has an active share
+- No additional permission prompt — `permissionGrantedRef` is set to `true` in the auto-resume effect
+
+### Scope
+- Single file: `src/hooks/useLocationSharing.ts`
+- Two lines changed (initial state values)
+- No behavior changes — just eliminates the "Not sharing" flash for returning users
 
