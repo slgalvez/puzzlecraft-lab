@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, ExternalLink, Navigation, Loader2, Activity, Plus, X, Tag } from "lucide-react";
+import { MapPin, ExternalLink, Navigation, Loader2, Activity, Plus, X, Tag, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { invokeMessaging, SessionExpiredError } from "@/lib/privateApi";
 import { useLocationSharing, getFreshness, type FreshnessStatus } from "@/hooks/useLocationSharing";
@@ -92,10 +93,9 @@ export default function LocationView() {
   const [viewerPos, setViewerPos] = useState<{ lat: number; lng: number } | null>(null);
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
-    // Attempt a single silent position request (won't prompt if already denied)
     navigator.geolocation.getCurrentPosition(
       (pos) => setViewerPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => {}, // silently fail — don't block UI
+      () => {},
       { enableHighAccuracy: false, maximumAge: 60000, timeout: 8000 },
     );
   }, []);
@@ -128,11 +128,8 @@ export default function LocationView() {
   const distance = (myCoords && inCoords) ? distanceMiles(myCoords.lat, myCoords.lng, inCoords.lat, inCoords.lng) : null;
   const distLabel = distance !== null ? formatDistance(distance) : null;
 
-  const allCoords: { lat: number; lng: number }[] = [];
-  if (myCoords) allCoords.push(myCoords);
-  if (inCoords) allCoords.push(inCoords);
-
-  const hasData = allCoords.length > 0;
+  // Fix #6: Show map even with only viewer position
+  const hasData = myCoords || inCoords;
 
   const mapMarkers = [
     ...(myCoords ? [{ lat: myCoords.lat, lng: myCoords.lng, type: "me" as const, label: "You" }] : []),
@@ -254,6 +251,13 @@ export default function LocationView() {
               )}
             </div>
 
+            {/* Fix #6: Show waiting message when only viewer position */}
+            {myCoords && !inCoords && (
+              <div className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-muted-foreground max-w-[200px]">
+                Waiting for {otherName} to share their location
+              </div>
+            )}
+
             {/* Labels toggle */}
             {labels.length > 0 && (
               <button
@@ -325,9 +329,9 @@ export default function LocationView() {
               <MapPin size={24} className="text-muted-foreground/50" />
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-foreground font-medium">Location not being shared</p>
+              <p className="text-sm text-foreground font-medium">Location not available</p>
               <p className="text-xs text-muted-foreground">
-                Start sharing from the chat to see locations here
+                Start sharing to see locations on the map
               </p>
             </div>
           </div>
@@ -401,6 +405,16 @@ export default function LocationView() {
           </div>
         )}
 
+        {/* Fix #7: Other user sharing indicator in bottom bar */}
+        {incomingLocation && !isSharingMine && (
+          <div className="shrink-0 border-t border-border/20 px-4 py-1.5 flex items-center gap-2">
+            <StatusDot status={freshness!} />
+            <span className="text-[11px] text-foreground font-medium">{otherName} is sharing</span>
+            <span className="text-[10px] text-muted-foreground">· {timestamp}</span>
+            {distLabel && <span className="text-[10px] text-muted-foreground">· {distLabel}</span>}
+          </div>
+        )}
+
         {/* Bottom controls */}
         <div
           className="shrink-0 border-t border-border/30 px-4 py-2.5 flex items-center justify-between"
@@ -440,10 +454,22 @@ export default function LocationView() {
           </div>
         </div>
 
-        {/* Error */}
+        {/* Fix #9: Actionable error display */}
         {error && (
           <div className="shrink-0 px-4 py-2 border-t border-destructive/20 bg-destructive/5">
-            <p className="text-[10px] text-destructive">{error}</p>
+            <div className="flex items-start gap-2">
+              <AlertCircle size={12} className="text-destructive mt-0.5 shrink-0" />
+              <div className="space-y-1 flex-1">
+                <div className="text-[10px] text-destructive space-y-0.5">
+                  {error.split("\n").map((line, i) => (
+                    <p key={i} className={i === 0 ? "font-medium" : "text-destructive/80 pl-1"}>{line}</p>
+                  ))}
+                </div>
+                <Button size="sm" variant="outline" onClick={startSharing} className="text-[10px] h-6">
+                  Try again
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </div>

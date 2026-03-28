@@ -74,6 +74,18 @@ export function LocationCard({
   const isMobile = useIsMobile();
   const isStandalone = isStandaloneMode();
   const useBottomSheet = isMobile && !isStandalone;
+  const [expanded, setExpanded] = useState(false);
+
+  // Fix #3: Silent viewer position fallback for map display
+  const [viewerPos, setViewerPos] = useState<{ lat: number; lng: number } | null>(null);
+  useEffect(() => {
+    if (!("geolocation" in navigator)) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setViewerPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: false, maximumAge: 60000, timeout: 8000 },
+    );
+  }, []);
 
   // Motion detection
   const prevIncomingRef = useRef<{ lat: number; lng: number; time: number } | null>(null);
@@ -91,7 +103,7 @@ export function LocationCard({
     prevIncomingRef.current = curr;
   }, [incomingLocation?.latitude, incomingLocation?.longitude, incomingLocation?.updated_at]);
 
-  // Smooth coordinate interpolation for incoming
+  // Fix #4: Only interpolate when expanded to avoid unnecessary state updates
   const prevCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
   const [displayCoords, setDisplayCoords] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -108,6 +120,12 @@ export function LocationCard({
       setDisplayCoords(target);
       return;
     }
+    // Only animate interpolation when map is visible (expanded or mapOpen)
+    if (!expanded && !mapOpen) {
+      prevCoordsRef.current = target;
+      setDisplayCoords(target);
+      return;
+    }
     const steps = 6;
     let step = 0;
     const dLat = (target.lat - prev.lat) / steps;
@@ -118,7 +136,7 @@ export function LocationCard({
       if (step >= steps) { clearInterval(timer); prevCoordsRef.current = target; }
     }, 100);
     return () => clearInterval(timer);
-  }, [incomingLocation?.latitude, incomingLocation?.longitude]);
+  }, [incomingLocation?.latitude, incomingLocation?.longitude, expanded, mapOpen]);
 
   // Tick for freshness
   useEffect(() => {
@@ -135,7 +153,8 @@ export function LocationCard({
   }, [stopConfirm]);
 
   const inCoords = displayCoords || (incomingLocation ? { lat: incomingLocation.latitude, lng: incomingLocation.longitude } : null);
-  const myCoords = myLocation ? { lat: myLocation.latitude, lng: myLocation.longitude } : null;
+  // Fix #3: Use myLocation if sharing, otherwise viewerPos for map display
+  const myCoords = myLocation ? { lat: myLocation.latitude, lng: myLocation.longitude } : viewerPos;
   const freshness = incomingLocation ? getFreshness(incomingLocation.updated_at) : null;
   const timestamp = incomingLocation ? humanTimestamp(incomingLocation.updated_at) : "";
   const hasAnyLocationActivity = isSharingMine || incomingLocation;
@@ -149,13 +168,6 @@ export function LocationCard({
   // Distance
   const distance = (myCoords && inCoords) ? distanceMiles(myCoords.lat, myCoords.lng, inCoords.lat, inCoords.lng) : null;
   const distLabel = distance !== null ? formatDistance(distance) : null;
-
-  // Build markers list for maps
-  const allMapCoords: { lat: number; lng: number }[] = [];
-  if (myCoords) allMapCoords.push(myCoords);
-  if (inCoords) allMapCoords.push(inCoords);
-
-  const [expanded, setExpanded] = useState(false);
 
   const handleTopTap = () => {
     if (isSharingMine || incomingLocation) {
@@ -200,7 +212,9 @@ export function LocationCard({
         ) : incomingLocation ? (
           <>
             <StatusDot status={freshness!} animated={freshness === "live"} />
-            <span className="font-medium">{otherName} — {timestamp}</span>
+            {/* Fix #5: Make incoming status more prominent */}
+            <span className="font-medium">{otherName} is sharing</span>
+            <span className="text-muted-foreground ml-0.5">· {timestamp}</span>
             {distLabel && <span className="text-muted-foreground ml-0.5">· {distLabel}</span>}
             {motionState === "moving" && freshness === "live" && (
               <Activity size={8} className="text-primary ml-0.5" />
