@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Timer, Trash2, MessageSquare, Puzzle, Plus, MapPin, ArrowRight } from "lucide-react";
 import { distanceMiles, formatDistance, humanTimestamp } from "@/lib/locationUtils";
+import { getLocationLabels } from "@/lib/locationLabels";
+import { getFreshness } from "@/hooks/useLocationSharing";
 import { OverviewHeaderControls } from "@/components/private/OverviewHeaderControls";
 import { useNicknames } from "@/hooks/useNicknames";
 import { WhatsNewBanner } from "@/components/private/WhatsNewBanner";
@@ -50,7 +52,7 @@ const AdminDashboard = () => {
   const [showClearAll, setShowClearAll] = useState(false);
   const [clearingAll, setClearingAll] = useState(false);
   const [hasLocationActivity, setHasLocationActivity] = useState(false);
-  const [locationMeta, setLocationMeta] = useState<{ name: string; dist: string | null; time: string } | null>(null);
+  const [locationMeta, setLocationMeta] = useState<{ name: string; dist: string | null; time: string; isLive: boolean; placeName: string | null } | null>(null);
 
   const handleSessionExpired = useCallback(() => {
     signOut();
@@ -78,10 +80,22 @@ const AdminDashboard = () => {
           if (locData.incoming) {
             setHasLocationActivity(true);
             const inc = locData.incoming;
+            // Find nearest saved label
+            const labels = getLocationLabels();
+            let placeName: string | null = null;
+            let minDist = Infinity;
+            for (const l of labels) {
+              const d = distanceMiles(inc.latitude, inc.longitude, l.lat, l.lng);
+              if (d < minDist) { minDist = d; placeName = `${l.icon} ${l.name}`; }
+            }
+            if (minDist > 0.5) placeName = null;
+            const freshness = getFreshness(inc.updated_at);
             setLocationMeta({
               name: convs[0].user_name || "them",
               dist: null,
               time: humanTimestamp(inc.updated_at),
+              isLive: freshness === "live",
+              placeName,
             });
           } else {
             setHasLocationActivity(false);
@@ -148,13 +162,20 @@ const AdminDashboard = () => {
   }
 
   if (hasLocationActivity && locationMeta) {
-    const locLabel = locationMeta.dist
-      ? `${locationMeta.name} · ${locationMeta.dist}`
-      : `${locationMeta.name} sharing location`;
+    let locLabel: string;
+    if (locationMeta.isLive) {
+      locLabel = locationMeta.placeName
+        ? `${locationMeta.name} live near ${locationMeta.placeName}`
+        : `${locationMeta.name} sharing live location`;
+    } else {
+      locLabel = locationMeta.placeName
+        ? `${locationMeta.name} last seen at ${locationMeta.placeName}`
+        : `${locationMeta.name} last seen nearby`;
+    }
     activeItems.push({
       icon: (
         <span className="relative flex h-[13px] w-[13px] items-center justify-center">
-          <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-primary opacity-60" />
+          {locationMeta.isLive && <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-primary opacity-60" />}
           <MapPin size={13} className="text-primary relative" />
         </span>
       ),

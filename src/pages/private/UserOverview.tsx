@@ -7,6 +7,8 @@ import { MessageSquare, Puzzle, Plus, MapPin, ArrowRight } from "lucide-react";
 import { OverviewHeaderControls } from "@/components/private/OverviewHeaderControls";
 import { WhatsNewBanner } from "@/components/private/WhatsNewBanner";
 import { distanceMiles, formatDistance, humanTimestamp } from "@/lib/locationUtils";
+import { getLocationLabels } from "@/lib/locationLabels";
+import { getFreshness } from "@/hooks/useLocationSharing";
 
 interface PuzzleSummary {
   id: string;
@@ -44,7 +46,7 @@ const UserOverview = () => {
   const [lastMessageAt, setLastMessageAt] = useState<string | null>(null);
   const [puzzles, setPuzzles] = useState<PuzzleSummary[]>([]);
   const [hasLocationActivity, setHasLocationActivity] = useState(false);
-  const [locationMeta, setLocationMeta] = useState<{ name: string; dist: string | null; time: string } | null>(null);
+  const [locationMeta, setLocationMeta] = useState<{ name: string; dist: string | null; time: string; isLive: boolean; placeName: string | null } | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [myLat, setMyLat] = useState<number | null>(null);
   const [myLng, setMyLng] = useState<number | null>(null);
@@ -83,10 +85,23 @@ const UserOverview = () => {
             if (myLat !== null && myLng !== null) {
               dist = formatDistance(distanceMiles(myLat, myLng, inc.latitude, inc.longitude));
             }
+            // Find nearest saved label for human-readable place name
+            const labels = getLocationLabels();
+            let placeName: string | null = null;
+            let minDist = Infinity;
+            for (const l of labels) {
+              const d = distanceMiles(inc.latitude, inc.longitude, l.lat, l.lng);
+              if (d < minDist) { minDist = d; placeName = `${l.icon} ${l.name}`; }
+            }
+            // Only use label if within ~0.5 miles
+            if (minDist > 0.5) placeName = null;
+            const freshness = getFreshness(inc.updated_at);
             setLocationMeta({
               name: convData.admin_name || "them",
               dist,
               time: humanTimestamp(inc.updated_at),
+              isLive: freshness === "live",
+              placeName,
             });
           } else {
             setHasLocationActivity(false);
@@ -136,13 +151,23 @@ const UserOverview = () => {
   }
 
   if (hasLocationActivity && locationMeta) {
-    const locLabel = locationMeta.dist
-      ? `${locationMeta.name} · ${locationMeta.dist}`
-      : `${locationMeta.name} sharing location`;
+    // Build natural-language location status
+    let locLabel: string;
+    if (locationMeta.isLive) {
+      locLabel = locationMeta.placeName
+        ? `${locationMeta.name} live near ${locationMeta.placeName}`
+        : `${locationMeta.name} sharing live location`;
+    } else {
+      locLabel = locationMeta.placeName
+        ? `${locationMeta.name} last seen at ${locationMeta.placeName}`
+        : locationMeta.dist
+          ? `${locationMeta.name} last seen ${locationMeta.dist}`
+          : `${locationMeta.name} last seen nearby`;
+    }
     activeItems.push({
       icon: (
         <span className="relative flex h-[13px] w-[13px] items-center justify-center">
-          <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-primary opacity-60" />
+          {locationMeta.isLive && <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-primary opacity-60" />}
           <MapPin size={13} className="text-primary relative" />
         </span>
       ),
