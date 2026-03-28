@@ -58,12 +58,75 @@ export function useLocationSharing(
   const watchIdRef = useRef<number | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
   const sharingRef = useRef(initiallySharing);
+  const recoveryInFlightRef = useRef(false);
+  const lastRecoveryAtRef = useRef(0);
   const tokenRef = useRef(token);
   const convRef = useRef(conversationId);
   const permissionGrantedRef = useRef(false);
   const startGpsWatchRef = useRef<(sendStartAction: boolean) => void>(() => {});
   tokenRef.current = token;
   convRef.current = conversationId;
+
+  const sendUpdate = useCallback(
+    async (latitude: number, longitude: number, accuracy: number | null, isStart = false) => {
+      if (!tokenRef.current || !convRef.current) return false;
+      try {
+        const action = isStart ? "start-location-sharing" : "update-location";
+        await invokeMessaging(action, tokenRef.current, {
+          conversation_id: convRef.current,
+          latitude,
+          longitude,
+          accuracy,
+        });
+        return true;
+      } catch (e) {
+        if (e instanceof SessionExpiredError) {
+          onSessionExpired();
+          return false;
+        }
+        console.warn("[location] update failed:", e);
+        return false;
+      }
+    },
+    [onSessionExpired],
+  );
+
+  const recoverMissingOutgoingShare = useCallback(() => {
+    if (!sharingRef.current || recoveryInFlightRef.current || !("geolocation" in navigator)) return;
+
+    const now = Date.now();
+    if (now - lastRecoveryAtRef.current < 4000) return;
+
+    recoveryInFlightRef.current = true;
+    lastRecoveryAtRef.current = now;
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const restored = await sendUpdate(
+          pos.coords.latitude,
+          pos.coords.longitude,
+          pos.coords.accuracy,
+          true,
+        );
+
+        if (restored) {
+          setMyLocation({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+            updated_at: new Date().toISOString(),
+          });
+          setError(null);
+        }
+
+        recoveryInFlightRef.current = false;
+      },
+      () => {
+        recoveryInFlightRef.current = false;
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 },
+    );
+  }, [sendUpdate]);
 
   // Poll for the other user's shared location + sync outgoing state (Fix #1)
   const fetchSharedLocation = useCallback(async () => {
@@ -104,11 +167,15 @@ export function useLocationSharing(
         sessionStorage.setItem(SHARING_KEY, "1");
         permissionGrantedRef.current = true;
         startGpsWatchRef.current(false);
+      } else if (!data.outgoing?.active && sharingRef.current) {
+        // Local UI thinks we're sharing, but backend has no active row.
+        // Re-create it so the other side can actually see us.
+        void recoverMissingOutgoingShare();
       }
     } catch (e) {
       if (e instanceof SessionExpiredError) return onSessionExpired();
     }
-  }, [token, conversationId, onSessionExpired]);
+  }, [token, conversationId, onSessionExpired, recoverMissingOutgoingShare]);
 
   // Start polling
   useEffect(() => {
@@ -157,25 +224,6 @@ export function useLocationSharing(
       window.removeEventListener("focus", handleVisibilityOrFocus);
     };
   }, []);
-
-  const sendUpdate = useCallback(
-    async (latitude: number, longitude: number, accuracy: number | null, isStart = false) => {
-      if (!tokenRef.current || !convRef.current) return;
-      try {
-        const action = isStart ? "start-location-sharing" : "update-location";
-        await invokeMessaging(action, tokenRef.current, {
-          conversation_id: convRef.current,
-          latitude,
-          longitude,
-          accuracy,
-        });
-      } catch (e) {
-        if (e instanceof SessionExpiredError) return onSessionExpired();
-        console.warn("[location] update failed:", e);
-      }
-    },
-    [onSessionExpired],
-  );
 
   // Exit snapshot: send final location when page hides
   useEffect(() => {
