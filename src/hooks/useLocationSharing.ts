@@ -107,7 +107,7 @@ export function useLocationSharing(
     } catch (e) {
       if (e instanceof SessionExpiredError) return onSessionExpired();
     }
-  }, [token, conversationId, onSessionExpired]);
+  }, [token, conversationId, onSessionExpired, startGpsWatch]);
 
   // Start polling
   useEffect(() => {
