@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Timer, Trash2, MessageSquare, Puzzle, Plus, MapPin, ArrowRight } from "lucide-react";
 import { distanceMiles, formatDistance, humanTimestamp } from "@/lib/locationUtils";
+import { getLocationLabels } from "@/lib/locationLabels";
+import { getFreshness } from "@/hooks/useLocationSharing";
 import { OverviewHeaderControls } from "@/components/private/OverviewHeaderControls";
 import { useNicknames } from "@/hooks/useNicknames";
 import { WhatsNewBanner } from "@/components/private/WhatsNewBanner";
