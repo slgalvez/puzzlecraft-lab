@@ -185,9 +185,9 @@ export default function DarkMap({ markers, labels, className = "", interactive =
       keyboard: false,
     }).setView([0, 0], 15);
 
-    // CartoDB Dark Matter — natively dark, minimal, Apple Find My aesthetic
-    // Shows streets, neighborhoods, parks, water — no house number clutter
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    // CartoDB Voyager — includes POI labels (businesses, landmarks, neighborhoods)
+    // Dark theme achieved via CSS invert filter on .leaflet-tile-pane
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
       subdomains: "abcd",
       maxZoom: 19,
     }).addTo(map);
