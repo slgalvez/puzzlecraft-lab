@@ -23,6 +23,7 @@ interface MessageComposerProps {
   onCancelEdit?: () => void;
   onSaveEdit?: (messageId: string, newBody: string) => void;
   onTyping?: () => void;
+  onRequestLocation?: () => void;
 }
 
 /** Detect media message format */
