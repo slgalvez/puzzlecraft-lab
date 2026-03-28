@@ -36,7 +36,7 @@ export function LocationDebugPanel({ debug, isSharingMine, hasIncoming, myLocati
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-16 right-2 z-[9999] h-7 w-7 rounded-full flex items-center justify-center opacity-30 hover:opacity-80 transition-opacity"
+        className="fixed bottom-24 right-2 z-[9999] h-7 w-7 rounded-full flex items-center justify-center opacity-30 hover:opacity-80 transition-opacity"
         style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
         title="Location debug"
       >
