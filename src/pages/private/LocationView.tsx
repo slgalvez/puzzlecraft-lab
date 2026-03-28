@@ -64,9 +64,9 @@ export default function LocationView() {
           }
         } else {
           const data = await invokeMessaging("get-my-conversation", token);
-          if (!cancelled && data.conversation_id) {
-            setConversationId(data.conversation_id);
-            setOtherName(data.admin_name || "them");
+          if (!cancelled && data.conversation?.id) {
+            setConversationId(data.conversation.id);
+            setOtherName(data.conversation.admin_name || "them");
           }
         }
       } catch (e) {
