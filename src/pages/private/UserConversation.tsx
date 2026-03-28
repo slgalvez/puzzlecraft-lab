@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Video } from "lucide-react";
 import { isPuzzleMessage, PuzzleMessageBubble } from "@/components/private/PuzzleMessageBubble";
+import { isLocationRequestMessage, LocationRequestBubble, LOCATION_REQUEST_PREFIX, LOCATION_REQUEST_ACCEPTED, LOCATION_REQUEST_DECLINED } from "@/components/private/LocationRequestBubble";
 import { MessageBubble } from "@/components/private/MessageBubble";
 import { TypingIndicator } from "@/components/private/TypingIndicator";
 import { computeMessageGroups } from "@/lib/messageGrouping";
