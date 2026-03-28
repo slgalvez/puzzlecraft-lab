@@ -52,7 +52,7 @@ const AdminDashboard = () => {
   const [showClearAll, setShowClearAll] = useState(false);
   const [clearingAll, setClearingAll] = useState(false);
   const [hasLocationActivity, setHasLocationActivity] = useState(false);
-  const [locationMeta, setLocationMeta] = useState<{ name: string; dist: string | null; time: string } | null>(null);
+  const [locationMeta, setLocationMeta] = useState<{ name: string; dist: string | null; time: string; isLive: boolean; placeName: string | null } | null>(null);
 
   const handleSessionExpired = useCallback(() => {
     signOut();
