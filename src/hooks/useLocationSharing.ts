@@ -58,6 +58,12 @@ export function useLocationSharing(
   const watchIdRef = useRef<number | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
   const sharingRef = useRef(initiallySharing);
+  const tokenRef = useRef(token);
+  const convRef = useRef(conversationId);
+  const permissionGrantedRef = useRef(false);
+  const startGpsWatchRef = useRef<(sendStartAction: boolean) => void>(() => {});
+  tokenRef.current = token;
+  convRef.current = conversationId;
 
   // Poll for the other user's shared location + sync outgoing state (Fix #1)
   const fetchSharedLocation = useCallback(async () => {
