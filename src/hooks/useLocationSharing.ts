@@ -48,14 +48,15 @@ export function useLocationSharing(
   conversationId: string | null,
   onSessionExpired: () => void,
 ): LocationSharingState {
-  const [isSharingMine, setIsSharingMine] = useState(false);
+  const initiallySharing = sessionStorage.getItem(SHARING_KEY) === "1";
+  const [isSharingMine, setIsSharingMine] = useState(initiallySharing);
   const [myLocation, setMyLocation] = useState<SharedLocation | null>(null);
   const [incomingLocation, setIncomingLocation] = useState<SharedLocation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
-  const sharingRef = useRef(false);
+  const sharingRef = useRef(initiallySharing);
   const tokenRef = useRef(token);
   const convRef = useRef(conversationId);
   const permissionGrantedRef = useRef(false);
