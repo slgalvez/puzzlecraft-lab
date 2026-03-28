@@ -325,6 +325,7 @@ const AdminConversationView = () => {
   }
 
   return (
+    <>
     <PrivateLayout title={conversation ? resolve(conversation.user_profile_id, conversation.user_name) : "Conversation"} fullHeight>
       {/* Video call overlays */}
       {videoCall.callState !== "idle" && videoCall.callState !== "ended" && (
