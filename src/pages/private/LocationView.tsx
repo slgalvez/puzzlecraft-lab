@@ -426,7 +426,7 @@ export default function LocationView() {
             ) : isSharingMine ? (
               <>
                 <StatusDot status="live" />
-                <span className="text-xs text-primary font-medium">Sharing your location</span>
+                <span className="text-xs text-primary font-medium">Sharing live location</span>
                 {distLabel && <span className="text-[10px] text-muted-foreground">· {distLabel}</span>}
               </>
             ) : (
