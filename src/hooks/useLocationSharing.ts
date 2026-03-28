@@ -81,6 +81,9 @@ export function useLocationSharing(
   tokenRef.current = token;
   convRef.current = conversationId;
 
+  // Ref for the broadcast channel
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
   const sendUpdate = useCallback(
     async (latitude: number, longitude: number, accuracy: number | null, isStart = false) => {
       if (!tokenRef.current || !convRef.current) return false;
@@ -92,6 +95,14 @@ export function useLocationSharing(
           longitude,
           accuracy,
         });
+
+        // Broadcast via realtime so the other side gets it instantly
+        channelRef.current?.send({
+          type: "broadcast",
+          event: "location-update",
+          payload: { latitude, longitude, accuracy, updated_at: new Date().toISOString() },
+        });
+
         return true;
       } catch (e) {
         if (e instanceof SessionExpiredError) {
