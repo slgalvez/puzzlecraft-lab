@@ -1,8 +1,15 @@
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
+import { SplashScreen } from "@capacitor/splash-screen";
+import { isNativeApp } from "./lib/appMode";
 import ErrorBoundary from "./components/ErrorBoundary";
 import App from "./App.tsx";
 import "./index.css";
+
+// Hide Capacitor splash screen once the app is mounted (native only)
+if (isNativeApp()) {
+  SplashScreen.hide();
+}
 
 // Register service worker with periodic update checks.
 // skipWaiting + clientsClaim in workbox config ensure the new SW activates immediately.
