@@ -76,19 +76,23 @@ export default function PrivateLayout({ children, title, fullHeight }: PrivateLa
     let armed = false;
     const armTimer = setTimeout(() => { armed = true; }, 1500);
 
+    const shouldIgnoreExit = () => {
+      if (!armed) return true;
+      if (!getFocusLossEnabled()) return true;
+      if (isCallActive()) return true; // Ignore app-switch / permission sheet during call setup or active call
+      return false;
+    };
+
     const handleVisibilityChange = () => {
-      if (!armed) return;
-      if (!getFocusLossEnabled()) return;
-      if (isCallActive()) return; // Don't exit during an active video call
+      if (shouldIgnoreExit()) return;
       if (document.visibilityState === "hidden") {
         quickExit();
       }
     };
 
-    const handlePageHide = () => {
-      if (!armed) return;
-      if (!getFocusLossEnabled()) return;
-      if (isCallActive()) return; // Don't exit during an active video call
+    const handlePageHide = (event: PageTransitionEvent) => {
+      if (shouldIgnoreExit()) return;
+      if (event.persisted) return; // Ignore bfcache-style page transitions
       quickExit();
     };
 
