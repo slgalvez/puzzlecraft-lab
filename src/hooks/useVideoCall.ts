@@ -401,6 +401,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
     if (!conversationId || !tokenRef.current || callStateRef.current !== "idle") return;
 
     setCallState("requesting-media");
+    setCallActive(true); // Set synchronously BEFORE getMedia triggers permission dialog
     setEndReason(null);
     isCallerRef.current = true;
     diag("startCall:begin", { conversationId });
