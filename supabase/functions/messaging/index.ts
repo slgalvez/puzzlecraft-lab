@@ -262,7 +262,26 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ─── SEND MESSAGE ───
+    // ─── LOAD OLDER MESSAGES (infinite scroll) ───
+    if (action === "load-older-messages") {
+      const { conversation_id, before } = body;
+      if (!conversation_id || !before) return err("Missing params", 400);
+
+      // Verify access
+      const { data: conv } = await sb
+        .from("conversations")
+        .select("id, user_profile_id, admin_profile_id, cleared_at_user, cleared_at_admin")
+        .eq("id", conversation_id)
+        .single();
+      if (!conv) return err("Not found");
+      if (!isAdmin && conv.user_profile_id !== profileId) return err("Access denied");
+
+      const clearedAt = isAdmin ? conv.cleared_at_admin : conv.cleared_at_user;
+      const { messages, has_more } = await fetchOlderMessages(sb, conversation_id, now, clearedAt, before);
+
+      return json({ messages, has_more });
+    }
+
     if (action === "send-message") {
       const { conversation_id, message } = body;
       if (!conversation_id || !message || typeof message !== "string" || message.trim().length === 0) return err("Invalid message", 400);
