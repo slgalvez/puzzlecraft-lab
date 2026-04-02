@@ -547,9 +547,11 @@ const Stats = () => {
                   Start with Today's Challenge <ArrowRight size={14} />
                 </Link>
               </Button>
-              <Button asChild variant="outline">
-                <Link to="/quick-play/sudoku?mode=endless">Try Endless Mode</Link>
-              </Button>
+              {!native && (
+                <Button asChild variant="outline">
+                  <Link to="/quick-play/sudoku?mode=endless">Try Endless Mode</Link>
+                </Button>
+              )}
             </div>
           </div>
         )}
