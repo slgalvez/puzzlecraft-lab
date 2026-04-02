@@ -604,6 +604,7 @@ Deno.serve(async (req) => {
           disappearing_duration: conv.disappearing_duration,
         },
         messages: messages || [],
+        has_more,
         other_typing: otherTyping,
       });
     }
