@@ -12,6 +12,7 @@ import { getProgressStats } from "@/lib/progressTracker";
 import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { isNativeApp } from "@/lib/appMode";
+import IOSPlayTab from "@/components/ios/IOSPlayTab";
 
 
 
