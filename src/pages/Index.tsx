@@ -130,9 +130,9 @@ const Index = () => {
     }
   };
 
-  // Native app mode: show the dedicated iOS play tab
+  // Native app mode: show the dedicated iOS play tab inside Layout (which provides tab bar + safe areas)
   if (isNativeApp()) {
-    return <IOSPlayTab />;
+    return <Layout><IOSPlayTab /></Layout>;
   }
 
   return (
