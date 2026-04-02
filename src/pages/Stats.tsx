@@ -156,7 +156,7 @@ const Stats = () => {
     : filteredCompletions.slice(0, RECENT_COLLAPSED_COUNT);
 
   const showDaily = viewFilter === null || viewFilter === "daily";
-  const showEndless = viewFilter === null || viewFilter === "endless";
+  const showEndless = !native && viewFilter === null;
   const showGeneral = viewFilter === null;
 
   const displayStats = filteredStatCards ?? stats;
