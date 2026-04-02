@@ -52,6 +52,8 @@ const UserConversation = () => {
   const [togglingDisappearing, setTogglingDisappearing] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [editingMessage, setEditingMessage] = useState<EditingMessage | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const messageIds = useMemo(() => messages.map((m) => m.id), [messages]);
   const { containerRef: messagesContainerRef, bottomRef: messagesEndRef, markUserSent, scrollIfNearBottom } = useChatScroll(messageIds);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
