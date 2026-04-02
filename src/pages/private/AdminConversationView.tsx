@@ -144,6 +144,9 @@ const AdminConversationView = () => {
     }
   }, [loadOlderMessages, loadingOlder, hasMore, messagesContainerRef]);
 
+  useEffect(() => {
+    fetchConversation();
+    pollRef.current = setInterval(fetchConversation, 3000);
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
