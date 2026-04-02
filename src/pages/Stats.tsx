@@ -25,7 +25,7 @@ import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-type ViewFilter = null | "daily" | "endless";
+type ViewFilter = null | "daily";
 
 const RECENT_COLLAPSED_COUNT = 5;
 
