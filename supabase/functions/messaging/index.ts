@@ -587,7 +587,7 @@ Deno.serve(async (req) => {
           .not("read_at", "is", null);
       }
 
-      const messages = await fetchLatestConversationMessages(sb, conversation_id, now, clearedAt);
+      const { messages, has_more } = await fetchLatestConversationMessages(sb, conversation_id, now, clearedAt);
 
       const profile = conv.profiles as unknown as { first_name: string; last_name: string } | null;
 
