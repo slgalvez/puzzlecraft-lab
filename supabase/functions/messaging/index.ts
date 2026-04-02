@@ -231,7 +231,7 @@ Deno.serve(async (req) => {
       }
 
       // Get the latest visible messages without cutting off newest ones in long threads
-      const messages = await fetchLatestConversationMessages(sb, conv.id, now, clearedAt);
+      const { messages, has_more } = await fetchLatestConversationMessages(sb, conv.id, now, clearedAt);
 
       // Count unread from admin (only after cleared_at)
       let unreadQuery = sb
