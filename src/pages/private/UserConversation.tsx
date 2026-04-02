@@ -116,7 +116,37 @@ const UserConversation = () => {
     }
   }, [token, handleSessionExpired]);
 
-  // Loading failsafe: if loading persists more than 45s, show error
+  const loadOlderMessages = useCallback(async () => {
+    if (!token || !conversationId || loadingOlder || !hasMore) return;
+    const oldest = messages.find((m) => !m.id.startsWith("failed-"));
+    if (!oldest) return;
+    setLoadingOlder(true);
+    try {
+      const data = await invokeMessaging("load-older-messages", token, {
+        conversation_id: conversationId,
+        before: oldest.created_at,
+      });
+      const older = Array.isArray(data.messages) ? data.messages : [];
+      if (older.length > 0) {
+        setMessages((prev) => [...older, ...prev]);
+      }
+      setHasMore(!!data.has_more);
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [token, conversationId, loadingOlder, hasMore, messages, handleSessionExpired]);
+
+  const handleScroll = useCallback(() => {
+    const el = messagesContainerRef.current;
+    if (!el || loadingOlder || !hasMore) return;
+    if (el.scrollTop < 200) {
+      loadOlderMessages();
+    }
+  }, [loadOlderMessages, loadingOlder, hasMore, messagesContainerRef]);
+
+
   useEffect(() => {
     if (!loading) return;
     const timer = setTimeout(() => {
