@@ -135,6 +135,11 @@ const Index = () => {
     }
   };
 
+  // Native app mode: show the dedicated iOS play tab
+  if (isNativeApp()) {
+    return <IOSPlayTab />;
+  }
+
   return (
     <Layout>
       {/* Hero */}
