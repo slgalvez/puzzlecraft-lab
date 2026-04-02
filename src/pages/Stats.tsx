@@ -7,6 +7,7 @@ import { formatTime } from "@/hooks/usePuzzleTimer";
 import { getDailyStreak, getTotalDailyCompleted } from "@/lib/dailyChallenge";
 import { getEndlessStats } from "@/lib/endlessHistory";
 import { Trophy, Flame, Clock, Target, BarChart3, Calendar, Infinity, ArrowRight, TrendingUp, TrendingDown, Shield, Zap, Info } from "lucide-react";
+import { isNativeApp } from "@/lib/appMode";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PremiumStats from "@/components/account/PremiumStats";
 import { StatsPremiumPreview } from "@/components/account/PremiumPreview";
@@ -24,7 +25,7 @@ import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-type ViewFilter = null | "daily" | "endless";
+type ViewFilter = null | "daily";
 
 const RECENT_COLLAPSED_COUNT = 5;
 
@@ -34,11 +35,12 @@ const ALL_CATEGORIES: PuzzleCategory[] = [
 ];
 
 const Stats = () => {
+  const native = isNativeApp();
   const [dataVersion, setDataVersion] = useState(0);
   const stats = useMemo(() => getProgressStats(), [dataVersion]);
   const dailyStreak = useMemo(() => getDailyStreak(), [dataVersion]);
   const dailyCompleted = useMemo(() => getTotalDailyCompleted(), [dataVersion]);
-  const endlessStats = useMemo(() => getEndlessStats(), [dataVersion]);
+  const endlessStats = useMemo(() => native ? null : getEndlessStats(), [dataVersion, native]);
   const { account, subscribed, loading: accountLoading } = useUserAccount();
   const isAdmin = account?.isAdmin ?? false;
   const premiumAccess = hasPremiumAccess({ isAdmin, subscribed });
@@ -154,7 +156,7 @@ const Stats = () => {
     : filteredCompletions.slice(0, RECENT_COLLAPSED_COUNT);
 
   const showDaily = viewFilter === null || viewFilter === "daily";
-  const showEndless = viewFilter === null || viewFilter === "endless";
+  const showEndless = !native && viewFilter === null;
   const showGeneral = viewFilter === null;
 
   const displayStats = filteredStatCards ?? stats;
@@ -545,9 +547,11 @@ const Stats = () => {
                   Start with Today's Challenge <ArrowRight size={14} />
                 </Link>
               </Button>
-              <Button asChild variant="outline">
-                <Link to="/quick-play/sudoku?mode=endless">Try Endless Mode</Link>
-              </Button>
+              {!native && (
+                <Button asChild variant="outline">
+                  <Link to="/quick-play/sudoku?mode=endless">Try Endless Mode</Link>
+                </Button>
+              )}
             </div>
           </div>
         )}
