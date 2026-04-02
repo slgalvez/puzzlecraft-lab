@@ -471,7 +471,19 @@ const AdminConversationView = () => {
 
 
         {/* Messages */}
-        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 scroll-smooth">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 scroll-smooth" onScroll={handleScroll}>
+          {loadingOlder && (
+            <div className="flex justify-center py-3">
+              <p className="text-xs text-muted-foreground animate-pulse">Loading older messages…</p>
+            </div>
+          )}
+          {hasMore && !loadingOlder && messages.length > 0 && (
+            <div className="flex justify-center py-2">
+              <button onClick={loadOlderMessages} className="text-xs text-muted-foreground/60 hover:text-foreground transition-colors">
+                Load older messages
+              </button>
+            </div>
+          )}
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <p className="text-[13px] text-muted-foreground/40">No messages in this conversation yet</p>
