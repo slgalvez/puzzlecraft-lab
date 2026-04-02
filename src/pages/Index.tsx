@@ -13,10 +13,7 @@ import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { isNativeApp } from "@/lib/appMode";
 import IOSPlayTab from "@/components/ios/IOSPlayTab";
-
-
-
-const ACCESS_GRANT_KEY = "private_access_grant";
+import { setPrivateAccessGrant } from "@/lib/privateAccessGrant";
 
 const Index = () => {
   const [puzzleCode, setPuzzleCode] = useState("");
