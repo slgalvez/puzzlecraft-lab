@@ -35,11 +35,12 @@ const ALL_CATEGORIES: PuzzleCategory[] = [
 ];
 
 const Stats = () => {
+  const native = isNativeApp();
   const [dataVersion, setDataVersion] = useState(0);
   const stats = useMemo(() => getProgressStats(), [dataVersion]);
   const dailyStreak = useMemo(() => getDailyStreak(), [dataVersion]);
   const dailyCompleted = useMemo(() => getTotalDailyCompleted(), [dataVersion]);
-  const endlessStats = useMemo(() => getEndlessStats(), [dataVersion]);
+  const endlessStats = useMemo(() => native ? null : getEndlessStats(), [dataVersion, native]);
   const { account, subscribed, loading: accountLoading } = useUserAccount();
   const isAdmin = account?.isAdmin ?? false;
   const premiumAccess = hasPremiumAccess({ isAdmin, subscribed });
