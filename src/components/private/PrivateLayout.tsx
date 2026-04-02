@@ -62,7 +62,8 @@ export default function PrivateLayout({ children, title, fullHeight }: PrivateLa
 
   const quickExit = useCallback(() => {
     sessionStorage.removeItem("private_view_state");
-    sessionStorage.removeItem("private_access_grant");
+    clearPrivateAccessGrant();
+    clearCallSetupGrace();
     stampActive();
     navigate("/");
   }, [navigate]);
