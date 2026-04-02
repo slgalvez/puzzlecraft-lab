@@ -58,6 +58,8 @@ const AdminConversationView = () => {
   const [togglingDisappearing, setTogglingDisappearing] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [editingMessage, setEditingMessage] = useState<EditingMessage | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const messageIds = useMemo(() => messages.map((m) => m.id), [messages]);
   const { containerRef: messagesContainerRef, bottomRef: messagesEndRef, markUserSent, scrollIfNearBottom } = useChatScroll(messageIds);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
@@ -91,6 +93,7 @@ const AdminConversationView = () => {
       const nextMessagesKey = nextMessages.map((message) => `${message.id}:${message.read_at ?? ""}:${message.body}:${JSON.stringify(message.reactions ?? {})}`).join("|");
 
       setConversation(data.conversation);
+      setHasMore(!!data.has_more);
       if (lastMessagesKeyRef.current !== nextMessagesKey) {
         lastMessagesKeyRef.current = nextMessagesKey;
         setMessages((prev) => {
@@ -110,6 +113,36 @@ const AdminConversationView = () => {
       setLoading(false);
     }
   }, [token, conversationId, handleSessionExpired]);
+
+  const loadOlderMessages = useCallback(async () => {
+    if (!token || !conversationId || loadingOlder || !hasMore) return;
+    const oldest = messages.find((m) => !m.id.startsWith("failed-"));
+    if (!oldest) return;
+    setLoadingOlder(true);
+    try {
+      const data = await invokeMessaging("load-older-messages", token, {
+        conversation_id: conversationId,
+        before: oldest.created_at,
+      });
+      const older = Array.isArray(data.messages) ? data.messages : [];
+      if (older.length > 0) {
+        setMessages((prev) => [...older, ...prev]);
+      }
+      setHasMore(!!data.has_more);
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [token, conversationId, loadingOlder, hasMore, messages, handleSessionExpired]);
+
+  const handleScroll = useCallback(() => {
+    const el = messagesContainerRef.current;
+    if (!el || loadingOlder || !hasMore) return;
+    if (el.scrollTop < 200) {
+      loadOlderMessages();
+    }
+  }, [loadOlderMessages, loadingOlder, hasMore, messagesContainerRef]);
 
   useEffect(() => {
     fetchConversation();
@@ -438,7 +471,19 @@ const AdminConversationView = () => {
 
 
         {/* Messages */}
-        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 scroll-smooth">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 scroll-smooth" onScroll={handleScroll}>
+          {loadingOlder && (
+            <div className="flex justify-center py-3">
+              <p className="text-xs text-muted-foreground animate-pulse">Loading older messages…</p>
+            </div>
+          )}
+          {hasMore && !loadingOlder && messages.length > 0 && (
+            <div className="flex justify-center py-2">
+              <button onClick={loadOlderMessages} className="text-xs text-muted-foreground/60 hover:text-foreground transition-colors">
+                Load older messages
+              </button>
+            </div>
+          )}
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <p className="text-[13px] text-muted-foreground/40">No messages in this conversation yet</p>

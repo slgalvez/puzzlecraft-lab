@@ -90,21 +90,43 @@ async function fetchLatestConversationMessages(
       limit,
       error,
     });
-    return [];
+    return { messages: [], has_more: false };
   }
 
   const messages = data || [];
-  const newestMessageAt = messages[0]?.created_at ?? null;
-  const oldestReturnedAt = messages[messages.length - 1]?.created_at ?? null;
+  const has_more = messages.length >= limit;
 
   console.debug("[messaging] fetched latest conversation messages", {
     conversationId,
     returned: messages.length,
-    newestMessageAt,
-    oldestReturnedAt,
+    has_more,
   });
 
-  return messages.reverse();
+  return { messages: messages.reverse(), has_more };
+}
+
+async function fetchOlderMessages(
+  sb: ReturnType<typeof createClient>,
+  conversationId: string,
+  now: string,
+  clearedAt: string | null,
+  before: string,
+  limit = 50,
+) {
+  let query = buildMessageQuery(sb, conversationId, now, clearedAt)
+    .lt("created_at", before)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("[messaging] failed to fetch older messages", { error });
+    return { messages: [], has_more: false };
+  }
+
+  const messages = data || [];
+  const has_more = messages.length >= limit;
+  return { messages: messages.reverse(), has_more };
 }
 
 // ─── EPHEMERAL TYPING STATE (DB-backed for cross-isolate reliability) ───
@@ -209,7 +231,7 @@ Deno.serve(async (req) => {
       }
 
       // Get the latest visible messages without cutting off newest ones in long threads
-      const messages = await fetchLatestConversationMessages(sb, conv.id, now, clearedAt);
+      const { messages, has_more } = await fetchLatestConversationMessages(sb, conv.id, now, clearedAt);
 
       // Count unread from admin (only after cleared_at)
       let unreadQuery = sb
@@ -234,12 +256,32 @@ Deno.serve(async (req) => {
           disappearing_duration: conv.disappearing_duration,
         },
         messages: messages || [],
+        has_more,
         unread_count: unreadCount || 0,
         other_typing: otherTyping,
       });
     }
 
-    // ─── SEND MESSAGE ───
+    // ─── LOAD OLDER MESSAGES (infinite scroll) ───
+    if (action === "load-older-messages") {
+      const { conversation_id, before } = body;
+      if (!conversation_id || !before) return err("Missing params", 400);
+
+      // Verify access
+      const { data: conv } = await sb
+        .from("conversations")
+        .select("id, user_profile_id, admin_profile_id, cleared_at_user, cleared_at_admin")
+        .eq("id", conversation_id)
+        .single();
+      if (!conv) return err("Not found");
+      if (!isAdmin && conv.user_profile_id !== profileId) return err("Access denied");
+
+      const clearedAt = isAdmin ? conv.cleared_at_admin : conv.cleared_at_user;
+      const { messages, has_more } = await fetchOlderMessages(sb, conversation_id, now, clearedAt, before);
+
+      return json({ messages, has_more });
+    }
+
     if (action === "send-message") {
       const { conversation_id, message } = body;
       if (!conversation_id || !message || typeof message !== "string" || message.trim().length === 0) return err("Invalid message", 400);
@@ -564,7 +606,7 @@ Deno.serve(async (req) => {
           .not("read_at", "is", null);
       }
 
-      const messages = await fetchLatestConversationMessages(sb, conversation_id, now, clearedAt);
+      const { messages, has_more } = await fetchLatestConversationMessages(sb, conversation_id, now, clearedAt);
 
       const profile = conv.profiles as unknown as { first_name: string; last_name: string } | null;
 
@@ -581,6 +623,7 @@ Deno.serve(async (req) => {
           disappearing_duration: conv.disappearing_duration,
         },
         messages: messages || [],
+        has_more,
         other_typing: otherTyping,
       });
     }
