@@ -99,10 +99,7 @@ const Index = () => {
             break;
           }
           // Set the access grant BEFORE navigating so PrivateRoute/Login see it immediately
-          sessionStorage.setItem(
-            ACCESS_GRANT_KEY,
-            JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 1800 })
-          );
+          setPrivateAccessGrant(Math.floor(Date.now() / 1000) + 1800);
           // Also stamp last active so grace period doesn't immediately expire
           localStorage.setItem("private_last_active", String(Date.now()));
           navigate("/p/login");

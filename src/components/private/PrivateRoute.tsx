@@ -53,7 +53,7 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
     return <>{children}</>;
   }
 
-  if (!hasAccessGrant()) {
+  if (!hasPrivateAccessGrant()) {
     return <Navigate to="/" replace />;
   }
 

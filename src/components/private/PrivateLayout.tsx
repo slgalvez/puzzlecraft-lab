@@ -78,28 +78,16 @@ export default function PrivateLayout({ children, title, fullHeight }: PrivateLa
     let armed = false;
     const armTimer = setTimeout(() => { armed = true; }, 1500);
 
-    const shouldIgnoreExit = () => {
-      if (!armed) return true;
-      if (!getFocusLossEnabled()) return true;
-      if (isCallActive()) return true; // Ignore app-switch / permission sheet during call setup or active call
-      return false;
-    };
-
     const handleVisibilityChange = () => {
-      if (shouldIgnoreExit()) return;
+      if (!armed) return;
+      if (!getFocusLossEnabled()) return;
+      if (isCallActive()) return; // Ignore app-switch / permission sheet during call setup or active call
       if (document.visibilityState === "hidden") {
         quickExit();
       }
     };
 
-    const handlePageHide = (event: PageTransitionEvent) => {
-      if (shouldIgnoreExit()) return;
-      if (event.persisted) return; // Ignore bfcache-style page transitions
-      quickExit();
-    };
-
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("pagehide", handlePageHide);
 
     stampActive();
     const interval = setInterval(stampActive, 10_000);
@@ -107,7 +95,6 @@ export default function PrivateLayout({ children, title, fullHeight }: PrivateLa
     return () => {
       clearTimeout(armTimer);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("pagehide", handlePageHide);
       clearInterval(interval);
     };
   }, [quickExit]);

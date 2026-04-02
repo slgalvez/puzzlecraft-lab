@@ -207,7 +207,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     localStorage.removeItem(SESSION_KEY);
-    sessionStorage.removeItem("private_access_grant");
+    clearPrivateAccessGrant();
     setUser(null);
     setToken(null);
   }, []);

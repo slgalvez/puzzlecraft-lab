@@ -18,7 +18,7 @@ export default function LoginPage() {
     }
   }, [sessionEnded, clearSessionEnded]);
 
-  if (!hasValidGrant()) {
+  if (!hasPrivateAccessGrant()) {
     return (
       <div className="private-app flex items-center justify-center min-h-screen">
         <p className="text-sm text-muted-foreground">Session unavailable</p>
