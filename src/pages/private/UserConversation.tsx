@@ -91,6 +91,7 @@ const UserConversation = () => {
       setConversationId(data.conversation.id);
       setAdminProfileId(data.conversation.admin_profile_id);
       setAdminName(data.conversation.admin_name || "Conversation");
+      setHasMore(!!data.has_more);
       if (lastMessagesKeyRef.current !== nextMessagesKey) {
         lastMessagesKeyRef.current = nextMessagesKey;
         // Preserve failed (unsent) messages at the end

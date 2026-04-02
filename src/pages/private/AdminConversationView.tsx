@@ -93,6 +93,7 @@ const AdminConversationView = () => {
       const nextMessagesKey = nextMessages.map((message) => `${message.id}:${message.read_at ?? ""}:${message.body}:${JSON.stringify(message.reactions ?? {})}`).join("|");
 
       setConversation(data.conversation);
+      setHasMore(!!data.has_more);
       if (lastMessagesKeyRef.current !== nextMessagesKey) {
         lastMessagesKeyRef.current = nextMessagesKey;
         setMessages((prev) => {
