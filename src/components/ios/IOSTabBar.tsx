@@ -3,7 +3,7 @@ import { Dices, Palette, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
-  { key: "play", label: "Play", icon: Dices, paths: ["/", "/puzzles", "/daily", "/surprise"] },
+  { key: "play", label: "Play", icon: Dices, paths: ["/", "/puzzles", "/daily", "/surprise", "/quick-play"] },
   { key: "craft", label: "Craft", icon: Palette, paths: ["/craft"] },
   { key: "stats", label: "Stats", icon: BarChart3, paths: ["/stats", "/leaderboard"] },
 ] as const;
@@ -34,10 +34,10 @@ const IOSTabBar = () => {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 border-t bg-surface-elevated/95 backdrop-blur-md"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-md"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
-      <div className="flex items-center justify-around h-14">
+      <div className="flex items-center justify-around h-12">
         {tabs.map(({ key, label, icon: Icon }) => {
           const active = activeTab === key;
           return (
@@ -45,11 +45,11 @@ const IOSTabBar = () => {
               key={key}
               onClick={() => handleTab(key)}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-4 py-1.5 transition-colors",
+                "flex flex-col items-center gap-0.5 px-4 py-1 transition-colors",
                 active ? "text-primary" : "text-muted-foreground"
               )}
             >
-              <Icon size={22} strokeWidth={active ? 2.2 : 1.8} />
+              <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
               <span className="text-[10px] font-medium">{label}</span>
             </button>
           );

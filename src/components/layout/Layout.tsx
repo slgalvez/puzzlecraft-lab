@@ -6,12 +6,22 @@ import IOSTabBar from "@/components/ios/IOSTabBar";
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const native = isNativeApp();
 
+  if (native) {
+    return (
+      <div className="flex flex-col h-[100dvh]" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+        <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-20">
+          {children}
+        </main>
+        <IOSTabBar />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
-      {!native && <Header />}
+      <Header />
       <main className="flex-1">{children}</main>
-      {!native && <Footer />}
-      {native && <IOSTabBar />}
+      <Footer />
     </div>
   );
 };
