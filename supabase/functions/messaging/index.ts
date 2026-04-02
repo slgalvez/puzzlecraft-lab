@@ -90,21 +90,43 @@ async function fetchLatestConversationMessages(
       limit,
       error,
     });
-    return [];
+    return { messages: [], has_more: false };
   }
 
   const messages = data || [];
-  const newestMessageAt = messages[0]?.created_at ?? null;
-  const oldestReturnedAt = messages[messages.length - 1]?.created_at ?? null;
+  const has_more = messages.length >= limit;
 
   console.debug("[messaging] fetched latest conversation messages", {
     conversationId,
     returned: messages.length,
-    newestMessageAt,
-    oldestReturnedAt,
+    has_more,
   });
 
-  return messages.reverse();
+  return { messages: messages.reverse(), has_more };
+}
+
+async function fetchOlderMessages(
+  sb: ReturnType<typeof createClient>,
+  conversationId: string,
+  now: string,
+  clearedAt: string | null,
+  before: string,
+  limit = 50,
+) {
+  let query = buildMessageQuery(sb, conversationId, now, clearedAt)
+    .lt("created_at", before)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("[messaging] failed to fetch older messages", { error });
+    return { messages: [], has_more: false };
+  }
+
+  const messages = data || [];
+  const has_more = messages.length >= limit;
+  return { messages: messages.reverse(), has_more };
 }
 
 // ─── EPHEMERAL TYPING STATE (DB-backed for cross-isolate reliability) ───
