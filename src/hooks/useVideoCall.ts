@@ -446,6 +446,7 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
   const acceptCall = useCallback(async (callId: string) => {
     diag("acceptCall:begin", { callId });
     setCallState("requesting-media");
+    setCallActive(true); // Set synchronously BEFORE getMedia triggers permission dialog
     setEndReason(null);
     isCallerRef.current = false;
     callIdRef.current = callId;
