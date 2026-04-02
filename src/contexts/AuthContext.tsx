@@ -11,6 +11,7 @@
  */
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { clearPrivateAccessGrant } from "@/lib/privateAccessGrant";
 
 export interface PrivateUser {
   id: string;
@@ -206,7 +207,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     localStorage.removeItem(SESSION_KEY);
-    sessionStorage.removeItem("private_access_grant");
+    clearPrivateAccessGrant();
     setUser(null);
     setToken(null);
   }, []);

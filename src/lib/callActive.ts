@@ -7,6 +7,14 @@ let active = false;
 const CALL_SETUP_GRACE_KEY = "private_call_setup_until";
 const CALL_SETUP_GRACE_MS = 15_000;
 
+export function clearCallSetupGrace() {
+  try {
+    sessionStorage.removeItem(CALL_SETUP_GRACE_KEY);
+  } catch {
+    // Ignore storage access issues in non-browser contexts
+  }
+}
+
 export function setCallActive(value: boolean) {
   active = value;
 
@@ -17,7 +25,7 @@ export function setCallActive(value: boolean) {
         String(Date.now() + CALL_SETUP_GRACE_MS),
       );
     } else {
-      sessionStorage.removeItem(CALL_SETUP_GRACE_KEY);
+      clearCallSetupGrace();
     }
   } catch {
     // Ignore storage access issues in non-browser contexts
@@ -30,7 +38,7 @@ export function isCallActive(): boolean {
   try {
     const expiresAt = Number(sessionStorage.getItem(CALL_SETUP_GRACE_KEY) || "0");
     if (expiresAt > Date.now()) return true;
-    if (expiresAt) sessionStorage.removeItem(CALL_SETUP_GRACE_KEY);
+    if (expiresAt) clearCallSetupGrace();
   } catch {
     // Ignore storage access issues in non-browser contexts
   }

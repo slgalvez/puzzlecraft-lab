@@ -13,10 +13,7 @@ import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { isNativeApp } from "@/lib/appMode";
 import IOSPlayTab from "@/components/ios/IOSPlayTab";
-
-
-
-const ACCESS_GRANT_KEY = "private_access_grant";
+import { setPrivateAccessGrant } from "@/lib/privateAccessGrant";
 
 const Index = () => {
   const [puzzleCode, setPuzzleCode] = useState("");
@@ -102,10 +99,7 @@ const Index = () => {
             break;
           }
           // Set the access grant BEFORE navigating so PrivateRoute/Login see it immediately
-          sessionStorage.setItem(
-            ACCESS_GRANT_KEY,
-            JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 1800 })
-          );
+          setPrivateAccessGrant(Math.floor(Date.now() / 1000) + 1800);
           // Also stamp last active so grace period doesn't immediately expire
           localStorage.setItem("private_last_active", String(Date.now()));
           navigate("/p/login");

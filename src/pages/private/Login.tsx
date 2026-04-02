@@ -3,26 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
-
-
-const ACCESS_GRANT_KEY = "private_access_grant";
-
-function hasValidGrant(): boolean {
-  try {
-    const raw = sessionStorage.getItem(ACCESS_GRANT_KEY);
-    if (!raw) return false;
-    const { exp } = JSON.parse(raw);
-    if (!exp || exp < Math.floor(Date.now() / 1000)) {
-      sessionStorage.removeItem(ACCESS_GRANT_KEY);
-      return false;
-    }
-    return true;
-  } catch {
-    sessionStorage.removeItem(ACCESS_GRANT_KEY);
-    return false;
-  }
-}
+import { hasPrivateAccessGrant } from "@/lib/privateAccessGrant";
 
 export default function LoginPage() {
   const { user, loading, signIn, sessionEnded, clearSessionEnded } = useAuth();
@@ -37,7 +18,7 @@ export default function LoginPage() {
     }
   }, [sessionEnded, clearSessionEnded]);
 
-  if (!hasValidGrant()) {
+  if (!hasPrivateAccessGrant()) {
     return (
       <div className="private-app flex items-center justify-center min-h-screen">
         <p className="text-sm text-muted-foreground">Session unavailable</p>

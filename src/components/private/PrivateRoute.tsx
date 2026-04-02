@@ -1,26 +1,10 @@
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { hasPrivateAccessGrant } from "@/lib/privateAccessGrant";
 
-const ACCESS_GRANT_KEY = "private_access_grant";
 const LAST_ACTIVE_KEY = "private_last_active";
 const GRACE_PERIOD_MS = 5 * 60 * 1000;
-
-function hasAccessGrant(): boolean {
-  try {
-    const raw = sessionStorage.getItem(ACCESS_GRANT_KEY);
-    if (!raw) return false;
-    const { exp } = JSON.parse(raw);
-    if (!exp || exp < Math.floor(Date.now() / 1000)) {
-      sessionStorage.removeItem(ACCESS_GRANT_KEY);
-      return false;
-    }
-    return true;
-  } catch {
-    sessionStorage.removeItem(ACCESS_GRANT_KEY);
-    return false;
-  }
-}
 
 /** Check if user has been away longer than the grace period */
 function isGracePeriodExpired(): boolean {
@@ -69,7 +53,7 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
     return <>{children}</>;
   }
 
-  if (!hasAccessGrant()) {
+  if (!hasPrivateAccessGrant()) {
     return <Navigate to="/" replace />;
   }
 
