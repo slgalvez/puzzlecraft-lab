@@ -19,16 +19,20 @@ const RC_ENTITLEMENT_ID = "puzzlecraft_plus";
 
 const SUBSCRIBE_WEB_URL = "https://puzzlecraft-lab.lovable.app/account?upgrade=1";
 
+// ── Hidden dynamic import helper ──────────────────────────────────────────
+// Uses a variable to prevent Vite/Rollup from statically analysing the specifier.
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function nativeImport(specifier: string): Promise<any> {
+  return new Function("s", "return import(s)")(specifier);
+}
+
 // ── Platform detection ────────────────────────────────────────────────────
 
 type SubscriptionPlatform = "stripe" | "apple" | "web_redirect";
 
 function getActivePlatform(): SubscriptionPlatform {
   if (!isNativeApp()) return "stripe";
-
-  // On native, we always use web_redirect (Path C) since RevenueCat
-  // is only available at runtime inside the native shell.
-  // The purchaseWithRevenueCat function handles the dynamic import.
   return "web_redirect";
 }
 
@@ -59,12 +63,10 @@ async function openStripeCheckout(annual: boolean, userId: string): Promise<void
 }
 
 // ── Apple IAP purchase (RevenueCat) ───────────────────────────────────────
-// Note: @revenuecat/purchases-capacitor is dynamically imported at runtime.
-// It's only available when the iOS app is built with RevenueCat installed.
 
 async function purchaseWithRevenueCat(annual: boolean): Promise<boolean> {
   try {
-    const RC = await import("@revenuecat/purchases-capacitor" as string);
+    const RC = await nativeImport("@revenuecat/purchases-capacitor");
     const Purchases = RC.Purchases;
     const APPLE_ANNUAL_PRODUCT_ID  = "com.puzzlecraft.plus.annual";
     const APPLE_MONTHLY_PRODUCT_ID = "com.puzzlecraft.plus.monthly";
@@ -91,7 +93,7 @@ async function purchaseWithRevenueCat(annual: boolean): Promise<boolean> {
 
 async function openSubscribeOnWebsite(): Promise<void> {
   try {
-    const mod = await import("@capacitor/browser" as string);
+    const mod = await nativeImport("@capacitor/browser");
     await mod.Browser.open({ url: SUBSCRIBE_WEB_URL });
   } catch {
     window.open(SUBSCRIBE_WEB_URL, "_blank");
@@ -110,7 +112,7 @@ export async function initRevenueCat(userId?: string): Promise<void> {
   }
 
   try {
-    const RC = await import("@revenuecat/purchases-capacitor" as string);
+    const RC = await nativeImport("@revenuecat/purchases-capacitor");
     const Purchases = RC.Purchases;
     await Purchases.configure({ apiKey: RC_API_KEY });
     if (userId) {
@@ -126,7 +128,7 @@ export async function initRevenueCat(userId?: string): Promise<void> {
 async function openManageSubscription(platform: SubscriptionPlatform): Promise<void> {
   if (platform === "apple") {
     try {
-      const mod = await import("@capacitor/browser" as string);
+      const mod = await nativeImport("@capacitor/browser");
       await mod.Browser.open({ url: "https://apps.apple.com/account/subscriptions" });
     } catch {
       window.open("https://apps.apple.com/account/subscriptions", "_blank");
@@ -141,7 +143,7 @@ async function openManageSubscription(platform: SubscriptionPlatform): Promise<v
 
 async function restorePurchases(): Promise<boolean> {
   try {
-    const RC = await import("@revenuecat/purchases-capacitor" as string);
+    const RC = await nativeImport("@revenuecat/purchases-capacitor");
     const Purchases = RC.Purchases;
     const { customerInfo } = await Purchases.restorePurchases();
     return !!customerInfo.entitlements.active[RC_ENTITLEMENT_ID];
