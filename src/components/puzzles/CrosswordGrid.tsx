@@ -37,6 +37,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const timerKey = `crossword-${puzzle.id}`;
+  const session = usePuzzleSession({ puzzleType: "crossword", difficulty: puzzle.difficulty as any, progressUnit: "words" });
 
   const saved = useMemo(() => loadProgress<CrosswordState>(timerKey), [timerKey]);
 
