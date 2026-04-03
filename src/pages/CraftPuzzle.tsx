@@ -483,6 +483,19 @@ const CraftPuzzle = () => {
     setEnteredFromDraft(true);
   }, []);
 
+  const handleWordSuggestions = (words: string) => {
+    if (!words.includes("\n")) {
+      setWordInput((prev) => {
+        const existing = prev.trim();
+        if (!existing) return words;
+        if (existing.includes(words)) return prev;
+        return existing + "\n" + words;
+      });
+    } else {
+      setWordInput(words);
+    }
+  };
+
   return (
     <Layout>
       <div className="container py-6 md:py-10 max-w-2xl mx-auto">
