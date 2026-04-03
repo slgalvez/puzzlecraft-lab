@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { CATEGORY_INFO, type Difficulty } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import {
   getTodaysChallenge,
@@ -11,9 +11,10 @@ import {
   getDailyStreak,
   type DailyChallenge,
 } from "@/lib/dailyChallenge";
-import { Calendar, CheckCircle2, Clock, Flame, Trophy, ArrowRight, ArrowLeft } from "lucide-react";
+import { Calendar, CheckCircle2, Clock, Flame, Trophy, ArrowRight, ArrowLeft, Share } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
+import { useToast } from "@/hooks/use-toast";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
@@ -31,6 +32,7 @@ import type { CrosswordPuzzle, FillInPuzzle } from "@/data/puzzles";
 
 const DailyPuzzle = () => {
   console.log("[DailyPuzzle] mount");
+  const { toast } = useToast();
   const challenge = useMemo(() => {
     const c = getTodaysChallenge();
     console.log("[DailyPuzzle] challenge:", c.category, c.difficulty, c.dateStr, "seed:", c.seed);
@@ -195,14 +197,30 @@ const DailyPuzzle = () => {
               </div>
             </div>
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  const diffLabel = DIFFICULTY_LABELS[challenge.difficulty];
+                  const timeStr = formatTime(completion.time);
+                  const shareUrl = `${window.location.origin}/play?code=daily-${challenge.dateStr}`;
+                  const text = `Just solved today's Puzzlecraft challenge 🧠\n\n${info.name} • ${diffLabel} • ${timeStr}${streak.current > 1 ? `\n🔥 ${streak.current}-day streak` : ""}\n\nCan you beat this time?\n\nPlay: ${shareUrl}`;
+                  if (navigator.share) {
+                    try {
+                      await navigator.share({ text });
+                    } catch { /* user cancelled */ }
+                  } else {
+                    await navigator.clipboard.writeText(text);
+                    toast({ title: "Results copied to clipboard!" });
+                  }
+                }}
+              >
+                <Share size={14} className="mr-1.5" />
+                Share
+              </Button>
               <Button asChild variant="outline" size="sm">
                 <Link to={`/generate/${challenge.category}`}>
                   Play More {info.name} <ArrowRight size={14} />
-                </Link>
-              </Button>
-              <Button asChild size="sm">
-                <Link to="/quick-play/sudoku?mode=endless">
-                  Endless Mode <ArrowRight size={14} />
                 </Link>
               </Button>
             </div>
