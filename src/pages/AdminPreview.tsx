@@ -472,6 +472,9 @@ export default function AdminPreview() {
         {/* ── Share Message Previews ── */}
         <ShareMessagePreviews />
 
+        {/* ── Craft Leaderboard Preview ── */}
+        <LeaderboardPreview />
+
         {/* ── Nonogram Pattern Preview ── */}
         <NonogramPreview />
 
