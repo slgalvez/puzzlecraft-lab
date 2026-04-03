@@ -8,7 +8,7 @@ import type { MilestoneIcon } from "@/lib/milestones";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle } from "lucide-react";
+import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Clock, Users } from "lucide-react";
 import { generateNonogram } from "@/lib/generators/nonogram";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
