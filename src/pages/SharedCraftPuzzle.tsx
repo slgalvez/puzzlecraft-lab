@@ -593,7 +593,54 @@ const SharedCraftPuzzle = () => {
                   </button>
                 </div>
 
-              </div>
+                {/* Name prompt for leaderboard */}
+                {nameInputVisible && !nameConfirmed && (
+                  <div className="rounded-2xl border bg-card p-4 space-y-3 animate-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex items-center gap-2">
+                      <Trophy size={15} className="text-primary" />
+                      <p className="text-sm font-semibold text-foreground">Join the leaderboard</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Enter your name so others can see your time. You can stay anonymous.
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={leaderboardName}
+                        onChange={(e) => setLeaderboardName(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleConfirmName()}
+                        placeholder="Your name"
+                        maxLength={30}
+                        autoFocus
+                        className="flex-1 h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={handleConfirmName}
+                        className="shrink-0 h-9 px-4"
+                      >
+                        Add me
+                      </Button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setNameConfirmed(true); setNameInputVisible(false); }}
+                      className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Skip — stay anonymous
+                    </button>
+                  </div>
+                )}
+
+                {/* Mini-leaderboard */}
+                {nameConfirmed && id && (
+                  <CraftLeaderboard
+                    puzzleId={id}
+                    currentEntryId={entryId}
+                    visible={true}
+                  />
+                )}
+
             )}
 
           </div>
