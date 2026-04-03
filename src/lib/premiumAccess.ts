@@ -11,7 +11,7 @@
 import { useUserAccount } from "@/contexts/UserAccountContext";
 
 // ─── Launch flag ──────────────────────────────────────────────────────────────
-export const PUZZLECRAFT_PLUS_LAUNCHED = false;
+export const PUZZLECRAFT_PLUS_LAUNCHED = true;
 
 // ─── Free tier limits ────────────────────────────────────────────────────────
 export const FREE_CRAFT_LIMIT_PER_MONTH = 3;
