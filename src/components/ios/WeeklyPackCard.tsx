@@ -9,10 +9,10 @@ import UpgradeModal from "@/components/account/UpgradeModal";
 
 export function WeeklyPackCard() {
   const navigate = useNavigate();
-  const { isPremium, account } = usePremiumAccess();
+  const { isPremium } = usePremiumAccess();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
-  const pack = useMemo(() => getCurrentWeeklyPack(account), [account]);
+  const pack = useMemo(() => getCurrentWeeklyPack(null), []);
   const completed = getPackCompletionCount(pack.id, pack.puzzles.length);
   const progressPct = (completed / pack.puzzles.length) * 100;
 
