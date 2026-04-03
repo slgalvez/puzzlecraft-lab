@@ -427,7 +427,16 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
       <div className="flex-shrink-0">
-        <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} remaining={timer.remaining} timeLimit={timer.timeLimit} expired={timer.expired} onPause={timer.pause} onResume={timer.resume} />
+        <PuzzleHeader
+          puzzleType={puzzle.type as any}
+          difficulty={puzzle.difficulty as any}
+          elapsed={timer.elapsed}
+          mistakes={session.mistakes}
+          personalBest={session.personalBest}
+          progressCurrent={session.progressCurrent}
+          progressTotal={session.progressTotal}
+          progressUnit={session.progressUnit}
+        />
         {!isMobile && (
           <p className="mb-2 text-xs text-muted-foreground">
             Arrow keys to move • Type to fill • Delete to clear • Tap same cell to toggle direction

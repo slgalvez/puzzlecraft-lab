@@ -211,7 +211,16 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
 
   return (
     <div ref={containerRef}>
-      <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} remaining={timer.remaining} timeLimit={timer.timeLimit} expired={timer.expired} onPause={timer.pause} onResume={timer.resume} />
+      <PuzzleHeader
+        puzzleType="cryptogram"
+        difficulty={difficulty}
+        elapsed={timer.elapsed}
+        mistakes={session.mistakes}
+        personalBest={session.personalBest}
+        progressCurrent={session.progressCurrent}
+        progressTotal={session.progressTotal}
+        progressUnit={session.progressUnit}
+      />
       {!isMobile && (
         <p className="mb-3 text-xs text-muted-foreground">
           Type letters to guess • Arrow keys to move • All matching letters update together
