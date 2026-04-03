@@ -266,7 +266,7 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
           )}
         </div>
       )}
-
+      )
       <AlertDialog open={showRevealConfirm} onOpenChange={setShowRevealConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
