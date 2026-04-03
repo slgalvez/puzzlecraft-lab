@@ -13,7 +13,7 @@ export function WeeklyPackCard() {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const pack = useMemo(() => getCurrentWeeklyPack(null), []);
-  const completed = getPackCompletionCount(pack.id, pack.puzzles.length);
+  const completed = getPackCompletionCount(pack.id);
   const progressPct = (completed / pack.puzzles.length) * 100;
 
   const handlePlay = () => {
