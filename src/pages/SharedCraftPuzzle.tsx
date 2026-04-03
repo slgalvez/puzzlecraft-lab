@@ -10,6 +10,7 @@ import {
   WordSearchSolver,
 } from "@/components/private/PrivatePuzzleSolvers";
 import { buildSolveResultShareText } from "@/lib/craftShare";
+import { getTheme } from "@/lib/craftThemes";
 import { hapticSuccess, hapticTap } from "@/lib/haptic";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +33,7 @@ interface CraftPayload {
   title?: string;
   from?: string;
   settings?: CraftPuzzleSettings;
+  theme?: string;
 }
 
 interface PuzzleRow {
@@ -264,6 +266,7 @@ const SharedCraftPuzzle = () => {
   }
 
   const { type, puzzleData, revealMessage, title, from, settings } = payload;
+  const theme = getTheme(payload.theme);
 
   return (
     <>
@@ -319,7 +322,23 @@ const SharedCraftPuzzle = () => {
 
             {/* Header */}
             <div className="text-center">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1.5">
+              {/* Theme emoji badge */}
+              {theme.id !== "none" && (
+                <div
+                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 mb-3 text-xs font-medium"
+                  style={{
+                    background: `hsl(${theme.accentHsl} / 0.12)`,
+                    color: `hsl(${theme.accentHsl})`,
+                  }}
+                >
+                  <span>{theme.emoji}</span>
+                  <span>{theme.label.split(" ")[0]}</span>
+                </div>
+              )}
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
+                style={{ color: theme.id !== "none" ? `hsl(${theme.accentHsl})` : undefined }}
+              >
                 {PUZZLE_LABELS[type]}
               </p>
               {title && (

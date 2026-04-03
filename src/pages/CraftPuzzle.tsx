@@ -13,6 +13,8 @@ import CraftNav, { type CraftView } from "@/components/craft/CraftNav";
 import CraftInbox from "@/components/craft/CraftInbox";
 import CraftSettingsPanel, { type CraftSettings, DEFAULT_CRAFT_SETTINGS } from "@/components/craft/CraftSettingsPanel";
 import CraftLivePreview from "@/components/craft/CraftLivePreview";
+import CraftThemePicker from "@/components/craft/CraftThemePicker";
+import { getTheme } from "@/lib/craftThemes";
 import { supabase } from "@/integrations/supabase/client";
 import {
   generateCustomFillIn,
@@ -74,6 +76,7 @@ const CraftPuzzle = () => {
   const [draftSaved, setDraftSaved] = useState(false);
   const [draftDirty, setDraftDirty] = useState(true);
   const [enteredFromDraft, setEnteredFromDraft] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState<string>("none");
   
   const sentRecorded = useRef(false);
 
@@ -231,6 +234,7 @@ const CraftPuzzle = () => {
       };
       if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
       if (puzzleFrom.trim()) payload.from = puzzleFrom.trim();
+      if (selectedTheme && selectedTheme !== "none") payload.theme = selectedTheme;
 
       setSaving(true);
       const shortId = generateShortId();
@@ -282,6 +286,7 @@ const CraftPuzzle = () => {
         };
         if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
         if (puzzleFrom.trim()) payload.from = puzzleFrom.trim();
+        if (selectedTheme && selectedTheme !== "none") payload.theme = selectedTheme;
 
         await supabase
           .from("shared_puzzles" as any)
@@ -445,6 +450,7 @@ const CraftPuzzle = () => {
     setShareUrl(null);
     setCopied(false);
     setShareSuccess(false);
+    setSelectedTheme("none");
   };
 
   const handleResumeDraft = useCallback((draft: CraftDraft) => {
@@ -477,6 +483,19 @@ const CraftPuzzle = () => {
     setEnteredFromDraft(true);
   }, []);
 
+  const handleWordSuggestions = (words: string) => {
+    if (!words.includes("\n")) {
+      setWordInput((prev) => {
+        const existing = prev.trim();
+        if (!existing) return words;
+        if (existing.includes(words)) return prev;
+        return existing + "\n" + words;
+      });
+    } else {
+      setWordInput(words);
+    }
+  };
+
   return (
     <Layout>
       <div className="container py-6 md:py-10 max-w-2xl mx-auto">
@@ -506,6 +525,7 @@ const CraftPuzzle = () => {
             setCopied(false);
             setShareSuccess(false);
             setEnteredFromDraft(false);
+            setSelectedTheme("none");
             sentRecorded.current = false;
           }
           setView(v);
@@ -561,6 +581,21 @@ const CraftPuzzle = () => {
                     />
                   </div>
                 </div>
+
+                <CraftThemePicker
+                  selected={selectedTheme}
+                  onSelect={(id) => {
+                    setSelectedTheme(id);
+                    const theme = getTheme(id);
+                    if (!revealMessage.trim() && theme.revealTemplates.length > 0) {
+                      setRevealMessage(theme.revealTemplates[0]);
+                    }
+                  }}
+                  onRevealTemplate={(tmpl) => setRevealMessage(tmpl)}
+                  onWordSuggestions={handleWordSuggestions}
+                  currentRevealMessage={revealMessage}
+                  showWordSuggestions={selectedType === "word-fill" || selectedType === "word-search"}
+                />
 
 {(selectedType === "word-fill" || selectedType === "word-search") && (
                   <div className="space-y-3">
