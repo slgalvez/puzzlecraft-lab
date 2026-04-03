@@ -716,6 +716,9 @@ export type Database = {
           id: string
           is_admin: boolean
           is_premium: boolean
+          rating: number | null
+          rating_tier: string | null
+          solves_count: number | null
           updated_at: string
         }
         Insert: {
@@ -724,6 +727,9 @@ export type Database = {
           id: string
           is_admin?: boolean
           is_premium?: boolean
+          rating?: number | null
+          rating_tier?: string | null
+          solves_count?: number | null
           updated_at?: string
         }
         Update: {
@@ -732,6 +738,9 @@ export type Database = {
           id?: string
           is_admin?: boolean
           is_premium?: boolean
+          rating?: number | null
+          rating_tier?: string | null
+          solves_count?: number | null
           updated_at?: string
         }
         Relationships: []
