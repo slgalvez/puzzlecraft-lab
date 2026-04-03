@@ -584,15 +584,24 @@ const CraftPuzzle = () => {
                   </div>
                 )}
 
-                {selectedType === "cryptogram" && (
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground">Enter a phrase or message to encode</label>
-                    <Textarea
-                      value={phraseInput}
-                      onChange={e => setPhraseInput(e.target.value)}
-                      placeholder="MEET ME AT MIDNIGHT"
-                      rows={4}
-                      className="resize-none"
+{selectedType === "cryptogram" && (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground">Enter a phrase or message to encode</label>
+                      <Textarea
+                        value={phraseInput}
+                        onChange={e => setPhraseInput(e.target.value)}
+                        placeholder="MEET ME AT MIDNIGHT"
+                        rows={4}
+                        className="resize-none"
+                      />
+                    </div>
+                    <CraftLivePreview
+                      type="cryptogram"
+                      wordInput=""
+                      phraseInput={phraseInput}
+                      clueEntries={[]}
+                      difficulty={craftSettings.difficulty}
                     />
                   </div>
                 )}
