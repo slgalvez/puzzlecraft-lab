@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share, Copy, Check, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share, Copy, Check, Loader2, Save, Trophy } from "lucide-react";
 import CraftStepper from "@/components/craft/CraftStepper";
 import CraftTypeCards, { TYPE_OPTIONS } from "@/components/craft/CraftTypeCards";
 import CraftPreviewGrid from "@/components/craft/CraftPreviewGrid";
