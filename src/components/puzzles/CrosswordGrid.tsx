@@ -116,6 +116,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
     session.setProgress(completedWords, totalWords);
   }, [grid, clues, session]);
 
+  useEffect(() => {
     for (let r = 0; r < gridSize; r++)
       for (let c = 0; c < gridSize; c++)
         if (!isBlack(r, c)) {
