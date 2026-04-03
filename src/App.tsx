@@ -78,6 +78,12 @@ function NavigationTracker() {
 
 /** Wraps public routes with the main account system */
 function PublicRoutes() {
+  const { onboardingComplete, completeOnboarding } = useOnboarding();
+
+  if (!onboardingComplete) {
+    return <OnboardingFlow onComplete={completeOnboarding} />;
+  }
+
   return (
     <UserAccountProvider>
       <DataMergeModal />
