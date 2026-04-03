@@ -20,7 +20,7 @@ import {
 
 interface Props {
   onReset: () => void;
-  onCheck: () => void;
+  onCheck?: () => void;
   onNewPuzzle: () => void;
   onReveal?: () => void;
   onHint?: () => void;
