@@ -131,6 +131,15 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
     return slots;
   }, [gridSize, blacks]);
 
+  // Track progress: filled entry slots
+  useEffect(() => {
+    let filledSlots = 0;
+    for (const slot of entrySlots) {
+      if (slot.cells.every(([r, c]) => grid[r]?.[c])) filledSlots++;
+    }
+    session.setProgress(filledSlots, entrySlots.length);
+  }, [grid, entrySlots, session]);
+
   const cellToSlots = useMemo(() => {
     const map = new Map<string, EntrySlot[]>();
     for (const slot of entrySlots) {
