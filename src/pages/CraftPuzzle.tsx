@@ -234,6 +234,7 @@ const CraftPuzzle = () => {
       };
       if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
       if (puzzleFrom.trim()) payload.from = puzzleFrom.trim();
+      if (selectedTheme && selectedTheme !== "none") payload.theme = selectedTheme;
 
       setSaving(true);
       const shortId = generateShortId();
