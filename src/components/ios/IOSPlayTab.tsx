@@ -189,6 +189,7 @@ const IOSPlayTab = () => {
   };
 
   const streakAtRisk = streak.current > 0 && !dailyCompletion;
+  const hasPlayedToday = !!dailyCompletion;
 
   return (
     <div className="space-y-4 px-5 pt-4">
