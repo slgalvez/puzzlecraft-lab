@@ -120,6 +120,7 @@ export default {
         "cell-pop": "cell-pop 0.15s ease-out",
         "milestone-glow": "milestone-glow 1.2s ease-out forwards",
         "milestone-sparkle": "milestone-sparkle 0.8s ease-out forwards",
+        shake: "shake 0.2s ease-in-out",
       },
     },
   },
