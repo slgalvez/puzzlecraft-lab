@@ -464,6 +464,7 @@ const IOSPlayTab = () => {
       </button>
 
       <IOSCustomizeSheet open={customizeOpen} onClose={() => setCustomizeOpen(false)} />
+      <PuzzleTypePicker type={pickerType} onClose={() => setPickerType(null)} />
     </div>
   );
 };
