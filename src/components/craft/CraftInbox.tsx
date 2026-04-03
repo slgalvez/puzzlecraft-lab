@@ -226,7 +226,7 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
         {/* ── Drafts ── */}
         <TabsContent value="drafts" className="mt-0">
           {drafts.length === 0 ? (
-            <EmptyState icon={<FileText className="h-5 w-5" />} text="No drafts yet" sub="Start creating a puzzle — it'll auto-save here" />
+            <EmptyCraftDrafts onNavigate={() => onResumeDraft({} as CraftDraft)} />
           ) : (
             <div className="space-y-2.5">
               {drafts.map((d) => (
