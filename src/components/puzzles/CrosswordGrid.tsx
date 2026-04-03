@@ -2,10 +2,12 @@ import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import type { CrosswordPuzzle, CrosswordClue } from "@/data/puzzles";
 import { cn } from "@/lib/utils";
 import PuzzleControls from "./PuzzleControls";
-import PuzzleTimer from "./PuzzleTimer";
+import { PuzzleHeader } from "./PuzzleHeader";
+import { PuzzleToolbar } from "./PuzzleToolbar";
 import MobileLetterInput from "./MobileLetterInput";
 import type { MobileLetterInputHandle } from "./MobileLetterInput";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
+import { usePuzzleSession } from "@/hooks/usePuzzleSession";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
@@ -35,6 +37,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const timerKey = `crossword-${puzzle.id}`;
+  const session = usePuzzleSession({ puzzleType: "crossword", difficulty: puzzle.difficulty as any, progressUnit: "words" });
 
   const saved = useMemo(() => loadProgress<CrosswordState>(timerKey), [timerKey]);
 
@@ -96,6 +99,22 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   });
 
   useEffect(() => { debouncedSave(); }, [grid, debouncedSave]);
+
+  // Track progress: count completed words (all cells in a clue filled correctly)
+  useEffect(() => {
+    const totalWords = clues.length;
+    let completedWords = 0;
+    for (const clue of clues) {
+      const dr = clue.direction === "down" ? 1 : 0;
+      const dc = clue.direction === "across" ? 1 : 0;
+      let allCorrect = true;
+      for (let i = 0; i < clue.answer.length; i++) {
+        if (grid[clue.row + dr * i]?.[clue.col + dc * i] !== clue.answer[i]) { allCorrect = false; break; }
+      }
+      if (allCorrect) completedWords++;
+    }
+    session.setProgress(completedWords, totalWords);
+  }, [grid, clues, session]);
 
   useEffect(() => {
     for (let r = 0; r < gridSize; r++)
@@ -289,7 +308,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
       }
     }
     setErrors(errs);
-    if (errs.size > 0) errorCheckCount.current++;
+    if (errs.size > 0) { errorCheckCount.current++; session.recordMistake(); }
     if (errs.size === 0 && filled) {
       const { isNewBest } = timer.solve({ assisted: hintCount.current > 0, hintsUsed: hintCount.current, mistakesCount: errorCheckCount.current });
       clearProgress(timerKey);
@@ -357,7 +376,16 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
       <div className="flex-shrink-0">
-        <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} remaining={timer.remaining} timeLimit={timer.timeLimit} expired={timer.expired} onPause={timer.pause} onResume={timer.resume} />
+        <PuzzleHeader
+          puzzleType="crossword"
+          difficulty={puzzle.difficulty as any}
+          elapsed={timer.elapsed}
+          mistakes={session.mistakes}
+          personalBest={session.personalBest}
+          progressCurrent={session.progressCurrent}
+          progressTotal={session.progressTotal}
+          progressUnit={session.progressUnit}
+        />
 
         {isMobile && activeCell && !timer.isSolved && !isRevealed && (
           <div className="flex items-center gap-2 mb-2">

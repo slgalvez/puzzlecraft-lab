@@ -3,8 +3,10 @@ import { cn } from "@/lib/utils";
 import { generateWordSearch } from "@/lib/generators/wordSearch";
 import { WORDS } from "@/lib/wordList";
 import PuzzleControls from "./PuzzleControls";
-import PuzzleTimer from "./PuzzleTimer";
+import { PuzzleHeader } from "./PuzzleHeader";
+import { PuzzleToolbar } from "./PuzzleToolbar";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
+import { usePuzzleSession } from "@/hooks/usePuzzleSession";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
@@ -36,6 +38,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateWordSearch(seed, difficulty, WORDS), [seed, difficulty]);
   const timerKey = `word-search-${seed}-${difficulty}`;
+  const session = usePuzzleSession({ puzzleType: "word-search", difficulty, progressUnit: "words" });
 
   const saved = useMemo(() => loadProgress<WordSearchState>(timerKey), [timerKey]);
 
@@ -77,6 +80,11 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
   });
 
   useEffect(() => { debouncedSave(); }, [foundWords, foundCells, debouncedSave]);
+
+  // Track progress: found words vs total
+  useEffect(() => {
+    session.setProgress(foundWords.size, puzzle.words.length);
+  }, [foundWords, puzzle.words.length, session]);
 
   useEffect(() => {
     setCursor([0, 0]);
@@ -322,7 +330,16 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
       <div className="flex-shrink-0 outline-none min-w-0" ref={containerRef} tabIndex={0} onKeyDown={handleKeyDown}>
-        <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} remaining={timer.remaining} timeLimit={timer.timeLimit} expired={timer.expired} onPause={timer.pause} onResume={timer.resume} />
+        <PuzzleHeader
+          puzzleType="word-search"
+          difficulty={difficulty}
+          elapsed={timer.elapsed}
+          mistakes={session.mistakes}
+          personalBest={session.personalBest}
+          progressCurrent={session.progressCurrent}
+          progressTotal={session.progressTotal}
+          progressUnit={session.progressUnit}
+        />
 
         {isMobile ? (
           <p className="mb-2 text-xs text-muted-foreground">

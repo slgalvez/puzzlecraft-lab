@@ -2,8 +2,10 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { generateCryptogram } from "@/lib/generators/cryptogram";
 import PuzzleControls from "./PuzzleControls";
-import PuzzleTimer from "./PuzzleTimer";
+import { PuzzleHeader } from "./PuzzleHeader";
+import { PuzzleToolbar } from "./PuzzleToolbar";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
+import { usePuzzleSession } from "@/hooks/usePuzzleSession";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { loadProgress, clearProgress } from "@/lib/puzzleProgress";
@@ -34,6 +36,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
   const puzzle = useMemo(() => generateCryptogram(seed, difficulty), [seed, difficulty]);
   const { encoded, decoded, reverseCipher, hints } = puzzle;
   const timerKey = `cryptogram-${seed}-${difficulty}`;
+  const session = usePuzzleSession({ puzzleType: "cryptogram", difficulty, progressUnit: "letters" });
 
   const saved = useMemo(() => loadProgress<CryptogramState>(timerKey), [timerKey]);
 
@@ -88,6 +91,16 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
     getElapsed: () => timer.elapsed,
     disabled: timer.isSolved || isRevealed,
   });
+
+  // Track progress: correctly decoded unique letters
+  useEffect(() => {
+    const totalUnique = encodedLetters.length;
+    let correctMappings = 0;
+    for (const el of encodedLetters) {
+      if (guesses[el] && guesses[el] === reverseCipher[el]) correctMappings++;
+    }
+    session.setProgress(correctMappings, totalUnique);
+  }, [guesses, encodedLetters, reverseCipher, session]);
 
   useEffect(() => { debouncedSave(); }, [guesses, debouncedSave]);
 
@@ -164,7 +177,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
       if (guess !== reverseCipher[el]) errs.add(el);
     }
     setErrors(errs);
-    if (errs.size > 0) errorCheckCount.current++;
+    if (errs.size > 0) { errorCheckCount.current++; session.recordMistake(); }
     if (errs.size === 0 && allFilled) {
       const { isNewBest } = timer.solve({ assisted: hintCount.current > 0, hintsUsed: hintCount.current, mistakesCount: errorCheckCount.current });
       clearProgress(timerKey);
@@ -208,7 +221,16 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
 
   return (
     <div ref={containerRef}>
-      <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} remaining={timer.remaining} timeLimit={timer.timeLimit} expired={timer.expired} onPause={timer.pause} onResume={timer.resume} />
+      <PuzzleHeader
+        puzzleType="cryptogram"
+        difficulty={difficulty}
+        elapsed={timer.elapsed}
+        mistakes={session.mistakes}
+        personalBest={session.personalBest}
+        progressCurrent={session.progressCurrent}
+        progressTotal={session.progressTotal}
+        progressUnit={session.progressUnit}
+      />
       {!isMobile && (
         <p className="mb-3 text-xs text-muted-foreground">
           Type letters to guess • Arrow keys to move • All matching letters update together

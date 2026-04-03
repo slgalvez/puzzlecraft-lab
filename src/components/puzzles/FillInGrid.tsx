@@ -3,11 +3,13 @@ import GroupedEntryList from "./GroupedEntryList";
 import type { FillInPuzzle } from "@/data/puzzles";
 import { cn } from "@/lib/utils";
 import PuzzleControls from "./PuzzleControls";
-import PuzzleTimer from "./PuzzleTimer";
+import { PuzzleHeader } from "./PuzzleHeader";
+import { PuzzleToolbar } from "./PuzzleToolbar";
 import MobileNumberPad from "./MobileNumberPad";
 import MobileLetterInput from "./MobileLetterInput";
 import type { MobileLetterInputHandle } from "./MobileLetterInput";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
+import { usePuzzleSession } from "@/hooks/usePuzzleSession";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
@@ -46,6 +48,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const timerKey = `fillin-${puzzle.id}`;
+  const session = usePuzzleSession({ puzzleType: puzzle.type as any, difficulty: puzzle.difficulty as any, progressUnit: isNumbers ? "entries" : "words" });
 
   const saved = useMemo(() => loadProgress<FillInState>(timerKey), [timerKey]);
 
@@ -81,6 +84,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
     getElapsed: () => timer.elapsed,
     disabled: timer.isSolved || isRevealed,
   });
+
 
   useEffect(() => { debouncedSave(); }, [grid, usedEntries, debouncedSave]);
 
@@ -126,6 +130,15 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
     }
     return slots;
   }, [gridSize, blacks]);
+
+  // Track progress: filled entry slots
+  useEffect(() => {
+    let filledSlots = 0;
+    for (const slot of entrySlots) {
+      if (slot.cells.every(([r, c]) => grid[r]?.[c])) filledSlots++;
+    }
+    session.setProgress(filledSlots, entrySlots.length);
+  }, [grid, entrySlots, session]);
 
   const cellToSlots = useMemo(() => {
     const map = new Map<string, EntrySlot[]>();
@@ -365,6 +378,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
       setErrors(errs);
       if (errs.size > 0) {
         errorCheckCount.current++;
+        session.recordMistake();
         toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
       } else {
         toast({ title: "Keep going!", description: "No errors so far." });
@@ -424,7 +438,16 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
       <div className="flex-shrink-0">
-        <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} remaining={timer.remaining} timeLimit={timer.timeLimit} expired={timer.expired} onPause={timer.pause} onResume={timer.resume} />
+        <PuzzleHeader
+          puzzleType={puzzle.type as any}
+          difficulty={puzzle.difficulty as any}
+          elapsed={timer.elapsed}
+          mistakes={session.mistakes}
+          personalBest={session.personalBest}
+          progressCurrent={session.progressCurrent}
+          progressTotal={session.progressTotal}
+          progressUnit={session.progressUnit}
+        />
         {!isMobile && (
           <p className="mb-2 text-xs text-muted-foreground">
             Arrow keys to move • Type to fill • Delete to clear • Tap same cell to toggle direction

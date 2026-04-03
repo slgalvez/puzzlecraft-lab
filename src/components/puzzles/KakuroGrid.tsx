@@ -2,9 +2,11 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { generateKakuro } from "@/lib/generators/kakuro";
 import PuzzleControls from "./PuzzleControls";
-import PuzzleTimer from "./PuzzleTimer";
+import { PuzzleHeader } from "./PuzzleHeader";
+import { PuzzleToolbar } from "./PuzzleToolbar";
 import MobileNumberPad from "./MobileNumberPad";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
+import { usePuzzleSession } from "@/hooks/usePuzzleSession";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
@@ -45,6 +47,7 @@ const KakuroGrid = ({ seed, difficulty: rawDifficulty, onNewPuzzle, onSolve, tim
   const puzzle = useMemo(() => generateKakuro(seed, difficulty), [seed, difficulty]);
   const { size, isBlack, solution, clues } = puzzle;
   const timerKey = `kakuro-${seed}-${difficulty}`;
+  const session = usePuzzleSession({ puzzleType: "kakuro", difficulty, progressUnit: "cells" });
 
   const saved = useMemo(() => loadProgress<KakuroState>(timerKey), [timerKey]);
 
@@ -73,6 +76,16 @@ const KakuroGrid = ({ seed, difficulty: rawDifficulty, onNewPuzzle, onSolve, tim
   });
 
   useEffect(() => { debouncedSave(); }, [grid, debouncedSave]);
+
+  // Track progress: filled white cells vs total white cells
+  useEffect(() => {
+    let filledCount = 0;
+    let totalWhite = 0;
+    for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) {
+      if (!isBlack[r][c]) { totalWhite++; if (grid[r][c]) filledCount++; }
+    }
+    session.setProgress(filledCount, totalWhite);
+  }, [grid, size, isBlack, session]);
 
   const clueMap = useMemo(() => {
     const map = new Map<string, { across?: number; down?: number }>();
@@ -278,7 +291,7 @@ const KakuroGrid = ({ seed, difficulty: rawDifficulty, onNewPuzzle, onSolve, tim
       }
     }
     setErrors(errs);
-    if (errs.size > 0) errorCheckCount.current++;
+    if (errs.size > 0) { errorCheckCount.current++; session.recordMistake(); }
     if (errs.size === 0 && filled) {
       const { isNewBest } = timer.solve({ assisted: hintCount.current > 0, hintsUsed: hintCount.current, mistakesCount: errorCheckCount.current });
       clearProgress(timerKey);
@@ -327,7 +340,16 @@ const KakuroGrid = ({ seed, difficulty: rawDifficulty, onNewPuzzle, onSolve, tim
 
   return (
     <div>
-      <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} remaining={timer.remaining} timeLimit={timer.timeLimit} expired={timer.expired} onPause={timer.pause} onResume={timer.resume} />
+      <PuzzleHeader
+        puzzleType="kakuro"
+        difficulty={difficulty}
+        elapsed={timer.elapsed}
+        mistakes={session.mistakes}
+        personalBest={session.personalBest}
+        progressCurrent={session.progressCurrent}
+        progressTotal={session.progressTotal}
+        progressUnit={session.progressUnit}
+      />
       {!isMobile && (
         <p className="mb-2 text-xs text-muted-foreground">
           Arrow keys to move • 1–9 to enter • Delete to clear • Tap same cell to toggle direction

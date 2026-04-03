@@ -2,8 +2,10 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { generateNonogram } from "@/lib/generators/nonogram";
 import PuzzleControls from "./PuzzleControls";
-import PuzzleTimer from "./PuzzleTimer";
+import { PuzzleHeader } from "./PuzzleHeader";
+import { PuzzleToolbar } from "./PuzzleToolbar";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
+import { usePuzzleSession } from "@/hooks/usePuzzleSession";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
@@ -52,6 +54,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
   const puzzle = useMemo(() => generateNonogram(seed, difficulty), [seed, difficulty]);
   const { rows, cols, solution, rowClues, colClues } = puzzle;
   const timerKey = `nonogram-${seed}-${difficulty}`;
+  const session = usePuzzleSession({ puzzleType: "nonogram", difficulty, progressUnit: "rows" });
 
   const saved = useMemo(() => loadProgress<NonogramState>(timerKey), [timerKey]);
 
@@ -103,6 +106,11 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
   });
 
   useEffect(() => { debouncedSave(); }, [grid, debouncedSave]);
+
+  // Track progress: completed rows
+  useEffect(() => {
+    session.setProgress(completedRows.size, rows);
+  }, [completedRows, rows, session]);
 
   useEffect(() => {
     setCursor([0, 0]);
@@ -174,7 +182,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
         if (shouldBeFilled !== isFilled) errs.add(`${r}-${c}`);
       }
     setErrors(errs);
-    if (errs.size > 0) errorCheckCount.current++;
+    if (errs.size > 0) { errorCheckCount.current++; session.recordMistake(); }
     if (errs.size === 0) {
       const { isNewBest } = timer.solve({ assisted: hintCount.current > 0, hintsUsed: hintCount.current, mistakesCount: errorCheckCount.current });
       clearProgress(timerKey);
@@ -228,7 +236,16 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
       className="outline-none"
       onKeyDown={handleKeyDown}
     >
-      <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} remaining={timer.remaining} timeLimit={timer.timeLimit} expired={timer.expired} onPause={timer.pause} onResume={timer.resume} />
+      <PuzzleHeader
+        puzzleType="nonogram"
+        difficulty={difficulty}
+        elapsed={timer.elapsed}
+        mistakes={session.mistakes}
+        personalBest={session.personalBest}
+        progressCurrent={session.progressCurrent}
+        progressTotal={session.progressTotal}
+        progressUnit={session.progressUnit}
+      />
 
       {isMobile && !timer.isSolved && !isRevealed && (
         <div className="flex items-center gap-2 mb-3">

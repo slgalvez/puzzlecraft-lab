@@ -2,9 +2,11 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { generateSudoku } from "@/lib/generators/sudoku";
 import PuzzleControls from "./PuzzleControls";
-import PuzzleTimer from "./PuzzleTimer";
+import { PuzzleHeader } from "./PuzzleHeader";
+import { PuzzleToolbar } from "./PuzzleToolbar";
 import MobileNumberPad from "./MobileNumberPad";
 import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
+import { usePuzzleSession } from "@/hooks/usePuzzleSession";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { haptic } from "@/lib/haptic";
@@ -35,6 +37,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateSudoku(seed, difficulty), [seed, difficulty]);
   const timerKey = `sudoku-${seed}-${difficulty}`;
+  const session = usePuzzleSession({ puzzleType: "sudoku", difficulty, progressUnit: "cells" });
 
   const saved = useMemo(() => loadProgress<SudokuState>(timerKey), [timerKey]);
 
@@ -64,6 +67,19 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
   });
 
   useEffect(() => { debouncedSave(); }, [grid, debouncedSave]);
+
+  // Track progress: count filled non-given cells
+  const prefillCount = useMemo(() => {
+    let count = 0;
+    for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (isGiven(r, c)) count++;
+    return count;
+  }, [puzzle.grid]);
+
+  useEffect(() => {
+    let filled = 0;
+    for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (!isGiven(r, c) && grid[r][c] !== null) filled++;
+    session.setProgress(filled, 81 - prefillCount);
+  }, [grid, prefillCount, session]);
 
   useEffect(() => {
     containerRef.current?.focus();
@@ -163,7 +179,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
         else if (grid[r][c] !== puzzle.solution[r][c]) errs.add(`${r}-${c}`);
       }
     setErrors(errs);
-    if (errs.size > 0) errorCheckCount.current++;
+    if (errs.size > 0) { errorCheckCount.current++; session.recordMistake(); }
     if (errs.size === 0 && filled) {
       const { isNewBest } = timer.solve({ assisted: hintCount.current > 0, hintsUsed: hintCount.current, mistakesCount: errorCheckCount.current });
       clearProgress(timerKey);
@@ -219,7 +235,16 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
 
   return (
     <div>
-      <PuzzleTimer elapsed={timer.elapsed} isRunning={timer.isRunning} isSolved={timer.isSolved} bestTime={timer.bestTime} countdown={timer.countdown} remaining={timer.remaining} timeLimit={timer.timeLimit} expired={timer.expired} onPause={timer.pause} onResume={timer.resume} />
+      <PuzzleHeader
+        puzzleType="sudoku"
+        difficulty={difficulty}
+        elapsed={timer.elapsed}
+        mistakes={session.mistakes}
+        personalBest={session.personalBest}
+        progressCurrent={session.progressCurrent}
+        progressTotal={session.progressTotal}
+        progressUnit={session.progressUnit}
+      />
       {!isMobile && (
         <p className="mb-2 text-xs text-muted-foreground">
           Arrow keys to move • 1–9 to enter • Delete to clear
