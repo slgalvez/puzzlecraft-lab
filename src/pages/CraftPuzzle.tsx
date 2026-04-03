@@ -12,6 +12,7 @@ import CraftPreviewGrid from "@/components/craft/CraftPreviewGrid";
 import CraftNav, { type CraftView } from "@/components/craft/CraftNav";
 import CraftInbox from "@/components/craft/CraftInbox";
 import CraftSettingsPanel, { type CraftSettings, DEFAULT_CRAFT_SETTINGS } from "@/components/craft/CraftSettingsPanel";
+import CraftLivePreview from "@/components/craft/CraftLivePreview";
 import { supabase } from "@/integrations/supabase/client";
 import {
   generateCustomFillIn,
@@ -561,31 +562,46 @@ const CraftPuzzle = () => {
                   </div>
                 </div>
 
-                {(selectedType === "word-fill" || selectedType === "word-search") && (
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground">Enter words (one per line or comma-separated)</label>
-                    <Textarea
-                      value={wordInput}
-                      onChange={e => setWordInput(e.target.value)}
-                      placeholder={"CHUCKY\nBEACH\nBIRTHDAY\nVACATION\nNASHVILLE"}
-                      rows={6}
-                      className="resize-none"
+{(selectedType === "word-fill" || selectedType === "word-search") && (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground">Enter words (one per line or comma-separated)</label>
+                      <Textarea
+                        value={wordInput}
+                        onChange={e => setWordInput(e.target.value)}
+                        placeholder={"CHUCKY\nBEACH\nBIRTHDAY\nVACATION\nNASHVILLE"}
+                        rows={5}
+                        className="resize-none"
+                      />
+                    </div>
+                    <CraftLivePreview
+                      type={selectedType}
+                      wordInput={wordInput}
+                      phraseInput=""
+                      clueEntries={[]}
+                      difficulty={craftSettings.difficulty}
                     />
-                    <p className="text-[10px] text-muted-foreground">
-                      Enter 5–15 words for best results
-                    </p>
                   </div>
                 )}
 
-                {selectedType === "cryptogram" && (
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground">Enter a phrase or message to encode</label>
-                    <Textarea
-                      value={phraseInput}
-                      onChange={e => setPhraseInput(e.target.value)}
-                      placeholder="MEET ME AT MIDNIGHT"
-                      rows={4}
-                      className="resize-none"
+{selectedType === "cryptogram" && (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground">Enter a phrase or message to encode</label>
+                      <Textarea
+                        value={phraseInput}
+                        onChange={e => setPhraseInput(e.target.value)}
+                        placeholder="MEET ME AT MIDNIGHT"
+                        rows={4}
+                        className="resize-none"
+                      />
+                    </div>
+                    <CraftLivePreview
+                      type="cryptogram"
+                      wordInput=""
+                      phraseInput={phraseInput}
+                      clueEntries={[]}
+                      difficulty={craftSettings.difficulty}
                     />
                   </div>
                 )}
@@ -625,9 +641,13 @@ const CraftPuzzle = () => {
                     <Button variant="outline" size="sm" onClick={() => setClueEntries([...clueEntries, { answer: "", clue: "" }])}>
                       <Plus className="h-3 w-3 mr-1" /> Add entry
                     </Button>
-                    <p className="text-[10px] text-muted-foreground">
-                      {clueEntries.filter(e => e.answer.trim() && e.clue.trim()).length} entries
-                    </p>
+                    <CraftLivePreview
+                      type="crossword"
+                      wordInput=""
+                      phraseInput=""
+                      clueEntries={clueEntries}
+                      difficulty={craftSettings.difficulty}
+                    />
                   </div>
                 )}
 
