@@ -310,38 +310,109 @@ const IOSPlayTab = () => {
         </button>
       )}
 
-      {/* Puzzle type grid — matches original grid pattern with PuzzleIcon added */}
-      <div>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">Choose a Puzzle</h2>
-        <div className="grid grid-cols-2 gap-2">
-          {categories.map(([type, info]) => {
-            const best = getBestForType(type, stats);
-            return (
-              <button
-                key={type}
-                onClick={() => handleQuickPlay(type)}
-                className="rounded-xl border bg-card px-4 py-3 text-left transition-all duration-150 active:scale-[0.95] active:shadow-md active:border-primary/30"
-              >
-                <div className="flex items-start gap-2.5">
-                  <div className="mt-0.5 shrink-0 text-muted-foreground">
-                    <PuzzleIcon type={type} size={22} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground leading-tight">{info.name}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{TYPE_SUBTITLES[type]}</p>
-                    {best !== null ? (
-                      <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
-                        <Trophy size={9} className="text-primary/60 shrink-0" />
-                        <span className="font-mono">{formatTime(best)}</span>
-                      </p>
-                    ) : (
-                      <p className="text-[10px] text-muted-foreground/50 mt-0.5">Not played yet</p>
+      {/* ── Puzzle type section ── */}
+      <div className="space-y-3">
+
+        {/* Returning users: top 2 "Your favourites" cards */}
+        {isReturningUser && topTwo.length > 0 && (
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-0.5">
+              Your favourites
+            </p>
+            <div className="flex gap-3">
+              {topTwo.map((type) => {
+                const best = getBestTimeForType(type);
+                return (
+                  <button
+                    key={type}
+                    onClick={() => handleQuickPlay(type)}
+                    className={cn(
+                      "flex-1 flex flex-col items-start gap-1.5 rounded-2xl border bg-card p-4",
+                      "transition-all duration-150 active:scale-[0.97] active:bg-secondary/50",
+                      "hover:border-primary/40 hover:shadow-sm"
                     )}
+                  >
+                    <PuzzleIcon type={type} size={28} />
+                    <div>
+                      <p className="text-sm font-semibold text-foreground leading-tight">
+                        {TYPE_LABELS[type]}
+                      </p>
+                      {best ? (
+                        <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
+                          Best: {formatTime(best)}
+                        </p>
+                      ) : (
+                        <p className="text-[10px] text-muted-foreground/50 mt-0.5">Play again →</p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* New users: 3 featured beginner types */}
+        {!isReturningUser && (
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-0.5">
+              Start here
+            </p>
+            <div className="flex gap-2">
+              {BEGINNER_FEATURED.map((type) => (
+                <button
+                  key={type}
+                  onClick={() => handleQuickPlay(type)}
+                  className={cn(
+                    "flex-1 flex flex-col items-center gap-2 rounded-2xl border bg-card py-4 px-2",
+                    "transition-all duration-150 active:scale-[0.97]",
+                    "hover:border-primary/40"
+                  )}
+                >
+                  <PuzzleIcon type={type} size={24} />
+                  <p className="text-[11px] font-medium text-foreground text-center leading-tight">
+                    {TYPE_LABELS[type]}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Full grid — all types */}
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-0.5">
+            {isReturningUser ? "All puzzles" : "All types"}
+          </p>
+          <div className="grid grid-cols-2 gap-2.5">
+            {rankedTypes.map((type) => {
+              const best = getBestTimeForType(type);
+              return (
+                <button
+                  key={type}
+                  onClick={() => handleQuickPlay(type)}
+                  className={cn(
+                    "flex items-center gap-3 rounded-2xl border bg-card p-3.5",
+                    "transition-all duration-150 active:scale-[0.97] active:bg-secondary/50",
+                    "text-left"
+                  )}
+                >
+                  <PuzzleIcon type={type} size={22} />
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium text-foreground truncate">
+                      {TYPE_LABELS[type]}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                      {best
+                        ? <span className="font-mono">Best: {formatTime(best)}</span>
+                        : TYPE_SUBTITLES[type]
+                      }
+                    </p>
                   </div>
-                </div>
-              </button>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
