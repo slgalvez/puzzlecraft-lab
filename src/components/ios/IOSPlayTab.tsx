@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
 import IOSCustomizeSheet from "./IOSCustomizeSheet";
+import { PuzzleTypePicker } from "./PuzzleTypePicker";
 import { getTodaysChallenge, getDailyCompletion, getDailyStreak } from "@/lib/dailyChallenge";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { hapticTap } from "@/lib/haptic";
@@ -13,8 +14,18 @@ import { getSolveRecords } from "@/lib/solveTracker";
 import { computePlayerRating, getSkillTier, getTierColor } from "@/lib/solveScoring";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
+import { setBackDestination } from "@/hooks/useBackDestination";
 
 const categories = Object.entries(CATEGORY_INFO) as [PuzzleCategory, (typeof CATEGORY_INFO)[PuzzleCategory]][];
+const ALL_PUZZLE_TYPES = categories.map(([type]) => type);
+
+/** Puzzle types shown first to new users — most approachable */
+const BEGINNER_FEATURED: PuzzleCategory[] = ["crossword", "word-search", "cryptogram"];
+
+/** Type labels for display */
+const TYPE_LABELS: Record<PuzzleCategory, string> = Object.fromEntries(
+  categories.map(([type, info]) => [type, info.name])
+) as Record<PuzzleCategory, string>;
 
 const DAILY_TAGLINES = [
   "Can you solve it without hints?",

@@ -320,14 +320,46 @@ export default function AccountPage() {
             </button>
           )}
 
-          {/* Sign out */}
-          <Button
-            variant="outline"
-            className="w-full rounded-xl"
-            onClick={() => { signOut(); navigate("/"); }}
-          >
-            Sign Out
-          </Button>
+          {/* Account actions list */}
+          <div className="rounded-2xl border border-border/50 overflow-hidden">
+            {[
+              {
+                icon: Shield,
+                label: "Help & FAQ",
+                onPress: () => navigate("/help"),
+              },
+              {
+                icon: Shield,
+                label: "Sign out",
+                onPress: () => { signOut(); navigate("/"); },
+                destructive: true,
+              },
+            ].map(({ icon: Icon, label, onPress, destructive }, i, arr) => (
+              <button
+                key={label}
+                onClick={onPress}
+                className={cn(
+                  "w-full flex items-center justify-between px-4 py-3.5",
+                  "transition-colors active:bg-muted/50",
+                  i < arr.length - 1 && "border-b border-border/40"
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <Icon
+                    size={16}
+                    className={destructive ? "text-destructive" : "text-muted-foreground"}
+                  />
+                  <span className={cn(
+                    "text-sm",
+                    destructive ? "text-destructive" : "text-foreground"
+                  )}>
+                    {label}
+                  </span>
+                </div>
+                {!destructive && <ChevronRight size={14} className="text-muted-foreground/50" />}
+              </button>
+            ))}
+          </div>
 
           <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
         </div>
