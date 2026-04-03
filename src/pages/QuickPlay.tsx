@@ -53,6 +53,14 @@ const QuickPlay = () => {
     setPuzzleOrigin("play");
   }, []);
 
+  const {
+    isPremium,
+    isDiffLocked,
+    isEndlessLocked,
+    endlessSessionCap,
+  } = usePremiumAccess();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+
   const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
   const [seed, setSeed] = useState(() => initialSeed ? parseInt(initialSeed) || randomSeed() : randomSeed());
   const [puzzleKey, setPuzzleKey] = useState(0);
