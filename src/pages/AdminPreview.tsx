@@ -292,6 +292,9 @@ export default function AdminPreview() {
           )}
         </section>
 
+        {/* ── Nonogram Pattern Preview ── */}
+        <NonogramPreview />
+
         {/* ── Quick actions ── */}
         <section className="space-y-3 rounded-xl border border-border/30 p-4">
           <h2 className="text-sm font-semibold text-foreground">Data Controls</h2>
