@@ -88,6 +88,10 @@ const SharedCraftPuzzle = () => {
   const [copied, setCopied] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [completionVisible, setCompletionVisible] = useState(false);
+  const [leaderboardName, setLeaderboardName] = useState("");
+  const [nameConfirmed, setNameConfirmed] = useState(false);
+  const [entryId, setEntryId] = useState<string | null>(null);
+  const [nameInputVisible, setNameInputVisible] = useState(false);
 
   // ── Timer ──
   const [elapsed, setElapsed] = useState(0);
