@@ -56,12 +56,17 @@ const CraftPuzzle = () => {
   const location = useLocation();
   const { toast } = useToast();
   const inboxTabFromState = (location.state as { inboxTab?: string } | null)?.inboxTab;
-  const { account, subscribed } = useUserAccount();
-  const isPremium = hasPremiumAccess({ isAdmin: account?.isAdmin ?? false, subscribed });
-  const limitStatus = getCraftLimitStatus(isPremium);
-  const limitReached = isCraftLimitReached(isPremium);
-  const [view, setView] = useState<CraftView>(inboxTabFromState ? "inbox" : "create");
-  const [step, setStep] = useState<Step>("type");
+  const { isPremium, craftStatus, recordCraftSent } = usePremiumAccess();
+  const limitReached = !isPremium && craftStatus.isAtLimit;
+  const limitStatus = {
+    used: craftStatus.used,
+    limit: craftStatus.limit,
+    remaining: craftStatus.remaining,
+    atLimit: craftStatus.isAtLimit,
+    label: craftStatus.isAtLimit
+      ? `${craftStatus.limit}/${craftStatus.limit} used this month`
+      : `${craftStatus.used}/${craftStatus.limit} used this month`,
+  };
   const [selectedType, setSelectedType] = useState<CraftType | null>(null);
   const [wordInput, setWordInput] = useState("");
   const [phraseInput, setPhraseInput] = useState("");
