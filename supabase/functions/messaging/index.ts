@@ -671,8 +671,8 @@ Deno.serve(async (req) => {
       if (!first_name || !last_name || !password || typeof first_name !== "string" || typeof last_name !== "string" || typeof password !== "string") {
         return err("Missing fields", 400);
       }
-      if (first_name.trim().length === 0 || last_name.trim().length === 0 || password.length < 4) {
-        return err("Invalid fields", 400);
+      if (first_name.trim().length === 0 || last_name.trim().length === 0 || password.length < 8) {
+        return err("Password must be at least 8 characters", 400);
       }
 
       const encoder = new TextEncoder();
