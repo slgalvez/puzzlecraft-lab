@@ -11,6 +11,7 @@ import {
 } from "@/components/private/PrivatePuzzleSolvers";
 import { buildSolveResultShareText } from "@/lib/craftShare";
 import { getTheme } from "@/lib/craftThemes";
+import CraftLeaderboard, { registerCraftSolve } from "@/components/craft/CraftLeaderboard";
 import { hapticSuccess, hapticTap } from "@/lib/haptic";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -87,6 +88,10 @@ const SharedCraftPuzzle = () => {
   const [copied, setCopied] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [completionVisible, setCompletionVisible] = useState(false);
+  const [leaderboardName, setLeaderboardName] = useState("");
+  const [nameConfirmed, setNameConfirmed] = useState(false);
+  const [entryId, setEntryId] = useState<string | null>(null);
+  const [nameInputVisible, setNameInputVisible] = useState(false);
 
   // ── Timer ──
   const [elapsed, setElapsed] = useState(0);
@@ -198,6 +203,7 @@ const SharedCraftPuzzle = () => {
     // Stagger confetti + completion panel
     setTimeout(() => setShowConfetti(true), 100);
     setTimeout(() => setCompletionVisible(true), 200);
+    setTimeout(() => setNameInputVisible(true), 800);
   }, [id, stopTimer]);
 
   // ── Share result ───────────────────────────────────────────────────────
@@ -240,6 +246,16 @@ const SharedCraftPuzzle = () => {
   const improvement = creatorSolveTime !== null && solveTimeRef.current > 0
     ? creatorSolveTime - solveTimeRef.current
     : null;
+
+  const handleConfirmName = async () => {
+    if (!id) return;
+    const finalTime = solveTimeRef.current;
+    const name = leaderboardName.trim() || "Anonymous";
+    setNameConfirmed(true);
+    setNameInputVisible(false);
+    const newEntryId = await registerCraftSolve(id, finalTime, name);
+    setEntryId(newEntryId);
+  };
 
   // ── Loading / error states ─────────────────────────────────────────────
 
@@ -576,6 +592,54 @@ const SharedCraftPuzzle = () => {
                     Play another puzzle
                   </button>
                 </div>
+
+                {/* Name prompt for leaderboard */}
+                {nameInputVisible && !nameConfirmed && (
+                  <div className="rounded-2xl border bg-card p-4 space-y-3 animate-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex items-center gap-2">
+                      <Trophy size={15} className="text-primary" />
+                      <p className="text-sm font-semibold text-foreground">Join the leaderboard</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Enter your name so others can see your time. You can stay anonymous.
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={leaderboardName}
+                        onChange={(e) => setLeaderboardName(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleConfirmName()}
+                        placeholder="Your name"
+                        maxLength={30}
+                        autoFocus
+                        className="flex-1 h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={handleConfirmName}
+                        className="shrink-0 h-9 px-4"
+                      >
+                        Add me
+                      </Button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setNameConfirmed(true); setNameInputVisible(false); }}
+                      className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Skip — stay anonymous
+                    </button>
+                  </div>
+                )}
+
+                {/* Mini-leaderboard */}
+                {nameConfirmed && id && (
+                  <CraftLeaderboard
+                    puzzleId={id}
+                    currentEntryId={entryId}
+                    visible={true}
+                  />
+                )}
 
               </div>
             )}
