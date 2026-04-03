@@ -58,6 +58,10 @@ const CraftPuzzle = () => {
   const location = useLocation();
   const { toast } = useToast();
   const inboxTabFromState = (location.state as { inboxTab?: string } | null)?.inboxTab;
+  const { account, subscribed } = useUserAccount();
+  const isPremium = hasPremiumAccess({ isAdmin: account?.isAdmin ?? false, subscribed });
+  const limitStatus = getCraftLimitStatus(isPremium);
+  const limitReached = isCraftLimitReached(isPremium);
   const [view, setView] = useState<CraftView>(inboxTabFromState ? "inbox" : "create");
   const [step, setStep] = useState<Step>("type");
   const [selectedType, setSelectedType] = useState<CraftType | null>(null);
