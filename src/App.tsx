@@ -99,6 +99,7 @@ function PublicRoutes() {
         <Route path="/craft/play" element={<PlayCraftPuzzle />} />
         <Route path="/s/:id" element={<SharedCraftPuzzle />} />
         <Route path="/account" element={<Account />} />
+        <Route path="/admin-preview" element={<AdminPreview />} />
       </Routes>
     </UserAccountProvider>
   );
