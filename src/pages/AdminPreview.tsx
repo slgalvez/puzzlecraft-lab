@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import Layout from "@/components/layout/Layout";
 import CompletionPanel from "@/components/puzzles/CompletionPanel";
 import MilestoneModal, { type MilestoneToShow } from "@/components/puzzles/MilestoneModal";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle } from "lucide-react";
+import { generateNonogram } from "@/lib/generators/nonogram";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ICON_MAP: Record<MilestoneIcon, any> = {
