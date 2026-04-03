@@ -247,6 +247,16 @@ const SharedCraftPuzzle = () => {
     ? creatorSolveTime - solveTimeRef.current
     : null;
 
+  const handleConfirmName = async () => {
+    if (!id) return;
+    const finalTime = solveTimeRef.current;
+    const name = leaderboardName.trim() || "Anonymous";
+    setNameConfirmed(true);
+    setNameInputVisible(false);
+    const newEntryId = await registerCraftSolve(id, finalTime, name);
+    setEntryId(newEntryId);
+  };
+
   // ── Loading / error states ─────────────────────────────────────────────
 
   if (loading) {
