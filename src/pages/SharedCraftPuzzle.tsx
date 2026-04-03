@@ -11,6 +11,7 @@ import {
 } from "@/components/private/PrivatePuzzleSolvers";
 import { buildSolveResultShareText } from "@/lib/craftShare";
 import { getTheme } from "@/lib/craftThemes";
+import CraftLeaderboard, { registerCraftSolve } from "@/components/craft/CraftLeaderboard";
 import { hapticSuccess, hapticTap } from "@/lib/haptic";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
