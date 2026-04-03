@@ -32,6 +32,7 @@ import type { CrosswordPuzzle, FillInPuzzle } from "@/data/puzzles";
 
 const DailyPuzzle = () => {
   console.log("[DailyPuzzle] mount");
+  const { toast } = useToast();
   const challenge = useMemo(() => {
     const c = getTodaysChallenge();
     console.log("[DailyPuzzle] challenge:", c.category, c.difficulty, c.dateStr, "seed:", c.seed);
