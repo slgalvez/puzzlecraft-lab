@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty } from "@/lib/puzzleTypes";
@@ -34,11 +34,13 @@ import type { CrosswordPuzzle, FillInPuzzle } from "@/data/puzzles";
 const DailyPuzzle = () => {
   console.log("[DailyPuzzle] mount");
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const dateOverride = searchParams.get("date") ?? undefined;
   const challenge = useMemo(() => {
-    const c = getTodaysChallenge();
+    const c = getTodaysChallenge(dateOverride);
     console.log("[DailyPuzzle] challenge:", c.category, c.difficulty, c.dateStr, "seed:", c.seed);
     return c;
-  }, []);
+  }, [dateOverride]);
   const [completion, setCompletion] = useState(() => getDailyCompletion(challenge.dateStr));
   const streak = useMemo(() => getDailyStreak(), []);
   const info = CATEGORY_INFO[challenge.category];

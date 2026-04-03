@@ -18,6 +18,7 @@ import { setBackDestination } from "@/hooks/useBackDestination";
 import { StreakShieldBanner } from "@/components/ios/StreakShieldBanner";
 import { FriendActivityFeed } from "@/components/ios/FriendActivityFeed";
 import { DailyLeaderboard } from "@/components/ios/DailyLeaderboard";
+import { WeeklyPackCard } from "@/components/ios/WeeklyPackCard";
 
 const categories = Object.entries(CATEGORY_INFO) as [PuzzleCategory, (typeof CATEGORY_INFO)[PuzzleCategory]][];
 const ALL_PUZZLE_TYPES = categories.map(([type]) => type);
@@ -294,6 +295,9 @@ const IOSPlayTab = () => {
 
       {/* Daily Leaderboard — top solvers today */}
       <DailyLeaderboard hasCompletedToday={hasPlayedToday} />
+
+      {/* Weekly Pack */}
+      <WeeklyPackCard />
 
       {/* Streak Shield status */}
       <StreakShieldBanner

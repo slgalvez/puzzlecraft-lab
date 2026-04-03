@@ -45,8 +45,9 @@ export interface DailyChallenge {
   displayDate: string;
 }
 
-export function getTodaysChallenge(): DailyChallenge {
-  return getChallengeForDate(new Date());
+export function getTodaysChallenge(dateOverride?: string): DailyChallenge {
+  const date = dateOverride ? new Date(dateOverride) : new Date();
+  return getChallengeForDate(date);
 }
 
 export function getChallengeForDate(date: Date): DailyChallenge {
