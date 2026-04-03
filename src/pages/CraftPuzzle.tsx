@@ -448,6 +448,7 @@ const CraftPuzzle = () => {
     setShareUrl(null);
     setCopied(false);
     setShareSuccess(false);
+    setSelectedTheme("none");
   };
 
   const handleResumeDraft = useCallback((draft: CraftDraft) => {
