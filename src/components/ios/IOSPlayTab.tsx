@@ -15,6 +15,9 @@ import { computePlayerRating, getSkillTier, getTierColor } from "@/lib/solveScor
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
 import { setBackDestination } from "@/hooks/useBackDestination";
+import { StreakShieldBanner } from "@/components/ios/StreakShieldBanner";
+import { FriendActivityFeed } from "@/components/ios/FriendActivityFeed";
+import { DailyLeaderboard } from "@/components/ios/DailyLeaderboard";
 
 const categories = Object.entries(CATEGORY_INFO) as [PuzzleCategory, (typeof CATEGORY_INFO)[PuzzleCategory]][];
 const ALL_PUZZLE_TYPES = categories.map(([type]) => type);
