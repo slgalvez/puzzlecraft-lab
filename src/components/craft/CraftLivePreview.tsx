@@ -59,7 +59,7 @@ function validateWords(raw: string, type: "word-fill" | "word-search"): Validati
     return { valid: true, count, feedback: `${count} words — add a few more for a better puzzle`, hint: "5–15 words gives the best results", color: "amber" };
   }
   if (count <= 8) {
-    return { valid: true, count, feedback: `${count} words — good`, hint: type === "crossword" ? "Nice set for a compact puzzle" : "Perfect for a satisfying puzzle", color: "green" };
+    return { valid: true, count, feedback: `${count} words — good`, hint: "Perfect for a satisfying puzzle", color: "green" };
   }
   if (count <= 15) {
     return { valid: true, count, feedback: `${count} words — great`, hint: "This will make a full, varied puzzle", color: "green" };
