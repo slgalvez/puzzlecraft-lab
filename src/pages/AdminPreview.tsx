@@ -383,6 +383,9 @@ export default function AdminPreview() {
           )}
         </section>
 
+        {/* ── Share Message Previews ── */}
+        <ShareMessagePreviews />
+
         {/* ── Nonogram Pattern Preview ── */}
         <NonogramPreview />
 
