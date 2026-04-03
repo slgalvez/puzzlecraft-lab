@@ -85,15 +85,6 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
     disabled: timer.isSolved || isRevealed,
   });
 
-  // Track progress: filled entry slots
-  useEffect(() => {
-    // Count entry slots where all cells are filled  
-    let filledSlots = 0;
-    for (const slot of entrySlots) {
-      if (slot.cells.every(([r, c]) => grid[r]?.[c])) filledSlots++;
-    }
-    session.setProgress(filledSlots, entrySlots.length);
-  }, [grid, entrySlots, session]);
 
   useEffect(() => { debouncedSave(); }, [grid, usedEntries, debouncedSave]);
 
