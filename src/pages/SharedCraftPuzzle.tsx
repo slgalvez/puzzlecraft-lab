@@ -203,6 +203,7 @@ const SharedCraftPuzzle = () => {
     // Stagger confetti + completion panel
     setTimeout(() => setShowConfetti(true), 100);
     setTimeout(() => setCompletionVisible(true), 200);
+    setTimeout(() => setNameInputVisible(true), 800);
   }, [id, stopTimer]);
 
   // ── Share result ───────────────────────────────────────────────────────
