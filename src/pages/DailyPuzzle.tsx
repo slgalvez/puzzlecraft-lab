@@ -46,11 +46,57 @@ const DailyPuzzle = () => {
 
   useEffect(() => { setPuzzleOrigin("daily"); }, []);
 
+  // ── Daily score write ──
+  const hasWrittenScore = useRef(false);
+
+  const writeDailyScore = useCallback(async (solveTime: number) => {
+    if (hasWrittenScore.current) return;
+    hasWrittenScore.current = true;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      let displayName = "Anonymous";
+      if (user) {
+        const { data: profile } = await supabase
+          .from("user_profiles")
+          .select("display_name")
+          .eq("id", user.id)
+          .single();
+        displayName = profile?.display_name
+          ?? user.email?.split("@")[0]
+          ?? "Anonymous";
+      }
+
+      await (supabase
+        .from("daily_scores" as any)
+        .upsert(
+          {
+            date_str: challenge.dateStr,
+            user_id: user?.id ?? null,
+            display_name: displayName,
+            solve_time: solveTime,
+            puzzle_type: challenge.category,
+          },
+          {
+            onConflict: "date_str,user_id",
+            ignoreDuplicates: false,
+          }
+        ) as any);
+    } catch (err) {
+      console.error("[DailyScore] Failed to write score:", err);
+    }
+  }, [challenge.dateStr, challenge.category]);
+
   // Track completion from puzzle timer callback
   const handleNewPuzzle = useCallback(() => {
     // Daily puzzle doesn't regenerate - just refresh completion state
-    setCompletion(getDailyCompletion(challenge.dateStr));
-  }, [challenge.dateStr]);
+    const comp = getDailyCompletion(challenge.dateStr);
+    setCompletion(comp);
+    if (comp) {
+      writeDailyScore(comp.time);
+    }
+  }, [challenge.dateStr, writeDailyScore]);
 
   // Memoize generated puzzles so heavy generators only run once (prevents mobile Safari crash)
   const generatedPuzzle = useMemo(() => {
