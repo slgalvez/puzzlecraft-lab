@@ -1,4 +1,5 @@
 import type { PuzzleCategory } from "@/lib/puzzleTypes";
+import { getShieldCount, getShieldUsedDates, setShieldCount, recordShieldUseFor } from "@/hooks/useStreakShield";
 
 export interface CompletionRecord {
   puzzleKey: string;
@@ -65,6 +66,21 @@ function calcStreak(dates: string[]): { current: number; longest: number } {
   const today = toDateStr(new Date().toISOString());
   const yesterday = toDateStr(new Date(Date.now() - 86400000).toISOString());
 
+  // ── Auto-shield: if yesterday wasn't played and we have a shield, consume it
+  const yesterdayPlayed = unique.includes(yesterday);
+  const todayPlayed = unique.includes(today);
+  if (!yesterdayPlayed && !todayPlayed) {
+    const shields = getShieldCount();
+    const shieldUsedDates = getShieldUsedDates();
+    if (shields > 0 && !shieldUsedDates.includes(yesterday)) {
+      setShieldCount(shields - 1);
+      recordShieldUseFor(yesterday);
+      // Treat yesterday as played for streak calculation
+      unique.push(yesterday);
+      unique.sort().reverse();
+    }
+  }
+
   let current = 0;
   if (unique[0] === today || unique[0] === yesterday) {
     current = 1;
@@ -79,7 +95,7 @@ function calcStreak(dates: string[]): { current: number; longest: number } {
 
   let longest = 1;
   let run = 1;
-  const sorted = [...new Set(dates)].sort();
+  const sorted = [...new Set(unique)].sort();
   for (let i = 1; i < sorted.length; i++) {
     const prev = new Date(sorted[i - 1]);
     const curr = new Date(sorted[i]);

@@ -15,6 +15,9 @@ import { computePlayerRating, getSkillTier, getTierColor } from "@/lib/solveScor
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
 import { setBackDestination } from "@/hooks/useBackDestination";
+import { StreakShieldBanner } from "@/components/ios/StreakShieldBanner";
+import { FriendActivityFeed } from "@/components/ios/FriendActivityFeed";
+import { DailyLeaderboard } from "@/components/ios/DailyLeaderboard";
 
 const categories = Object.entries(CATEGORY_INFO) as [PuzzleCategory, (typeof CATEGORY_INFO)[PuzzleCategory]][];
 const ALL_PUZZLE_TYPES = categories.map(([type]) => type);
@@ -186,6 +189,7 @@ const IOSPlayTab = () => {
   };
 
   const streakAtRisk = streak.current > 0 && !dailyCompletion;
+  const hasPlayedToday = !!dailyCompletion;
 
   return (
     <div className="space-y-4 px-5 pt-4">
@@ -288,7 +292,19 @@ const IOSPlayTab = () => {
         </div>
       </Link>
 
-      {/* Rating nudge — only after 5+ solves, matches Stats.tsx tier display */}
+      {/* Daily Leaderboard — top solvers today */}
+      <DailyLeaderboard hasCompletedToday={hasPlayedToday} />
+
+      {/* Streak Shield status */}
+      <StreakShieldBanner
+        streakLength={streak.current}
+        hasPlayedToday={hasPlayedToday}
+      />
+
+      {/* Friend activity feed */}
+      <FriendActivityFeed />
+
+
       {ratingInfo && (
         <button
           onClick={() => {

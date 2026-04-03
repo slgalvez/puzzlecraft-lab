@@ -1,9 +1,11 @@
-import { useEffect, useState, useRef } from "react";
-import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle } from "lucide-react";
+import { useEffect, useState, useRef, useMemo } from "react";
+import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { hapticSuccess } from "@/lib/haptic";
 import type { MilestoneIcon } from "@/lib/milestones";
+import { useMilestoneShare } from "./MilestoneShareCard";
+import { getProgressStats } from "@/lib/progressTracker";
 
 // ── Icon map — matches MilestoneIcon union in milestones.ts ───────────────
 
@@ -51,6 +53,8 @@ const MilestoneModal = ({ milestones, onDismiss }: Props) => {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
   const hasFiredHaptic = useRef(false);
+  const streakDays = useMemo(() => getProgressStats().currentStreak, []);
+  const { generateAndShare, sharing } = useMilestoneShare(streakDays);
 
   const current = milestones[currentIdx];
   const isLast = currentIdx === milestones.length - 1;
@@ -215,13 +219,33 @@ const MilestoneModal = ({ milestones, onDismiss }: Props) => {
 
           {/* Actions */}
           <div className="mt-6 space-y-2 ms-action">
-            <Button
-              size="lg"
-              onClick={handleNext}
-              className="w-full rounded-xl font-semibold h-12 active:scale-[0.97] transition-transform"
-            >
-              {isLast ? "Keep Playing" : `Next  (${currentIdx + 1}/${milestones.length})`}
-            </Button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => generateAndShare({
+                  id: current.id,
+                  label: current.label,
+                  description: getFlavorText(current.icon),
+                  icon: current.icon,
+                })}
+                disabled={sharing}
+                className={cn(
+                  "flex items-center gap-2 rounded-2xl border border-border px-4 py-3",
+                  "text-sm font-medium text-foreground transition-all active:scale-[0.97]",
+                  sharing && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <Share2 size={15} />
+                {sharing ? "..." : "Share"}
+              </button>
+
+              <Button
+                size="lg"
+                onClick={handleNext}
+                className="flex-1 rounded-xl font-semibold h-12 active:scale-[0.97] transition-transform"
+              >
+                {isLast ? "Keep Playing" : `Next  (${currentIdx + 1}/${milestones.length})`}
+              </Button>
+            </div>
             {isLast && (
               <button
                 type="button"
