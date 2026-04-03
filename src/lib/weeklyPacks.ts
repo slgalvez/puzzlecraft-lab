@@ -1,11 +1,17 @@
 /**
  * weeklyPacks.ts
- * Weekly curated puzzle packs that drop every Sunday.
- * Plus subscribers get early access on Friday.
- * Packs are seeded by week number — deterministic for all users.
+ * src/lib/weeklyPacks.ts
+ *
+ * Only change from the previous version: getCurrentWeeklyPack() now
+ * calls getActiveOverride() first. If an override matches today's date,
+ * it uses that instead of the auto-generated pack.
+ * Everything else is identical.
  */
 
 import { hasPremiumAccess } from "@/lib/premiumAccess";
+import { getActiveOverride, type PackOverride } from "@/lib/packOverrides";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 export type PackPuzzle = {
   id: string;
@@ -26,7 +32,11 @@ export type WeeklyPack = {
   releaseDate: Date;
   plusEarlyDate: Date;
   isCurrentWeek: boolean;
+  /** true if this pack came from a manual override */
+  isSpecialPack: boolean;
 };
+
+// ── Rotating theme list ───────────────────────────────────────────────────────
 
 const PACK_THEMES = [
   { theme: "Around the World",    emoji: "🌍", description: "Geography, languages, and landmarks from every continent" },
@@ -43,20 +53,23 @@ const PACK_THEMES = [
   { theme: "Pop Culture Remix",   emoji: "✨", description: "Trends, moments, and the things everyone's talking about" },
 ];
 
+// Puzzle titles per theme — fill in all 12 for production
 const PUZZLE_TITLES: Record<string, string[]> = {
-  "Around the World":  ["Capital Cities", "Famous Landmarks", "World Cuisines", "Languages of Earth", "Mountain Ranges"],
-  "Silver Screen":     ["Best Picture Winners", "Iconic Directors", "Legendary Actors", "Film Genres", "Classic Quotes"],
-  "The Natural World": ["Endangered Species", "Ocean Deep", "The Rainforest", "Bird Life", "Geology"],
-  "Into the Kitchen":  ["Spice Rack", "Baking Basics", "Italian Favourites", "Street Food", "Chef's Tools"],
-  "Great Minds":       ["Physics Pioneers", "Medical Breakthroughs", "Space Explorers", "Inventors", "Nobel Winners"],
-  "Game On":           ["Classic Arcade", "Strategy Games", "RPG Heroes", "Speedrun Records", "Gaming Legends"],
-  "Music to My Ears":  ["Rock Anthems", "Classical Masters", "Jazz Greats", "Pop Icons", "Musical Instruments"],
-  "By the Book":       ["Classic Novels", "Poetry Masters", "Fantasy Worlds", "Mystery Authors", "First Lines"],
-  "Sports Legends":    ["Olympic Gold", "Football Heroes", "Tennis Greats", "Marathon Records", "Team Dynasties"],
-  "Into Space":        ["Planet Facts", "Moon Missions", "Star Types", "Space Agencies", "Cosmic Scale"],
-  "Ancient History":   ["Egyptian Pharaohs", "Roman Empire", "Greek Mythology", "Medieval Times", "Lost Cities"],
-  "Pop Culture Remix": ["Viral Moments", "Iconic Brands", "Meme Origins", "Trend Setters", "Internet Firsts"],
+  "Around the World":   ["Capital Cities", "Famous Landmarks", "World Cuisines", "Languages of Earth", "Mountain Ranges"],
+  "Silver Screen":      ["Best Picture Winners", "Iconic Directors", "Legendary Actors", "Film Genres", "Classic Quotes"],
+  "The Natural World":  ["Endangered Species", "Ocean Deep", "The Rainforest", "Bird Life", "Geology"],
+  "Into the Kitchen":   ["Classic French Techniques", "Spices of the World", "Knife Skills", "Baking Science", "Street Food"],
+  "Great Minds":        ["Nobel Laureates", "Famous Inventions", "Scientific Theory", "Maths Pioneers", "Space Explorers"],
+  "Game On":            ["Console Generations", "Classic Board Games", "Esports Champions", "Game Mechanics", "Pixel Art Icons"],
+  "Music to My Ears":   ["Genre Origins", "Record Breakers", "Legendary Bands", "Music Theory", "Concert Moments"],
+  "By the Book":        ["Booker Prize Winners", "Classic Authors", "Literary Devices", "Famous Characters", "Opening Lines"],
+  "Sports Legends":     ["Olympic Records", "World Cup Moments", "Tennis Greats", "Boxing Champions", "Racing Icons"],
+  "Into Space":         ["Solar System", "Space Missions", "Astronomers", "Black Holes", "The Cosmos"],
+  "Ancient History":    ["Roman Empire", "Ancient Egypt", "Greek Mythology", "The Silk Road", "Lost Civilisations"],
+  "Pop Culture Remix":  ["Viral Moments", "Iconic Fashion", "Internet Culture", "Award Shows", "Decade Defining"],
 };
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getISOWeek(date: Date): { week: number; year: number } {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -86,40 +99,80 @@ function packSeed(week: number, year: number, index: number): string {
   return `pack-${year}-${week}-${index}`;
 }
 
+function overrideSeed(overrideFrom: string, index: number): string {
+  return `override-${overrideFrom}-${index}`;
+}
+
+// ── Main function ─────────────────────────────────────────────────────────────
+
 export function getCurrentWeeklyPack(
   account: { subscribed?: boolean; isAdmin?: boolean } | null
 ): WeeklyPack & { isUnlocked: boolean; unlocksIn: string | null } {
+
   const now = new Date();
   const { week, year } = getISOWeek(now);
-  const themeIndex = (week + year * 52) % PACK_THEMES.length;
-  const { theme, emoji, description } = PACK_THEMES[themeIndex];
-  const titles = PUZZLE_TITLES[theme] ?? ["Puzzle 1", "Puzzle 2", "Puzzle 3", "Puzzle 4", "Puzzle 5"];
-
-  const packId = `pack-${year}-${week}`;
-  const releaseDate = getSundayOfWeek(week, year);
+  const releaseDate   = getSundayOfWeek(week, year);
   const plusEarlyDate = getPreviousFriday(releaseDate);
 
-  const TYPES: PackPuzzle["type"][] = ["crossword", "word-search", "sudoku", "cryptogram", "word-fill"];
-  const DIFFICULTIES: PackPuzzle["difficulty"][] = ["easy", "medium", "medium", "hard", "hard"];
+  // ── Check for a manual override first ──────────────────────────────────────
+  const override = getActiveOverride(now);
 
-  const puzzles: PackPuzzle[] = Array.from({ length: 5 }, (_, i) => ({
-    id: `${packId}-${i}`,
-    type: TYPES[i],
-    difficulty: DIFFICULTIES[i],
-    seed: packSeed(week, year, i),
-    title: titles[i] ?? `Puzzle ${i + 1}`,
-  }));
+  let theme: string;
+  let emoji: string;
+  let description: string;
+  let puzzles: PackPuzzle[];
+  let isSpecialPack = false;
+  let packId: string;
 
+  if (override) {
+    // Use the override pack
+    isSpecialPack = true;
+    theme       = override.theme;
+    emoji       = override.emoji;
+    description = override.description;
+    packId      = `override-${override.from}`;
+
+    puzzles = override.puzzles.map((p, i) => ({
+      id:         `${packId}-${i}`,
+      type:       p.type,
+      difficulty: p.difficulty,
+      seed:       overrideSeed(override.from, i),
+      title:      p.title,
+    }));
+
+  } else {
+    // Auto-generate from the rotating theme list
+    const themeIndex = (week + year * 52) % PACK_THEMES.length;
+    const t = PACK_THEMES[themeIndex];
+    theme       = t.theme;
+    emoji       = t.emoji;
+    description = t.description;
+    packId      = `pack-${year}-${week}`;
+
+    const TYPES: PackPuzzle["type"][]       = ["crossword", "word-search", "sudoku", "cryptogram", "word-fill"];
+    const DIFFICULTIES: PackPuzzle["difficulty"][] = ["easy", "medium", "medium", "hard", "hard"];
+    const titles = PUZZLE_TITLES[theme] ?? ["Puzzle 1", "Puzzle 2", "Puzzle 3", "Puzzle 4", "Puzzle 5"];
+
+    puzzles = Array.from({ length: 5 }, (_, i) => ({
+      id:         `${packId}-${i}`,
+      type:       TYPES[i],
+      difficulty: DIFFICULTIES[i],
+      seed:       packSeed(week, year, i),
+      title:      titles[i] ?? `Puzzle ${i + 1}`,
+    }));
+  }
+
+  // ── Unlock state ────────────────────────────────────────────────────────────
   const isPremium = hasPremiumAccess(account);
   const isUnlocked = isPremium ? now >= plusEarlyDate : now >= releaseDate;
 
   let unlocksIn: string | null = null;
   if (!isUnlocked) {
     const unlockDate = isPremium ? plusEarlyDate : releaseDate;
-    const diff = unlockDate.getTime() - now.getTime();
+    const diff  = unlockDate.getTime() - now.getTime();
     const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(hours / 24);
-    unlocksIn = days > 0 ? `${days}d ${hours % 24}h` : `${hours}h`;
+    const days  = Math.floor(hours / 24);
+    unlocksIn   = days > 0 ? `${days}d ${hours % 24}h` : `${hours}h`;
   }
 
   return {
@@ -133,6 +186,7 @@ export function getCurrentWeeklyPack(
     releaseDate,
     plusEarlyDate,
     isCurrentWeek: true,
+    isSpecialPack,
     isUnlocked,
     unlocksIn,
   };
@@ -163,7 +217,6 @@ export function markPackPuzzleComplete(packId: string, puzzleId: string): void {
   }
 }
 
-export function getPackCompletionCount(packId: string, _totalPuzzles: number): number {
-  const progress = getPackProgress();
-  return progress[packId]?.length ?? 0;
+export function getPackCompletionCount(packId: string): number {
+  return getPackProgress()[packId]?.length ?? 0;
 }
