@@ -823,6 +823,47 @@ const CraftPuzzle = () => {
                   </div>
                 )}
 
+                {!isPremium && (
+                  <div className={cn(
+                    "flex items-center justify-between rounded-xl px-4 py-3 border",
+                    limitStatus.atLimit
+                      ? "bg-destructive/5 border-destructive/20"
+                      : limitStatus.remaining === 1
+                        ? "bg-amber-500/5 border-amber-500/20"
+                        : "bg-secondary/50 border-border"
+                  )}>
+                    <div className="flex items-center gap-2">
+                      {limitStatus.atLimit ? (
+                        <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
+                      ) : (
+                        <Palette className="h-4 w-4 text-muted-foreground shrink-0" />
+                      )}
+                      <div>
+                        <p className={cn(
+                          "text-xs font-semibold",
+                          limitStatus.atLimit ? "text-destructive" : "text-foreground"
+                        )}>
+                          {limitStatus.atLimit
+                            ? "Monthly limit reached"
+                            : `${limitStatus.remaining} puzzle${limitStatus.remaining === 1 ? "" : "s"} left this month`
+                          }
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {limitStatus.label}
+                        </p>
+                      </div>
+                    </div>
+                    {limitStatus.atLimit && (
+                      <button
+                        onClick={() => setUpgradeOpen(true)}
+                        className="text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors whitespace-nowrap ml-3"
+                      >
+                        Upgrade →
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 <div className="relative space-y-3 p-5 rounded-xl border border-border bg-card overflow-hidden">
                   {shareSuccess && (
                     <div className="absolute inset-0 flex items-center justify-center bg-card/90 z-10 animate-in fade-in-0 duration-200">
