@@ -176,6 +176,7 @@ const IOSPlayTab = () => {
   const handleResume = () => {
     if (!inProgress) return;
     hapticTap();
+    setBackDestination("/", "Play");
     const key = inProgress.key;
     if (key.startsWith("daily-")) {
       navigate("/daily");
