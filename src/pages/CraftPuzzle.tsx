@@ -100,6 +100,13 @@ const CraftPuzzle = () => {
     }
   }, [location.state]);
 
+  // Challenge timer cleanup
+  useEffect(() => {
+    return () => {
+      if (challengeTimerRef.current) clearInterval(challengeTimerRef.current);
+    };
+  }, []);
+
   /* ── Mark dirty on any content change ── */
   useEffect(() => {
     if (step === "content" || step === "preview") {
