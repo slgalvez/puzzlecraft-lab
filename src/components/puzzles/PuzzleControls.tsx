@@ -132,9 +132,11 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
           </div>
 
           {/* Primary — Check Solution, full width */}
-          <Button className="w-full h-11" onClick={onCheck}>
-            <CheckCircle2 className="mr-1.5 h-4 w-4" /> Check Solution
-          </Button>
+          {onCheck && (
+            <Button className="w-full h-11" onClick={onCheck}>
+              <CheckCircle2 className="mr-1.5 h-4 w-4" /> Check Solution
+            </Button>
+          )}
 
           {/* Secondary — Hint + Reveal side by side */}
           {showControls && (onHint || onReveal) && (
