@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { EmptyStats } from "@/components/ui/EmptyState";
 import Layout from "@/components/layout/Layout";
 import { getProgressStats } from "@/lib/progressTracker";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puzzleTypes";
