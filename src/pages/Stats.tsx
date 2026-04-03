@@ -46,6 +46,7 @@ const TIER_THRESHOLDS: Record<string, number> = {
 const TIER_ORDER_LIST = ["Beginner", "Casual", "Skilled", "Advanced", "Expert"];
 
 const Stats = () => {
+  const navigate = useNavigate();
   const native = isNativeApp();
   const [dataVersion, setDataVersion] = useState(0);
   const stats = useMemo(() => getProgressStats(), [dataVersion]);
