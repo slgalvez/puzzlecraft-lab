@@ -562,19 +562,25 @@ const CraftPuzzle = () => {
                   </div>
                 </div>
 
-                {(selectedType === "word-fill" || selectedType === "word-search") && (
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground">Enter words (one per line or comma-separated)</label>
-                    <Textarea
-                      value={wordInput}
-                      onChange={e => setWordInput(e.target.value)}
-                      placeholder={"CHUCKY\nBEACH\nBIRTHDAY\nVACATION\nNASHVILLE"}
-                      rows={6}
-                      className="resize-none"
+{(selectedType === "word-fill" || selectedType === "word-search") && (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground">Enter words (one per line or comma-separated)</label>
+                      <Textarea
+                        value={wordInput}
+                        onChange={e => setWordInput(e.target.value)}
+                        placeholder={"CHUCKY\nBEACH\nBIRTHDAY\nVACATION\nNASHVILLE"}
+                        rows={5}
+                        className="resize-none"
+                      />
+                    </div>
+                    <CraftLivePreview
+                      type={selectedType}
+                      wordInput={wordInput}
+                      phraseInput=""
+                      clueEntries={[]}
+                      difficulty={craftSettings.difficulty}
                     />
-                    <p className="text-[10px] text-muted-foreground">
-                      Enter 5–15 words for best results
-                    </p>
                   </div>
                 )}
 
