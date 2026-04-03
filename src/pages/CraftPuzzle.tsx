@@ -86,6 +86,7 @@ const CraftPuzzle = () => {
   const [draftDirty, setDraftDirty] = useState(true);
   const [enteredFromDraft, setEnteredFromDraft] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<string>("none");
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   
   const sentRecorded = useRef(false);
 
