@@ -639,9 +639,17 @@ const CraftPuzzle = () => {
                 <CraftTemplateSelector
                   puzzleType={selectedType as "crossword" | "word-search" | "word-fill" | "cryptogram"}
                   onSelect={(template) => {
-                    setWords(template.words);
-                    if (template.clues) setClues(template.clues);
-                    if (template.phrase) setPhrase(template.phrase);
+                    if (template.words.length > 0) {
+                      setWordInput(template.words.join("\n"));
+                    }
+                    if (template.clues) {
+                      setClueEntries(
+                        Object.entries(template.clues).map(([answer, clue]) => ({ answer, clue }))
+                      );
+                    }
+                    if (template.phrase) {
+                      setPhraseInput(template.phrase);
+                    }
                   }}
                 />
 
