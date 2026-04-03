@@ -8,7 +8,7 @@ import type { MilestoneIcon } from "@/lib/milestones";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle } from "lucide-react";
+import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Clock, Users } from "lucide-react";
 import { generateNonogram } from "@/lib/generators/nonogram";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -248,6 +248,135 @@ function NonogramPreview() {
   );
 }
 
+const MOCK_LEADERBOARD = [
+  { rank: 1, name: "Sarah", time: 98, emoji: "🥇", highlight: false },
+  { rank: 2, name: "You", time: 125, emoji: "🥈", highlight: true },
+  { rank: 3, name: "Mike", time: 147, emoji: "🥉", highlight: false },
+  { rank: 4, name: "Anonymous", time: 203, emoji: "#4", highlight: false },
+  { rank: 5, name: "Jamie", time: 310, emoji: "#5", highlight: false },
+];
+
+function formatTimeLb(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m > 0 ? `${m}:${s.toString().padStart(2, "0")}` : `${s}s`;
+}
+
+function LeaderboardPreview() {
+  const [solverCount, setSolverCount] = useState(5);
+
+  return (
+    <section className="space-y-3 rounded-xl border border-border/30 p-4">
+      <h2 className="text-sm font-semibold text-foreground">Craft Puzzle Mini-Leaderboard</h2>
+      <p className="text-xs text-muted-foreground">
+        Shown after solving a shared craft puzzle. The solver's row is highlighted.
+      </p>
+      <div className="flex gap-2 items-center">
+        <label className="text-xs text-muted-foreground">Solvers:</label>
+        {[2, 3, 5].map((n) => (
+          <Button
+            key={n}
+            size="sm"
+            variant={solverCount === n ? "default" : "outline"}
+            className="text-xs h-7 px-3"
+            onClick={() => setSolverCount(n)}
+          >
+            {n}
+          </Button>
+        ))}
+      </div>
+
+      {/* Mock leaderboard card */}
+      <div className="max-w-sm mx-auto">
+        <div className="rounded-2xl border bg-card overflow-hidden">
+          {/* Header */}
+          <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Trophy size={14} className="text-primary" />
+              <span className="text-sm font-semibold text-foreground">Leaderboard</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <Users size={11} />
+              {solverCount} solver{solverCount !== 1 ? "s" : ""}
+            </div>
+          </div>
+
+          {/* Rank callout */}
+          <div className="px-4 py-2.5 text-sm font-semibold border-b border-border/40 bg-primary/8 text-primary">
+            🥈 You're in second place
+          </div>
+
+          {/* Rows */}
+          <div className="divide-y divide-border/40">
+            {MOCK_LEADERBOARD.slice(0, solverCount).map((entry) => (
+              <div
+                key={entry.rank}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-2.5 transition-colors",
+                  entry.highlight && "bg-primary/5"
+                )}
+              >
+                <span className={cn(
+                  "text-sm font-bold w-7 text-center shrink-0",
+                  entry.rank === 1 ? "text-amber-500" :
+                  entry.rank === 2 ? "text-slate-400" :
+                  entry.rank === 3 ? "text-amber-700/70" :
+                  "text-muted-foreground"
+                )}>
+                  {entry.emoji}
+                </span>
+                <span className={cn(
+                  "flex-1 text-sm truncate min-w-0",
+                  entry.highlight ? "font-semibold text-foreground" : "text-foreground/80"
+                )}>
+                  {entry.name}
+                  {entry.highlight && (
+                    <span className="ml-1.5 text-[10px] font-normal text-primary">you</span>
+                  )}
+                </span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Clock size={10} className="text-muted-foreground/60" />
+                  <span className={cn(
+                    "font-mono text-xs tabular-nums",
+                    entry.highlight ? "font-semibold text-foreground" : "text-muted-foreground"
+                  )}>
+                    {formatTimeLb(entry.time)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Name input preview */}
+      <div className="max-w-sm mx-auto mt-3">
+        <div className="rounded-2xl border bg-card p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Trophy size={15} className="text-primary" />
+            <p className="text-sm font-semibold text-foreground">Join the leaderboard</p>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Enter your name so others can see your time. You can stay anonymous.
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Your name"
+              disabled
+              className="flex-1 h-9 rounded-lg border border-input bg-background px-3 text-sm"
+            />
+            <Button size="sm" className="shrink-0 h-9 px-4">Add me</Button>
+          </div>
+          <span className="text-[11px] text-muted-foreground">
+            Skip — stay anonymous
+          </span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function AdminPreview() {
   const [showCompletion, setShowCompletion] = useState(false);
   const [showMilestone, setShowMilestone] = useState(false);
@@ -471,6 +600,9 @@ export default function AdminPreview() {
 
         {/* ── Share Message Previews ── */}
         <ShareMessagePreviews />
+
+        {/* ── Craft Leaderboard Preview ── */}
+        <LeaderboardPreview />
 
         {/* ── Nonogram Pattern Preview ── */}
         <NonogramPreview />
