@@ -265,6 +265,7 @@ const SharedCraftPuzzle = () => {
   }
 
   const { type, puzzleData, revealMessage, title, from, settings } = payload;
+  const theme = getTheme(payload.theme);
 
   return (
     <>
