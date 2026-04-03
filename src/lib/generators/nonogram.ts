@@ -165,37 +165,107 @@ function getPattern(rng: SeededRandom): number[][] {
 }
 
 /**
- * Scale a 5×5 pattern to a target size with subtle noise for variety.
+ * Scale a 5×5 pattern to a target size.
+ *
+ * - 5×5 (easy): use pattern directly with minor noise.
+ * - 10×10+: draw the **outline** of the shape plus sparse internal detail.
+ *   This keeps fill rate ~30-45%, making the puzzle genuinely challenging
+ *   while still revealing a recognizable image when solved.
  */
 function scalePattern(pattern: number[][], targetSize: number, rng: SeededRandom): boolean[][] {
-  const baseSize = pattern.length;
-  const grid: boolean[][] = Array.from({ length: targetSize }, (_, r) =>
-    Array.from({ length: targetSize }, (_, c) => {
-      const srcR = Math.floor((r / targetSize) * baseSize);
-      const srcC = Math.floor((c / targetSize) * baseSize);
-      return pattern[srcR][srcC] === 1;
-    })
+  const baseSize = pattern.length; // always 5
+
+  // For 5×5 just use the pattern directly with light noise
+  if (targetSize <= 5) {
+    const grid = pattern.map((row) => row.map((v) => v === 1));
+    for (let r = 0; r < targetSize; r++) {
+      for (let c = 0; c < targetSize; c++) {
+        if (rng.next() < 0.06) grid[r][c] = !grid[r][c];
+      }
+    }
+    ensureMinimumClues(grid, targetSize, rng);
+    return grid;
+  }
+
+  const scale = targetSize / baseSize; // pixels per base cell
+
+  // Step 1: Create a filled-region mask from the pattern
+  const isFilled = (r: number, c: number) => {
+    const sr = Math.floor((r / targetSize) * baseSize);
+    const sc = Math.floor((c / targetSize) * baseSize);
+    return pattern[Math.min(sr, baseSize - 1)][Math.min(sc, baseSize - 1)] === 1;
+  };
+
+  const grid: boolean[][] = Array.from({ length: targetSize }, () =>
+    Array.from({ length: targetSize }, () => false)
   );
 
-  // Add subtle noise: flip ~8% of cells for texture while preserving shape
-  const noiseRate = 0.08;
+  // Step 2: Draw the outline of the shape (boundary between filled/empty regions)
+  const outlineThickness = Math.max(1, Math.round(scale * 0.35));
   for (let r = 0; r < targetSize; r++) {
     for (let c = 0; c < targetSize; c++) {
-      if (rng.next() < noiseRate) {
-        grid[r][c] = !grid[r][c];
+      if (!isFilled(r, c)) continue;
+      // Check if this pixel is near a boundary
+      let nearBorder = false;
+      for (let dr = -outlineThickness; dr <= outlineThickness && !nearBorder; dr++) {
+        for (let dc = -outlineThickness; dc <= outlineThickness && !nearBorder; dc++) {
+          const nr = r + dr;
+          const nc = c + dc;
+          if (nr < 0 || nr >= targetSize || nc < 0 || nc >= targetSize || !isFilled(nr, nc)) {
+            nearBorder = true;
+          }
+        }
       }
+      if (nearBorder) grid[r][c] = true;
     }
   }
 
-  // Ensure at least one filled cell per row and column
+  // Step 3: Add sparse interior detail for texture (stripes, dots)
+  const detailStyle = rng.nextInt(0, 3);
   for (let r = 0; r < targetSize; r++) {
-    if (!grid[r].some(Boolean)) grid[r][rng.nextInt(0, targetSize - 1)] = true;
-  }
-  for (let c = 0; c < targetSize; c++) {
-    if (!grid.some((row) => row[c])) grid[rng.nextInt(0, targetSize - 1)][c] = true;
+    for (let c = 0; c < targetSize; c++) {
+      if (!isFilled(r, c) || grid[r][c]) continue; // skip outline & empty
+      let fill = false;
+      switch (detailStyle) {
+        case 0: // diagonal stripes
+          fill = (r + c) % Math.max(3, Math.round(scale * 0.8)) === 0;
+          break;
+        case 1: // dots
+          fill = r % Math.max(3, Math.round(scale * 0.7)) === 0 &&
+                 c % Math.max(3, Math.round(scale * 0.7)) === 0;
+          break;
+        case 2: // crosshatch
+          fill = r % Math.max(3, Math.round(scale * 0.8)) === 0 ||
+                 c % Math.max(3, Math.round(scale * 0.8)) === 0;
+          break;
+        case 3: // sparse random
+          fill = rng.next() < 0.15;
+          break;
+      }
+      if (fill) grid[r][c] = true;
+    }
   }
 
+  // Step 4: Add light noise to break up regularity
+  const noiseRate = 0.04;
+  for (let r = 0; r < targetSize; r++) {
+    for (let c = 0; c < targetSize; c++) {
+      if (rng.next() < noiseRate) grid[r][c] = !grid[r][c];
+    }
+  }
+
+  ensureMinimumClues(grid, targetSize, rng);
   return grid;
+}
+
+/** Make sure every row and column has at least one filled cell. */
+function ensureMinimumClues(grid: boolean[][], size: number, rng: SeededRandom) {
+  for (let r = 0; r < size; r++) {
+    if (!grid[r].some(Boolean)) grid[r][rng.nextInt(0, size - 1)] = true;
+  }
+  for (let c = 0; c < size; c++) {
+    if (!grid.some((row) => row[c])) grid[rng.nextInt(0, size - 1)][c] = true;
+  }
 }
 
 export function generateNonogram(seed: number, difficulty: Difficulty): NonogramPuzzle {
