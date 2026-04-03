@@ -6,9 +6,10 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory,
 import { randomSeed } from "@/lib/seededRandom";
 import { cn } from "@/lib/utils";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
-import { ArrowLeft, Dices, Infinity, TrendingUp, TrendingDown, Minus, Square, Crown, Lock } from "lucide-react";
+import { ArrowLeft, Dices, Infinity, TrendingUp, TrendingDown, Minus, Square } from "lucide-react";
 import { usePremiumAccess } from "@/lib/premiumAccess";
 import UpgradeModal from "@/components/account/UpgradeModal";
+import DifficultySelector from "@/components/puzzles/DifficultySelector";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { computeNextDifficulty, createDifficultyMap, type PuzzlePerformance } from "@/lib/endlessDifficulty";
@@ -30,7 +31,7 @@ import { generateCrossword } from "@/lib/generators/crosswordGen";
 import { generateWordFillIn, generateNumberFillIn } from "@/lib/generators/fillGen";
 import type { CrosswordPuzzle, FillInPuzzle } from "@/data/puzzles";
 
-const difficulties = Object.entries(DIFFICULTY_LABELS) as [Difficulty, string][];
+
 const allTypes = Object.keys(CATEGORY_INFO) as PuzzleCategory[];
 const allDifficulties = Object.keys(DIFFICULTY_LABELS) as Difficulty[];
 
@@ -307,47 +308,11 @@ const QuickPlay = () => {
           </div>
 
           {mode === "default" && (
-            <div className="flex flex-wrap gap-1.5">
-              {difficulties.map(([val, label]) => {
-                const disabled = isDifficultyDisabled(activeType, val);
-                const locked = isDiffLocked(val);
-                return (
-                  <button
-                    key={val}
-                    onClick={() => {
-                      if (locked) {
-                        setUpgradeOpen(true);
-                        return;
-                      }
-                      if (disabled) {
-                        toast({ title: `${label} not available for ${activeInfo.name} yet` });
-                        return;
-                      }
-                      handleDifficultyChange(val);
-                    }}
-                    className={cn(
-                      "relative rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                      locked
-                        ? "border-border/40 bg-muted/30 text-muted-foreground/50 cursor-pointer select-none"
-                        : disabled
-                          ? "border-border text-muted-foreground/40 cursor-not-allowed"
-                          : activeDifficulty === val
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
-                    )}
-                    title={locked ? `${label} — Puzzlecraft+ only` : disabled ? `${label} not available for ${activeInfo.name} yet` : undefined}
-                  >
-                    {locked && <Lock className="inline h-3 w-3 mr-1 -mt-0.5" />}
-                    {label}
-                    {locked && (
-                      <span className="absolute -top-2 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary shadow-sm">
-                        <Crown className="h-2.5 w-2.5 text-primary-foreground" />
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <DifficultySelector
+              difficulty={activeDifficulty}
+              onChange={handleDifficultyChange}
+              puzzleType={activeType}
+            />
           )}
 
           {mode === "surprise" && (
