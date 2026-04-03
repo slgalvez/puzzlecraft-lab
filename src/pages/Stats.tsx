@@ -21,7 +21,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useUserAccount } from "@/contexts/UserAccountContext";
 import UpgradeModal from "@/components/account/UpgradeModal";
-import { hasPremiumAccess, shouldShowUpgradeCTA } from "@/lib/premiumAccess";
+import { usePremiumAccess } from "@/lib/premiumAccess";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 import { checkMilestones } from "@/lib/milestones";
 import { getSolveRecords } from "@/lib/solveTracker";
@@ -51,10 +51,9 @@ const Stats = () => {
   const dailyStreak = useMemo(() => getDailyStreak(), [dataVersion]);
   const dailyCompleted = useMemo(() => getTotalDailyCompleted(), [dataVersion]);
   const endlessStats = useMemo(() => native ? null : getEndlessStats(), [dataVersion, native]);
-  const { account, subscribed, loading: accountLoading } = useUserAccount();
+  const { isPremium: premiumAccess, showUpgradeCTA: showUpgrade, loading: accountLoading } = usePremiumAccess();
+  const { account } = useUserAccount();
   const isAdmin = account?.isAdmin ?? false;
-  const premiumAccess = hasPremiumAccess({ isAdmin, subscribed });
-  const showUpgrade = shouldShowUpgradeCTA({ isAdmin, subscribed });
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   // Local rating — identical logic to original

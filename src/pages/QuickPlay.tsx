@@ -6,7 +6,9 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory,
 import { randomSeed } from "@/lib/seededRandom";
 import { cn } from "@/lib/utils";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
-import { ArrowLeft, Dices, Infinity, TrendingUp, TrendingDown, Minus, Square } from "lucide-react";
+import { ArrowLeft, Dices, Infinity, TrendingUp, TrendingDown, Minus, Square, Crown } from "lucide-react";
+import { usePremiumAccess } from "@/lib/premiumAccess";
+import UpgradeModal from "@/components/account/UpgradeModal";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { computeNextDifficulty, createDifficultyMap, type PuzzlePerformance } from "@/lib/endlessDifficulty";
@@ -50,6 +52,14 @@ const QuickPlay = () => {
   useEffect(() => {
     setPuzzleOrigin("play");
   }, []);
+
+  const {
+    isPremium,
+    isDiffLocked,
+    isEndlessLocked,
+    endlessSessionCap,
+  } = usePremiumAccess();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
   const [seed, setSeed] = useState(() => initialSeed ? parseInt(initialSeed) || randomSeed() : randomSeed());
@@ -182,6 +192,10 @@ const QuickPlay = () => {
   }, []);
 
   const handleDifficultyChange = (d: Difficulty) => {
+    if (isDiffLocked(d)) {
+      setUpgradeOpen(true);
+      return;
+    }
     setDifficulty(d);
     try {
       const stored = JSON.parse(localStorage.getItem("play_difficulties") || "{}");
@@ -350,6 +364,7 @@ const QuickPlay = () => {
         </div>
         {showFlash && <EndlessFlash onDone={handleFlashDone} />}
       </div>
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </Layout>
   );
 };

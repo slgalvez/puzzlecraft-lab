@@ -6,9 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share, Copy, Check, Loader2, Save, Trophy, AlertCircle, Palette } from "lucide-react";
-import { useUserAccount } from "@/contexts/UserAccountContext";
-import { hasPremiumAccess } from "@/lib/premiumAccess";
-import { isCraftLimitReached, getCraftLimitStatus } from "@/lib/craftLimits";
+import { usePremiumAccess } from "@/lib/premiumAccess";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import { cn } from "@/lib/utils";
 import CraftStepper from "@/components/craft/CraftStepper";
@@ -58,10 +56,17 @@ const CraftPuzzle = () => {
   const location = useLocation();
   const { toast } = useToast();
   const inboxTabFromState = (location.state as { inboxTab?: string } | null)?.inboxTab;
-  const { account, subscribed } = useUserAccount();
-  const isPremium = hasPremiumAccess({ isAdmin: account?.isAdmin ?? false, subscribed });
-  const limitStatus = getCraftLimitStatus(isPremium);
-  const limitReached = isCraftLimitReached(isPremium);
+  const { isPremium, craftStatus, recordCraftSent } = usePremiumAccess();
+  const limitReached = !isPremium && craftStatus.isAtLimit;
+  const limitStatus = {
+    used: craftStatus.used,
+    limit: craftStatus.limit,
+    remaining: craftStatus.remaining,
+    atLimit: craftStatus.isAtLimit,
+    label: craftStatus.isAtLimit
+      ? `${craftStatus.limit}/${craftStatus.limit} used this month`
+      : `${craftStatus.used}/${craftStatus.limit} used this month`,
+  };
   const [view, setView] = useState<CraftView>(inboxTabFromState ? "inbox" : "create");
   const [step, setStep] = useState<Step>("type");
   const [selectedType, setSelectedType] = useState<CraftType | null>(null);
@@ -333,8 +338,9 @@ const CraftPuzzle = () => {
       shareUrl,
       sentAt: Date.now(),
     });
+    recordCraftSent(shareId);
     refreshDraftCount();
-  }, [shareUrl, selectedType, puzzleTitle, puzzleFrom, revealMessage, refreshDraftCount]);
+  }, [shareUrl, selectedType, puzzleTitle, puzzleFrom, revealMessage, refreshDraftCount, recordCraftSent]);
 
   const handleStartChallenge = useCallback(() => {
     if (!shareUrl || !selectedType) return;
