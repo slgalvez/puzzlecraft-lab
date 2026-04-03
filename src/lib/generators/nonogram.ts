@@ -167,90 +167,77 @@ function getPattern(rng: SeededRandom): number[][] {
 /**
  * Scale a 5×5 pattern to a target size.
  *
- * - 5×5 (easy): use pattern directly with minor noise.
- * - 10×10+: draw the **outline** of the shape plus sparse internal detail.
- *   This keeps fill rate ~30-45%, making the puzzle genuinely challenging
- *   while still revealing a recognizable image when solved.
+ * - 5×5: use pattern directly with NO noise (every pixel matters).
+ * - 10×10: thin 1px outline of the shape, very sparse interior dots.
+ * - 15×15+: clean outline with light interior texture.
+ *   Fill rate target: ~30-45%.
  */
 function scalePattern(pattern: number[][], targetSize: number, rng: SeededRandom): boolean[][] {
   const baseSize = pattern.length; // always 5
 
-  // For 5×5 just use the pattern directly with light noise
+  // For 5×5 just use the pattern directly — no noise at all
   if (targetSize <= 5) {
-    const grid = pattern.map((row) => row.map((v) => v === 1));
-    for (let r = 0; r < targetSize; r++) {
-      for (let c = 0; c < targetSize; c++) {
-        if (rng.next() < 0.06) grid[r][c] = !grid[r][c];
-      }
-    }
-    ensureMinimumClues(grid, targetSize, rng);
-    return grid;
+    return pattern.map((row) => row.map((v) => v === 1));
   }
 
   const scale = targetSize / baseSize; // pixels per base cell
 
-  // Step 1: Create a filled-region mask from the pattern
+  // Create a filled-region mask from the pattern
   const isFilled = (r: number, c: number) => {
-    const sr = Math.floor((r / targetSize) * baseSize);
-    const sc = Math.floor((c / targetSize) * baseSize);
-    return pattern[Math.min(sr, baseSize - 1)][Math.min(sc, baseSize - 1)] === 1;
+    const sr = Math.min(Math.floor((r / targetSize) * baseSize), baseSize - 1);
+    const sc = Math.min(Math.floor((c / targetSize) * baseSize), baseSize - 1);
+    return pattern[sr][sc] === 1;
   };
 
   const grid: boolean[][] = Array.from({ length: targetSize }, () =>
     Array.from({ length: targetSize }, () => false)
   );
 
-  // Step 2: Draw the outline of the shape (boundary between filled/empty regions)
-  const outlineThickness = Math.max(1, Math.round(scale * 0.35));
+  // Draw the outline of the shape (1px border between filled/empty regions)
   for (let r = 0; r < targetSize; r++) {
     for (let c = 0; c < targetSize; c++) {
       if (!isFilled(r, c)) continue;
-      // Check if this pixel is near a boundary
-      let nearBorder = false;
-      for (let dr = -outlineThickness; dr <= outlineThickness && !nearBorder; dr++) {
-        for (let dc = -outlineThickness; dc <= outlineThickness && !nearBorder; dc++) {
-          const nr = r + dr;
-          const nc = c + dc;
-          if (nr < 0 || nr >= targetSize || nc < 0 || nc >= targetSize || !isFilled(nr, nc)) {
-            nearBorder = true;
-          }
-        }
-      }
-      if (nearBorder) grid[r][c] = true;
+      // Check 4 cardinal neighbours only for a thin, clean outline
+      const hasEmptyNeighbour =
+        r === 0 || c === 0 || r === targetSize - 1 || c === targetSize - 1 ||
+        !isFilled(r - 1, c) || !isFilled(r + 1, c) ||
+        !isFilled(r, c - 1) || !isFilled(r, c + 1);
+      if (hasEmptyNeighbour) grid[r][c] = true;
     }
   }
 
-  // Step 3: Add sparse interior detail for texture (stripes, dots)
-  const detailStyle = rng.nextInt(0, 3);
-  for (let r = 0; r < targetSize; r++) {
-    for (let c = 0; c < targetSize; c++) {
-      if (!isFilled(r, c) || grid[r][c]) continue; // skip outline & empty
-      let fill = false;
-      switch (detailStyle) {
-        case 0: // diagonal stripes
-          fill = (r + c) % Math.max(3, Math.round(scale * 0.8)) === 0;
-          break;
-        case 1: // dots
-          fill = r % Math.max(3, Math.round(scale * 0.7)) === 0 &&
-                 c % Math.max(3, Math.round(scale * 0.7)) === 0;
-          break;
-        case 2: // crosshatch
-          fill = r % Math.max(3, Math.round(scale * 0.8)) === 0 ||
-                 c % Math.max(3, Math.round(scale * 0.8)) === 0;
-          break;
-        case 3: // sparse random
-          fill = rng.next() < 0.15;
-          break;
+  // Add a second outline pixel for grids ≥ 15 to keep the shape visible
+  if (targetSize >= 15) {
+    const outline1 = grid.map((row) => [...row]);
+    for (let r = 0; r < targetSize; r++) {
+      for (let c = 0; c < targetSize; c++) {
+        if (!isFilled(r, c) || grid[r][c]) continue;
+        // Fill if adjacent to an existing outline cell
+        const adj =
+          (r > 0 && outline1[r - 1][c]) || (r < targetSize - 1 && outline1[r + 1][c]) ||
+          (c > 0 && outline1[r][c - 1]) || (c < targetSize - 1 && outline1[r][c + 1]);
+        if (adj) grid[r][c] = true;
       }
-      if (fill) grid[r][c] = true;
     }
   }
 
-  // Step 4: Add light noise to break up regularity
-  const noiseRate = 0.04;
+  // Add sparse interior detail — just widely-spaced dots, no crosshatch/stripes
+  const dotSpacing = Math.max(3, Math.round(scale * 0.9));
   for (let r = 0; r < targetSize; r++) {
     for (let c = 0; c < targetSize; c++) {
-      if (rng.next() < noiseRate) grid[r][c] = !grid[r][c];
+      if (!isFilled(r, c) || grid[r][c]) continue;
+      if (r % dotSpacing === 0 && c % dotSpacing === 0) {
+        grid[r][c] = true;
+      }
+    }
+  }
+
+  // Very light noise (~2%) to break perfect regularity, never on small grids
+  if (targetSize >= 15) {
+    for (let r = 0; r < targetSize; r++) {
+      for (let c = 0; c < targetSize; c++) {
+        if (rng.next() < 0.02) grid[r][c] = !grid[r][c];
+      }
     }
   }
 
