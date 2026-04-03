@@ -9,7 +9,8 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle } from "lucide-react";
 
-const ICON_MAP: Record<MilestoneIcon, React.ComponentType<{ size?: number; className?: string }>> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ICON_MAP: Record<MilestoneIcon, any> = {
   puzzle: Puzzle, flame: Flame, trophy: Trophy, medal: Medal,
   zap: Zap, crown: Crown, target: Target, award: Award, bolt: Zap,
 };
