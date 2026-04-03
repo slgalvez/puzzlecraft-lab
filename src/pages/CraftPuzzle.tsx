@@ -914,6 +914,7 @@ const CraftPuzzle = () => {
           </>
         )}
       </div>
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </Layout>
   );
 };
