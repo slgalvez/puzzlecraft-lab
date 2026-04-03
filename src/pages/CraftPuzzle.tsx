@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share, Copy, Check, Loader2, Save, Trophy, AlertCircle, Palette } from "lucide-react";
 import { CraftSolveFirst } from "@/components/craft/CraftSolveFirst";
+import { CraftTemplateSelector } from "@/components/craft/CraftTemplateSelector";
 import { usePremiumAccess } from "@/lib/premiumAccess";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import { cn } from "@/lib/utils";
