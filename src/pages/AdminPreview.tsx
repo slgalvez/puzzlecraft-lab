@@ -2,7 +2,6 @@ import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import CompletionPanel from "@/components/puzzles/CompletionPanel";
 import MilestoneModal, { type MilestoneToShow } from "@/components/puzzles/MilestoneModal";
-import { WhatsNewBanner } from "@/components/private/WhatsNewBanner";
 import PremiumStats from "@/components/account/PremiumStats";
 import type { MilestoneIcon } from "@/lib/milestones";
 import { Button } from "@/components/ui/button";
@@ -125,26 +124,6 @@ export default function AdminPreview() {
           />
         )}
 
-        {/* ── What's New Banner ── */}
-        <section className="space-y-3 rounded-xl border border-border/30 p-4">
-          <h2 className="text-sm font-semibold text-foreground">What's New Banner</h2>
-          <p className="text-xs text-muted-foreground">
-            This shows the current banner. If you've already dismissed it, clear localStorage key <code className="text-[10px] bg-secondary/30 px-1 py-0.5 rounded">private_whats_new_dismissed</code> to see it again.
-          </p>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              localStorage.removeItem("private_whats_new_dismissed");
-              window.location.reload();
-            }}
-          >
-            Reset & Show Banner
-          </Button>
-          <div className="mt-2">
-            <WhatsNewBanner />
-          </div>
-        </section>
 
         {/* ── Premium Stats / Insights ── */}
         <section className="space-y-3 rounded-xl border border-border/30 p-4">
