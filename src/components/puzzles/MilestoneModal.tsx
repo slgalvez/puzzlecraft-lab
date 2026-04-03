@@ -219,13 +219,33 @@ const MilestoneModal = ({ milestones, onDismiss }: Props) => {
 
           {/* Actions */}
           <div className="mt-6 space-y-2 ms-action">
-            <Button
-              size="lg"
-              onClick={handleNext}
-              className="w-full rounded-xl font-semibold h-12 active:scale-[0.97] transition-transform"
-            >
-              {isLast ? "Keep Playing" : `Next  (${currentIdx + 1}/${milestones.length})`}
-            </Button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => generateAndShare({
+                  id: current.id,
+                  label: current.label,
+                  description: getFlavorText(current.icon),
+                  icon: current.icon,
+                })}
+                disabled={sharing}
+                className={cn(
+                  "flex items-center gap-2 rounded-2xl border border-border px-4 py-3",
+                  "text-sm font-medium text-foreground transition-all active:scale-[0.97]",
+                  sharing && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <Share2 size={15} />
+                {sharing ? "..." : "Share"}
+              </button>
+
+              <Button
+                size="lg"
+                onClick={handleNext}
+                className="flex-1 rounded-xl font-semibold h-12 active:scale-[0.97] transition-transform"
+              >
+                {isLast ? "Keep Playing" : `Next  (${currentIdx + 1}/${milestones.length})`}
+              </Button>
+            </div>
             {isLast && (
               <button
                 type="button"
