@@ -61,10 +61,13 @@ async function openStripeCheckout(annual: boolean, userId: string): Promise<void
 }
 
 // ── Apple IAP purchase (RevenueCat) ───────────────────────────────────────
+// Note: @revenuecat/purchases-capacitor is dynamically imported at runtime.
+// It's only available when the iOS app is built with RevenueCat installed.
 
 async function purchaseWithRevenueCat(annual: boolean): Promise<boolean> {
   try {
-    const { Purchases } = await import("@revenuecat/purchases-capacitor");
+    const RC = await import("@revenuecat/purchases-capacitor" as string);
+    const Purchases = RC.Purchases;
     const APPLE_ANNUAL_PRODUCT_ID  = "com.puzzlecraft.plus.annual";
     const APPLE_MONTHLY_PRODUCT_ID = "com.puzzlecraft.plus.monthly";
     const productId = annual ? APPLE_ANNUAL_PRODUCT_ID : APPLE_MONTHLY_PRODUCT_ID;
