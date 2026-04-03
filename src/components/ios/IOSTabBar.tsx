@@ -16,7 +16,7 @@ const tabs = [
   },
   {
     key: "craft",
-    label: "Craft",
+    label: "Create",
     icon: Palette,
     paths: ["/craft"],
   },

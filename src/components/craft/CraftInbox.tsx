@@ -4,6 +4,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Check, Trash2, FileText, Send, Eye, Inbox, Play, Clock, Trophy, Bell } from "lucide-react";
+import {
+  EmptyCraftReceived,
+  EmptyCraftSent,
+  EmptyCraftDrafts,
+} from "@/components/ui/EmptyState";
 import { useToast } from "@/hooks/use-toast";
 import { TYPE_OPTIONS } from "@/components/craft/CraftTypeCards";
 import { supabase } from "@/integrations/supabase/client";
@@ -221,7 +226,7 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
         {/* ── Drafts ── */}
         <TabsContent value="drafts" className="mt-0">
           {drafts.length === 0 ? (
-            <EmptyState icon={<FileText className="h-5 w-5" />} text="No drafts yet" sub="Start creating a puzzle — it'll auto-save here" />
+            <EmptyCraftDrafts onNavigate={() => onResumeDraft({} as CraftDraft)} />
           ) : (
             <div className="space-y-2.5">
               {drafts.map((d) => (
@@ -248,7 +253,7 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
         {/* ── Sent ── */}
         <TabsContent value="sent" className="mt-0">
           {sent.length === 0 ? (
-            <EmptyState icon={<Send className="h-5 w-5" />} text="No sent puzzles yet" sub="Puzzles you share will appear here" />
+            <EmptyCraftSent onNavigate={() => navigate("/craft")} />
           ) : (
             <div className="space-y-2.5">
               {sent.map((s) => {
@@ -320,7 +325,7 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
         {/* ── Received ── */}
         <TabsContent value="received" className="mt-0">
           {received.length === 0 ? (
-            <EmptyState icon={<Inbox className="h-5 w-5" />} text="No received puzzles" sub="Puzzles sent to you will appear here" />
+            <EmptyCraftReceived onNavigate={() => navigate("/craft")} />
           ) : (
             <div className="space-y-2.5">
               {received.map((r) => (

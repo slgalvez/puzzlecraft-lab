@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
 import IOSCustomizeSheet from "./IOSCustomizeSheet";
+import { PuzzleTypePicker } from "./PuzzleTypePicker";
 import { getTodaysChallenge, getDailyCompletion, getDailyStreak } from "@/lib/dailyChallenge";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { hapticTap } from "@/lib/haptic";
@@ -13,8 +14,18 @@ import { getSolveRecords } from "@/lib/solveTracker";
 import { computePlayerRating, getSkillTier, getTierColor } from "@/lib/solveScoring";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
+import { setBackDestination } from "@/hooks/useBackDestination";
 
 const categories = Object.entries(CATEGORY_INFO) as [PuzzleCategory, (typeof CATEGORY_INFO)[PuzzleCategory]][];
+const ALL_PUZZLE_TYPES = categories.map(([type]) => type);
+
+/** Puzzle types shown first to new users — most approachable */
+const BEGINNER_FEATURED: PuzzleCategory[] = ["crossword", "word-search", "cryptogram"];
+
+/** Type labels for display */
+const TYPE_LABELS: Record<PuzzleCategory, string> = Object.fromEntries(
+  categories.map(([type, info]) => [type, info.name])
+) as Record<PuzzleCategory, string>;
 
 const DAILY_TAGLINES = [
   "Can you solve it without hints?",
@@ -72,9 +83,42 @@ function getBestForType(type: PuzzleCategory, stats: ReturnType<typeof getProgre
   return stats.byCategory[type]?.bestTime ?? null;
 }
 
+function getBestTimeForType(type: PuzzleCategory): number | null {
+  try {
+    const stats = getProgressStats();
+    return stats.byCategory[type]?.bestTime ?? null;
+  } catch { return null; }
+}
+
+/** Returns puzzle types sorted by how many times this user has played them */
+function getRankedTypes(allTypes: PuzzleCategory[]): {
+  ranked: PuzzleCategory[];
+  topTwo: PuzzleCategory[];
+  isReturningUser: boolean;
+} {
+  try {
+    const records = getSolveRecords();
+    if (records.length < 5) {
+      return { ranked: allTypes, topTwo: [], isReturningUser: false };
+    }
+    const counts: Record<string, number> = {};
+    for (const r of records) {
+      counts[r.puzzleType] = (counts[r.puzzleType] ?? 0) + 1;
+    }
+    const sorted = [...allTypes].sort(
+      (a, b) => (counts[b] ?? 0) - (counts[a] ?? 0)
+    );
+    const topTwo = sorted.filter((t) => (counts[t] ?? 0) > 0).slice(0, 2);
+    return { ranked: sorted, topTwo, isReturningUser: true };
+  } catch {
+    return { ranked: allTypes, topTwo: [], isReturningUser: false };
+  }
+}
+
 const IOSPlayTab = () => {
   const navigate = useNavigate();
   const [customizeOpen, setCustomizeOpen] = useState(false);
+  const [pickerType, setPickerType] = useState<PuzzleCategory | null>(null);
   const [now, setNow] = useState(Date.now());
 
   // Refresh countdown every second
@@ -89,6 +133,12 @@ const IOSPlayTab = () => {
   const tagline = useMemo(() => getDailyTagline(challenge.dateStr), [challenge.dateStr]);
   const stats = useMemo(() => getProgressStats(), []);
   const inProgress = useMemo(() => findInProgressPuzzle(), []);
+
+  // Ranked types for personalised grid
+  const { ranked: rankedTypes, topTwo, isReturningUser } = useMemo(
+    () => getRankedTypes(ALL_PUZZLE_TYPES),
+    []
+  );
 
   // Rating / tier — only show after 5+ solves (matches Stats.tsx threshold)
   const ratingInfo = useMemo(() => {
@@ -114,18 +164,19 @@ const IOSPlayTab = () => {
 
   const handleSurprise = () => {
     hapticTap();
+    setBackDestination("/", "Play");
     navigate("/surprise");
   };
 
   const handleQuickPlay = (type: PuzzleCategory) => {
     hapticTap();
-    const seed = randomSeed();
-    navigate(`/quick-play/${type}?seed=${seed}&d=medium`);
+    setPickerType(type);
   };
 
   const handleResume = () => {
     if (!inProgress) return;
     hapticTap();
+    setBackDestination("/", "Play");
     const key = inProgress.key;
     if (key.startsWith("daily-")) {
       navigate("/daily");
@@ -259,38 +310,109 @@ const IOSPlayTab = () => {
         </button>
       )}
 
-      {/* Puzzle type grid — matches original grid pattern with PuzzleIcon added */}
-      <div>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">Choose a Puzzle</h2>
-        <div className="grid grid-cols-2 gap-2">
-          {categories.map(([type, info]) => {
-            const best = getBestForType(type, stats);
-            return (
-              <button
-                key={type}
-                onClick={() => handleQuickPlay(type)}
-                className="rounded-xl border bg-card px-4 py-3 text-left transition-all duration-150 active:scale-[0.95] active:shadow-md active:border-primary/30"
-              >
-                <div className="flex items-start gap-2.5">
-                  <div className="mt-0.5 shrink-0 text-muted-foreground">
-                    <PuzzleIcon type={type} size={22} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground leading-tight">{info.name}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{TYPE_SUBTITLES[type]}</p>
-                    {best !== null ? (
-                      <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
-                        <Trophy size={9} className="text-primary/60 shrink-0" />
-                        <span className="font-mono">{formatTime(best)}</span>
-                      </p>
-                    ) : (
-                      <p className="text-[10px] text-muted-foreground/50 mt-0.5">Not played yet</p>
+      {/* ── Puzzle type section ── */}
+      <div className="space-y-3">
+
+        {/* Returning users: top 2 "Your favourites" cards */}
+        {isReturningUser && topTwo.length > 0 && (
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-0.5">
+              Your favourites
+            </p>
+            <div className="flex gap-3">
+              {topTwo.map((type) => {
+                const best = getBestTimeForType(type);
+                return (
+                  <button
+                    key={type}
+                    onClick={() => handleQuickPlay(type)}
+                    className={cn(
+                      "flex-1 flex flex-col items-start gap-1.5 rounded-2xl border bg-card p-4",
+                      "transition-all duration-150 active:scale-[0.97] active:bg-secondary/50",
+                      "hover:border-primary/40 hover:shadow-sm"
                     )}
+                  >
+                    <PuzzleIcon type={type} size={28} />
+                    <div>
+                      <p className="text-sm font-semibold text-foreground leading-tight">
+                        {TYPE_LABELS[type]}
+                      </p>
+                      {best ? (
+                        <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
+                          Best: {formatTime(best)}
+                        </p>
+                      ) : (
+                        <p className="text-[10px] text-muted-foreground/50 mt-0.5">Play again →</p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* New users: 3 featured beginner types */}
+        {!isReturningUser && (
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-0.5">
+              Start here
+            </p>
+            <div className="flex gap-2">
+              {BEGINNER_FEATURED.map((type) => (
+                <button
+                  key={type}
+                  onClick={() => handleQuickPlay(type)}
+                  className={cn(
+                    "flex-1 flex flex-col items-center gap-2 rounded-2xl border bg-card py-4 px-2",
+                    "transition-all duration-150 active:scale-[0.97]",
+                    "hover:border-primary/40"
+                  )}
+                >
+                  <PuzzleIcon type={type} size={24} />
+                  <p className="text-[11px] font-medium text-foreground text-center leading-tight">
+                    {TYPE_LABELS[type]}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Full grid — all types */}
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-0.5">
+            {isReturningUser ? "All puzzles" : "All types"}
+          </p>
+          <div className="grid grid-cols-2 gap-2.5">
+            {rankedTypes.map((type) => {
+              const best = getBestTimeForType(type);
+              return (
+                <button
+                  key={type}
+                  onClick={() => handleQuickPlay(type)}
+                  className={cn(
+                    "flex items-center gap-3 rounded-2xl border bg-card p-3.5",
+                    "transition-all duration-150 active:scale-[0.97] active:bg-secondary/50",
+                    "text-left"
+                  )}
+                >
+                  <PuzzleIcon type={type} size={22} />
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium text-foreground truncate">
+                      {TYPE_LABELS[type]}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                      {best
+                        ? <span className="font-mono">Best: {formatTime(best)}</span>
+                        : TYPE_SUBTITLES[type]
+                      }
+                    </p>
                   </div>
-                </div>
-              </button>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -342,6 +464,7 @@ const IOSPlayTab = () => {
       </button>
 
       <IOSCustomizeSheet open={customizeOpen} onClose={() => setCustomizeOpen(false)} />
+      <PuzzleTypePicker type={pickerType} onClose={() => setPickerType(null)} />
     </div>
   );
 };

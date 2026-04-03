@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { EmptyStats } from "@/components/ui/EmptyState";
 import Layout from "@/components/layout/Layout";
 import { getProgressStats } from "@/lib/progressTracker";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puzzleTypes";
@@ -45,6 +46,7 @@ const TIER_THRESHOLDS: Record<string, number> = {
 const TIER_ORDER_LIST = ["Beginner", "Casual", "Skilled", "Advanced", "Expert"];
 
 const Stats = () => {
+  const navigate = useNavigate();
   const native = isNativeApp();
   const [dataVersion, setDataVersion] = useState(0);
   const stats = useMemo(() => getProgressStats(), [dataVersion]);
@@ -191,23 +193,7 @@ const Stats = () => {
 
         {/* ── Empty state ── */}
         {stats.totalSolved === 0 && (
-          <div className="mt-20 text-center">
-            <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-              <Target size={28} className="text-primary" />
-            </div>
-            <p className="font-display text-xl font-semibold text-foreground mb-1">No puzzles solved yet</p>
-            <p className="text-sm text-muted-foreground mb-6">Solve your first puzzle to start tracking your progress</p>
-            <div className="flex justify-center gap-3 flex-wrap">
-              <Button asChild>
-                <Link to="/daily">Today's Challenge <ArrowRight size={14} /></Link>
-              </Button>
-              {!native && (
-                <Button asChild variant="outline">
-                  <Link to="/quick-play/sudoku?mode=endless">Try Endless Mode</Link>
-                </Button>
-              )}
-            </div>
-          </div>
+          <EmptyStats onNavigate={() => navigate("/")} />
         )}
 
         {stats.totalSolved > 0 && (
