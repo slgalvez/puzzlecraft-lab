@@ -641,6 +641,7 @@ const SharedCraftPuzzle = () => {
                   />
                 )}
 
+              </div>
             )}
 
           </div>
