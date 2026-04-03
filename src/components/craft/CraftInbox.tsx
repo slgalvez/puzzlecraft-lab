@@ -4,6 +4,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Check, Trash2, FileText, Send, Eye, Inbox, Play, Clock, Trophy, Bell } from "lucide-react";
+import {
+  EmptyCraftReceived,
+  EmptyCraftSent,
+  EmptyCraftDrafts,
+} from "@/components/ui/EmptyState";
 import { useToast } from "@/hooks/use-toast";
 import { TYPE_OPTIONS } from "@/components/craft/CraftTypeCards";
 import { supabase } from "@/integrations/supabase/client";
