@@ -141,6 +141,7 @@ function ShareMessagePreviews() {
   );
 }
 
+const NONOGRAM_DIFFICULTIES = [
   { label: "5×5", value: "easy" as const },
   { label: "10×10", value: "medium" as const },
   { label: "15×15", value: "hard" as const },
