@@ -2,7 +2,6 @@ import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import CompletionPanel from "@/components/puzzles/CompletionPanel";
 import MilestoneModal, { type MilestoneToShow } from "@/components/puzzles/MilestoneModal";
-import { WhatsNewBanner } from "@/components/private/WhatsNewBanner";
 import PremiumStats from "@/components/account/PremiumStats";
 import type { MilestoneIcon } from "@/lib/milestones";
 import { Button } from "@/components/ui/button";
