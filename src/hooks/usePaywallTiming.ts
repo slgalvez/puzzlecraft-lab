@@ -63,7 +63,11 @@ export function usePaywallTiming(): UsePaywallTimingReturn {
   useEffect(() => {
     const check = () => {
       const streak = getDailyStreak();
-      if (streak.current >= 5 && !streak.playedToday) {
+      // If streak >= 5 and today isn't completed, they're at risk
+      const today = new Date().toISOString().slice(0, 10);
+      const completions = JSON.parse(localStorage.getItem("puzzlecraft-daily-completions") || "{}");
+      const playedToday = !!completions[today];
+      if (streak.current >= 5 && !playedToday) {
         maybeShow("streak_at_risk");
       }
     };
