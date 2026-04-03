@@ -1,7 +1,7 @@
 /**
  * Leaderboard sync — pushes the user's current Player Rating
- * to the leaderboard_entries table so it's visible to all users.
- * Tracks previous rating for change indicators.
+ * to the leaderboard_entries table via a security-definer RPC
+ * so users cannot self-inflate ratings.
  */
 import { supabase } from "@/integrations/supabase/client";
 import { getSolveRecords } from "./solveTracker";
@@ -23,20 +23,15 @@ export async function syncLeaderboardRating(userId: string, displayName: string 
     .eq("user_id", userId)
     .maybeSingle();
 
-  // Only update previous_rating if the stored rating differs
   const previousRating = existing ? existing.rating : 0;
 
-  await supabase.from("leaderboard_entries").upsert(
-    {
-      user_id: userId,
-      display_name: displayName || "Anonymous",
-      rating,
-      previous_rating: previousRating,
-      skill_tier: tier,
-      solve_count: records.length,
-      updated_at: new Date().toISOString(),
-      rating_updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" }
-  );
+  // Use security-definer RPC to prevent client-side rating manipulation
+  await supabase.rpc("upsert_leaderboard_entry" as any, {
+    p_user_id: userId,
+    p_display_name: displayName || "Anonymous",
+    p_rating: rating,
+    p_previous_rating: previousRating,
+    p_skill_tier: tier,
+    p_solve_count: records.length,
+  });
 }

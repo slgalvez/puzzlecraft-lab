@@ -111,8 +111,8 @@ const PrivateSettings = () => {
       setPwMsg("All fields are required");
       return;
     }
-    if (newPassword.length < 4) {
-      setPwMsg("New password must be at least 4 characters");
+    if (newPassword.length < 8) {
+      setPwMsg("New password must be at least 8 characters");
       return;
     }
     if (newPassword !== confirmPassword) {

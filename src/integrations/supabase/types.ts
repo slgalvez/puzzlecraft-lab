@@ -822,7 +822,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      upsert_leaderboard_entry: {
+        Args: {
+          p_display_name: string
+          p_previous_rating: number
+          p_rating: number
+          p_skill_tier: string
+          p_solve_count: number
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

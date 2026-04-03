@@ -671,8 +671,8 @@ Deno.serve(async (req) => {
       if (!first_name || !last_name || !password || typeof first_name !== "string" || typeof last_name !== "string" || typeof password !== "string") {
         return err("Missing fields", 400);
       }
-      if (first_name.trim().length === 0 || last_name.trim().length === 0 || password.length < 4) {
-        return err("Invalid fields", 400);
+      if (first_name.trim().length === 0 || last_name.trim().length === 0 || password.length < 8) {
+        return err("Password must be at least 8 characters", 400);
       }
 
       const encoder = new TextEncoder();
@@ -709,7 +709,7 @@ Deno.serve(async (req) => {
       if (!isAdmin) return err("Access denied");
       const { authorized_user_id, new_password } = body;
       if (!authorized_user_id || !new_password || typeof new_password !== "string") return err("Missing fields", 400);
-      if (new_password.length < 4) return err("Password must be at least 4 characters", 400);
+      if (new_password.length < 8) return err("Password must be at least 8 characters", 400);
 
       const encoder = new TextEncoder();
       const salt = crypto.getRandomValues(new Uint8Array(16));
@@ -812,7 +812,7 @@ Deno.serve(async (req) => {
     if (action === "change-password") {
       const { current_password, new_password } = body;
       if (!current_password || !new_password || typeof current_password !== "string" || typeof new_password !== "string") return err("Invalid fields", 400);
-      if (new_password.length < 4) return err("Password must be at least 4 characters", 400);
+      if (new_password.length < 8) return err("Password must be at least 8 characters", 400);
       if (new_password.length > 200) return err("Password too long", 400);
 
       const { data: profile } = await sb.from("profiles").select("authorized_user_id").eq("id", profileId).single();

@@ -92,8 +92,8 @@ const AdminUsers = () => {
       setAddError("All fields are required");
       return;
     }
-    if (newPassword.length < 4) {
-      setAddError("Password must be at least 4 characters");
+    if (newPassword.length < 8) {
+      setAddError("Password must be at least 8 characters");
       return;
     }
 
@@ -120,8 +120,8 @@ const AdminUsers = () => {
 
   const handleResetPassword = async (userId: string) => {
     if (!token || !resetPassword) return;
-    if (resetPassword.length < 4) {
-      setResetMsg("Password must be at least 4 characters");
+    if (resetPassword.length < 8) {
+      setResetMsg("Password must be at least 8 characters");
       return;
     }
     setResetting(true);
