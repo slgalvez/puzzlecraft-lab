@@ -134,7 +134,7 @@ function scalePattern(pattern: number[][], targetSize: number, rng: SeededRandom
   const noiseRate = 0.08;
   for (let r = 0; r < targetSize; r++) {
     for (let c = 0; c < targetSize; c++) {
-      if (rng.nextFloat() < noiseRate) {
+      if (rng.next() < noiseRate) {
         grid[r][c] = !grid[r][c];
       }
     }
