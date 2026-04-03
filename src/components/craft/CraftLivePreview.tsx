@@ -162,24 +162,45 @@ function MiniGrid({ data, type }: { data: Record<string, unknown>; type: "word-f
 
 function MiniWordSearch({ data }: { data: Record<string, unknown> }) {
   const grid = (data.grid as string[][]) || [];
-  const size = Math.min(grid.length, 12); // cap display size
-  const cellSize = Math.min(16, Math.floor(200 / size));
+  const wordPositions = (data.wordPositions as { word: string; row: number; col: number; dr: number; dc: number }[]) || [];
+  const size = Math.min(grid.length, 14);
+  const cellSize = Math.min(18, Math.floor(260 / size));
+  const fontSize = Math.max(6, cellSize * 0.55);
+
+  // Build a set of solution cells
+  const solutionCells = useMemo(() => {
+    const cells = new Set<string>();
+    for (const wp of wordPositions) {
+      for (let i = 0; i < wp.word.length; i++) {
+        cells.add(`${wp.row + wp.dr * i}-${wp.col + wp.dc * i}`);
+      }
+    }
+    return cells;
+  }, [wordPositions]);
 
   return (
     <div
-      className="inline-grid gap-0"
+      className="inline-grid gap-0 border border-border/30 rounded overflow-hidden"
       style={{ gridTemplateColumns: `repeat(${size}, ${cellSize}px)` }}
     >
       {Array.from({ length: size }, (_, r) =>
-        Array.from({ length: size }, (_, c) => (
-          <div
-            key={`${r}-${c}`}
-            className="flex items-center justify-center font-mono text-foreground/40"
-            style={{ width: cellSize, height: cellSize, fontSize: cellSize * 0.55 }}
-          >
-            {grid[r]?.[c] || "·"}
-          </div>
-        ))
+        Array.from({ length: size }, (_, c) => {
+          const isSolution = solutionCells.has(`${r}-${c}`);
+          return (
+            <div
+              key={`${r}-${c}`}
+              className={cn(
+                "flex items-center justify-center font-mono",
+                isSolution
+                  ? "bg-primary/15 text-primary font-semibold"
+                  : "text-foreground/25"
+              )}
+              style={{ width: cellSize, height: cellSize, fontSize }}
+            >
+              {grid[r]?.[c] || "·"}
+            </div>
+          );
+        })
       )}
     </div>
   );
