@@ -192,6 +192,10 @@ const QuickPlay = () => {
   }, []);
 
   const handleDifficultyChange = (d: Difficulty) => {
+    if (isDiffLocked(d)) {
+      setUpgradeOpen(true);
+      return;
+    }
     setDifficulty(d);
     try {
       const stored = JSON.parse(localStorage.getItem("play_difficulties") || "{}");
