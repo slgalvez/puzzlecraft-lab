@@ -89,10 +89,10 @@ async function purchaseWithRevenueCat(annual: boolean): Promise<boolean> {
 
 // ── Web redirect (Path C — iOS with no IAP) ───────────────────────────────
 
-function openSubscribeOnWebsite(): void {
+async function openSubscribeOnWebsite(): Promise<void> {
   try {
-    const { Browser } = require("@capacitor/browser");
-    Browser.open({ url: SUBSCRIBE_WEB_URL });
+    const mod = await import("@capacitor/browser" as string);
+    await mod.Browser.open({ url: SUBSCRIBE_WEB_URL });
   } catch {
     window.open(SUBSCRIBE_WEB_URL, "_blank");
   }
