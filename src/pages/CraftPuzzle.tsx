@@ -367,6 +367,7 @@ const CraftPuzzle = () => {
   }, [shareUrl, toast]);
 
   const handleCopyLink = async () => {
+    if (limitReached) { setUpgradeOpen(true); return; }
     if (!shareUrl) return;
     const fullText = buildCraftShareText(
       puzzleTitle.trim() || undefined,
