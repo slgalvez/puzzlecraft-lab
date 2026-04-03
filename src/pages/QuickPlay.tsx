@@ -6,9 +6,10 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory,
 import { randomSeed } from "@/lib/seededRandom";
 import { cn } from "@/lib/utils";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
-import { ArrowLeft, Dices, Infinity, TrendingUp, TrendingDown, Minus, Square, Crown, Lock } from "lucide-react";
+import { ArrowLeft, Dices, Infinity, TrendingUp, TrendingDown, Minus, Square } from "lucide-react";
 import { usePremiumAccess } from "@/lib/premiumAccess";
 import UpgradeModal from "@/components/account/UpgradeModal";
+import DifficultySelector from "@/components/puzzles/DifficultySelector";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { computeNextDifficulty, createDifficultyMap, type PuzzlePerformance } from "@/lib/endlessDifficulty";
