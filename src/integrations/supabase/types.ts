@@ -674,22 +674,31 @@ export type Database = {
         Row: {
           completed_at: string | null
           created_at: string
+          creator_solve_time: number | null
+          creator_solved_at: string | null
           id: string
           payload: Json
+          solve_time: number | null
           started_at: string | null
         }
         Insert: {
           completed_at?: string | null
           created_at?: string
+          creator_solve_time?: number | null
+          creator_solved_at?: string | null
           id: string
           payload: Json
+          solve_time?: number | null
           started_at?: string | null
         }
         Update: {
           completed_at?: string | null
           created_at?: string
+          creator_solve_time?: number | null
+          creator_solved_at?: string | null
           id?: string
           payload?: Json
+          solve_time?: number | null
           started_at?: string | null
         }
         Relationships: []
