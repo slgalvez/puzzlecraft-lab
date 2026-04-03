@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share, Copy, Check, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share, Copy, Check, Loader2, Save, Trophy } from "lucide-react";
 import CraftStepper from "@/components/craft/CraftStepper";
 import CraftTypeCards, { TYPE_OPTIONS } from "@/components/craft/CraftTypeCards";
 import CraftPreviewGrid from "@/components/craft/CraftPreviewGrid";
@@ -76,6 +76,13 @@ const CraftPuzzle = () => {
   
   const sentRecorded = useRef(false);
 
+  // Challenge mode state
+  const [creatorSolveTime, setCreatorSolveTime] = useState<number | null>(null);
+  const [challengeTimerRunning, setChallengeTimerRunning] = useState(false);
+  const [challengeElapsed, setChallengeElapsed] = useState(0);
+  const challengeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const challengeStartRef = useRef<number | null>(null);
+
   // Active draft ID for auto-save
   const activeDraftId = useRef<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -92,6 +99,13 @@ const CraftPuzzle = () => {
       window.history.replaceState({}, "");
     }
   }, [location.state]);
+
+  // Challenge timer cleanup
+  useEffect(() => {
+    return () => {
+      if (challengeTimerRef.current) clearInterval(challengeTimerRef.current);
+    };
+  }, []);
 
   /* ── Mark dirty on any content change ── */
   useEffect(() => {
@@ -306,12 +320,44 @@ const CraftPuzzle = () => {
     refreshDraftCount();
   }, [shareUrl, selectedType, puzzleTitle, puzzleFrom, revealMessage, refreshDraftCount]);
 
+  const handleStartChallenge = useCallback(() => {
+    if (!shareUrl || !selectedType) return;
+    challengeStartRef.current = Date.now();
+    setChallengeTimerRunning(true);
+    setChallengeElapsed(0);
+    challengeTimerRef.current = setInterval(() => {
+      setChallengeElapsed(Math.floor((Date.now() - challengeStartRef.current!) / 1000));
+    }, 1000);
+    const shareId = shareUrl.split("/s/")[1] || shareUrl;
+    window.open(`/s/${shareId}`, "_blank");
+  }, [shareUrl, selectedType]);
+
+  const handleCreatorSolved = useCallback((time: number) => {
+    if (challengeTimerRef.current) clearInterval(challengeTimerRef.current);
+    setChallengeTimerRunning(false);
+    setCreatorSolveTime(time);
+    if (shareUrl) {
+      const shareId = shareUrl.split("/s/")[1] || shareUrl;
+      supabase
+        .from("shared_puzzles" as any)
+        .update({
+          creator_solve_time: time,
+          creator_solved_at: new Date().toISOString(),
+        } as any)
+        .eq("id", shareId)
+        .then();
+    }
+    toast({ title: `Challenge set! Your time: ${Math.floor(time / 60)}:${(time % 60).toString().padStart(2, "0")}` });
+  }, [shareUrl, toast]);
+
   const handleCopyLink = async () => {
     if (!shareUrl) return;
     const fullText = buildCraftShareText(
       puzzleTitle.trim() || undefined,
       puzzleFrom.trim() || undefined,
       shareUrl,
+      selectedType ?? undefined,
+      creatorSolveTime,
     );
     try {
       await navigator.clipboard.writeText(fullText);
@@ -333,18 +379,17 @@ const CraftPuzzle = () => {
       puzzleTitle.trim() || undefined,
       puzzleFrom.trim() || undefined,
       shareUrl,
+      selectedType ?? undefined,
+      creatorSolveTime,
     );
 
     if (navigator.share) {
       try {
         await navigator.share({ text: shareText });
-        // Promise resolved without error → user completed the share action
         recordSent();
         setShareSuccess(true);
         setTimeout(() => setShareSuccess(false), 1500);
       } catch (err: unknown) {
-        // AbortError = user cancelled the share sheet — do NOT mark as sent
-        // Any other error is also not a successful share
         if (err instanceof Error && err.name !== "AbortError") {
           console.warn("Share failed:", err.message);
         }
@@ -352,7 +397,6 @@ const CraftPuzzle = () => {
       return;
     }
 
-    // Fallback: copy to clipboard, then navigate back
     try {
       await navigator.clipboard.writeText(shareText);
       recordSent();
@@ -673,6 +717,42 @@ const CraftPuzzle = () => {
                   <div className="p-4 rounded-xl bg-muted/50 border border-border space-y-1.5">
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Reveal Message (Preview)</p>
                     <p className="text-sm italic text-foreground/80">{revealMessage}</p>
+                  </div>
+                )}
+
+                {!creatorSolveTime ? (
+                  <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="h-4 w-4 text-primary" />
+                      <p className="text-sm font-semibold text-foreground">Set a challenge time</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Solve it yourself first — your time becomes the target your friend must beat.
+                    </p>
+                    <button
+                      onClick={handleStartChallenge}
+                      className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                    >
+                      Solve it yourself →
+                    </button>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 flex items-center gap-3">
+                    <Trophy className="h-4 w-4 text-primary shrink-0" />
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">
+                        Challenge set — {Math.floor(creatorSolveTime / 60)}:{(creatorSolveTime % 60).toString().padStart(2, "0")}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        Your friend must beat your time. This is included in the share text.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setCreatorSolveTime(null)}
+                      className="ml-auto text-[10px] text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                    >
+                      Remove
+                    </button>
                   </div>
                 )}
 
