@@ -54,6 +54,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
   const puzzle = useMemo(() => generateNonogram(seed, difficulty), [seed, difficulty]);
   const { rows, cols, solution, rowClues, colClues } = puzzle;
   const timerKey = `nonogram-${seed}-${difficulty}`;
+  const session = usePuzzleSession({ puzzleType: "nonogram", difficulty, progressUnit: "rows" });
 
   const saved = useMemo(() => loadProgress<NonogramState>(timerKey), [timerKey]);
 
