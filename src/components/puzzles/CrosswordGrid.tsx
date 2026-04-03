@@ -490,19 +490,22 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
         )}
 
         {showControls && onNewPuzzle && (
-          <PuzzleControls
-            onReset={handleReset}
-            onCheck={handleCheck}
-            onNewPuzzle={onNewPuzzle}
-            onHint={showHints ? handleHint : undefined}
-            onReveal={showReveal ? handleReveal : undefined}
-            hintCount={hintCount.current}
-            maxHints={showHints ? maxHints : undefined}
-            isRevealed={isRevealed}
-            puzzleCode={dailyCode ?? puzzle.id}
-            solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty: puzzle.difficulty as any, isEndless, assisted: hintCount.current > 0, category: "crossword", seed: parseInt(puzzle.id.replace(/\D/g, "")) || 0, dailyCode }}
-            saveStatus={saveStatus}
-          />
+          <>
+            <PuzzleToolbar
+              onHint={showHints ? handleHint : undefined}
+              hintsRemaining={showHints && maxHints != null ? Math.max(0, maxHints - hintCount.current) : undefined}
+              onCheck={handleCheck}
+              onReveal={showReveal ? handleReveal : undefined}
+            />
+            <PuzzleControls
+              onReset={handleReset}
+              onNewPuzzle={onNewPuzzle}
+              isRevealed={isRevealed}
+              puzzleCode={dailyCode ?? puzzle.id}
+              solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty: puzzle.difficulty as any, isEndless, assisted: hintCount.current > 0, category: "crossword", seed: parseInt(puzzle.id.replace(/\D/g, "")) || 0, dailyCode }}
+              saveStatus={saveStatus}
+            />
+          </>
         )}
       </div>
 

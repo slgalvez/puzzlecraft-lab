@@ -20,7 +20,7 @@ import {
 
 interface Props {
   onReset: () => void;
-  onCheck: () => void;
+  onCheck?: () => void;
   onNewPuzzle: () => void;
   onReveal?: () => void;
   onHint?: () => void;
@@ -132,9 +132,11 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
           </div>
 
           {/* Primary — Check Solution, full width */}
-          <Button className="w-full h-11" onClick={onCheck}>
-            <CheckCircle2 className="mr-1.5 h-4 w-4" /> Check Solution
-          </Button>
+          {onCheck && (
+            <Button className="w-full h-11" onClick={onCheck}>
+              <CheckCircle2 className="mr-1.5 h-4 w-4" /> Check Solution
+            </Button>
+          )}
 
           {/* Secondary — Hint + Reveal side by side */}
           {showControls && (onHint || onReveal) && (
@@ -192,9 +194,11 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
         <div className="space-y-4">
           {/* All controls in one unified row */}
           <div className="flex flex-wrap items-center gap-2.5">
-            <Button size="sm" onClick={onCheck}>
-              <CheckCircle2 className="mr-1.5 h-4 w-4" /> Check Solution
-            </Button>
+            {onCheck && (
+              <Button size="sm" onClick={onCheck}>
+                <CheckCircle2 className="mr-1.5 h-4 w-4" /> Check Solution
+              </Button>
+            )}
             {onHint && showControls && (
               <Button
                 variant="outline"
