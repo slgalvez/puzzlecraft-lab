@@ -111,7 +111,25 @@ function MiniGrid({ data, type }: { data: Record<string, unknown>; type: "word-f
   const gridSize = (data.gridSize as number) || 9;
   const blackCells = (data.blackCells as [number, number][]) || [];
   const blacks = new Set(blackCells.map(([r, c]) => `${r}-${c}`));
-  const cellSize = Math.min(20, Math.floor(200 / gridSize));
+  const cellSize = Math.min(22, Math.floor(240 / gridSize));
+  const fontSize = Math.max(6, cellSize * 0.5);
+
+  // Build solution grid from data
+  const solutionGrid: (string | null)[][] = [];
+  if (type === "word-fill" && data.solution) {
+    const sol = data.solution as (string | null)[][];
+    for (let r = 0; r < gridSize; r++) solutionGrid[r] = sol[r] || [];
+  } else if (type === "crossword" && data.clues) {
+    for (let r = 0; r < gridSize; r++) solutionGrid[r] = Array(gridSize).fill(null);
+    const clues = data.clues as { answer: string; row: number; col: number; direction: "across" | "down" }[];
+    for (const clue of clues) {
+      for (let i = 0; i < clue.answer.length; i++) {
+        const r = clue.direction === "down" ? clue.row + i : clue.row;
+        const c = clue.direction === "across" ? clue.col + i : clue.col;
+        if (r < gridSize && c < gridSize) solutionGrid[r][c] = clue.answer[i];
+      }
+    }
+  }
 
   return (
     <div
@@ -121,15 +139,20 @@ function MiniGrid({ data, type }: { data: Record<string, unknown>; type: "word-f
       {Array.from({ length: gridSize }, (_, r) =>
         Array.from({ length: gridSize }, (_, c) => {
           const isBlack = blacks.has(`${r}-${c}`);
+          const letter = solutionGrid[r]?.[c] || null;
           return (
             <div
               key={`${r}-${c}`}
               className={cn(
-                "border border-border/20",
+                "border border-border/20 flex items-center justify-center",
                 isBlack ? "bg-foreground/80" : "bg-card"
               )}
-              style={{ width: cellSize, height: cellSize }}
-            />
+              style={{ width: cellSize, height: cellSize, fontSize }}
+            >
+              {!isBlack && letter && (
+                <span className="font-mono font-medium text-foreground/70 leading-none">{letter}</span>
+              )}
+            </div>
           );
         })
       )}
@@ -164,24 +187,28 @@ function MiniWordSearch({ data }: { data: Record<string, unknown> }) {
 
 function MiniCryptogram({ data }: { data: Record<string, unknown> }) {
   const encoded = (data.encoded as string) || "";
-  const preview = encoded.slice(0, 40) + (encoded.length > 40 ? "…" : "");
+  const decoded = (data.decoded as string) || "";
+  const previewEncoded = encoded.slice(0, 40) + (encoded.length > 40 ? "…" : "");
+  const previewDecoded = decoded.slice(0, 40) + (decoded.length > 40 ? "…" : "");
 
   return (
-    <div className="font-mono text-xs text-muted-foreground/70 leading-relaxed break-all">
-      {preview.split("").map((ch, i) => (
-        <span
-          key={i}
-          className={ch === " " ? "mr-2" : "inline-flex flex-col items-center mr-0.5"}
-        >
-          {ch !== " " && (
-            <>
-              <span className="border-b border-foreground/20 w-4 text-center text-foreground/60 text-[10px]">{ch}</span>
-              <span className="text-[8px] text-muted-foreground/30 mt-0.5">·</span>
-            </>
-          )}
-          {ch === " " && " "}
-        </span>
-      ))}
+    <div className="space-y-1.5">
+      <div className="font-mono text-xs leading-relaxed break-all flex flex-wrap gap-x-1 gap-y-0.5">
+        {previewEncoded.split("").map((ch, i) => (
+          <span
+            key={i}
+            className={ch === " " ? "w-2" : "inline-flex flex-col items-center"}
+          >
+            {ch !== " " && (
+              <>
+                <span className="border-b border-foreground/20 w-4 text-center text-foreground/60 text-[10px]">{ch}</span>
+                <span className="w-4 text-center text-primary/60 text-[9px] font-semibold">{previewDecoded[i] !== " " ? previewDecoded[i] : ""}</span>
+              </>
+            )}
+          </span>
+        ))}
+      </div>
+      <p className="text-[10px] text-muted-foreground/50 italic">Solution shown above in colour</p>
     </div>
   );
 }
