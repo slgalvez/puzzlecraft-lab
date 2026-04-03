@@ -253,7 +253,7 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
         {/* ── Sent ── */}
         <TabsContent value="sent" className="mt-0">
           {sent.length === 0 ? (
-            <EmptyState icon={<Send className="h-5 w-5" />} text="No sent puzzles yet" sub="Puzzles you share will appear here" />
+            <EmptyCraftSent onNavigate={() => navigate("/craft")} />
           ) : (
             <div className="space-y-2.5">
               {sent.map((s) => {
