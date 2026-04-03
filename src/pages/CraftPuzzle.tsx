@@ -390,6 +390,7 @@ const CraftPuzzle = () => {
   };
 
   const handleShare = async () => {
+    if (limitReached) { setUpgradeOpen(true); return; }
     if (!shareUrl || !generatedData || !selectedType) return;
 
     const shareText = buildCraftShareText(
