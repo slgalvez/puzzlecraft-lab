@@ -28,6 +28,8 @@ import AdminPreview from "./pages/AdminPreview";
 import { UserAccountProvider } from "./contexts/UserAccountContext";
 import DataMergeModal from "./components/account/DataMergeModal";
 import { MilestoneModalManager } from "./components/puzzles/MilestoneModalManager";
+import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
+import { useOnboarding } from "@/hooks/useOnboarding";
 // Private app — completely separate auth system (custom JWT, separate DB tables)
 import { isNativeApp } from "./lib/appMode";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -76,6 +78,12 @@ function NavigationTracker() {
 
 /** Wraps public routes with the main account system */
 function PublicRoutes() {
+  const { onboardingComplete, completeOnboarding } = useOnboarding();
+
+  if (!onboardingComplete) {
+    return <OnboardingFlow onComplete={completeOnboarding} />;
+  }
+
   return (
     <UserAccountProvider>
       <DataMergeModal />
