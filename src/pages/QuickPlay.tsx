@@ -31,7 +31,7 @@ import { generateCrossword } from "@/lib/generators/crosswordGen";
 import { generateWordFillIn, generateNumberFillIn } from "@/lib/generators/fillGen";
 import type { CrosswordPuzzle, FillInPuzzle } from "@/data/puzzles";
 
-const difficulties = Object.entries(DIFFICULTY_LABELS) as [Difficulty, string][];
+
 const allTypes = Object.keys(CATEGORY_INFO) as PuzzleCategory[];
 const allDifficulties = Object.keys(DIFFICULTY_LABELS) as Difficulty[];
 
