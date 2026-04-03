@@ -37,6 +37,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateSudoku(seed, difficulty), [seed, difficulty]);
   const timerKey = `sudoku-${seed}-${difficulty}`;
+  const session = usePuzzleSession({ puzzleType: "sudoku", difficulty, progressUnit: "cells" });
 
   const saved = useMemo(() => loadProgress<SudokuState>(timerKey), [timerKey]);
 
