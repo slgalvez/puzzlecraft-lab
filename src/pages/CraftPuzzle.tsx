@@ -597,6 +597,7 @@ const CraftPuzzle = () => {
                   showWordSuggestions={selectedType === "word-fill" || selectedType === "word-search"}
                 />
 
+{(selectedType === "word-fill" || selectedType === "word-search") && (
                   <div className="space-y-3">
                     <div className="space-y-2">
                       <label className="text-xs font-medium text-muted-foreground">Enter words (one per line or comma-separated)</label>
