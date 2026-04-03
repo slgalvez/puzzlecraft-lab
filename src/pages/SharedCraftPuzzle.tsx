@@ -78,6 +78,7 @@ const SharedCraftPuzzle = () => {
   const location = useLocation();
   const { toast } = useToast();
   const fromInbox = (location.state as { fromInbox?: string } | null)?.fromInbox;
+  const isCreatorMode = new URLSearchParams(window.location.search).get("creator") === "1";
 
   // ── State ──
   const [solved, setSolved] = useState(false);
