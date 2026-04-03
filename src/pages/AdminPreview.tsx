@@ -95,6 +95,52 @@ function NonogramMiniGrid({ solution }: { solution: boolean[][] }) {
   );
 }
 
+const SHARE_MESSAGES = [
+  {
+    label: "Daily Challenge Result",
+    description: "Sent when a user shares their daily challenge completion",
+    text: `Just solved today's Puzzlecraft challenge 🧠\n\nCrossword • Medium • 4:32\n🔥 7-day streak\n\nCan you beat this time?\n\nPlay: https://puzzlecraft-lab.lovable.app/play?code=daily-2026-04-03`,
+  },
+  {
+    label: "Puzzle Result (Quick Play)",
+    description: "Sent when a user shares a completed puzzle from Quick Play or Puzzle Lab",
+    text: `Just tackled a Puzzlecraft puzzle 🧠\n\nSudoku • Hard • 12:05\n\nCan you beat this time?\n\nPlay: https://puzzlecraft-lab.lovable.app/play?code=sudoku-307144639-hard\n\nPuzzle Code: 307144639`,
+  },
+  {
+    label: "Crafted Puzzle Message",
+    description: "Sent when a user shares a crafted puzzle via iMessage or similar",
+    text: `Made this one for you!\nCheck it out here https://puzzlecraft-lab.lovable.app/s/abc123-craft-id`,
+  },
+];
+
+function ShareMessagePreviews() {
+  return (
+    <section className="space-y-3 rounded-xl border border-border/30 p-4">
+      <h2 className="text-sm font-semibold text-foreground">Share Message Previews</h2>
+      <p className="text-xs text-muted-foreground">
+        Sample messages as they appear when shared via iMessage, WhatsApp, etc.
+      </p>
+      <div className="space-y-4">
+        {SHARE_MESSAGES.map((msg) => (
+          <div key={msg.label} className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-foreground">{msg.label}</span>
+              <span className="text-[10px] text-muted-foreground/60">{msg.description}</span>
+            </div>
+            {/* iMessage-style bubble */}
+            <div className="max-w-sm ml-auto">
+              <div className="rounded-2xl rounded-br-md bg-[#007AFF] text-white px-4 py-2.5 text-sm whitespace-pre-line leading-relaxed shadow-sm">
+                {msg.text}
+              </div>
+              <p className="text-[9px] text-muted-foreground/50 text-right mt-0.5 mr-1">iMessage</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 const NONOGRAM_DIFFICULTIES = [
   { label: "5×5", value: "easy" as const },
   { label: "10×10", value: "medium" as const },
@@ -382,6 +428,9 @@ export default function AdminPreview() {
             </div>
           )}
         </section>
+
+        {/* ── Share Message Previews ── */}
+        <ShareMessagePreviews />
 
         {/* ── Nonogram Pattern Preview ── */}
         <NonogramPreview />
