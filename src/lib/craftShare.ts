@@ -14,6 +14,7 @@ export interface CraftPayload {
   title?: string;
   from?: string;
   settings?: CraftPuzzleSettings;
+  theme?: string; // theme ID from craftThemes.ts
 }
 
 const CRAFT_HANDOFF_KEY = "craft_message_handoff";
