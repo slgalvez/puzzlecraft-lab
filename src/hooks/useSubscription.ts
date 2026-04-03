@@ -26,12 +26,10 @@ type SubscriptionPlatform = "stripe" | "apple" | "web_redirect";
 function getActivePlatform(): SubscriptionPlatform {
   if (!isNativeApp()) return "stripe";
 
-  try {
-    require("@revenuecat/purchases-capacitor");
-    return "apple";
-  } catch {
-    return "web_redirect";
-  }
+  // On native, we always use web_redirect (Path C) since RevenueCat
+  // is only available at runtime inside the native shell.
+  // The purchaseWithRevenueCat function handles the dynamic import.
+  return "web_redirect";
 }
 
 // ── Stripe purchase (web only) ─────────────────────────────────────────────
