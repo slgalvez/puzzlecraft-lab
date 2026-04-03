@@ -320,12 +320,44 @@ const CraftPuzzle = () => {
     refreshDraftCount();
   }, [shareUrl, selectedType, puzzleTitle, puzzleFrom, revealMessage, refreshDraftCount]);
 
+  const handleStartChallenge = useCallback(() => {
+    if (!shareUrl || !selectedType) return;
+    challengeStartRef.current = Date.now();
+    setChallengeTimerRunning(true);
+    setChallengeElapsed(0);
+    challengeTimerRef.current = setInterval(() => {
+      setChallengeElapsed(Math.floor((Date.now() - challengeStartRef.current!) / 1000));
+    }, 1000);
+    const shareId = shareUrl.split("/s/")[1] || shareUrl;
+    window.open(`/s/${shareId}`, "_blank");
+  }, [shareUrl, selectedType]);
+
+  const handleCreatorSolved = useCallback((time: number) => {
+    if (challengeTimerRef.current) clearInterval(challengeTimerRef.current);
+    setChallengeTimerRunning(false);
+    setCreatorSolveTime(time);
+    if (shareUrl) {
+      const shareId = shareUrl.split("/s/")[1] || shareUrl;
+      supabase
+        .from("shared_puzzles" as any)
+        .update({
+          creator_solve_time: time,
+          creator_solved_at: new Date().toISOString(),
+        } as any)
+        .eq("id", shareId)
+        .then();
+    }
+    toast({ title: `Challenge set! Your time: ${Math.floor(time / 60)}:${(time % 60).toString().padStart(2, "0")}` });
+  }, [shareUrl, toast]);
+
   const handleCopyLink = async () => {
     if (!shareUrl) return;
     const fullText = buildCraftShareText(
       puzzleTitle.trim() || undefined,
       puzzleFrom.trim() || undefined,
       shareUrl,
+      selectedType ?? undefined,
+      creatorSolveTime,
     );
     try {
       await navigator.clipboard.writeText(fullText);
@@ -347,18 +379,17 @@ const CraftPuzzle = () => {
       puzzleTitle.trim() || undefined,
       puzzleFrom.trim() || undefined,
       shareUrl,
+      selectedType ?? undefined,
+      creatorSolveTime,
     );
 
     if (navigator.share) {
       try {
         await navigator.share({ text: shareText });
-        // Promise resolved without error → user completed the share action
         recordSent();
         setShareSuccess(true);
         setTimeout(() => setShareSuccess(false), 1500);
       } catch (err: unknown) {
-        // AbortError = user cancelled the share sheet — do NOT mark as sent
-        // Any other error is also not a successful share
         if (err instanceof Error && err.name !== "AbortError") {
           console.warn("Share failed:", err.message);
         }
@@ -366,7 +397,6 @@ const CraftPuzzle = () => {
       return;
     }
 
-    // Fallback: copy to clipboard, then navigate back
     try {
       await navigator.clipboard.writeText(shareText);
       recordSent();
