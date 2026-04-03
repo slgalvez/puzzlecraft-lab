@@ -36,6 +36,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
   const puzzle = useMemo(() => generateCryptogram(seed, difficulty), [seed, difficulty]);
   const { encoded, decoded, reverseCipher, hints } = puzzle;
   const timerKey = `cryptogram-${seed}-${difficulty}`;
+  const session = usePuzzleSession({ puzzleType: "cryptogram", difficulty, progressUnit: "letters" });
 
   const saved = useMemo(() => loadProgress<CryptogramState>(timerKey), [timerKey]);
 
