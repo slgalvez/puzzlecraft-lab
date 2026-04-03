@@ -53,6 +53,8 @@ const MilestoneModal = ({ milestones, onDismiss }: Props) => {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
   const hasFiredHaptic = useRef(false);
+  const streakDays = useMemo(() => getProgressStats().currentStreak, []);
+  const { generateAndShare, sharing } = useMilestoneShare(streakDays);
 
   const current = milestones[currentIdx];
   const isLast = currentIdx === milestones.length - 1;
