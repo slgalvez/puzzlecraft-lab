@@ -108,6 +108,11 @@ export default {
           "50%": { opacity: "1", transform: "scale(1.2) rotate(5deg)" },
           "100%": { opacity: "0", transform: "scale(0.8) rotate(0deg)" },
         },
+        shake: {
+          "0%, 100%": { transform: "translateX(0)" },
+          "25%": { transform: "translateX(-3px)" },
+          "75%": { transform: "translateX(3px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -115,6 +120,7 @@ export default {
         "cell-pop": "cell-pop 0.15s ease-out",
         "milestone-glow": "milestone-glow 1.2s ease-out forwards",
         "milestone-sparkle": "milestone-sparkle 0.8s ease-out forwards",
+        shake: "shake 0.2s ease-in-out",
       },
     },
   },
