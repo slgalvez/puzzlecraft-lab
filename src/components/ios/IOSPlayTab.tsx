@@ -118,6 +118,7 @@ function getRankedTypes(allTypes: PuzzleCategory[]): {
 const IOSPlayTab = () => {
   const navigate = useNavigate();
   const [customizeOpen, setCustomizeOpen] = useState(false);
+  const [pickerType, setPickerType] = useState<PuzzleCategory | null>(null);
   const [now, setNow] = useState(Date.now());
 
   // Refresh countdown every second
