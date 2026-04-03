@@ -709,7 +709,7 @@ Deno.serve(async (req) => {
       if (!isAdmin) return err("Access denied");
       const { authorized_user_id, new_password } = body;
       if (!authorized_user_id || !new_password || typeof new_password !== "string") return err("Missing fields", 400);
-      if (new_password.length < 4) return err("Password must be at least 4 characters", 400);
+      if (new_password.length < 8) return err("Password must be at least 8 characters", 400);
 
       const encoder = new TextEncoder();
       const salt = crypto.getRandomValues(new Uint8Array(16));
