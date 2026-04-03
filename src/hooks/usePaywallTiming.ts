@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { usePremiumAccess } from "@/lib/premiumAccess";
-import { getDailyStreak } from "@/lib/progressTracker";
+import { getDailyStreak } from "@/lib/dailyChallenge";
 import { getSolveRecords } from "@/lib/solveTracker";
 
 const PAYWALL_SHOWN_KEY    = "puzzlecraft_paywall_shown_at";

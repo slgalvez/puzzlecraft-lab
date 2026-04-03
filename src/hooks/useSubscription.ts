@@ -143,7 +143,8 @@ async function openManageSubscription(platform: SubscriptionPlatform): Promise<v
 
 async function restorePurchases(): Promise<boolean> {
   try {
-    const { Purchases } = await import("@revenuecat/purchases-capacitor");
+    const RC = await import("@revenuecat/purchases-capacitor" as string);
+    const Purchases = RC.Purchases;
     const { customerInfo } = await Purchases.restorePurchases();
     return !!customerInfo.entitlements.active[RC_ENTITLEMENT_ID];
   } catch {
