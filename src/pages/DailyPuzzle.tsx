@@ -197,14 +197,30 @@ const DailyPuzzle = () => {
               </div>
             </div>
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  const diffLabel = DIFFICULTY_LABELS[challenge.difficulty];
+                  const timeStr = formatTime(completion.time);
+                  const shareUrl = `${window.location.origin}/play?code=daily-${challenge.dateStr}`;
+                  const text = `Just solved today's Puzzlecraft challenge 🧠\n\n${info.name} • ${diffLabel} • ${timeStr}${streak.current > 1 ? `\n🔥 ${streak.current}-day streak` : ""}\n\nCan you beat this time?\n\nPlay: ${shareUrl}`;
+                  if (navigator.share) {
+                    try {
+                      await navigator.share({ text });
+                    } catch { /* user cancelled */ }
+                  } else {
+                    await navigator.clipboard.writeText(text);
+                    toast({ title: "Results copied to clipboard!" });
+                  }
+                }}
+              >
+                <Share size={14} className="mr-1.5" />
+                Share
+              </Button>
               <Button asChild variant="outline" size="sm">
                 <Link to={`/generate/${challenge.category}`}>
                   Play More {info.name} <ArrowRight size={14} />
-                </Link>
-              </Button>
-              <Button asChild size="sm">
-                <Link to="/quick-play/sudoku?mode=endless">
-                  Endless Mode <ArrowRight size={14} />
                 </Link>
               </Button>
             </div>
