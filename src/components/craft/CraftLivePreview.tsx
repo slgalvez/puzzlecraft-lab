@@ -111,7 +111,25 @@ function MiniGrid({ data, type }: { data: Record<string, unknown>; type: "word-f
   const gridSize = (data.gridSize as number) || 9;
   const blackCells = (data.blackCells as [number, number][]) || [];
   const blacks = new Set(blackCells.map(([r, c]) => `${r}-${c}`));
-  const cellSize = Math.min(20, Math.floor(200 / gridSize));
+  const cellSize = Math.min(22, Math.floor(240 / gridSize));
+  const fontSize = Math.max(6, cellSize * 0.5);
+
+  // Build solution grid from data
+  const solutionGrid: (string | null)[][] = [];
+  if (type === "word-fill" && data.solution) {
+    const sol = data.solution as (string | null)[][];
+    for (let r = 0; r < gridSize; r++) solutionGrid[r] = sol[r] || [];
+  } else if (type === "crossword" && data.clues) {
+    for (let r = 0; r < gridSize; r++) solutionGrid[r] = Array(gridSize).fill(null);
+    const clues = data.clues as { answer: string; row: number; col: number; direction: "across" | "down" }[];
+    for (const clue of clues) {
+      for (let i = 0; i < clue.answer.length; i++) {
+        const r = clue.direction === "down" ? clue.row + i : clue.row;
+        const c = clue.direction === "across" ? clue.col + i : clue.col;
+        if (r < gridSize && c < gridSize) solutionGrid[r][c] = clue.answer[i];
+      }
+    }
+  }
 
   return (
     <div
@@ -121,15 +139,20 @@ function MiniGrid({ data, type }: { data: Record<string, unknown>; type: "word-f
       {Array.from({ length: gridSize }, (_, r) =>
         Array.from({ length: gridSize }, (_, c) => {
           const isBlack = blacks.has(`${r}-${c}`);
+          const letter = solutionGrid[r]?.[c] || null;
           return (
             <div
               key={`${r}-${c}`}
               className={cn(
-                "border border-border/20",
+                "border border-border/20 flex items-center justify-center",
                 isBlack ? "bg-foreground/80" : "bg-card"
               )}
-              style={{ width: cellSize, height: cellSize }}
-            />
+              style={{ width: cellSize, height: cellSize, fontSize }}
+            >
+              {!isBlack && letter && (
+                <span className="font-mono font-medium text-foreground/70 leading-none">{letter}</span>
+              )}
+            </div>
           );
         })
       )}
