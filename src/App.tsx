@@ -26,6 +26,7 @@ import SharedCraftPuzzle from "./pages/SharedCraftPuzzle";
 import Account from "./pages/Account";
 import { UserAccountProvider } from "./contexts/UserAccountContext";
 import DataMergeModal from "./components/account/DataMergeModal";
+import { MilestoneModalManager } from "./components/puzzles/MilestoneModalManager";
 // Private app — completely separate auth system (custom JWT, separate DB tables)
 import { isNativeApp } from "./lib/appMode";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -77,6 +78,8 @@ function PublicRoutes() {
   return (
     <UserAccountProvider>
       <DataMergeModal />
+      {/* Global milestone celebration modal — fires after any solve */}
+      <MilestoneModalManager />
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/puzzles" element={<PuzzleLibrary />} />
