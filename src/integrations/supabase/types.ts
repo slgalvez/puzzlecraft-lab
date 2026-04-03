@@ -286,25 +286,31 @@ export type Database = {
         Row: {
           completed_at: string | null
           created_at: string
+          display_name: string
           id: string
           puzzle_id: string
           recipient_name: string
+          solve_time: number | null
           started_at: string | null
         }
         Insert: {
           completed_at?: string | null
           created_at?: string
+          display_name?: string
           id: string
           puzzle_id: string
           recipient_name?: string
+          solve_time?: number | null
           started_at?: string | null
         }
         Update: {
           completed_at?: string | null
           created_at?: string
+          display_name?: string
           id?: string
           puzzle_id?: string
           recipient_name?: string
+          solve_time?: number | null
           started_at?: string | null
         }
         Relationships: [
