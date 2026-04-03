@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { RotateCcw, CheckCircle2, Shuffle, Eye, Lightbulb, Bookmark } from "lucide-react";
 import { useState, useCallback } from "react";
-import CompletionPanel from "./CompletionPanel";
+import { CompletionSheet } from "./CompletionSheet";
 import SaveIndicator from "./SaveIndicator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Difficulty, PuzzleCategory } from "@/lib/puzzleTypes";
@@ -85,18 +85,18 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
 
   return (
     <div className="mt-8 space-y-3">
-      {showCompletion && solveData ? (
-        <CompletionPanel
-          time={solveData.time}
-          difficulty={solveData.difficulty}
-          onPlayAgain={onNewPuzzle}
-          accuracy={solveData.accuracy}
-          assisted={solveData.assisted}
-          category={solveData.category}
-          seed={solveData.seed}
-          dailyCode={solveData.dailyCode}
-        />
-      ) : isRevealed ? (
+      <CompletionSheet
+        open={!!showCompletion && !!solveData}
+        time={solveData?.time ?? 0}
+        difficulty={solveData?.difficulty ?? "medium"}
+        onPlayAgain={onNewPuzzle}
+        accuracy={solveData?.accuracy}
+        assisted={solveData?.assisted}
+        category={solveData?.category}
+        seed={solveData?.seed}
+        dailyCode={solveData?.dailyCode}
+      />
+      {!showCompletion && (isRevealed ? (
         <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
           <p className="mb-3">Solution revealed. This puzzle won't count toward your stats.</p>
           <Button size="sm" onClick={onNewPuzzle}>
@@ -265,8 +265,7 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
             </details>
           )}
         </div>
-      )}
-
+      ))}
       <AlertDialog open={showRevealConfirm} onOpenChange={setShowRevealConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
