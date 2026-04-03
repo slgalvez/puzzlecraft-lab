@@ -378,6 +378,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
       setErrors(errs);
       if (errs.size > 0) {
         errorCheckCount.current++;
+        session.recordMistake();
         toast({ title: "Not quite right", description: `${errs.size} cell(s) are incorrect.`, variant: "destructive" });
       } else {
         toast({ title: "Keep going!", description: "No errors so far." });

@@ -182,7 +182,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
         if (shouldBeFilled !== isFilled) errs.add(`${r}-${c}`);
       }
     setErrors(errs);
-    if (errs.size > 0) errorCheckCount.current++;
+    if (errs.size > 0) { errorCheckCount.current++; session.recordMistake(); }
     if (errs.size === 0) {
       const { isNewBest } = timer.solve({ assisted: hintCount.current > 0, hintsUsed: hintCount.current, mistakesCount: errorCheckCount.current });
       clearProgress(timerKey);

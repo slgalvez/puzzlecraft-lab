@@ -177,7 +177,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
       if (guess !== reverseCipher[el]) errs.add(el);
     }
     setErrors(errs);
-    if (errs.size > 0) errorCheckCount.current++;
+    if (errs.size > 0) { errorCheckCount.current++; session.recordMistake(); }
     if (errs.size === 0 && allFilled) {
       const { isNewBest } = timer.solve({ assisted: hintCount.current > 0, hintsUsed: hintCount.current, mistakesCount: errorCheckCount.current });
       clearProgress(timerKey);

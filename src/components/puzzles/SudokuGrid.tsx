@@ -179,7 +179,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
         else if (grid[r][c] !== puzzle.solution[r][c]) errs.add(`${r}-${c}`);
       }
     setErrors(errs);
-    if (errs.size > 0) errorCheckCount.current++;
+    if (errs.size > 0) { errorCheckCount.current++; session.recordMistake(); }
     if (errs.size === 0 && filled) {
       const { isNewBest } = timer.solve({ assisted: hintCount.current > 0, hintsUsed: hintCount.current, mistakesCount: errorCheckCount.current });
       clearProgress(timerKey);

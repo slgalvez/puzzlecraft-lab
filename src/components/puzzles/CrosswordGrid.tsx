@@ -308,7 +308,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
       }
     }
     setErrors(errs);
-    if (errs.size > 0) errorCheckCount.current++;
+    if (errs.size > 0) { errorCheckCount.current++; session.recordMistake(); }
     if (errs.size === 0 && filled) {
       const { isNewBest } = timer.solve({ assisted: hintCount.current > 0, hintsUsed: hintCount.current, mistakesCount: errorCheckCount.current });
       clearProgress(timerKey);
