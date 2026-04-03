@@ -14,7 +14,7 @@ import { useUserAccount } from "@/contexts/UserAccountContext";
 export const PUZZLECRAFT_PLUS_LAUNCHED = false;
 
 // ─── Free tier limits ────────────────────────────────────────────────────────
-export const FREE_CRAFT_LIMIT_PER_MONTH = 3;
+export const FREE_CRAFT_LIMIT_PER_MONTH = 10;
 export const FREE_DIFFICULTIES = ["easy", "medium", "hard"] as const;
 export const PLUS_DIFFICULTIES = ["easy", "medium", "hard", "extreme", "insane"] as const;
 
