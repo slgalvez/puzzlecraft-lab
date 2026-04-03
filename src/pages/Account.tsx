@@ -481,19 +481,10 @@ export default function AccountPage() {
           </Tabs>
         </div>
 
-        {/* Puzzlecraft+ teaser below the form */}
-        <button
-          onClick={() => setUpgradeOpen(true)}
-          className="w-full flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 transition-all active:scale-[0.97]"
-        >
-          <div className="flex items-center gap-2">
-            <Sparkles size={14} className="text-primary" />
-            <span className="text-sm font-medium text-foreground">
-              {PUZZLECRAFT_PLUS_LAUNCHED ? "Upgrade to Puzzlecraft+" : "Puzzlecraft+ — Coming Soon"}
-            </span>
-          </div>
-          <ChevronRight size={14} className="text-muted-foreground" />
-        </button>
+        {/* Puzzlecraft+ — subtle note below the form */}
+        <p className="text-center text-xs text-muted-foreground pt-1">
+          Puzzlecraft+ features unlock after you sign in.
+        </p>
 
         <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
       </div>
