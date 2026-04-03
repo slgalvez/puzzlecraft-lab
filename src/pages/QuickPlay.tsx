@@ -310,10 +310,15 @@ const QuickPlay = () => {
             <div className="flex flex-wrap gap-1.5">
               {difficulties.map(([val, label]) => {
                 const disabled = isDifficultyDisabled(activeType, val);
+                const locked = isDiffLocked(val);
                 return (
                   <button
                     key={val}
                     onClick={() => {
+                      if (locked) {
+                        setUpgradeOpen(true);
+                        return;
+                      }
                       if (disabled) {
                         toast({ title: `${label} not available for ${activeInfo.name} yet` });
                         return;
@@ -321,16 +326,24 @@ const QuickPlay = () => {
                       handleDifficultyChange(val);
                     }}
                     className={cn(
-                      "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                      disabled
-                        ? "border-border text-muted-foreground/40 cursor-not-allowed"
-                        : activeDifficulty === val
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+                      "relative rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                      locked
+                        ? "border-border/40 bg-muted/30 text-muted-foreground/50 cursor-pointer select-none"
+                        : disabled
+                          ? "border-border text-muted-foreground/40 cursor-not-allowed"
+                          : activeDifficulty === val
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
                     )}
-                    title={disabled ? `${label} not available for ${activeInfo.name} yet` : undefined}
+                    title={locked ? `${label} — Puzzlecraft+ only` : disabled ? `${label} not available for ${activeInfo.name} yet` : undefined}
                   >
+                    {locked && <Lock className="inline h-3 w-3 mr-1 -mt-0.5" />}
                     {label}
+                    {locked && (
+                      <span className="absolute -top-2 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary shadow-sm">
+                        <Crown className="h-2.5 w-2.5 text-primary-foreground" />
+                      </span>
+                    )}
                   </button>
                 );
               })}
