@@ -325,7 +325,7 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
         {/* ── Received ── */}
         <TabsContent value="received" className="mt-0">
           {received.length === 0 ? (
-            <EmptyState icon={<Inbox className="h-5 w-5" />} text="No received puzzles" sub="Puzzles sent to you will appear here" />
+            <EmptyCraftReceived onNavigate={() => navigate("/craft")} />
           ) : (
             <div className="space-y-2.5">
               {received.map((r) => (
