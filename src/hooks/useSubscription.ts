@@ -112,7 +112,8 @@ export async function initRevenueCat(userId?: string): Promise<void> {
   }
 
   try {
-    const { Purchases } = await import("@revenuecat/purchases-capacitor");
+    const RC = await import("@revenuecat/purchases-capacitor" as string);
+    const Purchases = RC.Purchases;
     await Purchases.configure({ apiKey: RC_API_KEY });
     if (userId) {
       await Purchases.logIn({ appUserID: userId });
