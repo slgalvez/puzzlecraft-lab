@@ -1,9 +1,11 @@
-import { useEffect, useState, useRef } from "react";
-import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle } from "lucide-react";
+import { useEffect, useState, useRef, useMemo } from "react";
+import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { hapticSuccess } from "@/lib/haptic";
 import type { MilestoneIcon } from "@/lib/milestones";
+import { useMilestoneShare } from "./MilestoneShareCard";
+import { getProgressStats } from "@/lib/progressTracker";
 
 // ── Icon map — matches MilestoneIcon union in milestones.ts ───────────────
 

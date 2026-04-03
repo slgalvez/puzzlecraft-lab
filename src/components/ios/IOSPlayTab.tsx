@@ -292,7 +292,19 @@ const IOSPlayTab = () => {
         </div>
       </Link>
 
-      {/* Rating nudge — only after 5+ solves, matches Stats.tsx tier display */}
+      {/* Daily Leaderboard — top solvers today */}
+      <DailyLeaderboard hasCompletedToday={hasPlayedToday} />
+
+      {/* Streak Shield status */}
+      <StreakShieldBanner
+        streakLength={streak.current}
+        hasPlayedToday={hasPlayedToday}
+      />
+
+      {/* Friend activity feed */}
+      <FriendActivityFeed />
+
+
       {ratingInfo && (
         <button
           onClick={() => {
