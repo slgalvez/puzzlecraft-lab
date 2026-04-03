@@ -38,6 +38,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
   const isMobile = useIsMobile();
   const puzzle = useMemo(() => generateWordSearch(seed, difficulty, WORDS), [seed, difficulty]);
   const timerKey = `word-search-${seed}-${difficulty}`;
+  const session = usePuzzleSession({ puzzleType: "word-search", difficulty, progressUnit: "words" });
 
   const saved = useMemo(() => loadProgress<WordSearchState>(timerKey), [timerKey]);
 
