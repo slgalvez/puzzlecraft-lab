@@ -47,6 +47,7 @@ const KakuroGrid = ({ seed, difficulty: rawDifficulty, onNewPuzzle, onSolve, tim
   const puzzle = useMemo(() => generateKakuro(seed, difficulty), [seed, difficulty]);
   const { size, isBlack, solution, clues } = puzzle;
   const timerKey = `kakuro-${seed}-${difficulty}`;
+  const session = usePuzzleSession({ puzzleType: "kakuro", difficulty, progressUnit: "cells" });
 
   const saved = useMemo(() => loadProgress<KakuroState>(timerKey), [timerKey]);
 
