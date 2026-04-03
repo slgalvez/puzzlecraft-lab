@@ -71,6 +71,75 @@ function ConfettiParticles() {
   );
 }
 
+function NonogramMiniGrid({ solution }: { solution: boolean[][] }) {
+  const size = solution.length;
+  const cellPx = Math.max(2, Math.min(6, Math.floor(60 / size)));
+  return (
+    <div
+      className="border border-border/20 rounded"
+      style={{
+        display: "grid",
+        gridTemplateColumns: `repeat(${size}, ${cellPx}px)`,
+        gridTemplateRows: `repeat(${size}, ${cellPx}px)`,
+        gap: 0,
+      }}
+    >
+      {solution.flat().map((filled, i) => (
+        <div
+          key={i}
+          className={filled ? "bg-foreground" : "bg-transparent"}
+          style={{ width: cellPx, height: cellPx }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function NonogramPreview() {
+  const [page, setPage] = useState(0);
+  const perPage = 20;
+
+  const puzzles = useMemo(() => {
+    // Generate a grid of nonograms at easy (5×5) for quick visual preview
+    return Array.from({ length: 240 }, (_, i) => {
+      const p = generateNonogram(i + 1, "easy");
+      return { seed: i + 1, solution: p.solution };
+    });
+  }, []);
+
+  const totalPages = Math.ceil(puzzles.length / perPage);
+  const visible = puzzles.slice(page * perPage, (page + 1) * perPage);
+
+  return (
+    <section className="space-y-3 rounded-xl border border-border/30 p-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-foreground">Nonogram Patterns</h2>
+        <p className="text-xs text-muted-foreground">{puzzles.length} total patterns</p>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        5×5 solved shapes — each seed produces a unique image. Patterns scale up for harder difficulties.
+      </p>
+      <div className="grid grid-cols-5 sm:grid-cols-10 gap-3">
+        {visible.map((p) => (
+          <div key={p.seed} className="flex flex-col items-center gap-1">
+            <NonogramMiniGrid solution={p.solution} />
+            <span className="text-[9px] text-muted-foreground/50">#{p.seed}</span>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center justify-center gap-2 pt-1">
+        <Button size="sm" variant="outline" className="text-xs h-7" disabled={page === 0} onClick={() => setPage(page - 1)}>
+          Prev
+        </Button>
+        <span className="text-xs text-muted-foreground">{page + 1} / {totalPages}</span>
+        <Button size="sm" variant="outline" className="text-xs h-7" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>
+          Next
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 export default function AdminPreview() {
   const [showCompletion, setShowCompletion] = useState(false);
   const [showMilestone, setShowMilestone] = useState(false);
