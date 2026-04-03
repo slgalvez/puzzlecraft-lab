@@ -422,14 +422,15 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
         </div>
       </div>
 
+      <PuzzleToolbar
+        onHint={showHints ? handleHint : undefined}
+        hintsRemaining={showHints && maxHints != null ? Math.max(0, maxHints - hintCount.current) : undefined}
+        onCheck={handleCheck}
+        onReveal={showReveal ? handleReveal : undefined}
+      />
       <PuzzleControls
         onReset={handleReset}
-        onCheck={handleCheck}
         onNewPuzzle={onNewPuzzle}
-        onHint={showHints ? handleHint : undefined}
-        onReveal={showReveal ? handleReveal : undefined}
-        hintCount={hintCount.current}
-        maxHints={showHints ? maxHints : undefined}
         isRevealed={isRevealed}
         puzzleCode={dailyCode ?? `nonogram-${seed}`}
         solveData={{ isSolved: timer.isSolved, time: timer.elapsed, difficulty, isEndless, assisted: hintCount.current > 0, category: "nonogram", seed, dailyCode }}
