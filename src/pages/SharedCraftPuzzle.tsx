@@ -188,6 +188,12 @@ const SharedCraftPuzzle = () => {
     setSolved(true);
     hapticSuccess();
 
+    // If creator is testing their own puzzle, return the time to CraftPuzzle
+    if (isCreatorMode) {
+      navigate(`/craft?creator_time=${finalTime}`);
+      return;
+    }
+
     // Write solve_time + completed_at to DB
     if (id) {
       supabase
@@ -205,7 +211,7 @@ const SharedCraftPuzzle = () => {
     setTimeout(() => setShowConfetti(true), 100);
     setTimeout(() => setCompletionVisible(true), 200);
     setTimeout(() => setNameInputVisible(true), 800);
-  }, [id, stopTimer]);
+  }, [id, stopTimer, isCreatorMode, navigate]);
 
   // ── Share result ───────────────────────────────────────────────────────
 

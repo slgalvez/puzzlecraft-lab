@@ -850,41 +850,18 @@ const CraftPuzzle = () => {
                   </div>
                 )}
 
-                {!creatorSolveTime ? (
-                  <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Trophy className="h-4 w-4 text-primary" />
-                      <p className="text-sm font-semibold text-foreground">Set a challenge time</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Solve it yourself first — your time becomes the target your friend must beat.
-                    </p>
-                    <button
-                      onClick={handleStartChallenge}
-                      className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
-                    >
-                      Solve it yourself →
-                    </button>
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 flex items-center gap-3">
-                    <Trophy className="h-4 w-4 text-primary shrink-0" />
-                    <div>
-                      <p className="text-xs font-semibold text-foreground">
-                        Challenge set — {Math.floor(creatorSolveTime / 60)}:{(creatorSolveTime % 60).toString().padStart(2, "0")}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        Your friend must beat your time. This is included in the share text.
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setCreatorSolveTime(null)}
-                      className="ml-auto text-[10px] text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                )}
+                <CraftSolveFirst
+                  creatorSolveTime={creatorSolveTime}
+                  onSolveFirst={handleSolveFirst}
+                  onSkip={() => {}}
+                  puzzleTypeLabel={
+                    selectedType === "word-search" ? "Word Search" :
+                    selectedType === "crossword" ? "Crossword" :
+                    selectedType === "cryptogram" ? "Cryptogram" :
+                    selectedType === "word-fill" ? "Word Fill-In" :
+                    "Puzzle"
+                  }
+                />
 
                 {!isPremium && (
                   <div className={cn(
