@@ -100,7 +100,22 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
 
   useEffect(() => { debouncedSave(); }, [grid, debouncedSave]);
 
+  // Track progress: count completed words (all cells in a clue filled correctly)
   useEffect(() => {
+    const totalWords = clues.length;
+    let completedWords = 0;
+    for (const clue of clues) {
+      const dr = clue.direction === "down" ? 1 : 0;
+      const dc = clue.direction === "across" ? 1 : 0;
+      let allCorrect = true;
+      for (let i = 0; i < clue.answer.length; i++) {
+        if (grid[clue.row + dr * i]?.[clue.col + dc * i] !== clue.answer[i]) { allCorrect = false; break; }
+      }
+      if (allCorrect) completedWords++;
+    }
+    session.setProgress(completedWords, totalWords);
+  }, [grid, clues, session]);
+
     for (let r = 0; r < gridSize; r++)
       for (let c = 0; c < gridSize; c++)
         if (!isBlack(r, c)) {

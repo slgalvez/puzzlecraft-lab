@@ -81,6 +81,11 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
 
   useEffect(() => { debouncedSave(); }, [foundWords, foundCells, debouncedSave]);
 
+  // Track progress: found words vs total
+  useEffect(() => {
+    session.setProgress(foundWords.size, puzzle.words.length);
+  }, [foundWords, puzzle.words.length, session]);
+
   useEffect(() => {
     setCursor([0, 0]);
     setStartCell(null);

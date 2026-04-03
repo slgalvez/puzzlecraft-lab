@@ -68,6 +68,19 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
 
   useEffect(() => { debouncedSave(); }, [grid, debouncedSave]);
 
+  // Track progress: count filled non-given cells
+  const prefillCount = useMemo(() => {
+    let count = 0;
+    for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (isGiven(r, c)) count++;
+    return count;
+  }, [puzzle.grid]);
+
+  useEffect(() => {
+    let filled = 0;
+    for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (!isGiven(r, c) && grid[r][c] !== null) filled++;
+    session.setProgress(filled, 81 - prefillCount);
+  }, [grid, prefillCount, session]);
+
   useEffect(() => {
     containerRef.current?.focus();
     for (let i = 0; i < 81; i++) {

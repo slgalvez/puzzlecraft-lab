@@ -77,6 +77,16 @@ const KakuroGrid = ({ seed, difficulty: rawDifficulty, onNewPuzzle, onSolve, tim
 
   useEffect(() => { debouncedSave(); }, [grid, debouncedSave]);
 
+  // Track progress: filled white cells vs total white cells
+  useEffect(() => {
+    let filledCount = 0;
+    let totalWhite = 0;
+    for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) {
+      if (!isBlack[r][c]) { totalWhite++; if (grid[r][c]) filledCount++; }
+    }
+    session.setProgress(filledCount, totalWhite);
+  }, [grid, size, isBlack, session]);
+
   const clueMap = useMemo(() => {
     const map = new Map<string, { across?: number; down?: number }>();
     for (const c of clues) map.set(`${c.row}-${c.col}`, { across: c.across, down: c.down });

@@ -92,6 +92,16 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
     disabled: timer.isSolved || isRevealed,
   });
 
+  // Track progress: correctly decoded unique letters
+  useEffect(() => {
+    const totalUnique = encodedLetters.length;
+    let correctMappings = 0;
+    for (const el of encodedLetters) {
+      if (guesses[el] && guesses[el] === reverseCipher[el]) correctMappings++;
+    }
+    session.setProgress(correctMappings, totalUnique);
+  }, [guesses, encodedLetters, reverseCipher, session]);
+
   useEffect(() => { debouncedSave(); }, [guesses, debouncedSave]);
 
   useEffect(() => {
