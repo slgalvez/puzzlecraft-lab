@@ -67,6 +67,8 @@ const CraftPuzzle = () => {
       ? `${craftStatus.limit}/${craftStatus.limit} used this month`
       : `${craftStatus.used}/${craftStatus.limit} used this month`,
   };
+  const [view, setView] = useState<CraftView>(inboxTabFromState ? "inbox" : "create");
+  const [step, setStep] = useState<Step>("type");
   const [selectedType, setSelectedType] = useState<CraftType | null>(null);
   const [wordInput, setWordInput] = useState("");
   const [phraseInput, setPhraseInput] = useState("");
