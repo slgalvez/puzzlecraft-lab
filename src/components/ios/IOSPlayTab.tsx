@@ -83,6 +83,38 @@ function getBestForType(type: PuzzleCategory, stats: ReturnType<typeof getProgre
   return stats.byCategory[type]?.bestTime ?? null;
 }
 
+function getBestTimeForType(type: PuzzleCategory): number | null {
+  try {
+    const stats = getProgressStats();
+    return stats.byCategory[type]?.bestTime ?? null;
+  } catch { return null; }
+}
+
+/** Returns puzzle types sorted by how many times this user has played them */
+function getRankedTypes(allTypes: PuzzleCategory[]): {
+  ranked: PuzzleCategory[];
+  topTwo: PuzzleCategory[];
+  isReturningUser: boolean;
+} {
+  try {
+    const records = getSolveRecords();
+    if (records.length < 5) {
+      return { ranked: allTypes, topTwo: [], isReturningUser: false };
+    }
+    const counts: Record<string, number> = {};
+    for (const r of records) {
+      counts[r.puzzleType] = (counts[r.puzzleType] ?? 0) + 1;
+    }
+    const sorted = [...allTypes].sort(
+      (a, b) => (counts[b] ?? 0) - (counts[a] ?? 0)
+    );
+    const topTwo = sorted.filter((t) => (counts[t] ?? 0) > 0).slice(0, 2);
+    return { ranked: sorted, topTwo, isReturningUser: true };
+  } catch {
+    return { ranked: allTypes, topTwo: [], isReturningUser: false };
+  }
+}
+
 const IOSPlayTab = () => {
   const navigate = useNavigate();
   const [customizeOpen, setCustomizeOpen] = useState(false);
