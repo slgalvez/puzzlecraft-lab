@@ -246,12 +246,22 @@ export async function generateDemoLeaderboard(count = 12) {
     });
   }
 
-  // Insert via supabase (upsert to avoid duplicates)
-  const { error } = await supabase
-    .from("leaderboard_entries")
-    .upsert(entries, { onConflict: "user_id" });
+  // Insert via RPC to respect security-definer leaderboard updates
+  const results = await Promise.allSettled(
+    entries.map((e) =>
+      supabase.rpc("upsert_leaderboard_entry" as any, {
+        p_user_id: e.user_id,
+        p_display_name: e.display_name,
+        p_rating: e.rating,
+        p_previous_rating: e.previous_rating,
+        p_skill_tier: e.skill_tier,
+        p_solve_count: e.solve_count,
+      })
+    )
+  );
 
-  if (!error) {
+  const anySuccess = results.some((r) => r.status === "fulfilled");
+  if (anySuccess) {
     localStorage.setItem(DEMO_LEADERBOARD_KEY, JSON.stringify(entries.map((e) => e.user_id)));
   }
 }
