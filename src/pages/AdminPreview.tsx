@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import CompletionPanel from "@/components/puzzles/CompletionPanel";
 import MilestoneModal, { type MilestoneToShow } from "@/components/puzzles/MilestoneModal";
@@ -95,30 +95,52 @@ function NonogramMiniGrid({ solution }: { solution: boolean[][] }) {
   );
 }
 
+const NONOGRAM_DIFFICULTIES = [
+  { label: "5×5", value: "easy" as const },
+  { label: "10×10", value: "medium" as const },
+  { label: "15×15", value: "hard" as const },
+  { label: "20×20", value: "extreme" as const },
+  { label: "25×25", value: "insane" as const },
+];
+
 function NonogramPreview() {
   const [page, setPage] = useState(0);
+  const [difficulty, setDifficulty] = useState<string>("easy");
   const perPage = 20;
 
   const puzzles = useMemo(() => {
-    // Generate a grid of nonograms at easy (5×5) for quick visual preview
-    return Array.from({ length: 240 }, (_, i) => {
-      const p = generateNonogram(i + 1, "easy");
+    return Array.from({ length: 60 }, (_, i) => {
+      const p = generateNonogram(i + 1, difficulty as any);
       return { seed: i + 1, solution: p.solution };
     });
-  }, []);
+  }, [difficulty]);
+
+  // Reset page when difficulty changes
+  useEffect(() => { setPage(0); }, [difficulty]);
 
   const totalPages = Math.ceil(puzzles.length / perPage);
   const visible = puzzles.slice(page * perPage, (page + 1) * perPage);
+  const currentLabel = NONOGRAM_DIFFICULTIES.find(d => d.value === difficulty)?.label ?? "5×5";
 
   return (
     <section className="space-y-3 rounded-xl border border-border/30 p-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">Nonogram Patterns</h2>
-        <p className="text-xs text-muted-foreground">{puzzles.length} total patterns</p>
+        <p className="text-xs text-muted-foreground">{puzzles.length} patterns · {currentLabel}</p>
       </div>
-      <p className="text-xs text-muted-foreground">
-        5×5 solved shapes — each seed produces a unique image. Patterns scale up for harder difficulties.
-      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {NONOGRAM_DIFFICULTIES.map((d) => (
+          <Button
+            key={d.value}
+            size="sm"
+            variant={difficulty === d.value ? "default" : "outline"}
+            className="text-xs h-7 px-3"
+            onClick={() => setDifficulty(d.value)}
+          >
+            {d.label}
+          </Button>
+        ))}
+      </div>
       <div className="grid grid-cols-5 sm:grid-cols-10 gap-3">
         {visible.map((p) => (
           <div key={p.seed} className="flex flex-col items-center gap-1">
