@@ -5,7 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share, Copy, Check, Loader2, Save, Trophy } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share, Copy, Check, Loader2, Save, Trophy, AlertCircle, Palette } from "lucide-react";
+import { useUserAccount } from "@/contexts/UserAccountContext";
+import { hasPremiumAccess } from "@/lib/premiumAccess";
+import { isCraftLimitReached, getCraftLimitStatus } from "@/lib/craftLimits";
+import UpgradeModal from "@/components/account/UpgradeModal";
+import { cn } from "@/lib/utils";
 import CraftStepper from "@/components/craft/CraftStepper";
 import CraftTypeCards, { TYPE_OPTIONS } from "@/components/craft/CraftTypeCards";
 import CraftPreviewGrid from "@/components/craft/CraftPreviewGrid";
@@ -53,6 +58,10 @@ const CraftPuzzle = () => {
   const location = useLocation();
   const { toast } = useToast();
   const inboxTabFromState = (location.state as { inboxTab?: string } | null)?.inboxTab;
+  const { account, subscribed } = useUserAccount();
+  const isPremium = hasPremiumAccess({ isAdmin: account?.isAdmin ?? false, subscribed });
+  const limitStatus = getCraftLimitStatus(isPremium);
+  const limitReached = isCraftLimitReached(isPremium);
   const [view, setView] = useState<CraftView>(inboxTabFromState ? "inbox" : "create");
   const [step, setStep] = useState<Step>("type");
   const [selectedType, setSelectedType] = useState<CraftType | null>(null);
@@ -77,6 +86,7 @@ const CraftPuzzle = () => {
   const [draftDirty, setDraftDirty] = useState(true);
   const [enteredFromDraft, setEnteredFromDraft] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<string>("none");
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   
   const sentRecorded = useRef(false);
 
@@ -357,6 +367,7 @@ const CraftPuzzle = () => {
   }, [shareUrl, toast]);
 
   const handleCopyLink = async () => {
+    if (limitReached) { setUpgradeOpen(true); return; }
     if (!shareUrl) return;
     const fullText = buildCraftShareText(
       puzzleTitle.trim() || undefined,
@@ -379,6 +390,7 @@ const CraftPuzzle = () => {
   };
 
   const handleShare = async () => {
+    if (limitReached) { setUpgradeOpen(true); return; }
     if (!shareUrl || !generatedData || !selectedType) return;
 
     const shareText = buildCraftShareText(
@@ -530,6 +542,26 @@ const CraftPuzzle = () => {
           }
           setView(v);
         }} draftCount={draftCount} />
+
+        {!isPremium && view === "create" && (
+          <div className="flex items-center justify-between text-[11px] -mt-1 mb-1 px-0.5">
+            <span className={cn(
+              "font-medium",
+              limitStatus.atLimit ? "text-destructive" : "text-muted-foreground/60"
+            )}>
+              {limitStatus.atLimit
+                ? "No free puzzles left this month"
+                : `${limitStatus.remaining} free craft puzzle${limitStatus.remaining === 1 ? "" : "s"} remaining`
+              }
+            </span>
+            <button
+              onClick={() => setUpgradeOpen(true)}
+              className="text-primary text-[11px] font-medium hover:underline"
+            >
+              Get unlimited →
+            </button>
+          </div>
+        )}
 
         {/* ─── Inbox View ─── */}
         {view === "inbox" && (
@@ -811,6 +843,47 @@ const CraftPuzzle = () => {
                   </div>
                 )}
 
+                {!isPremium && (
+                  <div className={cn(
+                    "flex items-center justify-between rounded-xl px-4 py-3 border",
+                    limitStatus.atLimit
+                      ? "bg-destructive/5 border-destructive/20"
+                      : limitStatus.remaining === 1
+                        ? "bg-amber-500/5 border-amber-500/20"
+                        : "bg-secondary/50 border-border"
+                  )}>
+                    <div className="flex items-center gap-2">
+                      {limitStatus.atLimit ? (
+                        <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
+                      ) : (
+                        <Palette className="h-4 w-4 text-muted-foreground shrink-0" />
+                      )}
+                      <div>
+                        <p className={cn(
+                          "text-xs font-semibold",
+                          limitStatus.atLimit ? "text-destructive" : "text-foreground"
+                        )}>
+                          {limitStatus.atLimit
+                            ? "Monthly limit reached"
+                            : `${limitStatus.remaining} puzzle${limitStatus.remaining === 1 ? "" : "s"} left this month`
+                          }
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {limitStatus.label}
+                        </p>
+                      </div>
+                    </div>
+                    {limitStatus.atLimit && (
+                      <button
+                        onClick={() => setUpgradeOpen(true)}
+                        className="text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors whitespace-nowrap ml-3"
+                      >
+                        Upgrade →
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 <div className="relative space-y-3 p-5 rounded-xl border border-border bg-card overflow-hidden">
                   {shareSuccess && (
                     <div className="absolute inset-0 flex items-center justify-center bg-card/90 z-10 animate-in fade-in-0 duration-200">
@@ -861,6 +934,7 @@ const CraftPuzzle = () => {
           </>
         )}
       </div>
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </Layout>
   );
 };
