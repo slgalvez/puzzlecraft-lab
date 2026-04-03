@@ -10,6 +10,7 @@ import {
   WordSearchSolver,
 } from "@/components/private/PrivatePuzzleSolvers";
 import { buildSolveResultShareText } from "@/lib/craftShare";
+import { getTheme } from "@/lib/craftThemes";
 import { hapticSuccess, hapticTap } from "@/lib/haptic";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
