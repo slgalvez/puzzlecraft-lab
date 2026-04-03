@@ -749,6 +749,10 @@ export type Database = {
           rating: number | null
           rating_tier: string | null
           solves_count: number | null
+          stripe_customer_id: string | null
+          subscribed: boolean | null
+          subscription_expires_at: string | null
+          subscription_platform: string | null
           updated_at: string
         }
         Insert: {
@@ -760,6 +764,10 @@ export type Database = {
           rating?: number | null
           rating_tier?: string | null
           solves_count?: number | null
+          stripe_customer_id?: string | null
+          subscribed?: boolean | null
+          subscription_expires_at?: string | null
+          subscription_platform?: string | null
           updated_at?: string
         }
         Update: {
@@ -771,6 +779,10 @@ export type Database = {
           rating?: number | null
           rating_tier?: string | null
           solves_count?: number | null
+          stripe_customer_id?: string | null
+          subscribed?: boolean | null
+          subscription_expires_at?: string | null
+          subscription_platform?: string | null
           updated_at?: string
         }
         Relationships: []
