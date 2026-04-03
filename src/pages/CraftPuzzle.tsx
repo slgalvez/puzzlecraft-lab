@@ -582,7 +582,21 @@ const CraftPuzzle = () => {
                   </div>
                 </div>
 
-{(selectedType === "word-fill" || selectedType === "word-search") && (
+                <CraftThemePicker
+                  selected={selectedTheme}
+                  onSelect={(id) => {
+                    setSelectedTheme(id);
+                    const theme = getTheme(id);
+                    if (!revealMessage.trim() && theme.revealTemplates.length > 0) {
+                      setRevealMessage(theme.revealTemplates[0]);
+                    }
+                  }}
+                  onRevealTemplate={(tmpl) => setRevealMessage(tmpl)}
+                  onWordSuggestions={handleWordSuggestions}
+                  currentRevealMessage={revealMessage}
+                  showWordSuggestions={selectedType === "word-fill" || selectedType === "word-search"}
+                />
+
                   <div className="space-y-3">
                     <div className="space-y-2">
                       <label className="text-xs font-medium text-muted-foreground">Enter words (one per line or comma-separated)</label>
