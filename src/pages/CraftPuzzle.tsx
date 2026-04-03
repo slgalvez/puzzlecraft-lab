@@ -76,6 +76,13 @@ const CraftPuzzle = () => {
   
   const sentRecorded = useRef(false);
 
+  // Challenge mode state
+  const [creatorSolveTime, setCreatorSolveTime] = useState<number | null>(null);
+  const [challengeTimerRunning, setChallengeTimerRunning] = useState(false);
+  const [challengeElapsed, setChallengeElapsed] = useState(0);
+  const challengeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const challengeStartRef = useRef<number | null>(null);
+
   // Active draft ID for auto-save
   const activeDraftId = useRef<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
