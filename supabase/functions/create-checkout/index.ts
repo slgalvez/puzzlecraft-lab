@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PRICE_ID = "price_1TDHYZI2mQ3QaWmEly0lqHqQ";
+const DEFAULT_PRICE_ID = "price_1TDHYZI2mQ3QaWmEly0lqHqQ";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -26,6 +26,20 @@ serve(async (req) => {
     const user = data.user;
     if (!user?.email) throw new Error("User not authenticated");
 
+    // Accept optional body params from useSubscription
+    let priceId = DEFAULT_PRICE_ID;
+    let successUrl = `${req.headers.get("origin")}/account?subscribed=1`;
+    let cancelUrl = `${req.headers.get("origin")}/account`;
+
+    try {
+      const body = await req.json();
+      if (body.priceId) priceId = body.priceId;
+      if (body.successUrl) successUrl = body.successUrl;
+      if (body.cancelUrl) cancelUrl = body.cancelUrl;
+    } catch {
+      // No body — use defaults
+    }
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
@@ -39,10 +53,15 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
-      line_items: [{ price: PRICE_ID, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/account?upgraded=true`,
-      cancel_url: `${req.headers.get("origin")}/account`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      subscription_data: {
+        trial_period_days: 7,
+        metadata: { supabase_user_id: user.id },
+      },
+      metadata: { supabase_user_id: user.id },
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
