@@ -96,7 +96,7 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
         seed={solveData?.seed}
         dailyCode={solveData?.dailyCode}
       />
-      {isRevealed ? (
+      {!showCompletion && (isRevealed ? (
         <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
           <p className="mb-3">Solution revealed. This puzzle won't count toward your stats.</p>
           <Button size="sm" onClick={onNewPuzzle}>
