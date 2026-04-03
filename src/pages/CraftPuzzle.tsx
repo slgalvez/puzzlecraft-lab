@@ -510,6 +510,7 @@ const CraftPuzzle = () => {
             setCopied(false);
             setShareSuccess(false);
             setEnteredFromDraft(false);
+            setSelectedTheme("none");
             sentRecorded.current = false;
           }
           setView(v);
