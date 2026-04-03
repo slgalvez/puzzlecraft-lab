@@ -543,6 +543,26 @@ const CraftPuzzle = () => {
           setView(v);
         }} draftCount={draftCount} />
 
+        {!isPremium && view === "create" && (
+          <div className="flex items-center justify-between text-[11px] -mt-1 mb-1 px-0.5">
+            <span className={cn(
+              "font-medium",
+              limitStatus.atLimit ? "text-destructive" : "text-muted-foreground/60"
+            )}>
+              {limitStatus.atLimit
+                ? "No free puzzles left this month"
+                : `${limitStatus.remaining} free craft puzzle${limitStatus.remaining === 1 ? "" : "s"} remaining`
+              }
+            </span>
+            <button
+              onClick={() => setUpgradeOpen(true)}
+              className="text-primary text-[11px] font-medium hover:underline"
+            >
+              Get unlimited →
+            </button>
+          </div>
+        )}
+
         {/* ─── Inbox View ─── */}
         {view === "inbox" && (
           <CraftInbox onResumeDraft={handleResumeDraft} onDataChange={refreshDraftCount} initialTab={inboxTabFromState || undefined} />
