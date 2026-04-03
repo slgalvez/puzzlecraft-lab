@@ -126,8 +126,8 @@ export async function initRevenueCat(userId?: string): Promise<void> {
 async function openManageSubscription(platform: SubscriptionPlatform): Promise<void> {
   if (platform === "apple") {
     try {
-      const { Browser } = require("@capacitor/browser");
-      await Browser.open({ url: "https://apps.apple.com/account/subscriptions" });
+      const mod = await import("@capacitor/browser" as string);
+      await mod.Browser.open({ url: "https://apps.apple.com/account/subscriptions" });
     } catch {
       window.open("https://apps.apple.com/account/subscriptions", "_blank");
     }
