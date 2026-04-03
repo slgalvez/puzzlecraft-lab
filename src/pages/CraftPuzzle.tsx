@@ -338,8 +338,9 @@ const CraftPuzzle = () => {
       shareUrl,
       sentAt: Date.now(),
     });
+    recordCraftSent(shareId);
     refreshDraftCount();
-  }, [shareUrl, selectedType, puzzleTitle, puzzleFrom, revealMessage, refreshDraftCount]);
+  }, [shareUrl, selectedType, puzzleTitle, puzzleFrom, revealMessage, refreshDraftCount, recordCraftSent]);
 
   const handleStartChallenge = useCallback(() => {
     if (!shareUrl || !selectedType) return;
