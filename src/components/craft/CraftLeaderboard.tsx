@@ -66,7 +66,7 @@ export default function CraftLeaderboard({ puzzleId, currentEntryId, visible }: 
         .limit(10);
 
       if (data) {
-        setEntries(data as LeaderboardEntry[]);
+        setEntries(data as unknown as LeaderboardEntry[]);
       }
       setLoading(false);
     };
