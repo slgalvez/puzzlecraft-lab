@@ -364,6 +364,7 @@ const QuickPlay = () => {
         </div>
         {showFlash && <EndlessFlash onDone={handleFlashDone} />}
       </div>
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </Layout>
   );
 };
