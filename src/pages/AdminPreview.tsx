@@ -108,9 +108,48 @@ const SHARE_MESSAGES = [
     text: `Just tackled a Puzzlecraft puzzle 🧠\n\nSudoku • Hard • 12:05\n\nCan you beat this time?\n\nPlay: https://puzzlecraft-lab.lovable.app/play?code=sudoku-307144639-hard\n\nPuzzle Code: 307144639`,
   },
   {
-    label: "Crafted Puzzle Message",
-    description: "Sent when a user shares a crafted puzzle via iMessage or similar",
-    text: `Made this one for you!\nCheck it out here https://puzzlecraft-lab.lovable.app/s/abc123-craft-id`,
+    label: "Crafted Puzzle (with challenge time)",
+    description: "Sent when a creator shares a crafted puzzle with a challenge time set",
+    text: buildCraftShareText(
+      "Birthday Brain Teaser",
+      "Alex",
+      "https://puzzlecraft-lab.lovable.app/s/abc123-craft-id",
+      "crossword",
+      202
+    ),
+  },
+  {
+    label: "Crafted Puzzle (no challenge)",
+    description: "Sent when a creator shares a crafted puzzle without solving it first",
+    text: buildCraftShareText(
+      undefined,
+      "Jordan",
+      "https://puzzlecraft-lab.lovable.app/s/xyz789-craft-id",
+      "word-search",
+      null
+    ),
+  },
+  {
+    label: "Solve Result (beat creator)",
+    description: "Sent when a recipient solves a crafted puzzle faster than the creator",
+    text: buildSolveResultShareText(
+      "Birthday Brain Teaser",
+      "crossword",
+      185,
+      202,
+      "https://puzzlecraft-lab.lovable.app/s/abc123-craft-id"
+    ),
+  },
+  {
+    label: "Solve Result (missed)",
+    description: "Sent when a recipient solves but doesn't beat the creator's time",
+    text: buildSolveResultShareText(
+      "Weekend Challenge",
+      "cryptogram",
+      310,
+      245,
+      "https://puzzlecraft-lab.lovable.app/s/def456-craft-id"
+    ),
   },
 ];
 
