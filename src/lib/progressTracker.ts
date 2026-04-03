@@ -1,4 +1,5 @@
 import type { PuzzleCategory } from "@/lib/puzzleTypes";
+import { getShieldCount, getShieldUsedDates, setShieldCount, recordShieldUseFor } from "@/hooks/useStreakShield";
 
 export interface CompletionRecord {
   puzzleKey: string;
