@@ -33,6 +33,7 @@ interface CraftPayload {
   title?: string;
   from?: string;
   settings?: CraftPuzzleSettings;
+  theme?: string;
 }
 
 interface PuzzleRow {
