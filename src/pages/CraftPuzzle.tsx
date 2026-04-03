@@ -343,6 +343,42 @@ const CraftPuzzle = () => {
     refreshDraftCount();
   }, [shareUrl, selectedType, puzzleTitle, puzzleFrom, revealMessage, refreshDraftCount, recordCraftSent]);
 
+  const handleSolveFirst = useCallback(() => {
+    if (!shareUrl) return;
+    hapticTap();
+    const shareId = shareUrl.includes("/s/")
+      ? shareUrl.split("/s/")[1].split("?")[0]
+      : shareUrl;
+    navigate(`/s/${shareId}?creator=1`);
+  }, [shareUrl, navigate]);
+
+  // Read creator_time back from URL when returning from solving
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const returnedTime = params.get("creator_time");
+    if (returnedTime) {
+      const seconds = parseInt(returnedTime, 10);
+      if (!isNaN(seconds) && seconds > 0) {
+        setCreatorSolveTime(seconds);
+        window.history.replaceState({}, "", window.location.pathname);
+
+        if (shareUrl) {
+          const shareId = shareUrl.includes("/s/")
+            ? shareUrl.split("/s/")[1].split("?")[0]
+            : shareUrl;
+          supabase
+            .from("shared_puzzles" as any)
+            .update({
+              creator_solve_time: seconds,
+              creator_solved_at: new Date().toISOString(),
+            } as any)
+            .eq("id", shareId)
+            .then();
+        }
+      }
+    }
+  }, [shareUrl]);
+
   const handleStartChallenge = useCallback(() => {
     if (!shareUrl || !selectedType) return;
     challengeStartRef.current = Date.now();
