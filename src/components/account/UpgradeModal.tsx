@@ -88,8 +88,8 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
   const ctaCopy = () => {
     if (purchasing) return "Opening…";
     if (native) {
-      try { require("@revenuecat/purchases-capacitor"); } catch { return "Subscribe on our website"; }
-      return `Start ${TRIAL_DAYS}-Day Free Trial`;
+      // On web build, RevenueCat is never available — always show website CTA
+      return "Subscribe on our website";
     }
     return annual
       ? `Subscribe — ${ANNUAL_PRICE}/year`
