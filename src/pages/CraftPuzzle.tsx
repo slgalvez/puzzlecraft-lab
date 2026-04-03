@@ -641,9 +641,13 @@ const CraftPuzzle = () => {
                     <Button variant="outline" size="sm" onClick={() => setClueEntries([...clueEntries, { answer: "", clue: "" }])}>
                       <Plus className="h-3 w-3 mr-1" /> Add entry
                     </Button>
-                    <p className="text-[10px] text-muted-foreground">
-                      {clueEntries.filter(e => e.answer.trim() && e.clue.trim()).length} entries
-                    </p>
+                    <CraftLivePreview
+                      type="crossword"
+                      wordInput=""
+                      phraseInput=""
+                      clueEntries={clueEntries}
+                      difficulty={craftSettings.difficulty}
+                    />
                   </div>
                 )}
 
