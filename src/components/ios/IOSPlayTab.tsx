@@ -134,6 +134,12 @@ const IOSPlayTab = () => {
   const stats = useMemo(() => getProgressStats(), []);
   const inProgress = useMemo(() => findInProgressPuzzle(), []);
 
+  // Ranked types for personalised grid
+  const { ranked: rankedTypes, topTwo, isReturningUser } = useMemo(
+    () => getRankedTypes(ALL_PUZZLE_TYPES),
+    []
+  );
+
   // Rating / tier — only show after 5+ solves (matches Stats.tsx threshold)
   const ratingInfo = useMemo(() => {
     const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
@@ -158,13 +164,13 @@ const IOSPlayTab = () => {
 
   const handleSurprise = () => {
     hapticTap();
+    setBackDestination("/", "Play");
     navigate("/surprise");
   };
 
   const handleQuickPlay = (type: PuzzleCategory) => {
     hapticTap();
-    const seed = randomSeed();
-    navigate(`/quick-play/${type}?seed=${seed}&d=medium`);
+    setPickerType(type);
   };
 
   const handleResume = () => {
