@@ -345,7 +345,6 @@ const CraftPuzzle = () => {
 
   const handleSolveFirst = useCallback(() => {
     if (!shareUrl) return;
-    hapticTap();
     const shareId = shareUrl.includes("/s/")
       ? shareUrl.split("/s/")[1].split("?")[0]
       : shareUrl;
