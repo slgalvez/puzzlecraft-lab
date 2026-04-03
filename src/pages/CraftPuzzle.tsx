@@ -12,6 +12,7 @@ import CraftPreviewGrid from "@/components/craft/CraftPreviewGrid";
 import CraftNav, { type CraftView } from "@/components/craft/CraftNav";
 import CraftInbox from "@/components/craft/CraftInbox";
 import CraftSettingsPanel, { type CraftSettings, DEFAULT_CRAFT_SETTINGS } from "@/components/craft/CraftSettingsPanel";
+import CraftLivePreview from "@/components/craft/CraftLivePreview";
 import { supabase } from "@/integrations/supabase/client";
 import {
   generateCustomFillIn,
