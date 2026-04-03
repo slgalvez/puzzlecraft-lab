@@ -50,11 +50,8 @@ const Stats = () => {
   const dailyStreak = useMemo(() => getDailyStreak(), [dataVersion]);
   const dailyCompleted = useMemo(() => getTotalDailyCompleted(), [dataVersion]);
   const endlessStats = useMemo(() => native ? null : getEndlessStats(), [dataVersion, native]);
-  const { account, subscribed, loading: accountLoading } = useUserAccount();
-  const isAdmin = account?.isAdmin ?? false;
-  const premiumAccess = hasPremiumAccess({ isAdmin, subscribed });
-  const showUpgrade = shouldShowUpgradeCTA({ isAdmin, subscribed });
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const { isPremium: premiumAccess, showUpgradeCTA: showUpgrade, loading: accountLoading } = usePremiumAccess();
+  const isAdmin = false;
 
   // Local rating — identical logic to original
   const localRating = useMemo(() => {
