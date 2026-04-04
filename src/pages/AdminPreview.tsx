@@ -10,7 +10,7 @@ import UpgradeModal from "@/components/account/UpgradeModal";
 import { NotificationBanner } from "@/components/private/NotificationBanner";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import { CraftTemplateSelector } from "@/components/craft/CraftTemplateSelector";
-import ActivityCalendar from "@/components/stats/ActivityCalendar";
+import { ActivityCalendar } from "@/components/stats/ActivityCalendar";
 import { WeeklyPackCard } from "@/components/ios/WeeklyPackCard";
 import { DailyLeaderboard } from "@/components/ios/DailyLeaderboard";
 import { StreakShieldBanner } from "@/components/ios/StreakShieldBanner";
