@@ -246,7 +246,7 @@ function MiniCryptogram({ data }: { data: Record<string, unknown> }) {
           </span>
         ))}
       </div>
-      <p className="text-[10px] text-muted-foreground/50 italic">Solution shown above in colour</p>
+      <p className="text-[10px] text-muted-foreground/50 italic">Solution shown above in color</p>
     </div>
   );
 }
