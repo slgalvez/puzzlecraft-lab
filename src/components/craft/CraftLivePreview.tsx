@@ -159,7 +159,7 @@ function MiniGrid({ data, type }: { data: Record<string, unknown>; type: "word-f
               {!isBlack && letter && (
                 <span
                   className="font-mono font-medium leading-none"
-                  style={{ color: "hsl(var(--foreground))", opacity: 0.7 }}
+                  style={{ color: "hsl(var(--puzzle-cell-text, var(--foreground)))", opacity: 0.7 }}
                 >
                   {letter}
                 </span>

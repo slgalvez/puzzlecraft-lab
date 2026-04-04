@@ -108,6 +108,7 @@ export function applyPalette(palette: CraftColorPalette) {
     root.style.removeProperty("--puzzle-cell-highlight");
     root.style.removeProperty("--puzzle-cell-correct");
     root.style.removeProperty("--puzzle-border");
+    root.style.removeProperty("--puzzle-cell-text");
     return;
   }
   root.style.setProperty("--puzzle-cell",           palette.cell);
@@ -115,6 +116,11 @@ export function applyPalette(palette: CraftColorPalette) {
   root.style.setProperty("--puzzle-cell-highlight", palette.highlight);
   root.style.setProperty("--puzzle-cell-correct",   palette.correct);
   root.style.setProperty("--puzzle-border",         palette.border);
+  if (palette.text) {
+    root.style.setProperty("--puzzle-cell-text", palette.text);
+  } else {
+    root.style.removeProperty("--puzzle-cell-text");
+  }
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────

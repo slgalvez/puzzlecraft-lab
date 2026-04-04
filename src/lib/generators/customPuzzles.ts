@@ -506,8 +506,11 @@ export function generateCustomFillIn(words: string[], difficulty: CraftDifficult
   if (cleaned.length === 0) throw new Error("No valid words provided");
 
   const maxLen = Math.max(...cleaned.map(w => w.length));
-  const padding = difficulty === "easy" ? 6 : difficulty === "medium" ? 4 : 3;
-  const baseSize = Math.max(9, maxLen + padding);
+  const wordCount = cleaned.length;
+  // Scale grid size with word count to avoid dropping words
+  const padding = difficulty === "easy" ? 6 : difficulty === "medium" ? 5 : 4;
+  const countPadding = Math.ceil(Math.sqrt(wordCount) * 1.2);
+  const baseSize = Math.max(9, maxLen + padding, countPadding + maxLen);
   const targetInt = TARGET_INTERSECTION_FILL[difficulty];
 
   return selectBestLayout((seed) => {
@@ -534,8 +537,9 @@ function buildFillIn(words: string[], size: number, seed: number) {
     placed.push({ word, row, col, dir: "across" });
   }
 
-  // Place remaining with quality-aware placement
-  for (let pass = 0; pass < 2; pass++) {
+  // Place remaining with quality-aware placement — more passes for more words
+  const passes = sorted.length > 8 ? 4 : sorted.length > 5 ? 3 : 2;
+  for (let pass = 0; pass < passes; pass++) {
     for (let i = 1; i < sorted.length; i++) {
       const word = sorted[i];
       if (placed.some(p => p.word === word)) continue;
@@ -647,8 +651,10 @@ export function generateCustomCrossword(entries: { answer: string; clue: string 
   if (cleaned.length === 0) throw new Error("No valid entries");
 
   const maxLen = Math.max(...cleaned.map(e => e.answer.length));
-  const padding = difficulty === "easy" ? 6 : difficulty === "medium" ? 4 : 3;
-  const baseSize = Math.max(9, maxLen + padding);
+  const wordCount = cleaned.length;
+  const padding = difficulty === "easy" ? 6 : difficulty === "medium" ? 5 : 4;
+  const countPadding = Math.ceil(Math.sqrt(wordCount) * 1.2);
+  const baseSize = Math.max(9, maxLen + padding, countPadding + maxLen);
   const targetInt = TARGET_INTERSECTION_XWORD[difficulty];
 
   return selectBestLayout((seed) => {
@@ -680,7 +686,7 @@ function buildCrossword(
   }
 
   // Multiple passes for denser interlocking
-  const passes = difficulty === "hard" ? 3 : 2;
+  const passes = sorted.length > 8 ? 4 : difficulty === "hard" ? 3 : 2;
   for (let pass = 0; pass < passes; pass++) {
     for (let i = 1; i < sorted.length; i++) {
       const { answer, clue } = sorted[i];
@@ -750,7 +756,7 @@ const CRAFT_TO_STD_DIFF: Record<CraftDifficulty, "easy" | "medium" | "hard"> = {
   hard: "hard",
 };
 
-const MAX_CRAFT_WS_ATTEMPTS = 15;
+const MAX_CRAFT_WS_ATTEMPTS = 25;
 
 export function generateCustomWordSearch(words: string[], difficulty: CraftDifficulty = "medium"): CustomWordSearchData {
   const cleaned = words.map(w => w.toUpperCase().replace(/[^A-Z]/g, "")).filter(w => w.length >= 2);
