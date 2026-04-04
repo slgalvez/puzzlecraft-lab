@@ -99,8 +99,7 @@ export interface StreakShieldState {
 }
 
 export function useStreakShield(): StreakShieldState {
-  const { account } = useUserAccount();
-  const isPremium = hasPremiumAccess(account);
+  const { isPremium } = usePremiumAccess();
 
   const [shieldCount, setShieldCountState] = useState(getShieldCount);
   const [shieldAutoUsedLastNight, setShieldAutoUsedLastNight] = useState(false);

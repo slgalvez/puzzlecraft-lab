@@ -78,9 +78,9 @@ function RatingChange({ current, previous }: { current: number; previous: number
 }
 
 export default function Leaderboard() {
-  const { account, subscribed } = useUserAccount();
+  const { account, subscribed, checkingSubscription } = useUserAccount();
   const isAdmin = account?.isAdmin ?? false;
-  const premiumAccess = hasPremiumAccess({ isAdmin, subscribed });
+  const premiumAccess = hasPremiumAccess(subscribed, isAdmin, checkingSubscription);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
 
   const { data: entries, isLoading } = useQuery({
