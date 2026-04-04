@@ -16,6 +16,7 @@ import { haptic } from "@/lib/haptic";
 import { loadProgress, clearProgress } from "@/lib/puzzleProgress";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
+import { useKeyboardAvoidance } from "@/hooks/useKeyboardAvoidance";
 
 interface Props {
   puzzle: FillInPuzzle;
@@ -47,6 +48,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
   const isNumbers = type === "number-fill";
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  useKeyboardAvoidance();
   const timerKey = `fillin-${puzzle.id}`;
   const session = usePuzzleSession({ puzzleType: puzzle.type as any, difficulty: puzzle.difficulty as any, progressUnit: isNumbers ? "entries" : "words" });
 
@@ -436,7 +438,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
   };
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
+    <div className="flex flex-col gap-6 lg:flex-row lg:gap-10 puzzle-keyboard-aware">
       <div className="flex-shrink-0">
         <PuzzleHeader
           puzzleType={puzzle.type as any}

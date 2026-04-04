@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Dices, Palette, BarChart3, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -38,10 +38,6 @@ type TabKey = (typeof tabs)[number]["key"];
 
 // ── Badge helpers ──────────────────────────────────────────────────────────
 
-/**
- * Count received craft puzzles that haven't been started yet.
- * Uses the existing CraftReceivedItem.status field.
- */
 function getUnreadCraftCount(): number {
   try {
     return loadReceivedItems().filter((r) => r.status === "not_started").length;
@@ -57,16 +53,18 @@ const IOSTabBar = () => {
   const navigate = useNavigate();
   const [unreadCraft, setUnreadCraft] = useState(0);
 
-  // Poll for new received craft puzzles every 30s and on focus
+  // Track which tab just became active so we can play its spring animation once
+  const [springKey, setSpringKey] = useState<TabKey | null>(null);
+  const prevActive = useRef<TabKey | null>(null);
+
+  // Poll for unread craft puzzles
   useEffect(() => {
     const refresh = () => setUnreadCraft(getUnreadCraftCount());
     refresh();
-
     const interval = setInterval(refresh, 30_000);
     const handleFocus = () => refresh();
     window.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleFocus);
-
     return () => {
       clearInterval(interval);
       window.removeEventListener("focus", handleFocus);
@@ -74,30 +72,35 @@ const IOSTabBar = () => {
     };
   }, []);
 
-  // Re-check badge when navigating away from Craft (user may have viewed items)
   useEffect(() => {
     setUnreadCraft(getUnreadCraftCount());
   }, [location.pathname]);
 
   const activeTab =
-    tabs.find((t) => t.paths.some((p) => (p === "/" ? location.pathname === "/" : location.pathname.startsWith(p))))
-      ?.key ?? "play";
+    tabs.find((t) =>
+      t.paths.some((p) =>
+        p === "/" ? location.pathname === "/" : location.pathname.startsWith(p)
+      )
+    )?.key ?? "play";
+
+  // Fire spring animation whenever the active tab changes
+  useEffect(() => {
+    if (prevActive.current !== activeTab) {
+      setSpringKey(activeTab);
+      prevActive.current = activeTab;
+      // Clear after animation completes so it doesn't loop
+      const t = setTimeout(() => setSpringKey(null), 400);
+      return () => clearTimeout(t);
+    }
+  }, [activeTab]);
 
   const handleTab = (key: TabKey) => {
     hapticLight();
     switch (key) {
-      case "play":
-        navigate("/");
-        break;
-      case "craft":
-        navigate("/craft");
-        break;
-      case "stats":
-        navigate("/stats");
-        break;
-      case "account":
-        navigate("/account");
-        break;
+      case "play":    navigate("/");        break;
+      case "craft":   navigate("/craft");   break;
+      case "stats":   navigate("/stats");   break;
+      case "account": navigate("/account"); break;
     }
   };
 
@@ -114,22 +117,32 @@ const IOSTabBar = () => {
         {tabs.map(({ key, label, icon: Icon }) => {
           const active = activeTab === key;
           const badge = badges[key] ?? 0;
+          const isSpringTarget = springKey === key;
 
           return (
             <button
               key={key}
               onClick={() => handleTab(key)}
               className={cn(
-                "relative flex flex-col items-center gap-0.5 px-5 py-1.5 transition-all duration-150",
-                "active:scale-90",
+                "relative flex flex-col items-center gap-0.5 px-5 py-1.5",
+                "transition-colors duration-150",
                 active ? "text-primary" : "text-muted-foreground",
               )}
             >
-              {/* Icon with spring scale on active */}
-              <div className={cn("relative transition-transform duration-200", active ? "scale-110" : "scale-100")}>
+              {/* Icon — spring animation on activation, static scale otherwise */}
+              <div
+                className={cn(
+                  "relative",
+                  // Spring animation plays once when this tab becomes active
+                  isSpringTarget && "tab-icon-spring",
+                  // Static scale for non-animating active state (after spring settles)
+                  !isSpringTarget && active && "scale-110",
+                  !isSpringTarget && !active && "scale-100",
+                )}
+              >
                 <Icon size={22} strokeWidth={active ? 2.2 : 1.7} />
 
-                {/* Badge dot — shown when there are unread items */}
+                {/* Badge dot */}
                 {badge > 0 && (
                   <span
                     className={cn(
@@ -148,7 +161,7 @@ const IOSTabBar = () => {
               {/* Label */}
               <span
                 className={cn(
-                  "text-[10px] font-medium transition-all duration-200",
+                  "text-[10px] font-medium transition-opacity duration-150",
                   active ? "opacity-100" : "opacity-60",
                 )}
               >

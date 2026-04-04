@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Check, Trash2, FileText, Send, Eye, Inbox, Play, Clock, Trophy, Bell } from "lucide-react";
+import { Copy, Check, Trash2, FileText, Send, Eye, Inbox, Play, Clock, Trophy, Sparkles } from "lucide-react";
 import {
   EmptyCraftReceived,
   EmptyCraftSent,
@@ -46,6 +46,38 @@ function formatTime(seconds: number): string {
   return m > 0 ? `${m}:${s.toString().padStart(2, "0")}` : `${s}s`;
 }
 
+// ── Example puzzles shown to new users (received tab, 0 items) ─────────────
+
+const EXAMPLE_PUZZLES = [
+  {
+    id: "example-1",
+    type: "crossword",
+    title: "Summer Memories",
+    from: "Alex",
+    description: "Inside jokes turned into clues — try to solve it!",
+    time: "3:47",
+    emoji: "☀️",
+  },
+  {
+    id: "example-2",
+    type: "word-search",
+    title: "Our Favourite Things",
+    from: "Jamie",
+    description: "Hidden words only we would know.",
+    time: "2:14",
+    emoji: "🔍",
+  },
+  {
+    id: "example-3",
+    type: "cryptogram",
+    title: "Secret Message",
+    from: "Taylor",
+    description: "Decode this to find out what I really think of you.",
+    time: "4:02",
+    emoji: "🔐",
+  },
+];
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 interface SentPuzzleStatus {
@@ -70,16 +102,12 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [sentStatuses, setSentStatuses] = useState<Record<string, SentPuzzleStatus>>({});
-  // Track which sent items were already completed last time we checked (for badge)
   const prevCompleted = useRef<Set<string>>(new Set());
   const [newSolves, setNewSolves] = useState<Set<string>>(new Set());
-
-  // ── Fetch solve status + time for sent items ───────────────────────────
 
   const fetchSentStatuses = useCallback(async (sentItems: CraftSentItem[]) => {
     if (sentItems.length === 0) return;
     const shareIds = sentItems.map((s) => s.shareId);
-
     const { data } = await supabase
       .from("shared_puzzles" as any)
       .select("id, started_at, completed_at, solve_time")
@@ -88,34 +116,21 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
     if (data) {
       const map: Record<string, SentPuzzleStatus> = {};
       const freshNewSolves = new Set<string>();
-
       for (const row of data as any[]) {
         let status: SentPuzzleStatus["status"] = "sent";
         if (row.completed_at) status = "completed";
         else if (row.started_at) status = "in_progress";
-
         map[row.id] = { status, solveTime: row.solve_time ?? null };
-
-        // Flag as "new solve" if it just completed since last check
-        if (status === "completed" && !prevCompleted.current.has(row.id)) {
-          freshNewSolves.add(row.id);
-        }
+        if (status === "completed" && !prevCompleted.current.has(row.id)) freshNewSolves.add(row.id);
         if (status === "completed") prevCompleted.current.add(row.id);
       }
-
       setSentStatuses(map);
-      if (freshNewSolves.size > 0) {
-        setNewSolves((prev) => new Set([...prev, ...freshNewSolves]));
-      }
+      if (freshNewSolves.size > 0) setNewSolves((prev) => new Set([...prev, ...freshNewSolves]));
     }
   }, []);
 
-  // Initial fetch
-  useEffect(() => {
-    fetchSentStatuses(sent);
-  }, [sent, fetchSentStatuses]);
+  useEffect(() => { fetchSentStatuses(sent); }, [sent, fetchSentStatuses]);
 
-  // Poll every 30s so creator sees when friend solves
   useEffect(() => {
     if (sent.length === 0) return;
     const interval = setInterval(() => fetchSentStatuses(sent), 30_000);
@@ -124,35 +139,24 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
     return () => { clearInterval(interval); window.removeEventListener("focus", handleFocus); };
   }, [sent, fetchSentStatuses]);
 
-  // ── Delete handlers ────────────────────────────────────────────────────
-
   const typeLabel = (type: string) => TYPE_OPTIONS.find((o) => o.value === type)?.label ?? type;
 
   const handleDeleteDraft = useCallback((id: string) => {
     if (confirmDeleteId === id) {
       deleteDraft(id); setDrafts(loadDrafts()); setConfirmDeleteId(null); onDataChange?.();
-    } else {
-      setConfirmDeleteId(id);
-      setTimeout(() => setConfirmDeleteId(null), 3000);
-    }
+    } else { setConfirmDeleteId(id); setTimeout(() => setConfirmDeleteId(null), 3000); }
   }, [confirmDeleteId, onDataChange]);
 
   const handleDeleteSent = useCallback((id: string) => {
     if (confirmDeleteId === id) {
       deleteSentItem(id); setSent(loadSentItems()); setConfirmDeleteId(null); onDataChange?.();
-    } else {
-      setConfirmDeleteId(id);
-      setTimeout(() => setConfirmDeleteId(null), 3000);
-    }
+    } else { setConfirmDeleteId(id); setTimeout(() => setConfirmDeleteId(null), 3000); }
   }, [confirmDeleteId, onDataChange]);
 
   const handleDeleteReceived = useCallback((id: string) => {
     if (confirmDeleteId === id) {
       deleteReceivedItem(id); setReceived(loadReceivedItems()); setConfirmDeleteId(null); onDataChange?.();
-    } else {
-      setConfirmDeleteId(id);
-      setTimeout(() => setConfirmDeleteId(null), 3000);
-    }
+    } else { setConfirmDeleteId(id); setTimeout(() => setConfirmDeleteId(null), 3000); }
   }, [confirmDeleteId, onDataChange]);
 
   const handleCopyLink = useCallback(async (id: string, url: string) => {
@@ -161,12 +165,8 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
       setCopiedId(id);
       toast({ title: "Link copied" });
       setTimeout(() => setCopiedId(null), 2000);
-    } catch {
-      toast({ title: "Failed to copy" });
-    }
+    } catch { toast({ title: "Failed to copy" }); }
   }, [toast]);
-
-  // ── Received status helpers ────────────────────────────────────────────
 
   const statusLabel = (status: CraftReceivedItem["status"]) => {
     switch (status) {
@@ -183,8 +183,6 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
       case "completed":   return "text-primary";
     }
   };
-
-  // ── Badge counts ───────────────────────────────────────────────────────
 
   const unreadReceived = received.filter((r) => r.status === "not_started").length;
 
@@ -204,7 +202,6 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
             {sent.length > 0 && (
               <span className="ml-1 text-[10px] opacity-60">({sent.length})</span>
             )}
-            {/* New solve notification dot */}
             {newSolves.size > 0 && (
               <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary" />
             )}
@@ -212,7 +209,6 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
 
           <TabsTrigger value="received" className="flex-1 gap-1.5 relative">
             <Inbox className="h-3 w-3" /> Received
-            {/* Unread badge */}
             {unreadReceived > 0 && (
               <span className="ml-1 inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold">
                 {unreadReceived}
@@ -260,58 +256,38 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
                 const status = sentStatuses[s.shareId];
                 const isNew = newSolves.has(s.shareId);
                 return (
-                  <div
-                    key={s.id}
-                    className={cn(
-                      "flex items-center justify-between gap-3 p-3.5 rounded-xl border transition-colors",
-                      isNew
-                        ? "border-primary/30 bg-primary/5"
-                        : "border-border/60 bg-muted/30"
-                    )}
-                  >
+                  <div key={s.id} className={cn(
+                    "flex items-center justify-between gap-3 p-3.5 rounded-xl border transition-colors",
+                    isNew ? "border-primary/30 bg-primary/5" : "border-border/60 bg-muted/30"
+                  )}>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">{typeLabel(s.type)}</Badge>
-                        <SolveStatusBadge
-                          status={status?.status ?? "sent"}
-                          solveTime={status?.solveTime ?? null}
-                          isNew={isNew}
-                        />
+                        <SolveStatusBadge status={status?.status ?? "sent"} solveTime={status?.solveTime ?? null} isNew={isNew} />
                         <span className="text-[10px] text-muted-foreground/60">{relativeTime(s.sentAt)}</span>
                       </div>
                       <p className="text-sm font-medium text-foreground truncate">{displayTitle(s.title, s.type)}</p>
-                      {/* Show solve time prominently when completed */}
                       {status?.status === "completed" && status.solveTime && (
                         <div className="flex items-center gap-1.5 mt-1.5">
                           <Clock size={10} className="text-primary/70" />
                           <span className="font-mono text-[11px] font-semibold text-primary">
                             Solved in {formatTime(status.solveTime)}
                           </span>
-                          {isNew && (
-                            <span className="text-[10px] text-primary animate-pulse">· New!</span>
-                          )}
+                          {isNew && <span className="text-[10px] text-primary animate-pulse">· New!</span>}
                         </div>
                       )}
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-xs h-7 gap-1 px-3"
-                        onClick={() => navigate(`/s/${s.shareId}`, { state: { fromInbox: "sent" } })}
-                      >
+                      <Button size="sm" variant="outline" className="text-xs h-7 gap-1 px-3"
+                        onClick={() => navigate(`/s/${s.shareId}`, { state: { fromInbox: "sent" } })}>
                         <Eye className="h-3 w-3" /> View
                       </Button>
-                      <button
-                        className="p-1.5 rounded-md opacity-40 hover:opacity-100 hover:bg-muted transition-all text-muted-foreground"
-                        onClick={() => handleCopyLink(s.id, s.shareUrl)}
-                      >
+                      <button className="p-1.5 rounded-md opacity-40 hover:opacity-100 hover:bg-muted transition-all text-muted-foreground"
+                        onClick={() => handleCopyLink(s.id, s.shareUrl)}>
                         {copiedId === s.id ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
                       </button>
-                      <button
-                        className="p-1.5 rounded-md opacity-30 hover:opacity-100 hover:bg-destructive/10 transition-all"
-                        onClick={() => handleDeleteSent(s.id)}
-                      >
+                      <button className="p-1.5 rounded-md opacity-30 hover:opacity-100 hover:bg-destructive/10 transition-all"
+                        onClick={() => handleDeleteSent(s.id)}>
                         <Trash2 className={`h-3 w-3 ${confirmDeleteId === s.id ? "text-destructive opacity-100" : "text-muted-foreground"}`} />
                       </button>
                     </div>
@@ -325,25 +301,56 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
         {/* ── Received ── */}
         <TabsContent value="received" className="mt-0">
           {received.length === 0 ? (
-            <EmptyCraftReceived onNavigate={() => navigate("/craft")} />
+            <div className="space-y-4">
+              {/* Example puzzles — show what a received puzzle looks like */}
+              <div className="rounded-2xl border border-dashed border-border/50 bg-muted/20 overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-border/30">
+                  <Sparkles size={13} className="text-primary/60" />
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    How it works — examples
+                  </p>
+                </div>
+                <div className="divide-y divide-border/30">
+                  {EXAMPLE_PUZZLES.map((ex) => (
+                    <div key={ex.id} className="flex items-center gap-3 px-4 py-3 opacity-60">
+                      <span className="text-xl shrink-0">{ex.emoji}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">
+                            {typeLabel(ex.type)}
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground/60">from {ex.from}</span>
+                        </div>
+                        <p className="text-sm font-medium text-foreground truncate">{ex.title}</p>
+                        <p className="text-[10px] text-muted-foreground/70 italic mt-0.5">{ex.description}</p>
+                      </div>
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground/50 shrink-0">
+                        <Clock size={9} />
+                        {ex.time}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="px-4 py-3 border-t border-border/30 bg-muted/10">
+                  <p className="text-[11px] text-muted-foreground/60 text-center">
+                    Send a puzzle first — your friend's reply will appear here
+                  </p>
+                </div>
+              </div>
+
+              <EmptyCraftReceived onNavigate={() => navigate("/craft")} />
+            </div>
           ) : (
             <div className="space-y-2.5">
               {received.map((r) => (
-                <div
-                  key={r.id}
-                  className={cn(
-                    "flex items-center justify-between gap-3 p-3.5 rounded-xl border transition-colors",
-                    r.status === "not_started"
-                      ? "border-primary/20 bg-primary/5"
-                      : "border-border/60 bg-muted/30"
-                  )}
-                >
+                <div key={r.id} className={cn(
+                  "flex items-center justify-between gap-3 p-3.5 rounded-xl border transition-colors",
+                  r.status === "not_started" ? "border-primary/20 bg-primary/5" : "border-border/60 bg-muted/30"
+                )}>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">{typeLabel(r.type)}</Badge>
-                      <span className={`text-[10px] font-medium ${statusColor(r.status)}`}>
-                        {statusLabel(r.status)}
-                      </span>
+                      <span className={`text-[10px] font-medium ${statusColor(r.status)}`}>{statusLabel(r.status)}</span>
                     </div>
                     <p className="text-sm font-medium text-foreground truncate">{displayTitle(r.title, r.type)}</p>
                     {r.from && (
@@ -351,19 +358,14 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
                     )}
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Button
-                      size="sm"
-                      variant={r.status === "not_started" ? "default" : "outline"}
+                    <Button size="sm" variant={r.status === "not_started" ? "default" : "outline"}
                       className="text-xs h-7 gap-1 px-3"
-                      onClick={() => navigate(`/s/${r.shareId}`, { state: { fromInbox: "received" } })}
-                    >
+                      onClick={() => navigate(`/s/${r.shareId}`, { state: { fromInbox: "received" } })}>
                       <Play className="h-3 w-3" />
                       {r.status === "in_progress" ? "Continue" : r.status === "completed" ? "View" : "Play"}
                     </Button>
-                    <button
-                      className="p-1.5 rounded-md opacity-30 hover:opacity-100 hover:bg-destructive/10 transition-all"
-                      onClick={() => handleDeleteReceived(r.id)}
-                    >
+                    <button className="p-1.5 rounded-md opacity-30 hover:opacity-100 hover:bg-destructive/10 transition-all"
+                      onClick={() => handleDeleteReceived(r.id)}>
                       <Trash2 className={`h-3 w-3 ${confirmDeleteId === r.id ? "text-destructive opacity-100" : "text-muted-foreground"}`} />
                     </button>
                   </div>
@@ -377,22 +379,8 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
   );
 }
 
-// ── Sub-components ─────────────────────────────────────────────────────────
-
-function EmptyState({ icon, text, sub }: { icon: React.ReactNode; text: string; sub: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-14 text-center text-muted-foreground">
-      <div className="mb-3 opacity-30">{icon}</div>
-      <p className="text-[13px] font-medium">{text}</p>
-      <p className="text-xs mt-1 opacity-60">{sub}</p>
-    </div>
-  );
-}
-
 function SolveStatusBadge({
-  status,
-  solveTime,
-  isNew,
+  status, solveTime, isNew,
 }: {
   status: "sent" | "in_progress" | "completed";
   solveTime: number | null;
@@ -400,17 +388,12 @@ function SolveStatusBadge({
 }) {
   if (status === "completed") {
     return (
-      <span className={cn(
-        "text-[10px] font-semibold flex items-center gap-1",
-        isNew ? "text-primary" : "text-primary/70"
-      )}>
+      <span className={cn("text-[10px] font-semibold flex items-center gap-1", isNew ? "text-primary" : "text-primary/70")}>
         <Trophy size={9} />
         Solved{solveTime ? ` · ${Math.floor(solveTime / 60)}:${(solveTime % 60).toString().padStart(2, "0")}` : ""}
       </span>
     );
   }
-  if (status === "in_progress") {
-    return <span className="text-[10px] font-medium text-primary/70">In Progress</span>;
-  }
+  if (status === "in_progress") return <span className="text-[10px] font-medium text-primary/70">In Progress</span>;
   return <span className="text-[10px] text-muted-foreground/60">Sent</span>;
 }

@@ -12,6 +12,7 @@ import { loadProgress, clearProgress } from "@/lib/puzzleProgress";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import type { Difficulty } from "@/lib/puzzleTypes";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
+import { useKeyboardAvoidance } from "@/hooks/useKeyboardAvoidance";
 
 interface Props {
   seed: number;
@@ -33,6 +34,7 @@ interface CryptogramState {
 const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode, showHints = true, showReveal = true, maxHints }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  useKeyboardAvoidance();
   const puzzle = useMemo(() => generateCryptogram(seed, difficulty), [seed, difficulty]);
   const { encoded, decoded, reverseCipher, hints } = puzzle;
   const timerKey = `cryptogram-${seed}-${difficulty}`;
@@ -220,7 +222,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
   let charIndex = 0;
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} className="puzzle-keyboard-aware">
       <PuzzleHeader
         puzzleType="cryptogram"
         difficulty={difficulty}

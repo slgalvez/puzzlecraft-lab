@@ -14,6 +14,7 @@ import { haptic } from "@/lib/haptic";
 import { loadProgress, clearProgress } from "@/lib/puzzleProgress";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
+import { useKeyboardAvoidance } from "@/hooks/useKeyboardAvoidance";
 
 interface Props {
   puzzle: CrosswordPuzzle;
@@ -34,6 +35,7 @@ interface CrosswordState {
 
 const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode, showHints = true, showReveal = true, maxHints }: Props) => {
   const { gridSize, blackCells, clues } = puzzle;
+  useKeyboardAvoidance();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const timerKey = `crossword-${puzzle.id}`;
@@ -374,7 +376,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   const downClues = clues.filter((c) => c.direction === "down");
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
+    <div className="flex flex-col gap-6 lg:flex-row lg:gap-10 puzzle-keyboard-aware">
       <div className="flex-shrink-0">
         <PuzzleHeader
           puzzleType="crossword"
