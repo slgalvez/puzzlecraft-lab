@@ -25,6 +25,7 @@ import PlayCraftPuzzle from "./pages/PlayCraftPuzzle";
 import SharedCraftPuzzle from "./pages/SharedCraftPuzzle";
 import Account from "./pages/Account";
 import AdminPreview from "./pages/AdminPreview";
+import AdminHomepagePreview from "./pages/AdminHomepagePreview";
 import AdminPremiumEmails from "./pages/AdminPremiumEmails";
 import { UserAccountProvider } from "./contexts/UserAccountContext";
 import DataMergeModal from "./components/account/DataMergeModal";
@@ -132,6 +133,7 @@ function PublicRoutes() {
         <Route path="/s/:id" element={<SharedCraftPuzzle />} />
         <Route path="/account" element={<Account />} />
         <Route path="/admin-preview" element={<AdminPreview />} />
+        <Route path="/admin-preview/homepage" element={<AdminHomepagePreview />} />
         <Route path="/admin/premium-emails" element={<AdminPremiumEmails />} />
       </Routes>
     </UserAccountProvider>
