@@ -297,6 +297,9 @@ const IOSPlayTab = () => {
       {/* Daily Leaderboard — top solvers today */}
       <DailyLeaderboard hasCompletedToday={hasPlayedToday} />
 
+      {/* Personal insights */}
+      <InsightsBanner />
+
       {/* Weekly Pack */}
       <WeeklyPackCard />
 
