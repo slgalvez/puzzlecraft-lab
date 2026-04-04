@@ -32,6 +32,7 @@ export function useKeyboardAvoidance() {
       // visualViewport.height shrinks when keyboard opens
       const kbHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
       setKeyboardHeight(kbHeight);
+      keyboardOpen = kbHeight > 80;
 
       if (kbHeight > 80) {
         // Keyboard is open — scroll active element into view
