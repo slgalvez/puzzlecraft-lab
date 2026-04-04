@@ -122,6 +122,12 @@ const SharedCraftPuzzle = () => {
           setPayload(p);
           setCreatorSolveTime(row.creator_solve_time ?? null);
 
+          // Apply color palette if set
+          if (p.colorPalette) {
+            const palette = CRAFT_PALETTES.find((cp) => cp.id === p.colorPalette);
+            if (palette) applyPalette(palette);
+          }
+
           // If already completed, show result immediately
           if (row.completed_at && row.solve_time) {
             setSolved(true);
