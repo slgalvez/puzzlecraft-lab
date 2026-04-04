@@ -387,16 +387,6 @@ export default function AdminPreview() {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // ── Notification banner state ──
-  const [bannerPhrase, setBannerPhrase] = useState<string | null>(null);
-
-  const NOTIFICATION_PHRASES = [
-    "Hey — need to check something",
-    "Quick thought for you",
-    "Something came up 🔔",
-    "Don't forget to look at this",
-    "Ping! You there?",
-  ];
 
   const handleAchieve = useCallback((id: string) => {
     setAchievedIds((prev) => new Set(prev).add(id));
