@@ -102,7 +102,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
       if (guesses[el] && guesses[el] === reverseCipher[el]) correctMappings++;
     }
     session.setProgress(correctMappings, totalUnique);
-  }, [guesses, encodedLetters, reverseCipher, session]);
+  }, [guesses, encodedLetters, reverseCipher, session.setProgress]);
 
   useEffect(() => { debouncedSave(); }, [guesses, debouncedSave]);
 

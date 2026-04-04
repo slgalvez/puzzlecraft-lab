@@ -112,7 +112,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
   // Track progress: completed rows
   useEffect(() => {
     session.setProgress(completedRows.size, rows);
-  }, [completedRows, rows, session]);
+  }, [completedRows, rows, session.setProgress]);
 
   useEffect(() => {
     setCursor([0, 0]);
