@@ -73,9 +73,17 @@ function seededInt(seed: number, min: number, max: number): number {
 
 function getMockLeaderboard(dateStr: string, count = 3): { display_name: string; solve_time: number; is_mock: true }[] {
   const dateSeed = dateStr.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  const base = [90, 140, 200]; // fast times in seconds
+  const base = [90, 140, 200];
+
+  // Shuffle name pool deterministically — no repeats
+  const pool = [...MOCK_NAMES];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = seededInt(dateSeed + i * 37, 0, i);
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+
   return Array.from({ length: count }, (_, i) => ({
-    display_name: MOCK_NAMES[seededInt(dateSeed + i * 97, 0, MOCK_NAMES.length - 1)],
+    display_name: pool[i],
     solve_time:   base[i] + seededInt(dateSeed + i * 113, -10, 20),
     is_mock:      true as const,
   }));
@@ -288,35 +296,38 @@ const Index = () => {
 
               {/* Returning user: inline stats bar */}
               {isReturning && (
-                <div className="mt-5 flex flex-wrap items-center gap-4">
-                  {dailyStreak.current > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <Flame size={13} className="text-primary" />
-                      <span className="text-sm font-bold text-foreground">{dailyStreak.current}</span>
-                      <span className="text-sm text-muted-foreground">day streak</span>
-                    </div>
-                  )}
-                  {dailyStreak.current > 0 && stats.totalSolved > 0 && (
-                    <div className="h-3.5 w-px bg-border" />
-                  )}
-                  {stats.totalSolved > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <Target size={13} className="text-primary" />
-                      <span className="text-sm font-bold text-foreground">{stats.totalSolved}</span>
-                      <span className="text-sm text-muted-foreground">solved</span>
-                    </div>
-                  )}
-                  {stats.bestTime !== null && (
-                    <>
-                      <div className="h-3.5 w-px bg-border" />
+                <div className="mt-5 space-y-2">
+                  {/* Stats bar */}
+                  <div className="flex flex-wrap items-center gap-4">
+                    {dailyStreak.current > 0 && (
                       <div className="flex items-center gap-1.5">
-                        <Clock size={13} className="text-primary" />
-                        <span className="text-sm font-bold text-foreground">{formatTime(stats.bestTime)}</span>
-                        <span className="text-sm text-muted-foreground">best</span>
+                        <Flame size={13} className="text-primary" />
+                        <span className="text-sm font-bold text-foreground">{dailyStreak.current}</span>
+                        <span className="text-sm text-muted-foreground">day streak</span>
                       </div>
-                    </>
-                  )}
-                  <Link to="/stats" className="text-xs font-medium text-primary hover:underline ml-auto">
+                    )}
+                    {dailyStreak.current > 0 && stats.totalSolved > 0 && (
+                      <div className="h-3.5 w-px bg-border" />
+                    )}
+                    {stats.totalSolved > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <Target size={13} className="text-primary" />
+                        <span className="text-sm font-bold text-foreground">{stats.totalSolved}</span>
+                        <span className="text-sm text-muted-foreground">solved</span>
+                      </div>
+                    )}
+                    {stats.bestTime !== null && (
+                      <>
+                        <div className="h-3.5 w-px bg-border" />
+                        <div className="flex items-center gap-1.5">
+                          <Clock size={13} className="text-primary" />
+                          <span className="text-sm font-bold text-foreground">{formatTime(stats.bestTime)}</span>
+                          <span className="text-sm text-muted-foreground">best</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <Link to="/stats" className="text-xs font-medium text-primary hover:underline">
                     Full stats →
                   </Link>
                 </div>
@@ -474,7 +485,7 @@ const Index = () => {
                         </span>
                       </div>
                     ))}
-                    {!playerCount && (
+                    {leaderRows.length === 0 && (
                       <p className="text-[10px] text-muted-foreground/40 italic pt-0.5">
                         Be the first on the board today
                       </p>
