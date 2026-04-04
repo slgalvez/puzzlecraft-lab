@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import { hasPremiumAccess, shouldShowUpgradeCTA, PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
+import { MONTHLY_PRICE, ANNUAL_PRICE, TRIAL_DAYS } from "@/lib/pricing";
 import { supabase } from "@/integrations/supabase/client";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 import { toast } from "sonner";
