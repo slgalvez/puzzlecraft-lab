@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserAccount } from "@/contexts/UserAccountContext";
 import Layout from "@/components/layout/Layout";
@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import { hasPremiumAccess, shouldShowUpgradeCTA, PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
-import { MONTHLY_PRICE, ANNUAL_PRICE, TRIAL_DAYS } from "@/lib/pricing";
 import { supabase } from "@/integrations/supabase/client";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 import { toast } from "sonner";
@@ -23,60 +22,44 @@ import { computePlayerRating, getSkillTier, getTierColor } from "@/lib/solveScor
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { cn } from "@/lib/utils";
 import { isNativeApp } from "@/lib/appMode";
+import { MONTHLY_PRICE, ANNUAL_PRICE, ANNUAL_SAVING_PCT } from "@/lib/pricing";
 
-// ── Plus benefits — single source used in both logged-out and upsell views ───
+// ── Shared Plus benefits ───────────────────────────────────────────────────────
 
 const PLUS_BENEFITS = [
-  {
-    icon: Shield,
-    label: "Streak Shield",
-    sub: "Protect your streak if you miss a day",
-  },
-  {
-    icon: Sparkles,
-    label: "Unlimited Create puzzles",
-    sub: "10 free/month — unlimited with Plus",
-  },
-  {
-    icon: Trophy,
-    label: "Global leaderboard ranking",
-    sub: "See where you stand among all players",
-  },
-  {
-    icon: Zap,
-    label: "Advanced stats & insights",
-    sub: "Rating, skill tier, trends, personal bests",
-  },
-  {
-    icon: Target,
-    label: "90-day daily archive",
-    sub: "Replay any past daily challenge",
-  },
-  {
-    icon: Flame,
-    label: "Extreme & Insane difficulty",
-    sub: "Unlock the hardest puzzle tiers",
-  },
+  { icon: Shield,   label: "Streak Shield",              sub: "Protect your streak if you miss a day"      },
+  { icon: Sparkles, label: "Unlimited Create puzzles",   sub: "10 free/month — unlimited with Plus"        },
+  { icon: Trophy,   label: "Global leaderboard ranking", sub: "See where you stand among all players"      },
+  { icon: Zap,      label: "Advanced stats & insights",  sub: "Rating, skill tier, trends, personal bests" },
+  { icon: Target,   label: "90-day daily archive",       sub: "Replay any past daily challenge"            },
+  { icon: Flame,    label: "Extreme & Insane difficulty", sub: "Unlock the hardest puzzle tiers"           },
 ];
 
 export default function AccountPage() {
-  const navigate = useNavigate();
-  const native = isNativeApp();
-  const { account, signIn, signUp, signOut, subscribed, subscriptionEnd, checkingSubscription, openCustomerPortal } = useUserAccount();
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const [tab, setTab] = useState<"login" | "signup">("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [signupSuccess, setSignupSuccess] = useState(false);
-  const [editingName, setEditingName] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [nameSaving, setNameSaving] = useState(false);
+  const navigate   = useNavigate();
+  const native     = isNativeApp();
+  const authFormRef = useRef<HTMLDivElement>(null);
 
-  const stats = useMemo(() => getProgressStats(), []);
-  const streak = useMemo(() => getDailyStreak(), []);
+  const {
+    account, signIn, signUp, signOut,
+    subscribed, subscriptionEnd, checkingSubscription, openCustomerPortal,
+  } = useUserAccount();
+
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [tab,          setTab]         = useState<"login" | "signup">("login");
+  const [annual,       setAnnual]      = useState(true);   // for the pricing toggle
+  const [email,        setEmail]       = useState("");
+  const [password,     setPassword]    = useState("");
+  const [displayName,  setDisplayName] = useState("");
+  const [error,        setError]       = useState("");
+  const [submitting,   setSubmitting]  = useState(false);
+  const [signupSuccess, setSignupSuccess] = useState(false);
+  const [editingName,  setEditingName] = useState(false);
+  const [newName,      setNewName]     = useState("");
+  const [nameSaving,   setNameSaving]  = useState(false);
+
+  const stats      = useMemo(() => getProgressStats(), []);
+  const streak     = useMemo(() => getDailyStreak(), []);
   const ratingInfo = useMemo(() => {
     const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
     if (recs.length < 5) return null;
@@ -92,11 +75,8 @@ export default function AccountPage() {
     setNameSaving(true);
     try {
       const { data: existing } = await supabase
-        .from("user_profiles")
-        .select("id")
-        .eq("display_name", newName.trim())
-        .neq("id", account.id)
-        .maybeSingle();
+        .from("user_profiles").select("id")
+        .eq("display_name", newName.trim()).neq("id", account.id).maybeSingle();
       if (existing) { toast.error("That username is already taken"); setNameSaving(false); return; }
       const { error: updateErr } = await supabase
         .from("user_profiles")
@@ -107,25 +87,21 @@ export default function AccountPage() {
       toast.success("Username updated");
       setEditingName(false);
       window.location.reload();
-    } catch {
-      toast.error("Failed to update username");
-    } finally {
-      setNameSaving(false);
-    }
+    } catch { toast.error("Failed to update username"); }
+    finally  { setNameSaving(false); }
   };
 
-  // ── SIGNED IN VIEW ────────────────────────────────────────────────────────
+  // ── SIGNED IN ─────────────────────────────────────────────────────────────
 
   if (account) {
-    const isAdmin = account.isAdmin;
+    const isAdmin      = account.isAdmin;
     const premiumAccess = hasPremiumAccess({ subscribed, isAdmin });
-    const showUpgrade = shouldShowUpgradeCTA({ subscribed, isAdmin });
-    const initial = (account.displayName || account.email)[0]?.toUpperCase();
+    const showUpgrade  = shouldShowUpgradeCTA({ subscribed, isAdmin });
+    const initial      = (account.displayName || account.email)[0]?.toUpperCase();
 
     return (
       <Layout>
         <div className="container max-w-md py-8 space-y-4 pb-24">
-
           <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft size={16} /> Back
           </button>
@@ -139,24 +115,10 @@ export default function AccountPage() {
               <div className="flex-1 min-w-0">
                 {editingName ? (
                   <div className="flex items-center gap-2">
-                    <Input
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                      placeholder="New username"
-                      className="h-8 text-sm"
-                      maxLength={30}
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleSaveName();
-                        if (e.key === "Escape") setEditingName(false);
-                      }}
-                    />
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={handleSaveName} disabled={nameSaving}>
-                      <Check size={14} />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setEditingName(false)}>
-                      <X size={14} />
-                    </Button>
+                    <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="New username" className="h-8 text-sm" maxLength={30} autoFocus
+                      onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") setEditingName(false); }} />
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={handleSaveName} disabled={nameSaving}><Check size={14} /></Button>
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setEditingName(false)}><X size={14} /></Button>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
@@ -175,23 +137,17 @@ export default function AccountPage() {
           {/* Quick stats */}
           {stats.totalSolved > 0 && (
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl border bg-card p-3 text-center">
-                <Target size={14} className="text-primary mx-auto mb-1" />
-                <p className="font-mono text-lg font-bold text-foreground leading-none">{stats.totalSolved}</p>
-                <p className="text-[10px] text-muted-foreground mt-1">Solved</p>
-              </div>
-              <div className="rounded-xl border bg-card p-3 text-center">
-                <Flame size={14} className="text-primary mx-auto mb-1" />
-                <p className="font-mono text-lg font-bold text-foreground leading-none">{streak.current}</p>
-                <p className="text-[10px] text-muted-foreground mt-1">Streak</p>
-              </div>
-              <div className="rounded-xl border bg-card p-3 text-center">
-                <Trophy size={14} className="text-primary mx-auto mb-1" />
-                <p className="font-mono text-lg font-bold text-foreground leading-none">
-                  {stats.bestTime !== null ? formatTime(stats.bestTime) : "—"}
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-1">Best</p>
-              </div>
+              {[
+                { icon: Target, label: "Solved", value: stats.totalSolved.toString() },
+                { icon: Flame,  label: "Streak", value: streak.current.toString() },
+                { icon: Trophy, label: "Best",   value: stats.bestTime !== null ? formatTime(stats.bestTime) : "—" },
+              ].map(({ icon: Icon, label, value }) => (
+                <div key={label} className="rounded-xl border bg-card p-3 text-center">
+                  <Icon size={14} className="text-primary mx-auto mb-1" />
+                  <p className="font-mono text-lg font-bold text-foreground leading-none">{value}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">{label}</p>
+                </div>
+              ))}
             </div>
           )}
 
@@ -212,7 +168,7 @@ export default function AccountPage() {
           {/* Admin */}
           {isAdmin && (
             <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 space-y-3">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2">
                 <Sparkles size={16} className="text-primary" />
                 <span className="font-semibold text-foreground">Puzzlecraft+ (Admin)</span>
               </div>
@@ -226,12 +182,10 @@ export default function AccountPage() {
           {/* Active subscriber */}
           {subscribed && !isAdmin && (
             <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Sparkles size={16} className="text-primary" />
-                  <span className="font-semibold text-foreground">Puzzlecraft+</span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">Active</span>
-                </div>
+              <div className="flex items-center gap-2">
+                <Sparkles size={16} className="text-primary" />
+                <span className="font-semibold text-foreground">Puzzlecraft+</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">Active</span>
               </div>
               {subscriptionEnd && (
                 <p className="text-xs text-muted-foreground">
@@ -241,8 +195,7 @@ export default function AccountPage() {
               <div className="grid grid-cols-2 gap-1.5">
                 {PLUS_BENEFITS.map(({ label }) => (
                   <div key={label} className="flex items-center gap-1.5 text-[11px] text-foreground/80">
-                    <Check size={10} className="text-primary shrink-0" />
-                    {label}
+                    <Check size={10} className="text-primary shrink-0" /> {label}
                   </div>
                 ))}
               </div>
@@ -262,9 +215,9 @@ export default function AccountPage() {
                 </div>
                 <p className="text-sm text-muted-foreground">Unlock everything — unlimited puzzles, advanced stats, and more.</p>
                 <div className="mt-3 flex items-baseline gap-1">
-                 <span className="font-mono text-3xl font-bold text-foreground">{MONTHLY_PRICE}</span>
-                 <span className="text-sm text-muted-foreground">/month</span>
-                 <span className="ml-2 text-[11px] text-muted-foreground/60">or {ANNUAL_PRICE}/year</span>
+                  <span className="font-mono text-3xl font-bold text-foreground">{MONTHLY_PRICE}</span>
+                  <span className="text-sm text-muted-foreground">/month</span>
+                  <span className="ml-2 text-[11px] text-muted-foreground/60">or {ANNUAL_PRICE}/year</span>
                 </div>
               </div>
               <div className="px-5 py-4 space-y-2.5 border-t border-border/60">
@@ -284,7 +237,7 @@ export default function AccountPage() {
                 <Button onClick={() => setUpgradeOpen(true)} className="w-full h-12 rounded-xl font-semibold text-base gap-2 shadow-[0_0_20px_hsl(var(--primary)/0.25)] active:scale-[0.97] transition-transform">
                   <Sparkles size={16} /> Start Puzzlecraft+
                 </Button>
-                <p className="text-center text-[11px] text-muted-foreground">Cancel anytime · 7-day free trial</p>
+                <p className="text-center text-[11px] text-muted-foreground">Cancel anytime</p>
               </div>
             </div>
           )}
@@ -300,16 +253,16 @@ export default function AccountPage() {
                 <ChevronRight size={14} className="text-muted-foreground" />
               </div>
               <p className="text-[11px] text-muted-foreground mt-1.5">
-                Unlimited craft puzzles, streak shield, advanced stats, and more. Tap to preview.
+                Unlimited craft puzzles, streak shield, advanced stats, and more.
               </p>
             </button>
           )}
 
-          {/* Account actions */}
+          {/* Actions */}
           <div className="rounded-2xl border border-border/50 overflow-hidden">
             {[
-              { icon: Shield, label: "Help & FAQ",  onPress: () => navigate("/help"), destructive: false },
-              { icon: Shield, label: "Sign out",    onPress: () => { signOut(); navigate("/"); }, destructive: true },
+              { icon: Shield, label: "Help & FAQ", onPress: () => navigate("/help"), destructive: false },
+              { icon: Shield, label: "Sign out",   onPress: () => { signOut(); navigate("/"); }, destructive: true },
             ].map(({ icon: Icon, label, onPress, destructive }, i, arr) => (
               <button key={label} onClick={onPress} className={cn("w-full flex items-center justify-between px-4 py-3.5 transition-colors active:bg-muted/50", i < arr.length - 1 && "border-b border-border/40")}>
                 <div className="flex items-center gap-3">
@@ -344,9 +297,7 @@ export default function AccountPage() {
         if (res.error) setError(res.error);
         else setSignupSuccess(true);
       }
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   };
 
   // ── SIGN UP SUCCESS ───────────────────────────────────────────────────────
@@ -385,7 +336,7 @@ export default function AccountPage() {
           <ArrowLeft size={16} /> Back
         </button>
 
-        {/* Value prop card */}
+        {/* Value prop */}
         <div className="rounded-2xl border bg-card p-5 space-y-3">
           <h1 className="font-display text-xl font-bold text-foreground">Sign in to Puzzlecraft</h1>
           <p className="text-sm text-muted-foreground">
@@ -399,15 +350,14 @@ export default function AccountPage() {
               { icon: Sparkles, text: "Unlock Puzzlecraft+"   },
             ].map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Icon size={12} className="text-primary shrink-0" />
-                {text}
+                <Icon size={12} className="text-primary shrink-0" /> {text}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Auth form */}
-        <div className="rounded-2xl border bg-card overflow-hidden">
+        {/* Auth form — ref used for scroll targeting */}
+        <div ref={authFormRef} className="rounded-2xl border bg-card overflow-hidden">
           <Tabs value={tab} onValueChange={(v) => { setTab(v as "login" | "signup"); setError(""); }}>
             <TabsList className="w-full rounded-none border-b bg-transparent h-11">
               <TabsTrigger value="login" className="flex-1 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none">
@@ -456,27 +406,57 @@ export default function AccountPage() {
           </Tabs>
         </div>
 
-        {/* ── Puzzlecraft+ benefits — full showcase below the form ── */}
+        {/* ── Puzzlecraft+ showcase ── */}
         <div className="rounded-2xl border border-primary/20 overflow-hidden">
           {/* Header */}
           <div className="px-5 pt-5 pb-4 bg-primary/5">
-            <div className="flex items-center gap-2.5 mb-1">
+            <div className="flex items-center gap-2.5 mb-4">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15">
                 <Crown size={15} className="text-primary" />
               </div>
-              <div>
-                <p className="font-display text-base font-bold text-foreground leading-tight">Puzzlecraft+</p>
-                <p className="text-[10px] text-muted-foreground">Unlocks after you sign in</p>
-              </div>
+              <p className="font-display text-base font-bold text-foreground">Puzzlecraft+</p>
             </div>
-            <div className="mt-3 flex items-baseline gap-1.5">
-              <span className="font-mono text-2xl font-bold text-foreground">{MONTHLY_PRICE}</span>
-              <span className="text-sm text-muted-foreground">/month</span>
-              <span className="text-[11px] text-muted-foreground/50 ml-1">· {ANNUAL_PRICE}/year</span>
+
+            {/* Pricing toggle — pill shape matching UpgradeModal */}
+            <div className="flex rounded-2xl bg-muted/60 p-1 gap-1">
+              <button
+                onClick={() => setAnnual(false)}
+                className={cn(
+                  "flex-1 rounded-xl py-2 text-sm font-medium transition-all",
+                  !annual ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
+                )}
+              >
+                {MONTHLY_PRICE}/mo
+              </button>
+              <button
+                onClick={() => setAnnual(true)}
+                className={cn(
+                  "flex-1 rounded-xl py-2 text-sm font-medium transition-all relative",
+                  annual ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
+                )}
+              >
+                {ANNUAL_PRICE}/yr
+                {/* Savings badge — always visible, dimmed when not selected */}
+                <span className={cn(
+                  "absolute -top-2.5 left-1/2 -translate-x-1/2",
+                  "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide",
+                  "bg-emerald-500 text-white transition-opacity",
+                  !annual && "opacity-50"
+                )}>
+                  Save {ANNUAL_SAVING_PCT}
+                </span>
+              </button>
             </div>
+
+            <p className="text-xs text-muted-foreground mt-3">
+              {annual
+                ? `${ANNUAL_PRICE}/year — just ${(parseFloat(ANNUAL_PRICE.replace("$", "")) / 12).toFixed(2)}/month`
+                : `${MONTHLY_PRICE}/month, billed monthly`
+              }
+            </p>
           </div>
 
-          {/* Benefits list */}
+          {/* Benefits */}
           <div className="px-5 py-4 border-t border-border/60 space-y-3">
             {PLUS_BENEFITS.map(({ icon: Icon, label, sub }) => (
               <div key={label} className="flex items-start gap-3">
@@ -491,17 +471,22 @@ export default function AccountPage() {
             ))}
           </div>
 
-          {/* CTA — directs to sign up tab */}
+          {/* CTA — scrolls to form AND switches to signup tab */}
           <div className="px-5 pb-5">
             <Button
-              onClick={() => setTab("signup")}
+              onClick={() => {
+                setTab("signup");
+                // Small delay so the tab switch renders before scroll
+                setTimeout(() => {
+                  authFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }, 50);
+              }}
               className="w-full h-11 rounded-xl font-semibold gap-2"
-              variant="outline"
             >
-              <Crown size={14} /> Create a free account to get started
+              <Crown size={14} /> Create a free account
             </Button>
             <p className="text-center text-[11px] text-muted-foreground mt-2">
-              7-day free trial · Cancel anytime
+              Cancel anytime · No commitment
             </p>
           </div>
         </div>
