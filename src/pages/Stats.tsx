@@ -8,9 +8,9 @@ import { formatTime } from "@/hooks/usePuzzleTimer";
 import { getDailyStreak, getTotalDailyCompleted } from "@/lib/dailyChallenge";
 import { getEndlessStats } from "@/lib/endlessHistory";
 import {
-  Trophy, Flame, Clock, Target, BarChart3, Calendar,
+  Trophy, Flame, Clock, Target, Calendar,
   Infinity, ArrowRight, TrendingUp, TrendingDown, Shield,
-  Zap, Info, ChevronRight,
+  Zap, Info, ChevronRight, Play,
 } from "lucide-react";
 import { isNativeApp } from "@/lib/appMode";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -26,51 +26,59 @@ import { usePremiumAccess } from "@/lib/premiumAccess";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 import { checkMilestones } from "@/lib/milestones";
 import { getSolveRecords } from "@/lib/solveTracker";
-import { InsightsBanner } from "@/components/ios/InsightsBanner";
 import { computePlayerRating, getSkillTier, getTierColor, getTierProgress } from "@/lib/solveScoring";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-type ViewFilter = null | "daily";
+// ── Constants ──────────────────────────────────────────────────────────────
 
-const RECENT_COLLAPSED_COUNT = 5;
+type ViewFilter = null | "daily";
+const RECENT_COLLAPSED_COUNT = 8;
 
 const ALL_CATEGORIES: PuzzleCategory[] = [
   "crossword", "word-fill", "number-fill", "sudoku",
   "word-search", "kakuro", "nonogram", "cryptogram",
 ];
 
-// Tier order and thresholds — kept identical to original
 const TIER_THRESHOLDS: Record<string, number> = {
   Expert: 1200, Advanced: 950, Skilled: 700, Casual: 400, Beginner: 0,
 };
 const TIER_ORDER_LIST = ["Beginner", "Casual", "Skilled", "Advanced", "Expert"];
 
+const DIFF_COLORS: Record<string, string> = {
+  easy:    "bg-emerald-400",
+  medium:  "bg-amber-400",
+  hard:    "bg-orange-500",
+  extreme: "bg-rose-500",
+  insane:  "bg-violet-600",
+};
+
+// ── Component ──────────────────────────────────────────────────────────────
+
 const Stats = () => {
   const navigate = useNavigate();
-  const native = isNativeApp();
+  const native   = isNativeApp();
   const [dataVersion, setDataVersion] = useState(0);
-  const stats = useMemo(() => getProgressStats(), [dataVersion]);
-  const dailyStreak = useMemo(() => getDailyStreak(), [dataVersion]);
-  const dailyCompleted = useMemo(() => getTotalDailyCompleted(), [dataVersion]);
-  const endlessStats = useMemo(() => native ? null : getEndlessStats(), [dataVersion, native]);
-  const { isPremium: premiumAccess, showUpgradeCTA: showUpgrade, loading: accountLoading } = usePremiumAccess();
+
+  const stats          = useMemo(() => getProgressStats(),                [dataVersion]);
+  const dailyStreak    = useMemo(() => getDailyStreak(),                  [dataVersion]);
+  const dailyCompleted = useMemo(() => getTotalDailyCompleted(),          [dataVersion]);
+  const endlessStats   = useMemo(() => native ? null : getEndlessStats(), [dataVersion, native]);
+
+  const { isPremium: premiumAccess, showUpgradeCTA: showUpgrade } = usePremiumAccess();
   const { account } = useUserAccount();
-  const isAdmin = account?.isAdmin ?? false;
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
-  // Local rating — identical logic to original
+  // Local rating
   const localRating = useMemo(() => {
     if (!premiumAccess) return null;
     const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
     if (recs.length < 10) return null;
     const rating = computePlayerRating(recs);
-    const tier = getSkillTier(rating);
+    const tier   = getSkillTier(rating);
     let bestRating = rating;
-    const WINDOW = 25;
     for (let i = 1; i <= Math.max(0, recs.length - 10); i++) {
-      const windowRecs = recs.slice(i);
-      const r = computePlayerRating(windowRecs);
+      const r = computePlayerRating(recs.slice(i));
       if (r > bestRating) bestRating = r;
     }
     return { rating, tier, solveCount: recs.length, bestRating };
@@ -104,63 +112,43 @@ const Stats = () => {
   })() : null;
 
   useEffect(() => {
-    if (account) {
-      syncLeaderboardRating(account.id, account.displayName);
-    }
+    if (account) syncLeaderboardRating(account.id, account.displayName);
     checkMilestones();
   }, [account, dataVersion]);
 
-  const [viewFilter, setViewFilter] = useState<ViewFilter>(null);
+  // Filters
+  const [viewFilter,     setViewFilter]     = useState<ViewFilter>(null);
   const [categoryFilter, setCategoryFilter] = useState<PuzzleCategory | null>(null);
-  const [dateFilter, setDateFilter] = useState<string | null>(null);
+  const [dateFilter,     setDateFilter]     = useState<string | null>(null);
   const [recentExpanded, setRecentExpanded] = useState(false);
 
-  const toggleViewFilter = (f: ViewFilter) => {
-    setViewFilter((prev) => (prev === f ? null : f));
-  };
-
-  const toggleDateFilter = (dateStr: string) => {
-    setDateFilter((prev) => (prev === dateStr ? null : dateStr));
-  };
-
-  const handleCategoryChange = (value: string) => {
+  const handleCategoryChange = (value: string) =>
     setCategoryFilter(value === "all" ? null : (value as PuzzleCategory));
-  };
 
   const filteredCompletions = useMemo(() => {
-    let results = stats.recentCompletions;
-    if (categoryFilter) results = results.filter((r) => r.category === categoryFilter);
-    if (dateFilter) results = results.filter((r) => r.date.slice(0, 10) === dateFilter);
-    return results;
+    let r = stats.recentCompletions;
+    if (categoryFilter) r = r.filter((c) => c.category === categoryFilter);
+    if (dateFilter)     r = r.filter((c) => c.date.slice(0, 10) === dateFilter);
+    return r;
   }, [stats.recentCompletions, categoryFilter, dateFilter]);
 
   const filteredStatCards = useMemo(() => {
     if (!dateFilter) return null;
-    const dayCompletions = stats.recentCompletions.filter(
-      (r) => r.date.slice(0, 10) === dateFilter
-    );
-    const catFiltered = categoryFilter
-      ? dayCompletions.filter((r) => r.category === categoryFilter)
-      : dayCompletions;
-    const totalSolved = catFiltered.length;
-    const totalTime = catFiltered.reduce((s, r) => s + r.time, 0);
-    const bestTime = catFiltered.length > 0 ? Math.min(...catFiltered.map((r) => r.time)) : null;
-    return {
-      totalSolved,
-      totalTime,
-      averageTime: totalSolved > 0 ? Math.round(totalTime / totalSolved) : 0,
-      bestTime,
-    };
+    const day = stats.recentCompletions.filter((r) => r.date.slice(0, 10) === dateFilter);
+    const cat = categoryFilter ? day.filter((r) => r.category === categoryFilter) : day;
+    const totalSolved = cat.length;
+    const totalTime   = cat.reduce((s, r) => s + r.time, 0);
+    const bestTime    = cat.length > 0 ? Math.min(...cat.map((r) => r.time)) : null;
+    return { totalSolved, totalTime, averageTime: totalSolved > 0 ? Math.round(totalTime / totalSolved) : 0, bestTime };
   }, [dateFilter, categoryFilter, stats.recentCompletions]);
 
   const visibleCompletions = recentExpanded
     ? filteredCompletions
     : filteredCompletions.slice(0, RECENT_COLLAPSED_COUNT);
 
-  const showDaily = viewFilter === null || viewFilter === "daily";
-  const showEndless = !native && viewFilter === null;
   const showGeneral = viewFilter === null;
-
+  const showDaily   = viewFilter === null || viewFilter === "daily";
+  const showEndless = !native && viewFilter === null;
   const displayStats = filteredStatCards ?? stats;
 
   const activeFilterLabel = [
@@ -168,65 +156,110 @@ const Stats = () => {
     categoryFilter && CATEGORY_INFO[categoryFilter]?.name,
   ].filter(Boolean).join(" · ");
 
-  // ── Rating progress for the "next tier" bar ──
   const tierProgressValue = localRating ? getTierProgress(localRating.rating) : 0;
-  const pointsToNext = localRating && nextTierInfo
-    ? nextTierInfo.threshold - localRating.rating
-    : null;
+  const pointsToNext = localRating && nextTierInfo ? nextTierInfo.threshold - localRating.rating : null;
   const nearRank = pointsToNext !== null && nextTierInfo
-    ? pointsToNext <= Math.round(nextTierInfo.threshold * 0.12)
-    : false;
+    ? pointsToNext <= Math.round(nextTierInfo.threshold * 0.12) : false;
+
+  // Streak at-risk
+  const streakAtRisk = useMemo(() => {
+    if (stats.currentStreak === 0) return false;
+    const today = new Date().toISOString().slice(0, 10);
+    return stats.solvedDates[0] !== today;
+  }, [stats]);
+
+  // Personalised heading
+  const headingLabel = useMemo(() => {
+    if (stats.totalSolved === 0) return "Your Progress";
+    const tierLabel = localRating?.tier ?? null;
+    const solveStr  = `${stats.totalSolved.toLocaleString()} solve${stats.totalSolved !== 1 ? "s" : ""}`;
+    return tierLabel ? `${tierLabel} · ${solveStr}` : solveStr;
+  }, [stats.totalSolved, localRating]);
+
+  // For solve-time bars in recent list
+  const overallBest = useMemo(() => {
+    const times = filteredCompletions.map((c) => c.time).filter((t) => t > 0);
+    return times.length > 0 ? Math.min(...times) : null;
+  }, [filteredCompletions]);
+
+  // Empty state
+  if (stats.totalSolved === 0) {
+    return (
+      <Layout>
+        <div className="container py-6 md:py-10 max-w-2xl">
+          <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl mb-1">
+            Your Progress
+          </h1>
+          <EmptyStats onNavigate={() => navigate("/")} />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
-      <div className="container py-6 md:py-10 max-w-2xl">
+      <div className="container py-6 md:py-10">
 
-        {/* ── Page header ── */}
-        <div className="mb-1">
-          <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Your Progress</h1>
-        </div>
-        <p className="text-muted-foreground text-sm">
-          Track your solving stats, streaks, and best times.
-          {activeFilterLabel && (
-            <span className="ml-2 font-medium text-primary">Showing: {activeFilterLabel}</span>
-          )}
-        </p>
-
-        {/* ── Empty state ── */}
-        {stats.totalSolved === 0 && (
-          <EmptyStats onNavigate={() => navigate("/")} />
+        {/* Streak at-risk banner */}
+        {streakAtRisk && (
+          <div className="mb-5 flex items-center gap-3 rounded-xl border border-destructive/25 bg-destructive/5 px-4 py-3">
+            <Flame size={16} className="text-destructive shrink-0 animate-pulse" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">
+                {stats.currentStreak}-day streak at risk
+              </p>
+              <p className="text-xs text-muted-foreground">Play today to keep it alive</p>
+            </div>
+            <Button asChild size="sm" className="shrink-0 gap-1.5">
+              <Link to="/daily">
+                <Play size={12} className="fill-current" /> Play now
+              </Link>
+            </Button>
+          </div>
         )}
 
-        {stats.totalSolved > 0 && (
-          <>
-            {/* Personal insights */}
-            <InsightsBanner className="mt-6" />
-            {/* ── Rating hero card (premium) ── */}
+        {/* Page heading */}
+        <div className="mb-6">
+          <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
+            {headingLabel}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Your solving stats, streaks, and best times.
+            {activeFilterLabel && (
+              <span className="ml-2 font-medium text-primary">Showing: {activeFilterLabel}</span>
+            )}
+          </p>
+        </div>
+
+        {/* Two-column desktop layout */}
+        <div className="grid lg:grid-cols-[1fr_340px] gap-8 items-start">
+
+          {/* ── LEFT COLUMN ── */}
+          <div className="space-y-6 min-w-0">
+
+            {/* Rating hero (premium) */}
             {showGeneral && premiumAccess && localRating && (
               <div className={cn(
-                "mt-6 rounded-2xl border bg-card p-5",
+                "rounded-2xl border bg-card p-5",
                 nearRank ? "border-primary/30" : "border-primary/20"
               )}>
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    {/* Label row */}
                     <div className="flex items-center gap-2 mb-2">
                       <Zap size={14} className="text-primary" />
                       <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Your Rank</span>
                       {myLeaderboardEntry && (
-                        <span className="font-mono font-bold text-sm text-primary">
-                          #{myLeaderboardEntry.rank}
-                        </span>
+                        <span className="font-mono font-bold text-sm text-primary">#{myLeaderboardEntry.rank}</span>
                       )}
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <button type="button" className="text-muted-foreground/40 hover:text-muted-foreground transition-colors p-1 -m-1 min-w-[28px] min-h-[28px] flex items-center justify-center touch-manipulation">
+                            <button type="button" className="text-muted-foreground/40 hover:text-muted-foreground transition-colors p-1 -m-1 min-w-[28px] min-h-[28px] flex items-center justify-center">
                               <Info size={12} />
                             </button>
                           </TooltipTrigger>
                           <TooltipContent side="top" className="max-w-52 text-xs leading-relaxed">
-                            <p className="font-medium mb-1">Your rating is based on:</p>
+                            <p className="font-medium mb-1">Rating is based on:</p>
                             <ul className="space-y-0.5 text-muted-foreground">
                               <li>• Puzzle difficulty</li>
                               <li>• Solve speed</li>
@@ -238,57 +271,43 @@ const Stats = () => {
                       </TooltipProvider>
                     </div>
 
-                    {/* Tier name */}
                     <p className={cn("text-base font-semibold", getTierColor(localRating.tier as any))}>
                       {localRating.tier}
                     </p>
 
-                    {/* Rating number + delta */}
                     <div className="flex items-baseline gap-2 mt-0.5">
-                      <p className="font-mono text-4xl font-bold text-foreground leading-none">
-                        {localRating.rating}
-                      </p>
+                      <p className="font-mono text-4xl font-bold text-foreground leading-none">{localRating.rating}</p>
                       <span className="text-xs text-muted-foreground">rating</span>
                       {myLeaderboardEntry && myLeaderboardEntry.previous_rating > 0 && (() => {
                         const diff = myLeaderboardEntry.rating - myLeaderboardEntry.previous_rating;
                         if (diff === 0) return null;
                         return (
-                          <span className={cn(
-                            "text-xs font-semibold inline-flex items-center gap-0.5",
-                            diff > 0 ? "text-emerald-500" : "text-destructive"
-                          )}>
+                          <span className={cn("text-xs font-semibold inline-flex items-center gap-0.5",
+                            diff > 0 ? "text-emerald-500" : "text-destructive")}>
                             {diff > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
                             {diff > 0 ? "+" : ""}{diff}
                           </span>
                         );
                       })()}
                     </div>
-
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Based on your recent solves</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Based on your recent {localRating.solveCount} solves</p>
                     {localRating.bestRating > localRating.rating && (
-                      <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                        Peak: {localRating.bestRating}
-                      </p>
+                      <p className="text-[10px] text-muted-foreground/60 mt-0.5">Peak: {localRating.bestRating}</p>
                     )}
 
-                    {/* Progress to next tier */}
                     {nextTierInfo && (
                       <div className="mt-4 max-w-xs">
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-[10px] text-muted-foreground">
                             {nearRank
                               ? <span className="text-primary font-semibold">Only {pointsToNext} pts to {nextTierInfo.name}!</span>
-                              : <span>{pointsToNext} pts to {nextTierInfo.name}</span>
-                            }
+                              : <>{pointsToNext} pts to {nextTierInfo.name}</>}
                           </span>
                           <span className="text-[10px] text-muted-foreground/60 font-mono">
                             {localRating.rating}/{nextTierInfo.threshold}
                           </span>
                         </div>
-                        <Progress
-                          value={tierProgressValue}
-                          className={cn("h-2", nearRank && "h-2.5")}
-                        />
+                        <Progress value={tierProgressValue} className={cn("h-2", nearRank && "h-2.5")} />
                         {nearRank && (
                           <p className="text-[10px] text-primary mt-1 font-medium">
                             Play a puzzle now to break through →
@@ -298,45 +317,34 @@ const Stats = () => {
                     )}
                   </div>
 
-                  {/* Leaderboard button */}
                   <Button asChild variant="outline" size="sm" className="shrink-0 self-start">
-                    <Link to="/leaderboard">
-                      <Shield size={13} className="mr-1" /> Leaderboard
-                    </Link>
+                    <Link to="/leaderboard"><Shield size={13} className="mr-1" /> Leaderboard</Link>
                   </Button>
                 </div>
               </div>
             )}
 
-            {/* ── Key stat cards ── */}
+            {/* Premium upgrade teaser */}
+            {showGeneral && showUpgrade && !premiumAccess && (
+              <StatsPremiumPreview onUpgrade={() => setUpgradeOpen(true)} />
+            )}
+
+            {/* Key stat cards */}
             {showGeneral && (
-              <div className={cn(
-                "mt-5 grid gap-3",
-                !dateFilter ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-3"
-              )}>
-                {/* Puzzles solved */}
+              <div className={cn("grid gap-3",
+                !dateFilter ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-3")}>
                 <div className="rounded-xl border bg-card p-4 text-center">
                   <Target className="mx-auto h-4 w-4 text-primary mb-2" />
-                  <p className="font-mono text-2xl font-bold text-foreground leading-none">
-                    {displayStats.totalSolved}
-                  </p>
+                  <p className="font-mono text-2xl font-bold text-foreground leading-none">{displayStats.totalSolved}</p>
                   <p className="mt-1.5 text-[11px] text-muted-foreground">Puzzles Solved</p>
                 </div>
-
-                {/* Current streak — only shown when no date filter */}
                 {!dateFilter && (
                   <div className="rounded-xl border bg-card p-4 text-center">
                     <Flame className="mx-auto h-4 w-4 text-primary mb-2" />
-                    <p className="font-mono text-2xl font-bold text-foreground leading-none">
-                      {stats.currentStreak}
-                    </p>
-                    <p className="mt-1.5 text-[11px] text-muted-foreground">
-                      Day{stats.currentStreak !== 1 ? "s" : ""} Streak
-                    </p>
+                    <p className="font-mono text-2xl font-bold text-foreground leading-none">{stats.currentStreak}</p>
+                    <p className="mt-1.5 text-[11px] text-muted-foreground">Day Streak</p>
                   </div>
                 )}
-
-                {/* Avg solve time */}
                 <div className="rounded-xl border bg-card p-4 text-center">
                   <Clock className="mx-auto h-4 w-4 text-primary mb-2" />
                   <p className="font-mono text-2xl font-bold text-foreground leading-none">
@@ -344,336 +352,202 @@ const Stats = () => {
                   </p>
                   <p className="mt-1.5 text-[11px] text-muted-foreground">Avg Time</p>
                 </div>
-
-                {/* Fastest solve */}
                 <div className="rounded-xl border bg-card p-4 text-center">
                   <Trophy className="mx-auto h-4 w-4 text-primary mb-2" />
                   <p className="font-mono text-2xl font-bold text-foreground leading-none">
                     {displayStats.bestTime !== null ? formatTime(displayStats.bestTime) : "—"}
                   </p>
-                  <p className="mt-1.5 text-[11px] text-muted-foreground">Fastest Solve</p>
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">Fastest</p>
                 </div>
               </div>
             )}
 
-            {/* ── Streak at-risk nudge ── */}
-            {showGeneral && !dateFilter && stats.currentStreak > 0 && (
-              (() => {
-                const today = new Date().toISOString().slice(0, 10);
-                const playedToday = stats.solvedDates[0] === today;
-                if (playedToday) return null;
-                return (
-                  <div className="mt-3 flex items-center gap-3 rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3">
-                    <Flame size={16} className="text-destructive shrink-0 animate-pulse" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground">
-                        {stats.currentStreak}-day streak at risk!
-                      </p>
-                      <p className="text-[11px] text-muted-foreground">Play today to keep it alive</p>
-                    </div>
-                    <Button asChild size="sm" variant="outline" className="shrink-0 border-destructive/30 text-destructive hover:bg-destructive/10">
-                      <Link to="/daily">Play now</Link>
-                    </Button>
-                  </div>
-                );
-              })()
-            )}
-
-            {/* ── Daily challenge stats ── */}
-            {showDaily && dailyCompleted > 0 && (
-              <div className="mt-6 rounded-xl border bg-card p-5">
-                <h2 className="font-display text-base font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <Calendar size={16} className="text-primary" />
-                  Daily Challenge
-                </h2>
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="font-mono text-2xl font-bold text-foreground">{dailyCompleted}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">Completed</p>
-                  </div>
-                  <div>
-                    <p className="font-mono text-2xl font-bold text-foreground">{dailyStreak.current}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">Current Streak</p>
-                  </div>
-                  <div>
-                    <p className="font-mono text-2xl font-bold text-foreground">{dailyStreak.longest}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">Best Streak</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ── Endless Mode ── */}
-            {showEndless && endlessStats && (
-              <div className="mt-6 rounded-xl border bg-card p-5">
-                <h2 className="font-display text-base font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <Infinity size={16} className="text-primary" />
-                  Endless Mode
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center mb-5">
-                  <div>
-                    <p className="font-mono text-2xl font-bold text-foreground">{endlessStats.totalSessions}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">Sessions</p>
-                  </div>
-                  <div>
-                    <p className="font-mono text-2xl font-bold text-foreground">{endlessStats.totalSolved}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">Total Solved</p>
-                  </div>
-                  <div>
-                    <p className="font-mono text-2xl font-bold text-foreground">{endlessStats.bestSessionSolved}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">Best Session</p>
-                  </div>
-                  <div>
-                    <p className="font-mono text-2xl font-bold text-foreground">
-                      {endlessStats.fastestEver !== null ? formatTime(endlessStats.fastestEver) : "—"}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground mt-1">Fastest Solve</p>
-                  </div>
-                </div>
-
-                {endlessStats.recentSessions.length > 0 && (
-                  <TooltipProvider>
-                    <div>
-                      <h3 className="text-sm font-semibold text-foreground mb-2">Recent Sessions</h3>
-                      <div className="space-y-2">
-                        {endlessStats.recentSessions.map((session) => {
-                          const typesUnique = [...new Set(session.typesPlayed)];
-                          const ups = session.solves.filter((s) => s.diffChange === "up").length;
-                          const downs = session.solves.filter((s) => s.diffChange === "down").length;
-                          return (
-                            <div key={session.id} className="rounded-lg border bg-secondary/30 p-3">
-                              <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-xs text-muted-foreground">
-                                  {new Date(session.date).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                                </span>
-                                <span className="text-xs font-medium text-foreground">
-                                  {session.totalSolved} solved · {formatTime(session.totalTime)}
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between gap-2 text-[11px]">
-                                <div className="flex items-center flex-wrap min-w-0">
-                                  {typesUnique.map((t, idx) => (
-                                    <span key={t} className="inline-flex items-center gap-0.5 whitespace-nowrap">
-                                      {idx > 0 && <span className="text-muted-foreground/40 mx-1">|</span>}
-                                      <span className="text-muted-foreground">{CATEGORY_INFO[t]?.name}</span>
-                                      <span className="text-muted-foreground/60 text-[10px] ml-0.5">
-                                        ({DIFFICULTY_LABELS[session.finalDifficulties[t] ?? "medium"]})
-                                      </span>
-                                    </span>
-                                  ))}
-                                </div>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  {ups > 0 && (
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <button type="button" className="flex items-center gap-0.5 text-[10px] text-primary p-1 -m-1 min-w-[28px] min-h-[28px] justify-center touch-manipulation">
-                                          <TrendingUp size={9} /> {ups}
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="top" className="text-xs">Faster than your average</TooltipContent>
-                                    </Tooltip>
-                                  )}
-                                  {downs > 0 && (
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <button type="button" className="flex items-center gap-0.5 text-[10px] text-destructive p-1 -m-1 min-w-[28px] min-h-[28px] justify-center touch-manipulation">
-                                          <TrendingDown size={9} /> {downs}
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="top" className="text-xs">Slower than your average</TooltipContent>
-                                    </Tooltip>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </TooltipProvider>
-                )}
-              </div>
-            )}
-
-            {/* ── By Puzzle Type — inline grid replacing dropdown for iOS feel ── */}
-            {showGeneral && (
-              <div className="mt-8">
+            {/* Recent solves */}
+            {filteredCompletions.length > 0 && (
+              <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-display text-base font-semibold text-foreground">By Puzzle Type</h2>
-                  {/* Keep the dropdown for web — familiar and filterable */}
-                  <Select
-                    value={categoryFilter ?? "all"}
-                    onValueChange={handleCategoryChange}
-                  >
-                    <SelectTrigger className="w-40 h-8 text-xs">
+                  <h2 className="font-display text-base font-semibold text-foreground">Recent Solves</h2>
+                  <Select value={categoryFilter ?? "all"} onValueChange={handleCategoryChange}>
+                    <SelectTrigger className="w-36 h-8 text-xs">
                       <SelectValue placeholder="All Types" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Types</SelectItem>
                       {ALL_CATEGORIES.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {CATEGORY_INFO[cat]?.name}
-                        </SelectItem>
+                        <SelectItem key={cat} value={cat}>{CATEGORY_INFO[cat]?.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* Category detail card when one type is selected */}
-                {categoryFilter && stats.byCategory[categoryFilter] && (
-                  <div className="mb-3 rounded-xl border bg-card p-4">
-                    <p className="font-display text-sm font-semibold text-primary mb-3">
-                      {CATEGORY_INFO[categoryFilter]?.name}
-                    </p>
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      <div>
-                        <p className="font-mono text-xl font-bold text-foreground">{stats.byCategory[categoryFilter].solved}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Solved</p>
-                      </div>
-                      <div>
-                        <p className="font-mono text-xl font-bold text-foreground">
-                          {formatTime(stats.byCategory[categoryFilter].bestTime)}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Best</p>
-                      </div>
-                      <div>
-                        <p className="font-mono text-xl font-bold text-foreground">
-                          {formatTime(Math.round(stats.byCategory[categoryFilter].totalTime / stats.byCategory[categoryFilter].solved))}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Avg</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <div className="rounded-xl border bg-card overflow-hidden">
+                  {visibleCompletions.map((c, i) => {
+                    const isLast = i === visibleCompletions.length - 1;
+                    const barPct = overallBest && c.time > 0
+                      ? Math.round(Math.min(100, (overallBest / c.time) * 100)) : 0;
+                    const isPB = overallBest !== null && c.time === overallBest;
 
-                {/* Puzzle type grid — shows all with solved count + best time */}
-                <div className="grid grid-cols-2 gap-2">
-                  {ALL_CATEGORIES.map((cat) => {
-                    const catStats = stats.byCategory[cat];
-                    const isSelected = categoryFilter === cat;
                     return (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => setCategoryFilter(isSelected ? null : cat)}
-                        className={cn(
-                          "rounded-xl border p-3 text-left transition-all active:scale-[0.97]",
-                          isSelected
-                            ? "border-primary/40 bg-primary/5"
-                            : "border-border bg-card hover:border-primary/20"
-                        )}
-                      >
-                        <p className={cn(
-                          "text-sm font-semibold leading-tight",
-                          isSelected ? "text-primary" : "text-foreground"
-                        )}>
-                          {CATEGORY_INFO[cat]?.name}
-                        </p>
-                        {catStats ? (
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] text-muted-foreground font-mono">
-                              {formatTime(catStats.bestTime)}
+                      <div key={`${c.date}-${i}`}
+                        className={cn("flex items-center gap-3 px-4 py-3", !isLast && "border-b border-border/40")}>
+                        <div className={cn("h-2 w-2 rounded-full shrink-0", DIFF_COLORS[c.difficulty] ?? "bg-muted-foreground/40")} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-medium text-foreground truncate">
+                              {CATEGORY_INFO[c.category]?.name ?? c.category}
                             </span>
-                            <span className="text-[10px] text-muted-foreground/50">
-                              · {catStats.solved} solved
-                            </span>
+                            {isPB && (
+                              <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">PB</span>
+                            )}
                           </div>
-                        ) : (
-                          <p className="text-[10px] text-muted-foreground/40 mt-1">Not played yet</p>
-                        )}
-                      </button>
+                          <div className="mt-1.5 flex items-center gap-2">
+                            <div className="flex-1 h-1 rounded-full bg-border/50 overflow-hidden max-w-[100px]">
+                              <div className={cn("h-full rounded-full",
+                                barPct >= 90 ? "bg-emerald-500" : barPct >= 70 ? "bg-amber-400" : "bg-muted-foreground/30")}
+                                style={{ width: `${barPct}%` }} />
+                            </div>
+                            <span className="text-[10px] text-muted-foreground capitalize shrink-0">{c.difficulty}</span>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-mono text-sm font-semibold text-foreground">{formatTime(c.time)}</p>
+                          <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                            {new Date(c.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                          </p>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
-              </div>
-            )}
 
-            {/* ── Activity calendar (last 30 days) ── */}
-            {showGeneral && (
-              <div className="mt-8">
-                <h2 className="font-display text-base font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <Calendar size={15} className="text-primary" />
-                  Last 30 Days
-                </h2>
-                <div className="flex flex-wrap gap-1.5">
-                  {Array.from({ length: 30 }, (_, i) => {
-                    const d = new Date();
-                    d.setDate(d.getDate() - (29 - i));
-                    const dateStr = d.toISOString().slice(0, 10);
-                    const hasActivity = stats.solvedDates.includes(dateStr);
-                    const isToday = i === 29;
-                    const isSelected = dateFilter === dateStr;
-                    return (
-                      <button
-                        key={dateStr}
-                        type="button"
-                        onClick={() => toggleDateFilter(dateStr)}
-                        title={`${dateStr}${hasActivity ? " ✓" : ""}`}
-                        className={cn(
-                          "w-7 h-7 sm:w-8 sm:h-8 rounded-md border text-[9px] flex items-center justify-center font-medium transition-colors cursor-pointer",
-                          isSelected
-                            ? "bg-primary text-primary-foreground border-primary ring-2 ring-primary/40"
-                            : hasActivity
-                              ? "bg-primary/20 border-primary/40 text-primary hover:bg-primary/30"
-                              : "bg-card border-border text-muted-foreground/50 hover:border-muted-foreground/30",
-                          isToday && !isSelected && "ring-1 ring-primary/50"
-                        )}
-                      >
-                        {d.getDate()}
-                      </button>
-                    );
-                  })}
-                </div>
-                {dateFilter && (
-                  <button
-                    type="button"
-                    onClick={() => setDateFilter(null)}
-                    className="mt-2 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Clear date filter
+                {filteredCompletions.length > RECENT_COLLAPSED_COUNT && (
+                  <button onClick={() => setRecentExpanded((v) => !v)}
+                    className="mt-2 w-full text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors text-center py-1">
+                    {recentExpanded ? "Show less" : `Show all ${filteredCompletions.length} solves`}
                   </button>
                 )}
               </div>
             )}
 
-            {/* ── Lifetime stats ── */}
-            {showGeneral && !dateFilter && stats.totalSolved > 0 && (
-              <div className="mt-8">
-                <h2 className="font-display text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                  Lifetime
-                </h2>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border bg-card p-4 text-center">
-                    <Flame className="mx-auto h-4 w-4 text-muted-foreground mb-2" />
-                    <p className="font-mono text-lg font-bold text-foreground">
-                      {stats.longestStreak} day{stats.longestStreak !== 1 ? "s" : ""}
+            {/* Premium stats section */}
+            {showGeneral && premiumAccess && <PremiumStats />}
+
+          </div>
+          {/* ── end LEFT COLUMN ── */}
+
+          {/* ── RIGHT COLUMN ── */}
+          <div className="space-y-5 lg:sticky lg:top-24">
+
+            {/* By puzzle type */}
+            {showGeneral && (
+              <div className="rounded-2xl border bg-card overflow-hidden">
+                <div className="px-4 py-3 border-b border-border/60">
+                  <h2 className="font-display text-sm font-semibold text-foreground">By Puzzle Type</h2>
+                </div>
+                <div className="divide-y divide-border/40">
+                  {ALL_CATEGORIES.map((cat) => {
+                    const cs = stats.byCategory[cat];
+                    const isSel = categoryFilter === cat;
+                    return (
+                      <button key={cat} type="button"
+                        onClick={() => setCategoryFilter(isSel ? null : cat)}
+                        className={cn("w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors",
+                          isSel ? "bg-primary/5" : "hover:bg-secondary/50")}>
+                        <div className="flex-1 min-w-0">
+                          <p className={cn("text-xs font-semibold truncate", isSel ? "text-primary" : "text-foreground")}>
+                            {CATEGORY_INFO[cat]?.name}
+                          </p>
+                        </div>
+                        {cs ? (
+                          <div className="text-right shrink-0">
+                            <p className="font-mono text-xs font-semibold text-foreground">{formatTime(cs.bestTime)}</p>
+                            <p className="text-[9px] text-muted-foreground/60">{cs.solved} solve{cs.solved !== 1 ? "s" : ""}</p>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground/40 shrink-0">No plays</span>
+                        )}
+                        <ChevronRight size={12} className={cn("shrink-0", isSel ? "text-primary" : "text-muted-foreground/30")} />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {categoryFilter && stats.byCategory[categoryFilter] && (
+                  <div className="border-t border-border/60 px-4 py-3 bg-primary/5">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-primary mb-2">
+                      {CATEGORY_INFO[categoryFilter]?.name}
                     </p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">Longest Streak</p>
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      {[
+                        { label: "Solved", val: String(stats.byCategory[categoryFilter].solved) },
+                        { label: "Best",   val: formatTime(stats.byCategory[categoryFilter].bestTime) },
+                        { label: "Avg",    val: formatTime(Math.round(stats.byCategory[categoryFilter].totalTime / stats.byCategory[categoryFilter].solved)) },
+                      ].map(({ label, val }) => (
+                        <div key={label}>
+                          <p className="font-mono text-lg font-bold text-foreground leading-none">{val}</p>
+                          <p className="text-[9px] text-muted-foreground mt-1">{label}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="rounded-xl border bg-card p-4 text-center">
-                    <BarChart3 className="mx-auto h-4 w-4 text-muted-foreground mb-2" />
-                    <p className="font-mono text-lg font-bold text-foreground">
-                      {stats.totalSolved > 0 ? formatTime(stats.totalTime) : "—"}
-                    </p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">Total Time</p>
-                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Daily challenge */}
+            {showDaily && dailyCompleted > 0 && (
+              <div className="rounded-2xl border bg-card overflow-hidden">
+                <div className="px-4 py-3 border-b border-border/60 flex items-center gap-2">
+                  <Calendar size={13} className="text-primary" />
+                  <h2 className="font-display text-sm font-semibold text-foreground">Daily Challenge</h2>
+                </div>
+                <div className="px-4 py-3 grid grid-cols-3 gap-2 text-center">
+                  {[
+                    { label: "Completed", val: String(dailyCompleted) },
+                    { label: "Streak",    val: String(dailyStreak.current) },
+                    { label: "Best",      val: String(dailyStreak.longest) },
+                  ].map(({ label, val }) => (
+                    <div key={label}>
+                      <p className="font-mono text-xl font-bold text-foreground">{val}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">{label}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="px-4 pb-3">
+                  <Button asChild variant="outline" size="sm" className="w-full gap-1.5 text-xs">
+                    <Link to="/daily">Today's challenge <ArrowRight size={12} /></Link>
+                  </Button>
                 </div>
               </div>
             )}
 
-            {/* ── Premium full analytics ── */}
-            {showGeneral && premiumAccess && (
-              <div className="mt-10">
-                <PremiumStats onDataChange={() => setDataVersion((v) => v + 1)} />
+            {/* Endless stats */}
+            {showEndless && endlessStats && endlessStats.totalSessions > 0 && (
+              <div className="rounded-2xl border bg-card overflow-hidden">
+                <div className="px-4 py-3 border-b border-border/60 flex items-center gap-2">
+                  <Infinity size={13} className="text-primary" />
+                  <h2 className="font-display text-sm font-semibold text-foreground">Endless Mode</h2>
+                </div>
+                <div className="px-4 py-3 grid grid-cols-2 gap-3 text-center">
+                  {[
+                    { label: "Sessions",     val: String(endlessStats.totalSessions) },
+                    { label: "Total Solved", val: String(endlessStats.totalSolved) },
+                    { label: "Best Session", val: String(endlessStats.bestSessionSolved) },
+                    { label: "Fastest",      val: endlessStats.fastestEver !== null ? formatTime(endlessStats.fastestEver) : "—" },
+                  ].map(({ label, val }) => (
+                    <div key={label}>
+                      <p className="font-mono text-xl font-bold text-foreground">{val}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">{label}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* ── Premium preview for free users ── */}
-            {showGeneral && !premiumAccess && !accountLoading && (
-              <StatsPremiumPreview onUpgrade={() => setUpgradeOpen(true)} />
-            )}
-          </>
-        )}
+          </div>
+          {/* ── end RIGHT COLUMN ── */}
+
+        </div>
       </div>
 
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
