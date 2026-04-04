@@ -106,7 +106,7 @@ export const CRAFT_THEMES: CraftTheme[] = [
     revealTemplates: [
       "Made this just for you because you're the best 💛",
       "Friends like you make everything better 🌻",
-      "This one's for you — my favourite person ✨",
+      "This one's for you — my favorite person ✨",
     ],
     wordSuggestions: ["TOGETHER", "LAUGHTER", "MEMORIES", "LOYALTY", "KINDNESS", "SUPPORT", "SUNSHINE", "BESTIE", "FOREVER", "GRATEFUL"],
   },
