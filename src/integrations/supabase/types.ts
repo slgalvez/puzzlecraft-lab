@@ -854,6 +854,8 @@ export type Database = {
         }
         Returns: undefined
       }
+      user_has_active_subscription: { Args: never; Returns: boolean }
+      user_is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
