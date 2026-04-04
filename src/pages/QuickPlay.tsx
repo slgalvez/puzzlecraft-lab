@@ -59,6 +59,7 @@ const QuickPlay = () => {
     isDiffLocked,
     isEndlessLocked,
     endlessSessionCap,
+    availableDifficulties,
   } = usePremiumAccess();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
