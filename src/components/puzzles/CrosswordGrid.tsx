@@ -65,14 +65,16 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
 
   const timer = usePuzzleTimer(timerKey, { category: "crossword", difficulty: puzzle.difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
-  const blackSet = useCallback(() => {
+  const blacks = useMemo(() => {
     const set = new Set<string>();
     blackCells.forEach(([r, c]) => set.add(`${r}-${c}`));
     return set;
   }, [blackCells]);
 
-  const blacks = blackSet();
-  const isBlack = (r: number, c: number) => blacks.has(`${r}-${c}`);
+  const isBlack = useCallback(
+    (r: number, c: number) => blacks.has(`${r}-${c}`),
+    [blacks]
+  );
 
   const getCellNumber = (r: number, c: number) => {
     const clue = clues.find((cl) => cl.row === r && cl.col === c);
