@@ -1,30 +1,36 @@
 
 
-## Create `src/lib/cellStyles.ts` — Centralised Cell Class Utilities
+# Fix: Premium features showing when signed out
 
-### What it does
-A single utility file that exports typed helper functions for generating Tailwind class strings for every puzzle grid type. Replaces ad-hoc inline styles scattered across grid components.
+## Root Cause
 
-### File
-**`src/lib/cellStyles.ts`** — New file from uploaded content.
-
-### Exports
-| Function | Used by |
-|---|---|
-| `getCellClasses(state)` | Crossword, Kakuro, Sudoku, Fill-in grids |
-| `getInputClasses(state)` | Text-entry grids (crossword, fill-in, cryptogram) |
-| `getWordSearchCellClasses(state)` | Word search grid |
-| `getNonogramCellClasses(state)` | Nonogram grid |
-| `getCryptogramCellClasses(state)` | Cryptogram puzzle |
-
-### Additional change
-Add the `shake` keyframe to `tailwind.config.ts` so the error animation referenced in `getCellClasses` works:
+`hasPremiumAccess()` in `src/lib/premiumAccess.ts` line 33:
 ```
-shake: { "0%,100%": { transform: "translateX(0)" }, "25%": { transform: "translateX(-3px)" }, "75%": { transform: "translateX(3px)" } }
+if (!PUZZLECRAFT_PLUS_LAUNCHED) return true; // pre-launch: everyone gets full access
 ```
-And the corresponding animation entry: `"shake": "shake 0.2s ease-in-out"`.
 
-### Scope
-- Drop-in file creation — no existing components are modified yet
-- Grid components can adopt these helpers incrementally in future patches
+Since `PUZZLECRAFT_PLUS_LAUNCHED = false`, **every user — including signed-out users — gets `isPremium = true`**. This causes:
+- Stats page shows the rating hero card, PremiumStats analytics, and hides the "Coming Soon" preview
+- Account page shows premium rating card and premium blocks even when signed out
+- The "Coming Soon" pull tab never renders because `premiumAccess` is always true
+
+## Fix
+
+**One-line change in `src/lib/premiumAccess.ts`** — the pre-launch bypass should only grant access to **signed-in** users:
+
+```typescript
+// Before:
+if (!PUZZLECRAFT_PLUS_LAUNCHED) return true;
+
+// After:
+if (!PUZZLECRAFT_PLUS_LAUNCHED) return !!account;
+```
+
+This means:
+- **Signed in** → `hasPremiumAccess` returns `true` (pre-launch: full access as intended)
+- **Signed out** → `hasPremiumAccess` returns `false` (no premium UI shown)
+
+The "Coming Soon" pull tab on Account (line 305) already has the condition `!PUZZLECRAFT_PLUS_LAUNCHED && !isAdmin`, and `shouldShowUpgradeCTA` returns `false` pre-launch — so the signed-out Account page will correctly show the "Coming Soon" teaser. The Stats page will show `StatsPremiumPreview` for signed-out users (line 669: `!premiumAccess && !accountLoading`).
+
+No other files need changes — all gating flows through this single function.
 
