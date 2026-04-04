@@ -148,7 +148,7 @@ export function CraftColorPicker({ selected, onSelect }: CraftColorPickerProps) 
               {!isDefault && (
                 <span
                   className="h-3 w-3 rounded-full border border-black/10 shrink-0"
-                  style={{ background: palette.active }}
+                  style={{ background: `hsl(${palette.active})` }}
                 />
               )}
               {palette.label}
