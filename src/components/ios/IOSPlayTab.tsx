@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { InsightsBanner } from "@/components/ios/InsightsBanner";
 import { Dices, SlidersHorizontal, Flame, Trophy, Zap, ChevronRight, Clock, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
@@ -295,6 +296,9 @@ const IOSPlayTab = () => {
 
       {/* Daily Leaderboard — top solvers today */}
       <DailyLeaderboard hasCompletedToday={hasPlayedToday} />
+
+      {/* Personal insights */}
+      <InsightsBanner />
 
       {/* Weekly Pack */}
       <WeeklyPackCard />

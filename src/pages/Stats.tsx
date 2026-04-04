@@ -26,6 +26,7 @@ import { usePremiumAccess } from "@/lib/premiumAccess";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 import { checkMilestones } from "@/lib/milestones";
 import { getSolveRecords } from "@/lib/solveTracker";
+import { InsightsBanner } from "@/components/ios/InsightsBanner";
 import { computePlayerRating, getSkillTier, getTierColor, getTierProgress } from "@/lib/solveScoring";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -198,6 +199,8 @@ const Stats = () => {
 
         {stats.totalSolved > 0 && (
           <>
+            {/* Personal insights */}
+            <InsightsBanner className="mt-6" />
             {/* ── Rating hero card (premium) ── */}
             {showGeneral && premiumAccess && localRating && (
               <div className={cn(

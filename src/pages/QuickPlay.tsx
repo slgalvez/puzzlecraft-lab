@@ -59,6 +59,7 @@ const QuickPlay = () => {
     isDiffLocked,
     isEndlessLocked,
     endlessSessionCap,
+    availableDifficulties,
   } = usePremiumAccess();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
@@ -120,7 +121,8 @@ const QuickPlay = () => {
   const handleNewPuzzle = useCallback(() => {
     if (mode === "surprise") {
       const newType = allTypes[Math.floor(Math.random() * allTypes.length)];
-      const newDiff = allDifficulties[Math.floor(Math.random() * allDifficulties.length)];
+      const allowedDiffs = allDifficulties.filter((d) => availableDifficulties.includes(d));
+      const newDiff = allowedDiffs[Math.floor(Math.random() * allowedDiffs.length)] as Difficulty;
       const newSeed = randomSeed();
       setCurrentType(newType);
       setDifficulty(newDiff);

@@ -19,6 +19,7 @@ import CraftInbox from "@/components/craft/CraftInbox";
 import CraftSettingsPanel, { type CraftSettings, DEFAULT_CRAFT_SETTINGS } from "@/components/craft/CraftSettingsPanel";
 import CraftLivePreview from "@/components/craft/CraftLivePreview";
 import CraftThemePicker from "@/components/craft/CraftThemePicker";
+import { CraftColorPicker } from "@/components/craft/CraftColorPicker";
 import { getTheme } from "@/lib/craftThemes";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -93,6 +94,7 @@ const CraftPuzzle = () => {
   const [draftDirty, setDraftDirty] = useState(true);
   const [enteredFromDraft, setEnteredFromDraft] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<string>("none");
+  const [colorPalette, setColorPalette] = useState("default");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   
   const sentRecorded = useRef(false);
@@ -238,6 +240,36 @@ const CraftPuzzle = () => {
 
       setGeneratedData(data);
 
+      // Detect dropped words and warn user
+      const inputWords = (() => {
+        if (!selectedType) return [];
+        if (selectedType === "crossword") {
+          return clueEntries.filter((e) => e.answer.trim() && e.clue.trim()).map((e) => e.answer.trim());
+        }
+        return wordInput.split(/[,\n]+/).map((w) => w.trim()).filter(Boolean);
+      })();
+      const placedCount = (() => {
+        if (!data || inputWords.length === 0) return inputWords.length;
+        try {
+          if (selectedType === "word-fill" || selectedType === "word-search") {
+            const entries = (data.entries as any[]) ?? (data.words as any[]) ?? [];
+            return entries.length;
+          }
+          if (selectedType === "crossword") {
+            return ((data.clues as any[]) ?? []).length;
+          }
+        } catch {}
+        return inputWords.length;
+      })();
+      const droppedCount = inputWords.length - placedCount;
+      if (droppedCount > 0) {
+        toast({
+          title: `${droppedCount} word${droppedCount > 1 ? "s" : ""} couldn't fit`,
+          description: `Try adding shorter words or using fewer words for better results.`,
+          variant: "destructive",
+        });
+      }
+
       const payload: CraftPayload = {
         type: selectedType,
         puzzleData: data,
@@ -252,6 +284,7 @@ const CraftPuzzle = () => {
       if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
       if (puzzleFrom.trim()) payload.from = puzzleFrom.trim();
       if (selectedTheme && selectedTheme !== "none") payload.theme = selectedTheme;
+      if (colorPalette !== "default") (payload as any).colorPalette = colorPalette;
 
       setSaving(true);
       const shortId = generateShortId();
@@ -304,6 +337,7 @@ const CraftPuzzle = () => {
         if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
         if (puzzleFrom.trim()) payload.from = puzzleFrom.trim();
         if (selectedTheme && selectedTheme !== "none") payload.theme = selectedTheme;
+        if (colorPalette !== "default") (payload as any).colorPalette = colorPalette;
 
         await supabase
           .from("shared_puzzles" as any)
@@ -688,6 +722,8 @@ const CraftPuzzle = () => {
                   currentRevealMessage={revealMessage}
                   showWordSuggestions={selectedType === "word-fill" || selectedType === "word-search"}
                 />
+
+                <CraftColorPicker selected={colorPalette} onSelect={setColorPalette} />
 
 {(selectedType === "word-fill" || selectedType === "word-search") && (
                   <div className="space-y-3">

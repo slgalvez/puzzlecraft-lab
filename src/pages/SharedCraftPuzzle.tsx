@@ -12,6 +12,7 @@ import {
 import { buildSolveResultShareText } from "@/lib/craftShare";
 import { getTheme } from "@/lib/craftThemes";
 import CraftLeaderboard, { registerCraftSolve } from "@/components/craft/CraftLeaderboard";
+import { CRAFT_PALETTES, applyPalette } from "@/components/craft/CraftColorPicker";
 import { hapticSuccess, hapticTap } from "@/lib/haptic";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -35,6 +36,7 @@ interface CraftPayload {
   from?: string;
   settings?: CraftPuzzleSettings;
   theme?: string;
+  colorPalette?: string;
 }
 
 interface PuzzleRow {
@@ -119,6 +121,12 @@ const SharedCraftPuzzle = () => {
         if (p?.type && p?.puzzleData) {
           setPayload(p);
           setCreatorSolveTime(row.creator_solve_time ?? null);
+
+          // Apply color palette if set
+          if (p.colorPalette) {
+            const palette = CRAFT_PALETTES.find((cp) => cp.id === p.colorPalette);
+            if (palette) applyPalette(palette);
+          }
 
           // If already completed, show result immediately
           if (row.completed_at && row.solve_time) {

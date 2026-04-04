@@ -12,7 +12,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { getPuzzleById } from "@/data/puzzles";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { RefreshCw, Dices, ChevronDown, ChevronRight, ArrowLeft, Sparkles, Clock, Lightbulb, Eye } from "lucide-react";
+import { RefreshCw, Dices, ChevronDown, ChevronRight, ArrowLeft, Sparkles, Clock, Lightbulb, Eye, Lock, Crown } from "lucide-react";
+import { usePremiumAccess, PLUS_DIFFICULTIES } from "@/lib/premiumAccess";
+import UpgradeModal from "@/components/account/UpgradeModal";
 import { Switch } from "@/components/ui/switch";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
@@ -57,6 +59,8 @@ const PuzzleGenerator = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { isDiffLocked } = usePremiumAccess();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const hintLimits: { value: number | null; label: string }[] = [
     { value: 1, label: "1" },
@@ -267,8 +271,15 @@ const PuzzleGenerator = () => {
     finally { setLoadingSeed(false); }
   };
 
-  // Auto-generate when arriving with a seed from URL and user picks difficulty
+
+
+
   const handleDifficultyChange = (d: Difficulty) => {
+    // Gate premium difficulties
+    if (isDiffLocked(d)) {
+      setUpgradeOpen(true);
+      return;
+    }
     setDifficulty(d);
     // If we have a seed from URL and haven't generated yet, auto-generate
     if (initialSeed && !puzzleGenerated) {
@@ -665,10 +676,11 @@ const PuzzleGenerator = () => {
           Difficulty
         </label>
         <div className="flex flex-wrap gap-2">
-          {difficulties.map(([val, label]) => {
-            // Disabled if ALL selected types disable this difficulty
+          {PLUS_DIFFICULTIES.map((val) => {
+            const label = DIFFICULTY_LABELS[val];
             const selectedTypes = Array.from(generateTypes);
             const disabled = selectedTypes.length > 0 && selectedTypes.every(t => isDifficultyDisabled(t, val));
+            const locked = isDiffLocked(val);
             return (
               <button
                 key={val}
@@ -677,19 +689,27 @@ const PuzzleGenerator = () => {
                     toast({ title: `${label} not available for ${info?.name} yet` });
                     return;
                   }
-                  setDifficulty(val);
+                  handleDifficultyChange(val);
                 }}
                 className={cn(
-                  "rounded-full border-2 px-5 py-2 text-sm font-medium transition-all",
+                  "relative flex items-center gap-1 rounded-full border-2 px-5 py-2 text-sm font-medium transition-all",
                   disabled
                     ? "border-border bg-card text-muted-foreground/40 cursor-not-allowed"
+                    : locked
+                    ? "border-border/40 bg-card text-muted-foreground/50 cursor-pointer"
                     : difficulty === val
                       ? "border-primary bg-primary text-primary-foreground shadow-sm"
                       : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-primary/40"
                 )}
-                title={disabled ? `${label} not available for ${info?.name} yet` : undefined}
+                title={disabled ? `${label} not available for ${info?.name} yet` : locked ? `${label} requires Puzzlecraft+` : undefined}
               >
+                {locked && !disabled && <Lock size={11} className="shrink-0" />}
                 {label}
+                {locked && !disabled && (
+                  <span className="absolute -top-2 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary">
+                    <Crown size={8} className="text-primary-foreground" />
+                  </span>
+                )}
               </button>
             );
           })}
@@ -888,6 +908,7 @@ const PuzzleGenerator = () => {
           </>
         )}
       </div>
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </Layout>
   );
 };
