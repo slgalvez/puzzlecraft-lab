@@ -157,7 +157,8 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
       const current = grid[r][c];
       setCellState(r, c, current === "empty" ? "filled" : current === "filled" ? "marked" : "empty");
     }
-    if (!isMobile) containerRef.current?.focus();
+    // Always reclaim focus so keyboard navigation works immediately after tap
+    containerRef.current?.focus();
   };
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
