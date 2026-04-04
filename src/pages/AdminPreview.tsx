@@ -9,7 +9,7 @@ import PremiumLockedCard from "@/components/account/PremiumLockedCard";
 import UpgradeModal from "@/components/account/UpgradeModal";
 
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
-import { CraftTemplateSelector } from "@/components/craft/CraftTemplateSelector";
+import CraftThemePicker from "@/components/craft/CraftThemePicker";
 import { ActivityCalendar } from "@/components/stats/ActivityCalendar";
 import { WeeklyPackCard } from "@/components/ios/WeeklyPackCard";
 import { DailyLeaderboard } from "@/components/ios/DailyLeaderboard";
@@ -761,23 +761,22 @@ export default function AdminPreview() {
             {/* ── Craft Leaderboard ── */}
             <LeaderboardPreview />
 
-            {/* ── Craft Template Selector ── */}
+            {/* ── Craft Theme Picker ── */}
             <section className="space-y-3 rounded-xl border border-border/30 p-4">
               <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Sparkles size={14} /> Craft Template Selector
+                <Sparkles size={14} /> Craft Theme Picker
               </h2>
               <p className="text-xs text-muted-foreground">
-                Template picker shown in Step 1 of the craft flow. Try each puzzle type:
+                Unified theme + word pre-fill picker (replaces old template selector):
               </p>
-              {(["crossword", "word-search", "word-fill", "cryptogram"] as const).map((type) => (
-                <div key={type} className="space-y-1">
-                  <p className="text-[11px] font-medium text-muted-foreground capitalize">{type}</p>
-                  <CraftTemplateSelector
-                    puzzleType={type}
-                    onSelect={(t) => console.log("Selected template:", t.id, t.label)}
-                  />
-                </div>
-              ))}
+              <CraftThemePicker
+                selected="none"
+                onSelect={(id) => console.log("Theme selected:", id)}
+                onRevealTemplate={(t) => console.log("Reveal template:", t)}
+                onPrefillWords={(w) => console.log("Pre-fill words:", w)}
+                currentRevealMessage=""
+                showWordSection={true}
+              />
             </section>
 
             {/* ── Activity Calendar ── */}

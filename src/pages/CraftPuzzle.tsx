@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share, Copy, Check, Loader2, Save, Trophy, AlertCircle, Palette } from "lucide-react";
 import { CraftSolveFirst } from "@/components/craft/CraftSolveFirst";
-import { CraftTemplateSelector } from "@/components/craft/CraftTemplateSelector";
+
 import { usePremiumAccess } from "@/lib/premiumAccess";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import { cn } from "@/lib/utils";
@@ -669,24 +669,6 @@ const CraftPuzzle = () => {
                   </h2>
                 </div>
 
-                {/* Template selector */}
-                <CraftTemplateSelector
-                  puzzleType={selectedType as "crossword" | "word-search" | "word-fill" | "cryptogram"}
-                  onSelect={(template) => {
-                    if (template.words.length > 0) {
-                      setWordInput(template.words.join("\n"));
-                    }
-                    if (template.clues) {
-                      setClueEntries(
-                        Object.entries(template.clues).map(([answer, clue]) => ({ answer, clue }))
-                      );
-                    }
-                    if (template.phrase) {
-                      setPhraseInput(template.phrase);
-                    }
-                  }}
-                />
-
                 <div className="space-y-3">
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-muted-foreground">Puzzle title (optional)</label>
@@ -718,9 +700,9 @@ const CraftPuzzle = () => {
                     }
                   }}
                   onRevealTemplate={(tmpl) => setRevealMessage(tmpl)}
-                  onWordSuggestions={handleWordSuggestions}
+                  onPrefillWords={(words) => setWordInput(words)}
                   currentRevealMessage={revealMessage}
-                  showWordSuggestions={selectedType === "word-fill" || selectedType === "word-search"}
+                  showWordSection={selectedType === "word-fill" || selectedType === "word-search"}
                 />
 
                 <CraftColorPicker selected={colorPalette} onSelect={setColorPalette} />
