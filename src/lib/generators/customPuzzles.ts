@@ -12,7 +12,6 @@ import { SeededRandom } from "../seededRandom";
 import type { Difficulty } from "../puzzleTypes";
 import {
   tryGenerateWordSearch,
-  scoreWordSearchPuzzle,
   validateWordSearchGrid,
   type WordSearchPuzzle,
 } from "./wordSearch";

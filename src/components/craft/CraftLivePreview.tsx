@@ -64,7 +64,7 @@ function validateWords(raw: string, type: "word-fill" | "word-search"): Validati
   if (count <= 15) {
     return { valid: true, count, feedback: `${count} words — great`, hint: "This will make a full, varied puzzle", color: "green" };
   }
-  return { valid: true, count, feedback: `${count} words — plenty`, hint: "Extra words may not all fit — that's OK", color: "amber" };
+  return { valid: true, count, feedback: `${count} words — plenty`, hint: "If they exceed the board capacity, you'll be prompted before generating", color: "amber" };
 }
 
 function validatePhrase(raw: string): ValidationResult {
