@@ -193,10 +193,12 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const handleSession = useCallback(async (session: Session | null, event?: string) => {
+    // Reset subscription state on every session change
+    setSubscribed(false);
+    setSubscriptionEnd(null);
+
     if (!session?.user) {
       setAccount(null);
-      setSubscribed(false);
-      setSubscriptionEnd(null);
       setLoading(false);
       return;
     }
