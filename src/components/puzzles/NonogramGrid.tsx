@@ -233,6 +233,19 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
   // Row clue column width: enough for the widest clue set
   const rowClueWidth = maxRowClueLen * (clueFontSize * 1.1 + 4) + 8;
 
+  useEffect(() => {
+    const el = gridScrollRef.current;
+    if (!el) return;
+    const check = () => setCanScrollRight(el.scrollWidth > el.clientWidth + 4);
+    check();
+    el.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", check);
+      window.removeEventListener("resize", check);
+    };
+  }, [rows, cols, cellPx]);
+
   return (
     <div
       ref={containerRef}
