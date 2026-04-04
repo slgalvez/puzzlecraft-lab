@@ -46,7 +46,7 @@ function getPersonalizedTypes(): { types: PuzzleCategory[]; isPersonalized: bool
     const sorted = [...ALL_TYPES].sort((a, b) => (counts[b] ?? 0) - (counts[a] ?? 0));
     return { types: sorted, isPersonalized: true };
   } catch {
-    return { types: ALL_TYPES.slice(0, 8), isPersonalised: false };
+    return { types: ALL_TYPES.slice(0, 8), isPersonalized: false };
   }
 }
 
