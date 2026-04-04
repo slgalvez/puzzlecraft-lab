@@ -12,6 +12,8 @@ import { getSolveRecords } from "@/lib/solveTracker";
 import { computePlayerRating, getSkillTier, getTierColor, computeSolveScore } from "@/lib/solveScoring";
 import { getDailyStreak } from "@/lib/dailyChallenge";
 import { isNativeApp } from "@/lib/appMode";
+import { usePaywallTiming } from "@/hooks/usePaywallTiming";
+import UpgradeModal from "@/components/account/UpgradeModal";
 
 interface Props {
   time: number;
@@ -53,7 +55,6 @@ function buildShareData(props: {
   return { text, url: shareUrl, displayCode };
 }
 
-/** Compute rating change — identical logic to original */
 function useRatingDelta() {
   return useMemo(() => {
     const records = getSolveRecords().filter((r) => r.solveTime >= 10);
@@ -73,7 +74,6 @@ function useRatingDelta() {
   }, []);
 }
 
-/** Detect if this is a new personal best for the category + difficulty */
 function usePersonalBest(category?: PuzzleCategory, difficulty?: Difficulty, time?: number, assisted?: boolean) {
   return useMemo(() => {
     if (!category || !difficulty || !time || assisted) return null;
@@ -110,6 +110,13 @@ const CompletionPanel = ({
   const [showConfetti, setShowConfetti] = useState(false);
   const native = isNativeApp();
 
+  // Paywall timing — fires upgrade modal at high-emotion moments
+  const {
+    shouldShow: paywallOpen,
+    dismiss: dismissPaywall,
+    checkAfterSolve,
+  } = usePaywallTiming();
+
   const origin = getPuzzleOrigin();
   const isDaily = origin === "daily";
   const shareData = buildShareData({ category, seed, difficulty, time, isDaily, dailyCode });
@@ -130,6 +137,13 @@ const CompletionPanel = ({
     hapticSuccess();
     const id = requestAnimationFrame(() => setVisible(true));
     const t1 = setTimeout(() => setStatsVisible(true), 300);
+
+    // Check if this solve should trigger a paywall prompt.
+    // Runs after a 3-second delay so the celebration animates first.
+    if (!assisted) {
+      checkAfterSolve(difficulty);
+    }
+
     if (isNewBest) {
       const t2 = setTimeout(() => setShowConfetti(true), 400);
       return () => {
@@ -142,7 +156,7 @@ const CompletionPanel = ({
       cancelAnimationFrame(id);
       clearTimeout(t1);
     };
-  }, [isNewBest]);
+  }, [isNewBest, difficulty, assisted, checkAfterSolve]);
 
   const handleShare = async () => {
     if (!shareData) return;
@@ -192,7 +206,7 @@ const CompletionPanel = ({
           visible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-2 scale-[0.97]",
         )}
       >
-        {/* Confetti burst on new best — CSS only, no library */}
+        {/* Confetti burst on new best */}
         {showConfetti && (
           <div className="relative h-0 overflow-visible pointer-events-none" aria-hidden>
             {Array.from({ length: 16 }, (_, i) => {
@@ -215,7 +229,6 @@ const CompletionPanel = ({
         {/* Header */}
         <div className={cn("p-4 sm:p-5", isNewBest && "bg-primary/5")}>
           <div className="flex items-center gap-2.5 mb-3">
-            {/* Icon — animates in */}
             <div
               className={cn(
                 "h-8 w-8 rounded-full flex items-center justify-center transition-all duration-700 ease-out",
@@ -257,14 +270,12 @@ const CompletionPanel = ({
                 {formatTime(time)}
               </p>
             </div>
-            {/* Show prev best when not a new best */}
             {personalBest && !isNewBest && (
               <div>
                 <p className="text-[10px] text-muted-foreground/60 mb-0.5">Your best</p>
                 <p className="font-mono text-lg font-semibold text-muted-foreground">{formatTime(personalBest.best)}</p>
               </div>
             )}
-            {/* Show improvement when it IS a new best */}
             {isNewBest && personalBest?.improvement && (
               <div>
                 <p className="text-[10px] text-emerald-600 mb-0.5">Faster by</p>
@@ -273,7 +284,7 @@ const CompletionPanel = ({
             )}
           </div>
 
-          {/* Secondary stats — matches original layout */}
+          {/* Secondary stats */}
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
             <span className="text-muted-foreground">
               Difficulty:{" "}
@@ -297,7 +308,7 @@ const CompletionPanel = ({
           </div>
         </div>
 
-        {/* Rating delta — matches original emerald/destructive pattern exactly */}
+        {/* Rating delta */}
         {ratingDelta && ratingDelta.delta !== 0 && !assisted && (
           <div
             className={cn(
@@ -346,14 +357,14 @@ const CompletionPanel = ({
           </div>
         )}
 
-        {/* Assisted note — preserved from original */}
+        {/* Assisted note */}
         {assisted && (
           <p className="text-xs text-muted-foreground mx-4 mb-3">
             Hints were used — this solve won't count toward your best time or streak.
           </p>
         )}
 
-        {/* Action buttons — same layout as original, extended */}
+        {/* Action buttons */}
         <div className="p-4 sm:p-5 pt-0 space-y-2">
           <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={onPlayAgain} className="gap-1.5">
@@ -371,7 +382,7 @@ const CompletionPanel = ({
             </Button>
           </div>
 
-          {/* Share URL block — preserved from original */}
+          {/* Share URL block */}
           {shareData && (
             <div
               className={cn(
@@ -389,6 +400,9 @@ const CompletionPanel = ({
           )}
         </div>
       </div>
+
+      {/* Contextual upgrade modal — fires after high-emotion solve moments */}
+      <UpgradeModal open={paywallOpen} onClose={dismissPaywall} />
     </>
   );
 };
