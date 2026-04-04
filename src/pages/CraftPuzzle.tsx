@@ -271,13 +271,17 @@ const CraftPuzzle = () => {
         } catch {}
         return inputWords.length;
       })();
-      const droppedCount = inputWords.length - placedCount;
+      const droppedCount = Math.max(0, inputWords.length - placedCount);
       if (droppedCount > 0) {
         toast({
-          title: `${droppedCount} word${droppedCount > 1 ? "s" : ""} couldn't fit`,
-          description: `Try adding shorter words or using fewer words for better results.`,
+          title: `${droppedCount} word${droppedCount > 1 ? "s" : ""} won't fit`,
+          description: droppedCount > 2
+            ? `Remove ${droppedCount} words or use shorter words, then try again.`
+            : `Try removing ${droppedCount === 1 ? "a word" : "a couple of words"} or using shorter ones.`,
           variant: "destructive",
         });
+        setSaving(false);
+        return;
       }
 
       const payload: CraftPayload = {
