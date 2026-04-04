@@ -598,7 +598,7 @@ const Index = () => {
             <div className="space-y-2.5">
               {[
                 { emoji: "☀️", type: "Crossword",  from: "Alex",   title: "Summer Memories",      time: "3:47", beat: true,  status: null },
-                { emoji: "🔍", type: "Word Search", from: "Jamie",  title: "Our Favourite Things",  time: "2:14", beat: false, status: null },
+                { emoji: "🔍", type: "Word Search", from: "Jamie",  title: "Our Favorite Things",  time: "2:14", beat: false, status: null },
                 { emoji: "🔐", type: "Cryptogram",  from: "Taylor", title: "Secret Message",        time: null,  beat: false, status: "New" },
               ].map((ex) => (
                 <div key={ex.title} className="flex items-center gap-3.5 rounded-xl border bg-card px-4 py-3.5">
