@@ -270,7 +270,15 @@ const PuzzleGenerator = () => {
   };
 
   // Auto-generate when arriving with a seed from URL and user picks difficulty
+  const { isDiffLocked } = usePremiumAccess();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+
   const handleDifficultyChange = (d: Difficulty) => {
+    // Gate premium difficulties
+    if (isDiffLocked(d)) {
+      setUpgradeOpen(true);
+      return;
+    }
     setDifficulty(d);
     // If we have a seed from URL and haven't generated yet, auto-generate
     if (initialSeed && !puzzleGenerated) {
