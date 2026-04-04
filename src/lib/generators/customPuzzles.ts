@@ -592,53 +592,60 @@ export interface CustomWordSearchData {
 
 const MAX_CRAFT_WS_ATTEMPTS = 30;
 
-function getWordSearchDifficultyLadder(difficulty: Difficulty): Difficulty[] {
-  switch (difficulty) {
-    case "easy":
-      return ["easy", "medium", "hard", "extreme", "insane"];
-    case "medium":
-      return ["medium", "hard", "extreme", "insane"];
-    case "hard":
-      return ["hard", "extreme", "insane"];
-    default:
-      return [difficulty];
+function getDeterministicSeed(parts: string[]): number {
+  let hash = 2166136261;
+  for (const part of parts) {
+    for (let i = 0; i < part.length; i++) {
+      hash ^= part.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
   }
+  return (hash >>> 0) % 2147483646 || 1;
 }
 
 /**
- * Uses the exact standard word-search generator pipeline.
- * The Create UI stays easy/medium/hard, but internally we can escalate through
- * the standard higher-capacity tiers until all words fit.
+ * Uses the exact standard word-search generator path.
+ * The Create UI stays easy/medium/hard, and the selected difficulty directly
+ * controls the same board size, word-count budget, and filler complexity as normal gameplay.
  */
 export function generateCustomWordSearch(words: string[], difficulty: Difficulty = "medium"): CustomWordSearchData {
   const cleaned = words.map(w => w.toUpperCase().replace(/[^A-Z]/g, "")).filter(w => w.length >= 2);
   if (cleaned.length === 0) throw new Error("No valid words provided");
 
   const maxLen = Math.max(...cleaned.map(w => w.length));
-  if (maxLen > WS_SIZES.insane) {
-    throw new Error(`Word Search supports words up to ${WS_SIZES.insane} letters.`);
+  const minLen = Math.min(...cleaned.map(w => w.length));
+  const sizeLimit = WS_SIZES[difficulty];
+  const wordLimit = WS_WORD_COUNTS[difficulty];
+  const minWordLen = WS_MIN_WORD_LEN[difficulty];
+
+  if (maxLen > sizeLimit) {
+    throw new Error(`${difficulty[0].toUpperCase() + difficulty.slice(1)} word search supports words up to ${sizeLimit} letters.`);
+  }
+  if (minLen < minWordLen) {
+    throw new Error(`${difficulty[0].toUpperCase() + difficulty.slice(1)} word search needs words with at least ${minWordLen} letters.`);
+  }
+  if (cleaned.length > wordLimit) {
+    throw new Error(`${difficulty[0].toUpperCase() + difficulty.slice(1)} word search fits up to ${wordLimit} words. Remove a few words or change the layout.`);
   }
 
-  const baseSeed = Date.now() % 2147483646 || 1;
-  const ladder = getWordSearchDifficultyLadder(difficulty);
+  const seed = getDeterministicSeed([difficulty, ...cleaned.slice().sort()]);
+
   let bestResult: WordSearchPuzzle | null = null;
   let bestPlacedCount = 0;
 
-  for (const internalDifficulty of ladder) {
-    for (let attempt = 0; attempt < MAX_CRAFT_WS_ATTEMPTS; attempt++) {
-      const result = tryGenerateWordSearch(baseSeed + attempt * 7919, internalDifficulty, cleaned);
-      if (!validateWordSearchGrid(result)) continue;
+  for (let attempt = 0; attempt < MAX_CRAFT_WS_ATTEMPTS; attempt++) {
+    const result = tryGenerateWordSearch(seed + attempt * 7919, difficulty, cleaned);
+    if (!validateWordSearchGrid(result)) continue;
 
-      if (result.words.length > bestPlacedCount) {
-        bestPlacedCount = result.words.length;
-        bestResult = result;
-      }
+    if (result.words.length > bestPlacedCount) {
+      bestPlacedCount = result.words.length;
+      bestResult = result;
+    }
 
-      if (result.words.length === cleaned.length) {
-        return result as CustomWordSearchData;
-      }
+    if (result.words.length === cleaned.length) {
+      return result as CustomWordSearchData;
     }
   }
 
-  return (bestResult ?? tryGenerateWordSearch(baseSeed, ladder[0], cleaned)) as CustomWordSearchData;
+  throw new Error(`This ${difficulty} word search could not fit all ${cleaned.length} words cleanly. Remove a few words or shorten them.`);
 }
