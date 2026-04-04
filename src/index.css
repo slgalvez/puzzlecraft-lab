@@ -74,6 +74,9 @@ html {
     --puzzle-cell-error: 0 72% 94%;
     --puzzle-cell-correct: 142 60% 92%;
 
+    /* iOS keyboard avoidance */
+    --keyboard-height: 0px;
+
     font-family: 'DM Sans', sans-serif;
   }
 
@@ -98,12 +101,17 @@ html {
     --input: 220 15% 22%;
     --ring: 32 80% 55%;
 
-    --puzzle-cell: 220 18% 16%;
-    --puzzle-cell-active: 32 60% 25%;
-    --puzzle-cell-highlight: 32 40% 20%;
-    --puzzle-cell-black: 220 15% 8%;
-    --puzzle-cell-error: 0 50% 20%;
-    --puzzle-cell-correct: 142 40% 18%;
+    /*
+     * OLED dark mode puzzle cell colours — warmer and more saturated than before.
+     * The original values were too cold/muddy at 16-20% lightness on OLED.
+     * These values pop cleanly on iPhone OLED while staying legible at night.
+     */
+    --puzzle-cell: 220 16% 14%;           /* resting cell — deep, not pure black */
+    --puzzle-cell-active: 32 70% 28%;     /* warm orange tint — was 32 60% 25% */
+    --puzzle-cell-highlight: 32 45% 20%;  /* soft orange word highlight — was 32 40% 20% */
+    --puzzle-cell-black: 220 18% 6%;      /* near-black blocker — absorbs on OLED */
+    --puzzle-cell-error: 0 55% 22%;       /* warmer red — was 0 50% 20% */
+    --puzzle-cell-correct: 142 45% 20%;   /* cleaner emerald — was 142 40% 18% */
   }
 
   * {
@@ -130,7 +138,33 @@ html {
   }
 }
 
-/* Private app theme — applied via .private-app wrapper */
+/* ── iOS keyboard avoidance ──────────────────────────────────────────────── */
+/*
+ * Grids that use text input on iOS need padding-bottom equal to the
+ * keyboard height so the active cell doesn't hide behind the keyboard.
+ * useKeyboardAvoidance.ts sets --keyboard-height via JS.
+ * Add the class `puzzle-keyboard-aware` to your grid container div.
+ */
+.puzzle-keyboard-aware {
+  padding-bottom: var(--keyboard-height, 0px);
+  transition: padding-bottom 0.25s ease;
+  will-change: padding-bottom;
+}
+
+/* ── Tab bar spring animation ────────────────────────────────────────────── */
+@keyframes tab-icon-spring {
+  0%   { transform: scale(0.82); }
+  45%  { transform: scale(1.18); }
+  72%  { transform: scale(1.04); }
+  88%  { transform: scale(1.12); }
+  100% { transform: scale(1.1);  }
+}
+
+.tab-icon-spring {
+  animation: tab-icon-spring 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ── Private app theme ───────────────────────────────────────────────────── */
 .private-app {
   --background: 220 14% 10%;
   --foreground: 220 10% 90%;
@@ -202,7 +236,7 @@ body:has(.private-app) #root {
   letter-spacing: -0.02em;
 }
 
-/* iPhone-like message bubbles — use --chat-accent (set by chatTheme.ts) */
+/* iPhone-like message bubbles */
 .private-app .msg-bubble-mine {
   background: hsl(var(--chat-accent, var(--primary)));
   color: hsl(var(--chat-accent-foreground, var(--primary-foreground)));
@@ -217,7 +251,7 @@ body:has(.private-app) #root {
   overflow-wrap: break-word;
 }
 
-/* Mobile sidebar portal inherits private-app dark theme + scoped chat accent */
+/* Mobile sidebar portal */
 body:has(.private-app) [data-sidebar="sidebar"][data-mobile="true"] {
   --sidebar-background: 220 14% 8%;
   --sidebar-foreground: 220 10% 85%;
@@ -258,19 +292,11 @@ body:has(.private-app) [data-sidebar="sidebar"][data-mobile="true"] {
   box-shadow: none;
 }
 
-/* Composer bottom padding: safe-area when keyboard is CLOSED, zero when open.
-   interactive-widget=resizes-content shrinks the viewport when the keyboard
-   opens, so env(safe-area-inset-bottom) should be 0 at that point on modern
-   iOS/Android. For older browsers that still report the inset, we use
-   env(keyboard-inset-height) to detect the keyboard if available. */
 .private-app .composer-form {
   padding-bottom: env(safe-area-inset-bottom, 0.375rem);
 }
 
 @supports (padding-bottom: env(keyboard-inset-height, 0px)) {
-  /* When the virtual keyboard is open, the keyboard-inset-height > 0;
-     at that point we want zero bottom padding since the viewport already
-     shrinks to the keyboard edge. */
   .private-app .composer-form {
     padding-bottom: max(
       0.375rem,
@@ -279,7 +305,6 @@ body:has(.private-app) [data-sidebar="sidebar"][data-mobile="true"] {
   }
 }
 
-/* Mobile keyboard: keep conversation stable when virtual keyboard opens */
 @supports (height: 1dvh) {
   .private-app {
     height: 100dvh;
