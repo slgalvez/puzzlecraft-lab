@@ -73,9 +73,17 @@ function seededInt(seed: number, min: number, max: number): number {
 
 function getMockLeaderboard(dateStr: string, count = 3): { display_name: string; solve_time: number; is_mock: true }[] {
   const dateSeed = dateStr.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  const base = [90, 140, 200]; // fast times in seconds
+  const base = [90, 140, 200];
+
+  // Shuffle name pool deterministically — no repeats
+  const pool = [...MOCK_NAMES];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = seededInt(dateSeed + i * 37, 0, i);
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+
   return Array.from({ length: count }, (_, i) => ({
-    display_name: MOCK_NAMES[seededInt(dateSeed + i * 97, 0, MOCK_NAMES.length - 1)],
+    display_name: pool[i],
     solve_time:   base[i] + seededInt(dateSeed + i * 113, -10, 20),
     is_mock:      true as const,
   }));
