@@ -84,8 +84,17 @@ function GridPreview({ data, puzzleType, showSolution }: { data: Record<string, 
               return (
                 <div
                   key={`${r}-${c}`}
-                  className={`relative flex items-center justify-center border border-border/30 font-mono font-medium ${isBlack ? "bg-foreground/90" : "bg-card text-foreground"}`}
-                  style={{ width: cellSize, height: cellSize, fontSize: showSolution ? 10 : 0 }}
+                  className="relative flex items-center justify-center font-mono font-medium"
+                  style={{
+                    width: cellSize,
+                    height: cellSize,
+                    fontSize: showSolution ? 10 : 0,
+                    backgroundColor: isBlack
+                      ? "hsl(var(--puzzle-cell-black, 220 20% 14%))"
+                      : "hsl(var(--puzzle-cell, 0 0% 100%))",
+                    border: "1px solid hsl(var(--puzzle-border, var(--border)) / 0.3)",
+                    color: "hsl(var(--puzzle-cell-text, var(--foreground)))",
+                  }}
                 >
                   {num && (
                     <span className="absolute top-px left-0.5 text-[6px] text-muted-foreground leading-none">{num}</span>
@@ -217,10 +226,18 @@ function WordSearchPreview({ data, showSolution }: { data: Record<string, unknow
             return (
               <div
                 key={i}
-                className={`flex items-center justify-center text-[10px] font-mono font-medium transition-colors ${
-                  isHighlighted ? "bg-primary/20 text-primary font-bold rounded-sm" : "text-foreground"
-                }`}
-                style={{ width: cellSize, height: cellSize }}
+                className="flex items-center justify-center text-[10px] font-mono font-medium transition-colors"
+                style={{
+                  width: cellSize,
+                  height: cellSize,
+                  backgroundColor: isHighlighted
+                    ? "hsl(var(--puzzle-cell-highlight, 32 60% 92%))"
+                    : "hsl(var(--puzzle-cell, 0 0% 100%))",
+                  border: "1px solid hsl(var(--puzzle-border, var(--border)) / 0.2)",
+                  color: "hsl(var(--puzzle-cell-text, var(--foreground)))",
+                  fontWeight: isHighlighted ? 700 : 500,
+                  borderRadius: isHighlighted ? 3 : 0,
+                }}
               >
                 {ch}
               </div>

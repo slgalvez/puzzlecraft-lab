@@ -425,7 +425,12 @@ export function GridSolver({ data, puzzleType, onComplete, savedState, onSavePro
                     <span className="absolute left-0.5 top-0 text-[8px] font-medium text-puzzle-number leading-tight">{num}</span>
                   )}
                   {!black && (
-                    <span className="text-sm sm:text-base font-semibold text-foreground uppercase">{grid[r][c]}</span>
+                    <span
+                      className="text-sm sm:text-base font-semibold uppercase"
+                      style={{ color: "hsl(var(--puzzle-cell-text, var(--foreground)))" }}
+                    >
+                      {grid[r][c]}
+                    </span>
                   )}
                 </div>
               );
@@ -892,12 +897,13 @@ export function WordSearchSolver({ data, onComplete, savedState, onSaveProgress,
                 key={key}
                 className={cn(
                   "w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-xs font-mono select-none border border-puzzle-border touch-manipulation transition-colors cursor-pointer",
-                  isFound && "bg-primary/20 text-primary font-bold",
+                  isFound && "bg-puzzle-cell-highlight font-bold",
                   !isFound && hintCells.has(key) && "bg-yellow-200/60 dark:bg-yellow-500/20 ring-2 ring-inset ring-yellow-400/60",
                   isTapStart && "bg-puzzle-cell-active ring-2 ring-inset ring-primary",
                   !isFound && !isTapStart && !hintCells.has(key) && isPreview && "bg-puzzle-cell-active",
                   !isFound && !isTapStart && !hintCells.has(key) && !isPreview && "bg-puzzle-cell hover:bg-puzzle-cell-highlight"
                 )}
+                style={{ color: "hsl(var(--puzzle-cell-text, var(--foreground)))" }}
                 onMouseDown={() => handleMouseDown(r, c)}
                 onMouseEnter={() => handleMouseEnter(r, c)}
               >
@@ -999,7 +1005,12 @@ export function CompletedGridView({ data, puzzleType }: { data: Record<string, u
                   <span className="absolute left-px top-0 text-[6px] font-medium text-puzzle-number leading-tight">{num}</span>
                 )}
                 {!black && letter && (
-                  <span className="text-[10px] sm:text-xs font-semibold text-primary">{letter}</span>
+                  <span
+                    className="text-[10px] sm:text-xs font-semibold"
+                    style={{ color: "hsl(var(--puzzle-cell-text, var(--foreground)))" }}
+                  >
+                    {letter}
+                  </span>
                 )}
               </div>
             );
@@ -1073,13 +1084,18 @@ export function CompletedWordSearchView({ data }: { data: Record<string, unknown
       <div className="inline-grid gap-0" style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}>
         {grid.map((row, r) =>
           row.map((cell, c) => (
-            <div
-              key={`${r}-${c}`}
-              className={cn(
-                "w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-[9px] sm:text-[10px] font-mono border border-puzzle-border",
-                foundCells.has(`${r}-${c}`) ? "bg-primary/15 text-primary font-bold" : "bg-puzzle-cell text-muted-foreground"
-              )}
-            >
+              <div
+                key={`${r}-${c}`}
+                className={cn(
+                  "w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-[9px] sm:text-[10px] font-mono border border-puzzle-border",
+                  foundCells.has(`${r}-${c}`) ? "bg-puzzle-cell-highlight font-bold" : "bg-puzzle-cell"
+                )}
+                style={{
+                  color: foundCells.has(`${r}-${c}`)
+                    ? "hsl(var(--puzzle-cell-text, var(--foreground)))"
+                    : "hsl(var(--puzzle-cell-text, var(--foreground)) / 0.65)",
+                }}
+              >
               {cell}
             </div>
           ))
@@ -1136,7 +1152,11 @@ export function PuzzlePreview({ data, puzzleType }: PuzzlePreviewProps) {
         <div className="inline-grid gap-0" style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}>
           {grid.map((row, r) =>
             row.map((cell, c) => (
-              <div key={`${r}-${c}`} className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-[9px] sm:text-[10px] font-mono bg-puzzle-cell border border-puzzle-border">
+              <div
+                key={`${r}-${c}`}
+                className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-[9px] sm:text-[10px] font-mono bg-puzzle-cell border border-puzzle-border"
+                style={{ color: "hsl(var(--puzzle-cell-text, var(--foreground)))" }}
+              >
                 {cell}
               </div>
             ))
