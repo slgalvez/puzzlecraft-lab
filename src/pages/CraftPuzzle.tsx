@@ -534,6 +534,7 @@ const CraftPuzzle = () => {
   };
 
   const handleStartOver = () => {
+    applyPalette({ id: "default", label: "Default", cell: "", active: "", highlight: "", correct: "", border: "", text: "" });
     // Delete active draft
     if (activeDraftId.current) {
       deleteDraft(activeDraftId.current);
