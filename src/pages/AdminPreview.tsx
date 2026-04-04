@@ -431,6 +431,53 @@ function MockCraftAnalytics({ title, totalSent, totalStarted, totalCompleted, av
   );
 }
 
+// ── Daily Confetti preview (mirrors DailyPuzzle confetti) ──────────────────
+
+const DAILY_CONFETTI_COLORS_PREVIEW = [
+  "hsl(var(--primary))",
+  "hsl(var(--accent))",
+  "#fbbf24", "#f97316", "#ef4444", "#8b5cf6", "#06b6d4",
+];
+
+function DailyConfettiPreview() {
+  const [particles] = useState(() =>
+    Array.from({ length: 40 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      delay: Math.random() * 0.6,
+      duration: 1.2 + Math.random() * 1.0,
+      size: 4 + Math.random() * 6,
+      color: DAILY_CONFETTI_COLORS_PREVIEW[Math.floor(Math.random() * DAILY_CONFETTI_COLORS_PREVIEW.length)],
+      rotation: Math.random() * 360,
+      drift: (Math.random() - 0.5) * 60,
+    }))
+  );
+
+  return (
+    <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden rounded-xl" aria-hidden>
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className="absolute animate-[dailyConfettiFall_var(--dur)_ease-out_var(--delay)_forwards]"
+          style={{
+            left: `${p.x}%`,
+            top: "-10px",
+            width: p.size,
+            height: p.size * 1.4,
+            backgroundColor: p.color,
+            borderRadius: "2px",
+            transform: `rotate(${p.rotation}deg)`,
+            opacity: 0,
+            "--delay": `${p.delay}s`,
+            "--dur": `${p.duration}s`,
+            "--drift": `${p.drift}px`,
+          } as React.CSSProperties}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function AdminPreview() {
   // ── Core previews state ──
   const [showCompletion, setShowCompletion] = useState(false);
@@ -441,11 +488,11 @@ export default function AdminPreview() {
   const [completionTime, setCompletionTime] = useState(185);
   const [achievedIds, setAchievedIds] = useState<Set<string>>(new Set());
   const [celebratingIds, setCelebratingIds] = useState<Set<string>>(new Set());
+  const [showDailyConfetti, setShowDailyConfetti] = useState(false);
 
   // ── Premium / modals state ──
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-
 
   const handleAchieve = useCallback((id: string) => {
     setAchievedIds((prev) => new Set(prev).add(id));
@@ -565,6 +612,45 @@ export default function AdminPreview() {
                   />
                 </div>
               )}
+            </section>
+
+            {/* ── Daily Challenge Confetti ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Sparkles size={14} /> Daily Challenge Completion Confetti
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Confetti burst + animated trophy banner that plays when a user solves the daily puzzle.
+              </p>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setShowDailyConfetti(false);
+                  requestAnimationFrame(() => setShowDailyConfetti(true));
+                }}
+              >
+                Fire Confetti
+              </Button>
+              <div className="relative mt-3 rounded-xl border border-border/20 p-4 bg-secondary/5 overflow-hidden min-h-[120px]">
+                {showDailyConfetti && <DailyConfettiPreview />}
+                <div className={cn(
+                  "flex items-center gap-3",
+                  showDailyConfetti && "animate-scale-in"
+                )}>
+                  <div className={cn(
+                    "h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0",
+                    showDailyConfetti && "animate-[dailyTrophyPulse_0.6s_ease-out]"
+                  )}>
+                    <Trophy size={20} className="text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-display font-semibold text-foreground">Challenge Complete!</p>
+                    <p className="text-sm text-muted-foreground">
+                      You solved today's Crossword in 3:05. Come back tomorrow for a new challenge.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </section>
 
             {/* ── Milestone Tiles ── */}
