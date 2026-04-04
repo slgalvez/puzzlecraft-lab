@@ -9,7 +9,7 @@ import PremiumLockedCard from "@/components/account/PremiumLockedCard";
 import UpgradeModal from "@/components/account/UpgradeModal";
 
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
-import { CraftTemplateSelector } from "@/components/craft/CraftTemplateSelector";
+import CraftThemePicker from "@/components/craft/CraftThemePicker";
 import { ActivityCalendar } from "@/components/stats/ActivityCalendar";
 import { WeeklyPackCard } from "@/components/ios/WeeklyPackCard";
 import { DailyLeaderboard } from "@/components/ios/DailyLeaderboard";
