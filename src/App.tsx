@@ -25,6 +25,7 @@ import PlayCraftPuzzle from "./pages/PlayCraftPuzzle";
 import SharedCraftPuzzle from "./pages/SharedCraftPuzzle";
 import Account from "./pages/Account";
 import AdminPreview from "./pages/AdminPreview";
+import AdminPremiumEmails from "./pages/AdminPremiumEmails";
 import { UserAccountProvider } from "./contexts/UserAccountContext";
 import DataMergeModal from "./components/account/DataMergeModal";
 import { MilestoneModalManager } from "./components/puzzles/MilestoneModalManager";
