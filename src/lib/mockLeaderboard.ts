@@ -11,7 +11,7 @@
  *    mock entries are never shown (the function returns [] instantly)
  *  - Mock names are generic enough to not feel fake (no "User123" style)
  *  - Times are realistic for each puzzle category (crossword ~4min, sudoku ~6min, etc.)
- *  - Clearly labelled in dev but invisible to end users
+ *  - Clearly labeled in dev but invisible to end users
  */
 
 import type { PuzzleCategory } from "@/lib/puzzleTypes";
