@@ -274,7 +274,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
                   <input
                     ref={(el) => { if (el) inputRefs.current.set(idx, el); }}
                     className={cn(
-                      "w-8 h-10 sm:h-9 text-center text-lg font-semibold outline-none border-b-2 bg-transparent uppercase touch-manipulation",
+                      "w-8 h-11 sm:w-8 sm:h-9 text-center text-base sm:text-lg font-semibold outline-none border-b-2 bg-transparent uppercase touch-manipulation",
                       isHint && "text-primary border-primary/50",
                       hasError && "text-destructive border-destructive",
                       !isHint && !hasError && isActive && "text-foreground border-primary",
