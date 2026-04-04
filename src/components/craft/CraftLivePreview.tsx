@@ -334,11 +334,17 @@ export default function CraftLivePreview({ type, wordInput, phraseInput, clueEnt
           case "word-fill": {
             const words = wordInput.split(/[,\n]+/).map((w) => w.trim().toUpperCase().replace(/[^A-Z]/g, "")).filter((w) => w.length >= 2);
             data = generateCustomFillIn(words, difficulty) as unknown as Record<string, unknown>;
+            if (((data.entries as string[] | undefined) ?? []).length !== words.length) {
+              throw new Error("Not all words fit");
+            }
             break;
           }
           case "word-search": {
             const words = wordInput.split(/[,\n]+/).map((w) => w.trim().toUpperCase().replace(/[^A-Z]/g, "")).filter((w) => w.length >= 2);
             data = generateCustomWordSearch(words, difficulty) as unknown as Record<string, unknown>;
+            if (((data.words as string[] | undefined) ?? []).length !== words.length) {
+              throw new Error("Not all words fit");
+            }
             break;
           }
           case "cryptogram": {
@@ -351,6 +357,9 @@ export default function CraftLivePreview({ type, wordInput, phraseInput, clueEnt
             const valid = clueEntries.filter((e) => e.answer.trim().replace(/[^A-Za-z]/g, "").length >= 2 && e.clue.trim().length > 0);
             if (valid.length >= 2) {
               data = generateCustomCrossword(valid, difficulty) as unknown as Record<string, unknown>;
+              if (((data.clues as unknown[] | undefined) ?? []).length !== valid.length) {
+                throw new Error("Not all entries fit");
+              }
             }
             break;
           }
@@ -362,6 +371,7 @@ export default function CraftLivePreview({ type, wordInput, phraseInput, clueEnt
         }
       } catch {
         if (mountedRef.current) {
+          setPreview(null);
           setGenError(true);
           setGenerating(false);
         }
