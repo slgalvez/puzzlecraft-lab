@@ -19,7 +19,7 @@ import CraftInbox from "@/components/craft/CraftInbox";
 import CraftSettingsPanel, { type CraftSettings, DEFAULT_CRAFT_SETTINGS } from "@/components/craft/CraftSettingsPanel";
 import CraftLivePreview from "@/components/craft/CraftLivePreview";
 import CraftThemePicker from "@/components/craft/CraftThemePicker";
-import { CraftColorPicker } from "@/components/craft/CraftColorPicker";
+import { CraftColorPicker, CRAFT_PALETTES, applyPalette } from "@/components/craft/CraftColorPicker";
 import { getTheme } from "@/lib/craftThemes";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -96,6 +96,16 @@ const CraftPuzzle = () => {
   const [selectedTheme, setSelectedTheme] = useState<string>("none");
   const [colorPalette, setColorPalette] = useState("default");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  const handleColorPaletteSelect = (id: string) => {
+    setColorPalette(id);
+    const palette = CRAFT_PALETTES.find((p) => p.id === id);
+    if (palette) {
+      applyPalette(palette);
+    } else {
+      applyPalette({ id: "default", label: "Default", cell: "", active: "", highlight: "", correct: "", border: "", text: "" });
+    }
+  };
   
   const sentRecorded = useRef(false);
 
@@ -261,13 +271,17 @@ const CraftPuzzle = () => {
         } catch {}
         return inputWords.length;
       })();
-      const droppedCount = inputWords.length - placedCount;
+      const droppedCount = Math.max(0, inputWords.length - placedCount);
       if (droppedCount > 0) {
         toast({
-          title: `${droppedCount} word${droppedCount > 1 ? "s" : ""} couldn't fit`,
-          description: `Try adding shorter words or using fewer words for better results.`,
+          title: `${droppedCount} word${droppedCount > 1 ? "s" : ""} won't fit`,
+          description: droppedCount > 2
+            ? `Remove ${droppedCount} words or use shorter words, then try again.`
+            : `Try removing ${droppedCount === 1 ? "a word" : "a couple of words"} or using shorter ones.`,
           variant: "destructive",
         });
+        setSaving(false);
+        return;
       }
 
       const payload: CraftPayload = {
@@ -520,6 +534,7 @@ const CraftPuzzle = () => {
   };
 
   const handleStartOver = () => {
+    applyPalette({ id: "default", label: "Default", cell: "", active: "", highlight: "", correct: "", border: "", text: "" });
     // Delete active draft
     if (activeDraftId.current) {
       deleteDraft(activeDraftId.current);
@@ -590,7 +605,7 @@ const CraftPuzzle = () => {
       <div className="container py-6 md:py-10 max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-2 text-center">
-          <h1 className="font-display text-2xl font-bold text-foreground">Send a Puzzle</h1>
+          <h1 className="font-display text-2xl font-bold text-foreground">Create a Puzzle</h1>
           <p className="text-sm text-muted-foreground mt-1">Create a custom puzzle and share it with someone</p>
         </div>
 
@@ -700,12 +715,29 @@ const CraftPuzzle = () => {
                     }
                   }}
                   onRevealTemplate={(tmpl) => setRevealMessage(tmpl)}
-                  onPrefillWords={(words) => setWordInput(words)}
+                  onPrefillWords={(words) => {
+                    if (!words.includes("\n")) {
+                      setWordInput((prev) => {
+                        const existing = prev.trim();
+                        if (!existing) return words;
+                        if (existing.includes(words)) return prev;
+                        return existing + "\n" + words;
+                      });
+                    } else {
+                      setWordInput(words);
+                    }
+                    if (selectedType === "crossword") {
+                      const wordList = words.split("\n").filter(Boolean);
+                      if (wordList.length > 0) {
+                        setClueEntries(wordList.map((w) => ({ answer: w, clue: "" })));
+                      }
+                    }
+                  }}
                   currentRevealMessage={revealMessage}
                   showWordSection={selectedType === "word-fill" || selectedType === "word-search"}
                 />
 
-                <CraftColorPicker selected={colorPalette} onSelect={setColorPalette} />
+                <CraftColorPicker selected={colorPalette} onSelect={handleColorPaletteSelect} />
 
 {(selectedType === "word-fill" || selectedType === "word-search") && (
                   <div className="space-y-3">
