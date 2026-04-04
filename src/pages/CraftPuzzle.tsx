@@ -700,9 +700,9 @@ const CraftPuzzle = () => {
                     }
                   }}
                   onRevealTemplate={(tmpl) => setRevealMessage(tmpl)}
-                  onWordSuggestions={handleWordSuggestions}
+                  onPrefillWords={(words) => setWordInput(words)}
                   currentRevealMessage={revealMessage}
-                  showWordSuggestions={selectedType === "word-fill" || selectedType === "word-search"}
+                  showWordSection={selectedType === "word-fill" || selectedType === "word-search"}
                 />
 
                 <CraftColorPicker selected={colorPalette} onSelect={setColorPalette} />
