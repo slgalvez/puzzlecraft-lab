@@ -89,7 +89,7 @@ interface LeaderRow {
 
 function useDailyLeaderPreview(dateStr: string, category: PuzzleCategory): LeaderRow[] {
   const [rows, setRows] = useState<LeaderRow[]>(() =>
-    // Initialise immediately with mock data so there's no loading flash
+    // Initialize immediately with mock data so there's no loading flash
     generateMockLeaderboard(dateStr, category).slice(0, 3)
   );
 
