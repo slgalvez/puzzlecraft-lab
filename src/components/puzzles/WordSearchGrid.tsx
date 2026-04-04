@@ -351,7 +351,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
           </p>
         )}
 
-        <div style={{ touchAction: isMobile ? "none" : "auto" }}>
+        <div style={{ touchAction: isMobile ? "none" : "auto" }} className="[overscroll-behavior:contain]">
         <div
           ref={gridRef}
           className="inline-grid border-2 border-puzzle-border select-none outline-none"
