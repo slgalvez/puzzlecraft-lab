@@ -593,7 +593,7 @@ const CraftPuzzle = () => {
         {/* Header */}
         <div className="mb-2 text-center">
           <h1 className="font-display text-2xl font-bold text-foreground">Create a Puzzle</h1>
-          <p className="text-sm text-muted-foreground mt-1">Create a custom puzzle and share it with someone</p>
+          <p className="text-sm text-muted-foreground mt-1">Make something personal — send it to anyone</p>
         </div>
 
         {/* View Nav */}
