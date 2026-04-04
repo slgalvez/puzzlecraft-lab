@@ -271,9 +271,8 @@ const PuzzleGenerator = () => {
     finally { setLoadingSeed(false); }
   };
 
-  // Auto-generate when arriving with a seed from URL and user picks difficulty
-  const { isDiffLocked } = usePremiumAccess();
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+
 
   const handleDifficultyChange = (d: Difficulty) => {
     // Gate premium difficulties
