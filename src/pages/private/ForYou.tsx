@@ -227,7 +227,7 @@ const ForYou = () => {
         }
         case "cryptogram": {
           if (phraseInput.trim().length < 10) { toast({ title: "Phrase must be at least 10 characters", variant: "destructive" }); return; }
-          data = generateCustomCryptogram(phraseInput) as unknown as Record<string, unknown>;
+          data = generateCustomCryptogram(phraseInput, "medium") as unknown as Record<string, unknown>;
           break;
         }
         case "crossword": {
