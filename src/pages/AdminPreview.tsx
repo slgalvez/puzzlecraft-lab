@@ -1097,6 +1097,59 @@ export default function AdminPreview() {
           </TabsContent>
 
           {/* ══════════════════════════════════════════════════════════════ */}
+          {/* TAB: CRAFT ANALYTICS                                            */}
+          {/* ══════════════════════════════════════════════════════════════ */}
+          <TabsContent value="craft" className="space-y-6 mt-4">
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Star size={14} /> Craft Analytics Card
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Shows puzzle creators how their shared puzzles are performing — recipients, completion rates, solve times, and a solver leaderboard.
+              </p>
+
+              {/* Mock analytics card — same visual structure as CraftAnalyticsCard */}
+              <div className="max-w-md">
+                <MockCraftAnalytics
+                  title="Weekend Brain Teaser"
+                  totalSent={8}
+                  totalStarted={6}
+                  totalCompleted={5}
+                  avgTime={243}
+                  fastestTime={128}
+                  creatorTime={195}
+                  solvers={[
+                    { name: "Alex", time: 128 },
+                    { name: "Jordan", time: 172 },
+                    { name: "Sam", time: 195 },
+                    { name: "Casey", time: 310 },
+                    { name: "Morgan", time: 412 },
+                  ]}
+                />
+              </div>
+            </section>
+
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground">Empty State</h2>
+              <p className="text-xs text-muted-foreground">
+                What creators see before anyone has solved their puzzle.
+              </p>
+              <div className="max-w-md">
+                <MockCraftAnalytics
+                  title="My First Puzzle"
+                  totalSent={3}
+                  totalStarted={0}
+                  totalCompleted={0}
+                  avgTime={null}
+                  fastestTime={null}
+                  creatorTime={145}
+                  solvers={[]}
+                />
+              </div>
+            </section>
+          </TabsContent>
+
+          {/* ══════════════════════════════════════════════════════════════ */}
           {/* TAB 5: PATTERNS                                               */}
           {/* ══════════════════════════════════════════════════════════════ */}
           <TabsContent value="patterns" className="space-y-6 mt-4">
