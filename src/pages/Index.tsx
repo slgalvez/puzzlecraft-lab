@@ -284,7 +284,7 @@ const Index = () => {
                 {isReturning ? (
                   <>Welcome back.<br /><span className="text-primary">Your puzzles await.</span></>
                 ) : (
-                  <>Sharpen your mind,<br /><span className="text-primary">one puzzle at a time.</span></>
+                  <>Today's puzzle is<br /><span className="text-primary">waiting for you.</span></>
                 )}
               </h1>
 
