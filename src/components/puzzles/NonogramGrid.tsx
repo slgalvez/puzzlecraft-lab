@@ -335,9 +335,9 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
                   className={cn(
                     "font-semibold tabular-nums text-center leading-tight transition-opacity duration-300",
                     completedCols.has(c) && !timer.isSolved && !isRevealed
-                      ? "opacity-30 line-through decoration-1"
+                      ? "opacity-25 line-through decoration-1 decoration-foreground/40"
                       : cursor[1] === c && !timer.isSolved && !isRevealed
-                        ? "text-primary"
+                        ? "text-primary font-bold"
                         : "text-muted-foreground"
                   )}
                 >
