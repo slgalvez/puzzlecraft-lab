@@ -392,7 +392,7 @@ const Index = () => {
               <h2 className="font-display text-2xl font-semibold text-foreground">
                 {isPersonalized ? "Your favorites" : "Eight ways to play"}
               </h2>
-              {isPersonalised && (
+              {isPersonalized && (
                 <p className="text-sm text-muted-foreground mt-0.5">Sorted by how often you play</p>
               )}
             </div>
