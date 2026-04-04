@@ -262,9 +262,9 @@ export default function AccountPage() {
                 </div>
                 <p className="text-sm text-muted-foreground">Unlock everything — unlimited puzzles, advanced stats, and more.</p>
                 <div className="mt-3 flex items-baseline gap-1">
-                  <span className="font-mono text-3xl font-bold text-foreground">$2.99</span>
-                  <span className="text-sm text-muted-foreground">/month</span>
-                  <span className="ml-2 text-[11px] text-muted-foreground/60">or $19.99/year</span>
+                 <span className="font-mono text-3xl font-bold text-foreground">{MONTHLY_PRICE}</span>
+                 <span className="text-sm text-muted-foreground">/month</span>
+                 <span className="ml-2 text-[11px] text-muted-foreground/60">or {ANNUAL_PRICE}/year</span>
                 </div>
               </div>
               <div className="px-5 py-4 space-y-2.5 border-t border-border/60">
