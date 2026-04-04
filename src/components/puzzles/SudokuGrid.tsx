@@ -254,7 +254,10 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
           Arrow keys to move • 1–9 to enter • Delete to clear
         </p>
       )}
-      <div className="max-w-full overflow-x-auto">
+      <div
+        className="max-w-full overflow-x-auto [overscroll-behavior:contain]"
+        style={{ touchAction: isMobile ? "none" : "auto" }}
+      >
       <div
         ref={containerRef}
         tabIndex={0}
