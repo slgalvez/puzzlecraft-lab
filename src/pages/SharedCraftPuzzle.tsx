@@ -12,6 +12,7 @@ import {
 import { buildSolveResultShareText } from "@/lib/craftShare";
 import { getTheme } from "@/lib/craftThemes";
 import CraftLeaderboard, { registerCraftSolve } from "@/components/craft/CraftLeaderboard";
+import { CRAFT_PALETTES, applyPalette } from "@/components/craft/CraftColorPicker";
 import { hapticSuccess, hapticTap } from "@/lib/haptic";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
