@@ -254,6 +254,7 @@ const CraftPuzzle = () => {
       if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
       if (puzzleFrom.trim()) payload.from = puzzleFrom.trim();
       if (selectedTheme && selectedTheme !== "none") payload.theme = selectedTheme;
+      if (colorPalette !== "default") (payload as any).colorPalette = colorPalette;
 
       setSaving(true);
       const shortId = generateShortId();
