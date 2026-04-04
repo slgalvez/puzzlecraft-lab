@@ -254,7 +254,7 @@ function findPlacement(
         }
         if (!canPlace(grid, word, nr, nc, newDir, size)) continue;
 
-        // Balance score: prefer placements that pull CoM toward centre
+        // Balance score: prefer placements that pull CoM toward center
         const dr = newDir === "down" ? 1 : 0;
         const dc = newDir === "across" ? 1 : 0;
         let midR = 0, midC = 0;
