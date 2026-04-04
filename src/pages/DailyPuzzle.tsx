@@ -7,15 +7,13 @@ import { formatTime } from "@/hooks/usePuzzleTimer";
 import {
   getTodaysChallenge,
   getDailyCompletion,
-  recordDailyCompletion,
   getDailyStreak,
-  type DailyChallenge,
 } from "@/lib/dailyChallenge";
-import { Calendar, CheckCircle2, Clock, Flame, Trophy, ArrowRight, ArrowLeft, Share } from "lucide-react";
+import { Calendar, Flame, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import DailyPostSolve from "@/components/daily/DailyPostSolve";
 
 // Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
@@ -31,75 +29,19 @@ import { generateCrossword } from "@/lib/generators/crosswordGen";
 import { generateWordFillIn, generateNumberFillIn } from "@/lib/generators/fillGen";
 import type { CrosswordPuzzle, FillInPuzzle } from "@/data/puzzles";
 
-const CONFETTI_COLORS = [
-  "hsl(var(--primary))",
-  "hsl(var(--accent))",
-  "#fbbf24", "#f97316", "#ef4444", "#8b5cf6", "#06b6d4",
-];
-
-function DailyConfetti() {
-  const [particles] = useState(() =>
-    Array.from({ length: 40 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      delay: Math.random() * 0.6,
-      duration: 1.2 + Math.random() * 1.0,
-      size: 4 + Math.random() * 6,
-      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-      rotation: Math.random() * 360,
-      drift: (Math.random() - 0.5) * 60,
-    }))
-  );
-
-  return (
-    <div className="fixed inset-0 z-[100] pointer-events-none overflow-hidden" aria-hidden>
-      {particles.map((p) => (
-        <div
-          key={p.id}
-          className="absolute animate-[dailyConfettiFall_var(--dur)_ease-out_var(--delay)_forwards]"
-          style={{
-            left: `${p.x}%`,
-            top: "-10px",
-            width: p.size,
-            height: p.size * 1.4,
-            backgroundColor: p.color,
-            borderRadius: "2px",
-            transform: `rotate(${p.rotation}deg)`,
-            opacity: 0,
-            "--delay": `${p.delay}s`,
-            "--dur": `${p.duration}s`,
-            "--drift": `${p.drift}px`,
-          } as React.CSSProperties}
-        />
-      ))}
-    </div>
-  );
-}
-
 const DailyPuzzle = () => {
-  console.log("[DailyPuzzle] mount");
-  const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const dateOverride = searchParams.get("date") ?? undefined;
-  const challenge = useMemo(() => {
-    const c = getTodaysChallenge(dateOverride);
-    console.log("[DailyPuzzle] challenge:", c.category, c.difficulty, c.dateStr, "seed:", c.seed);
-    return c;
-  }, [dateOverride]);
+
+  const challenge = useMemo(() => getTodaysChallenge(dateOverride), [dateOverride]);
   const [completion, setCompletion] = useState(() => getDailyCompletion(challenge.dateStr));
-  const [justSolved, setJustSolved] = useState(false);
   const streak = useMemo(() => getDailyStreak(), []);
   const info = CATEGORY_INFO[challenge.category];
-  console.log("[DailyPuzzle] info:", info?.name, "completion:", !!completion);
+
+  // Track whether the solve just happened this session (for entrance animation + milestone)
+  const [isNewSolve, setIsNewSolve] = useState(false);
 
   useEffect(() => { setPuzzleOrigin("daily"); }, []);
-
-  // Auto-dismiss confetti
-  useEffect(() => {
-    if (!justSolved) return;
-    const t = setTimeout(() => setJustSolved(false), 3000);
-    return () => clearTimeout(t);
-  }, [justSolved]);
 
   // ── Daily score write ──
   const hasWrittenScore = useRef(false);
@@ -127,37 +69,32 @@ const DailyPuzzle = () => {
         .from("daily_scores" as any)
         .upsert(
           {
-            date_str: challenge.dateStr,
-            user_id: user?.id ?? null,
+            date_str:     challenge.dateStr,
+            user_id:      user?.id ?? null,
             display_name: displayName,
-            solve_time: solveTime,
-            puzzle_type: challenge.category,
+            solve_time:   solveTime,
+            puzzle_type:  challenge.category,
           },
-          {
-            onConflict: "date_str,user_id",
-            ignoreDuplicates: false,
-          }
+          { onConflict: "date_str,user_id", ignoreDuplicates: false }
         ) as any);
-    } catch (err) {
-      console.error("[DailyScore] Failed to write score:", err);
+    } catch {
+      // silently fail — score write is non-critical
     }
   }, [challenge.dateStr, challenge.category]);
 
-  // Track completion from puzzle timer callback
+  // Called by puzzle grids on completion
   const handleNewPuzzle = useCallback(() => {
     const comp = getDailyCompletion(challenge.dateStr);
-    setCompletion(comp);
     if (comp) {
-      setJustSolved(true);
+      setCompletion(comp);
+      setIsNewSolve(true);
       writeDailyScore(comp.time);
     }
   }, [challenge.dateStr, writeDailyScore]);
 
-  // Memoize generated puzzles so heavy generators only run once (prevents mobile Safari crash)
+  // Generated puzzles (crossword / fill-in types only)
   const generatedPuzzle = useMemo(() => {
     const { seed, difficulty, category, dateStr } = challenge;
-    console.log("[DailyPuzzle] generating puzzle:", category, difficulty, seed);
-    const startTime = performance.now();
     try {
       switch (category) {
         case "crossword": {
@@ -188,14 +125,10 @@ const DailyPuzzle = () => {
           } satisfies FillInPuzzle;
         }
         default:
-          console.log("[DailyPuzzle] no generator needed for", category);
           return null;
       }
-    } catch (e) {
-      console.error("Daily puzzle generation failed:", e);
+    } catch {
       return null;
-    } finally {
-      console.log("[DailyPuzzle] generation took", (performance.now() - startTime).toFixed(1), "ms");
     }
   }, [challenge]);
 
@@ -229,128 +162,91 @@ const DailyPuzzle = () => {
     }
   };
 
+  const needsGenerator = ["crossword", "word-fill", "number-fill"].includes(challenge.category);
+  const generationFailed = needsGenerator && !generatedPuzzle;
+
   return (
     <Layout>
-      <div className="container py-6 md:py-12">
-        {/* Back arrow */}
+      <div className="container py-6 md:py-10">
+
+        {/* Back */}
         <div className="mb-4">
           <Link
             to="/"
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft size={14} />
-            <span>Back</span>
+            Back
           </Link>
         </div>
 
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-            <Calendar size={14} />
+        {/* Page header */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+            <Calendar size={13} />
             <span>{challenge.displayDate}</span>
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
                 Daily Challenge
               </h1>
-              <p className="mt-1 text-muted-foreground flex items-center gap-2">
-                Today's puzzle: <span className="font-medium text-foreground">{info.name}</span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground capitalize">
+              <p className="mt-1 text-muted-foreground flex items-center gap-2 text-sm">
+                {info.name}
+                <span className="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs capitalize font-medium">
                   {challenge.difficulty}
                 </span>
               </p>
             </div>
-
-            {/* Streak and completion */}
-            <div className="flex items-center gap-4">
-              {streak.current > 0 && (
-                <div className="flex items-center gap-1.5 text-sm">
-                  <Flame size={16} className="text-primary" />
-                  <span className="font-medium text-foreground">{streak.current}</span>
-                  <span className="text-muted-foreground">day streak</span>
-                </div>
-              )}
-              {completion && (
-                <div className="flex items-center gap-1.5 rounded-lg border bg-card px-3 py-2">
-                  <CheckCircle2 size={16} className="text-primary" />
-                  <span className="text-sm font-medium text-foreground">
-                    Solved in {formatTime(completion.time)}
-                  </span>
-                </div>
-              )}
-            </div>
+            {streak.current > 0 && (
+              <div className="flex items-center gap-1.5 text-sm shrink-0">
+                <Flame size={16} className="text-primary" />
+                <span className="font-bold text-foreground">{streak.current}</span>
+                <span className="text-muted-foreground">day streak</span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Confetti on fresh solve */}
-        {justSolved && <DailyConfetti />}
-
-        {/* Completion banner */}
-        {completion && (
-          <div className={cn(
-            "mb-8 rounded-xl border bg-card p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4",
-            justSolved && "animate-scale-in"
-          )}>
-            <div className="flex items-center gap-3">
-              <div className={cn(
-                "h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center",
-                justSolved && "animate-[dailyTrophyPulse_0.6s_ease-out]"
-              )}>
-                <Trophy size={20} className="text-primary" />
+        {/* ── Two-column layout on desktop ── */}
+        <div className={cn(
+          "grid gap-8",
+          completion
+            ? "lg:grid-cols-[1fr_400px] items-start"
+            : "max-w-3xl mx-auto"
+        )}>
+          {/* Left: puzzle */}
+          <div>
+            {generationFailed ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <p className="text-muted-foreground mb-4">Puzzle generation failed. Please refresh.</p>
+                <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                  Refresh
+                </Button>
               </div>
-              <div>
-                <p className="font-display font-semibold text-foreground">Challenge Complete!</p>
-                <p className="text-sm text-muted-foreground">
-                  You solved today's {info.name} in {formatTime(completion.time)}.
-                  Come back tomorrow for a new challenge.
-                </p>
+            ) : (
+              <div className="min-h-[300px]">
+                {renderPuzzle()}
               </div>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  const diffLabel = DIFFICULTY_LABELS[challenge.difficulty];
-                  const timeStr = formatTime(completion.time);
-                  const shareUrl = `${window.location.origin}/play?code=daily-${challenge.dateStr}`;
-                  const text = `Just solved today's Puzzlecraft challenge 🧠\n\n${info.name} • ${diffLabel} • ${timeStr}${streak.current > 1 ? `\n🔥 ${streak.current}-day streak` : ""}\n\nCan you beat this time?\n\nPlay: ${shareUrl}`;
-                  if (navigator.share) {
-                    try {
-                      await navigator.share({ text });
-                    } catch { /* user cancelled */ }
-                  } else {
-                    await navigator.clipboard.writeText(text);
-                    toast({ title: "Results copied to clipboard!" });
-                  }
-                }}
-              >
-                <Share size={14} className="mr-1.5" />
-                Share
-              </Button>
-              <Button asChild variant="outline" size="sm">
-                <Link to={`/generate/${challenge.category}`}>
-                  Play More {info.name} <ArrowRight size={14} />
-                </Link>
-              </Button>
-            </div>
+            )}
           </div>
-        )}
 
-        {/* Puzzle */}
-        <div className="min-h-[300px]">
-          {(challenge.category === "crossword" || challenge.category === "word-fill" || challenge.category === "number-fill") && !generatedPuzzle ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <p className="text-muted-foreground mb-4">Puzzle generation failed. Please try refreshing the page.</p>
-              <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-                Refresh
-              </Button>
+          {/* Right: post-solve panel (desktop sidebar, full-width below on smaller) */}
+          {completion && (
+            <div className="lg:sticky lg:top-24">
+              <DailyPostSolve
+                solveTime={completion.time}
+                dateStr={challenge.dateStr}
+                displayDate={challenge.displayDate}
+                category={challenge.category}
+                difficulty={challenge.difficulty}
+                streakCount={streak.current}
+                isNew={isNewSolve}
+              />
             </div>
-          ) : (
-            renderPuzzle()
           )}
         </div>
+
       </div>
     </Layout>
   );
