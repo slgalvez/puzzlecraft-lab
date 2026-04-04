@@ -48,6 +48,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
   const isNumbers = type === "number-fill";
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  useKeyboardAvoidance();
   const timerKey = `fillin-${puzzle.id}`;
   const session = usePuzzleSession({ puzzleType: puzzle.type as any, difficulty: puzzle.difficulty as any, progressUnit: isNumbers ? "entries" : "words" });
 
