@@ -287,7 +287,14 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
                     autoCapitalize="characters"
                     autoComplete="off"
                     autoCorrect="off"
-                    onChange={(e) => handleInput(ch, e.target.value, idx)}
+                    onChange={(e) => {
+                      if (e.nativeEvent instanceof InputEvent && e.nativeEvent.isComposing) return;
+                      handleInput(ch, e.target.value, idx);
+                    }}
+                    onCompositionEnd={(e) => {
+                      const val = (e.target as HTMLInputElement).value;
+                      handleInput(ch, val, idx);
+                    }}
                     onKeyDown={(e) => handleKeyDown(e, ch, idx)}
                     onFocus={() => setActiveIdx(idx)}
                   />
