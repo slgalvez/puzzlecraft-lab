@@ -605,7 +605,7 @@ const CraftPuzzle = () => {
       <div className="container py-6 md:py-10 max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-2 text-center">
-          <h1 className="font-display text-2xl font-bold text-foreground">Send a Puzzle</h1>
+          <h1 className="font-display text-2xl font-bold text-foreground">Create a Puzzle</h1>
           <p className="text-sm text-muted-foreground mt-1">Create a custom puzzle and share it with someone</p>
         </div>
 
