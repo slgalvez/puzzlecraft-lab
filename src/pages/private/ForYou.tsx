@@ -222,24 +222,24 @@ const ForYou = () => {
         case "word-fill": {
           const words = wordInput.split(/[,\n]+/).map(w => w.trim()).filter(Boolean);
           if (words.length < 3) { toast({ title: "Enter at least 3 words", variant: "destructive" }); return; }
-          data = generateCustomFillIn(words) as unknown as Record<string, unknown>;
+          data = generateCustomFillIn(words, "medium") as unknown as Record<string, unknown>;
           break;
         }
         case "cryptogram": {
           if (phraseInput.trim().length < 10) { toast({ title: "Phrase must be at least 10 characters", variant: "destructive" }); return; }
-          data = generateCustomCryptogram(phraseInput) as unknown as Record<string, unknown>;
+          data = generateCustomCryptogram(phraseInput, "medium") as unknown as Record<string, unknown>;
           break;
         }
         case "crossword": {
           const valid = clueEntries.filter(e => e.answer.trim() && e.clue.trim());
           if (valid.length < 3) { toast({ title: "Enter at least 3 answer + clue pairs", variant: "destructive" }); return; }
-          data = generateCustomCrossword(valid) as unknown as Record<string, unknown>;
+          data = generateCustomCrossword(valid, "medium") as unknown as Record<string, unknown>;
           break;
         }
         case "word-search": {
           const words = wordInput.split(/[,\n]+/).map(w => w.trim()).filter(Boolean);
           if (words.length < 3) { toast({ title: "Enter at least 3 words", variant: "destructive" }); return; }
-          data = generateCustomWordSearch(words) as unknown as Record<string, unknown>;
+          data = generateCustomWordSearch(words, "medium") as unknown as Record<string, unknown>;
           break;
         }
         default:
