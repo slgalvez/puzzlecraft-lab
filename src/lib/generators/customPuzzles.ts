@@ -756,7 +756,7 @@ const CRAFT_TO_STD_DIFF: Record<CraftDifficulty, "easy" | "medium" | "hard"> = {
   hard: "hard",
 };
 
-const MAX_CRAFT_WS_ATTEMPTS = 15;
+const MAX_CRAFT_WS_ATTEMPTS = 25;
 
 export function generateCustomWordSearch(words: string[], difficulty: CraftDifficulty = "medium"): CustomWordSearchData {
   const cleaned = words.map(w => w.toUpperCase().replace(/[^A-Z]/g, "")).filter(w => w.length >= 2);
