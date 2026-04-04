@@ -66,6 +66,8 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
   const [touchMode, setTouchMode] = useState<"fill" | "mark">("fill");
   const [isRevealed, setIsRevealed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const gridScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollRight, setCanScrollRight] = useState(false);
   const resetCount = useRef(0);
   const checkCount = useRef(0);
   const errorCheckCount = useRef(0);
@@ -117,6 +119,7 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
     containerRef.current?.focus();
   }, [seed, difficulty]);
 
+
   const setCellState = (r: number, c: number, state: CellState) => {
     if (timer.isSolved || isRevealed) return;
     setGrid((prev) => {
@@ -142,7 +145,8 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
       const current = grid[r][c];
       setCellState(r, c, current === "empty" ? "filled" : current === "filled" ? "marked" : "empty");
     }
-    if (!isMobile) containerRef.current?.focus();
+    // Always reclaim focus so keyboard navigation works immediately after tap
+    containerRef.current?.focus();
   };
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -229,12 +233,26 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
   // Row clue column width: enough for the widest clue set
   const rowClueWidth = maxRowClueLen * (clueFontSize * 1.1 + 4) + 8;
 
+  useEffect(() => {
+    const el = gridScrollRef.current;
+    if (!el) return;
+    const check = () => setCanScrollRight(el.scrollWidth > el.clientWidth + 4);
+    check();
+    el.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", check);
+      window.removeEventListener("resize", check);
+    };
+  }, [rows, cols, cellPx]);
+
   return (
     <div
       ref={containerRef}
       tabIndex={0}
-      className="outline-none"
+      className="outline-none scroll-mt-4"
       onKeyDown={handleKeyDown}
+      style={{ touchAction: isMobile && !timer.isSolved ? "none" : "auto" }}
     >
       <PuzzleHeader
         puzzleType="nonogram"
@@ -278,7 +296,11 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
         </p>
       )}
 
-      <div className="max-w-full overflow-x-auto pb-2">
+      <div className="relative">
+        <div
+          ref={gridScrollRef}
+          className="max-w-full overflow-x-auto pb-2 [overscroll-behavior:contain]"
+        >
         <div
           className="inline-grid"
           style={{
@@ -314,9 +336,9 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
                   className={cn(
                     "font-semibold tabular-nums text-center leading-tight transition-opacity duration-300",
                     completedCols.has(c) && !timer.isSolved && !isRevealed
-                      ? "opacity-30 line-through decoration-1"
+                      ? "opacity-25 line-through decoration-1 decoration-foreground/40"
                       : cursor[1] === c && !timer.isSolved && !isRevealed
-                        ? "text-primary"
+                        ? "text-primary font-bold"
                         : "text-muted-foreground"
                   )}
                 >
@@ -349,9 +371,9 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
                     className={cn(
                       "font-semibold tabular-nums transition-opacity duration-300",
                       completedRows.has(r) && !timer.isSolved && !isRevealed
-                        ? "opacity-30 line-through decoration-1"
+                        ? "opacity-25 line-through decoration-1 decoration-foreground/40"
                         : cursor[0] === r && !timer.isSolved && !isRevealed
-                          ? "text-primary"
+                          ? "text-primary font-bold"
                           : "text-muted-foreground"
                     )}
                   >
@@ -420,6 +442,13 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
             </>
           ))}
         </div>
+        </div>
+        {canScrollRight && isMobile && (
+          <div
+            className="pointer-events-none absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-background/80 to-transparent"
+            aria-hidden
+          />
+        )}
       </div>
 
       <PuzzleToolbar
