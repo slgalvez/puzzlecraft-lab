@@ -12,7 +12,6 @@ import { SeededRandom } from "../seededRandom";
 import type { Difficulty } from "../puzzleTypes";
 import {
   tryGenerateWordSearch,
-  scoreWordSearchPuzzle,
   validateWordSearchGrid,
   type WordSearchPuzzle,
 } from "./wordSearch";
@@ -235,28 +234,25 @@ export interface CustomFillInData {
 
 /**
  * Generates a custom word fill-in using the SAME placement logic as fillGen.ts.
- * Grid size scales with difficulty (matching standard gameplay) and grows
- * automatically until ALL user words are placed — words are NEVER dropped.
+ * The Create UI still exposes only easy/medium/hard, but generation can grow
+ * up to the standard insane board capacity before it gives up.
  */
 export function generateCustomFillIn(words: string[], difficulty: Difficulty = "medium"): CustomFillInData {
   const cleaned = words.map(w => w.toUpperCase().replace(/[^A-Z]/g, "")).filter(w => w.length >= 2);
   if (cleaned.length === 0) throw new Error("No valid words provided");
 
   const maxLen = Math.max(...cleaned.map(w => w.length));
+  if (maxLen > FILL_SIZES.insane) {
+    throw new Error(`Word Fill-In supports words up to ${FILL_SIZES.insane} letters.`);
+  }
+
   const wordCount = cleaned.length;
-
-  // Start with the standard gameplay size for this difficulty,
-  // but ensure it's at least large enough for the longest word + padding
   const standardSize = FILL_SIZES[difficulty];
-  const minSizeForWords = maxLen + 2;
-  const baseSize = Math.max(standardSize, minSizeForWords);
-
+  const baseSize = Math.max(standardSize, maxLen);
+  const maxSize = FILL_SIZES.insane;
   const baseSeed = Date.now() % 2147483646 || 1;
 
-  // Grow grid until all words are placed — up to insane-level max (19) + extra
-  const maxSize = Math.max(baseSize + 12, 25);
-
-  let bestOverall: { data: CustomFillInData; placedCount: number; score: number } | null = null;
+  let bestOverall: { data: CustomFillInData; placedCount: number } | null = null;
 
   for (let size = baseSize; size <= maxSize; size++) {
     const target = Math.min(wordCount, FILL_TARGETS[difficulty] || wordCount);
@@ -265,32 +261,26 @@ export function generateCustomFillIn(words: string[], difficulty: Difficulty = "
       (seed) => {
         const built = buildFillIn(cleaned, size, seed);
         if (built.placedCount === wordCount) {
-          // Perfect — score the layout quality
           const grid = solutionToLetterGrid(built.data.solution, built.data.gridSize);
           const placedEntries = extractPlacedEntries(grid, built.data.gridSize);
           const stats = analyzeGrid(grid, built.data.gridSize, placedEntries);
           const layoutScore = scoreGridLayout(stats, built.placedCount, target);
-          return { data: built.data, score: layoutScore + 1000 }; // +1000 completeness bonus
+          return { data: built.data, score: layoutScore + 1000 };
         }
-        // Incomplete — low score
         return { data: built.data, score: built.placedCount * 2 };
       },
       (baseSeed + size * 3571) % 2147483646 || 1,
-      5,  // candidates per batch
-      3,  // max batches
-      50  // threshold
+      5,
+      3,
+      50
     );
 
-    // Track placed count from the data
-    const placedCount = (result as CustomFillInData).entries.length;
-
+    const placedCount = result.entries.length;
     if (!bestOverall || placedCount > bestOverall.placedCount) {
-      bestOverall = { data: result, placedCount, score: 0 };
+      bestOverall = { data: result, placedCount };
     }
 
-    if (placedCount === wordCount) {
-      return result;
-    }
+    if (placedCount === wordCount) return result;
   }
 
   return bestOverall!.data;
@@ -602,34 +592,41 @@ export interface CustomWordSearchData {
 
 const MAX_CRAFT_WS_ATTEMPTS = 30;
 
+function getWordSearchDifficultyLadder(difficulty: Difficulty): Difficulty[] {
+  switch (difficulty) {
+    case "easy":
+      return ["easy", "medium", "hard", "extreme", "insane"];
+    case "medium":
+      return ["medium", "hard", "extreme", "insane"];
+    case "hard":
+      return ["hard", "extreme", "insane"];
+    default:
+      return [difficulty];
+  }
+}
+
 /**
- * Generates a custom word search using the same tryGenerateWordSearch logic.
- * Grid size scales to fit ALL user words — never drops words.
+ * Uses the exact standard word-search generator pipeline.
+ * The Create UI stays easy/medium/hard, but internally we can escalate through
+ * the standard higher-capacity tiers until all words fit.
  */
 export function generateCustomWordSearch(words: string[], difficulty: Difficulty = "medium"): CustomWordSearchData {
   const cleaned = words.map(w => w.toUpperCase().replace(/[^A-Z]/g, "")).filter(w => w.length >= 2);
   if (cleaned.length === 0) throw new Error("No valid words provided");
 
-  const baseSeed = Date.now() % 2147483646 || 1;
   const maxLen = Math.max(...cleaned.map(w => w.length));
+  if (maxLen > WS_SIZES.insane) {
+    throw new Error(`Word Search supports words up to ${WS_SIZES.insane} letters.`);
+  }
 
-  // Standard grid size for this difficulty, but ensure it fits all words
-  const standardSize = WS_SIZES[difficulty];
-  // Need at least maxLen for the longest word, and scale with word count
-  const minSizeForCount = Math.ceil(Math.sqrt(cleaned.length * maxLen * 1.8));
-  const baseSize = Math.max(standardSize, maxLen, minSizeForCount);
-
-  // Try progressively larger grids until all words are placed
-  const maxSize = Math.max(baseSize + 8, 28);
-
+  const baseSeed = Date.now() % 2147483646 || 1;
+  const ladder = getWordSearchDifficultyLadder(difficulty);
   let bestResult: WordSearchPuzzle | null = null;
   let bestPlacedCount = 0;
 
-  for (let size = baseSize; size <= maxSize; size++) {
-    const dirCount = WS_DIR_COUNTS[difficulty];
-
+  for (const internalDifficulty of ladder) {
     for (let attempt = 0; attempt < MAX_CRAFT_WS_ATTEMPTS; attempt++) {
-      const result = tryGenerateWordSearchWithSize(baseSeed + attempt * 7919 + size * 31, cleaned, size, dirCount);
+      const result = tryGenerateWordSearch(baseSeed + attempt * 7919, internalDifficulty, cleaned);
       if (!validateWordSearchGrid(result)) continue;
 
       if (result.words.length > bestPlacedCount) {
@@ -637,113 +634,11 @@ export function generateCustomWordSearch(words: string[], difficulty: Difficulty
         bestResult = result;
       }
 
-      if (result.words.length >= cleaned.length) {
+      if (result.words.length === cleaned.length) {
         return result as CustomWordSearchData;
       }
     }
-
-    // If we placed all words at this size, return
-    if (bestPlacedCount >= cleaned.length && bestResult) {
-      return bestResult as CustomWordSearchData;
-    }
   }
 
-  // Return best result even if not all words placed
-  if (bestResult) return bestResult as CustomWordSearchData;
-
-  // Final fallback
-  return tryGenerateWordSearch(baseSeed, "easy", cleaned) as CustomWordSearchData;
-}
-
-/**
- * Word search generation with explicit size control.
- * Uses the same placement logic as the standard wordSearch.ts generator.
- */
-function tryGenerateWordSearchWithSize(
-  seed: number,
-  words: string[],
-  size: number,
-  dirCount: number
-): WordSearchPuzzle {
-  const DIRECTIONS: [number, number][] = [
-    [0, 1], [1, 0], [1, 1], [-1, 1], [0, -1], [-1, 0], [-1, -1], [1, -1],
-  ];
-
-  const rng = new SeededRandom(seed);
-  const dirs = DIRECTIONS.slice(0, dirCount);
-  const grid: string[][] = Array.from({ length: size }, () => Array(size).fill(""));
-
-  const shuffled = rng.shuffle([...words]);
-  shuffled.sort((a, b) => b.length - a.length);
-
-  const placed: WordSearchPuzzle["wordPositions"] = [];
-  const placedWords = new Set<string>();
-
-  for (const word of shuffled) {
-    if (placedWords.has(word)) continue;
-
-    const shuffledDirs = rng.shuffle([...dirs]);
-    let bestPos: { r: number; c: number; dr: number; dc: number; score: number } | null = null;
-
-    for (const [dr, dc] of shuffledDirs) {
-      for (let r = 0; r < size; r++) {
-        for (let c = 0; c < size; c++) {
-          if (!canPlaceWS(grid, word, r, c, dr, dc, size)) continue;
-
-          let overlaps = 0;
-          for (let i = 0; i < word.length; i++) {
-            if (grid[r + dr * i][c + dc * i] !== "") overlaps++;
-          }
-          if (word.length > 0 && overlaps / word.length > 0.3) continue;
-
-          // Simple distance-based scoring
-          const midR = r + dr * (word.length - 1) / 2;
-          const midC = c + dc * (word.length - 1) / 2;
-          let minMidDist = size * 2;
-          for (const pw of placed) {
-            const pmR = pw.row + pw.dr * (pw.word.length - 1) / 2;
-            const pmC = pw.col + pw.dc * (pw.word.length - 1) / 2;
-            const dist = Math.abs(midR - pmR) + Math.abs(midC - pmC);
-            if (dist < minMidDist) minMidDist = dist;
-          }
-          if (placed.length === 0) minMidDist = size;
-
-          const posScore = minMidDist * 10 - overlaps * 2;
-          if (!bestPos || posScore > bestPos.score) {
-            bestPos = { r, c, dr, dc, score: posScore };
-          }
-        }
-      }
-    }
-
-    if (bestPos) {
-      placeWordWS(grid, word, bestPos.r, bestPos.c, bestPos.dr, bestPos.dc);
-      placed.push({ word, row: bestPos.r, col: bestPos.c, dr: bestPos.dr, dc: bestPos.dc });
-      placedWords.add(word);
-    }
-  }
-
-  // Fill empty cells
-  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  for (let r = 0; r < size; r++)
-    for (let c = 0; c < size; c++)
-      if (!grid[r][c]) grid[r][c] = letters[rng.nextInt(0, 25)];
-
-  return { grid, words: placed.map(p => p.word), wordPositions: placed, size };
-}
-
-function canPlaceWS(grid: string[][], word: string, row: number, col: number, dr: number, dc: number, size: number): boolean {
-  for (let i = 0; i < word.length; i++) {
-    const r = row + dr * i;
-    const c = col + dc * i;
-    if (r < 0 || r >= size || c < 0 || c >= size) return false;
-    if (grid[r][c] && grid[r][c] !== word[i]) return false;
-  }
-  return true;
-}
-
-function placeWordWS(grid: string[][], word: string, row: number, col: number, dr: number, dc: number) {
-  for (let i = 0; i < word.length; i++) {
-    grid[row + dr * i][col + dc * i] = word[i];
-  }
+  return (bestResult ?? tryGenerateWordSearch(baseSeed, ladder[0], cleaned)) as CustomWordSearchData;
 }

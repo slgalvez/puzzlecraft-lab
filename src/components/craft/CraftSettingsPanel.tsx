@@ -1,16 +1,8 @@
-/**
- * CraftSettingsPanel.tsx
- * 
- * Full difficulty range (Easy → Insane) matching standard gameplay.
- * Difficulty controls actual grid generation — not just UI.
- */
-
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
-import type { Difficulty } from "@/lib/puzzleTypes";
 
 export interface CraftSettings {
-  difficulty: Difficulty;
+  difficulty: "easy" | "medium" | "hard";
   hintsEnabled: boolean;
   revealEnabled: boolean;
   checkEnabled: boolean;
@@ -24,7 +16,7 @@ export const DEFAULT_CRAFT_SETTINGS: CraftSettings = {
 };
 
 const DIFFICULTY_OPTIONS: {
-  value: Difficulty;
+  value: CraftSettings["difficulty"];
   label: string;
   desc: string;
 }[] = [
@@ -42,16 +34,6 @@ const DIFFICULTY_OPTIONS: {
     value: "hard",
     label: "Hard",
     desc: "Dense grid, many crossings — a tighter challenge",
-  },
-  {
-    value: "extreme",
-    label: "Extreme",
-    desc: "Very dense — heavy interlocking, large grids",
-  },
-  {
-    value: "insane",
-    label: "Insane",
-    desc: "Maximum density — as tight as the generator allows",
   },
 ];
 
@@ -73,13 +55,12 @@ export default function CraftSettingsPanel({ value, onChange }: Props) {
       </p>
 
       <div className="space-y-3">
-        {/* Difficulty row */}
         <div className="grid grid-cols-[auto_1fr] gap-x-6 items-start">
           <span className="text-[11px] text-muted-foreground whitespace-nowrap pt-1.5">
             Layout
           </span>
           <div className="space-y-1.5">
-            <div className="inline-flex flex-wrap rounded-full border border-border bg-muted/30 p-0.5 w-fit gap-0.5">
+            <div className="inline-flex rounded-full border border-border bg-muted/30 p-0.5 w-fit">
               {DIFFICULTY_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
@@ -95,14 +76,12 @@ export default function CraftSettingsPanel({ value, onChange }: Props) {
                 </button>
               ))}
             </div>
-            {/* Active difficulty description */}
             <p className="text-[10px] text-muted-foreground/60 pl-0.5">
               {activeDiff.desc}
             </p>
           </div>
         </div>
 
-        {/* Solver tools row */}
         <div className="grid grid-cols-[auto_1fr] gap-x-6 items-center">
           <span className="text-[11px] text-muted-foreground whitespace-nowrap">
             Solver tools

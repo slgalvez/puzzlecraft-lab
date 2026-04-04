@@ -64,7 +64,7 @@ function validateWords(raw: string, type: "word-fill" | "word-search"): Validati
   if (count <= 15) {
     return { valid: true, count, feedback: `${count} words — great`, hint: "This will make a full, varied puzzle", color: "green" };
   }
-  return { valid: true, count, feedback: `${count} words — plenty`, hint: "Extra words may not all fit — that's OK", color: "amber" };
+  return { valid: true, count, feedback: `${count} words — plenty`, hint: "If they exceed the board capacity, you'll be prompted before generating", color: "amber" };
 }
 
 function validatePhrase(raw: string): ValidationResult {
@@ -102,7 +102,7 @@ function validateClues(entries: { answer: string; clue: string }[]): ValidationR
   if (count <= 8) {
     return { valid: true, count, feedback: `${count} pairs — great`, hint: "", color: "green" };
   }
-  return { valid: true, count, feedback: `${count} pairs — full puzzle`, hint: "Some words may not fit — that's normal", color: "amber" };
+  return { valid: true, count, feedback: `${count} pairs — full puzzle`, hint: "If they exceed the board capacity, you'll be prompted before generating", color: "amber" };
 }
 
 // ── Mini grid renderer ─────────────────────────────────────────────────────
@@ -334,11 +334,17 @@ export default function CraftLivePreview({ type, wordInput, phraseInput, clueEnt
           case "word-fill": {
             const words = wordInput.split(/[,\n]+/).map((w) => w.trim().toUpperCase().replace(/[^A-Z]/g, "")).filter((w) => w.length >= 2);
             data = generateCustomFillIn(words, difficulty) as unknown as Record<string, unknown>;
+            if (((data.entries as string[] | undefined) ?? []).length !== words.length) {
+              throw new Error("Not all words fit");
+            }
             break;
           }
           case "word-search": {
             const words = wordInput.split(/[,\n]+/).map((w) => w.trim().toUpperCase().replace(/[^A-Z]/g, "")).filter((w) => w.length >= 2);
             data = generateCustomWordSearch(words, difficulty) as unknown as Record<string, unknown>;
+            if (((data.words as string[] | undefined) ?? []).length !== words.length) {
+              throw new Error("Not all words fit");
+            }
             break;
           }
           case "cryptogram": {
@@ -351,6 +357,9 @@ export default function CraftLivePreview({ type, wordInput, phraseInput, clueEnt
             const valid = clueEntries.filter((e) => e.answer.trim().replace(/[^A-Za-z]/g, "").length >= 2 && e.clue.trim().length > 0);
             if (valid.length >= 2) {
               data = generateCustomCrossword(valid, difficulty) as unknown as Record<string, unknown>;
+              if (((data.clues as unknown[] | undefined) ?? []).length !== valid.length) {
+                throw new Error("Not all entries fit");
+              }
             }
             break;
           }
@@ -362,6 +371,7 @@ export default function CraftLivePreview({ type, wordInput, phraseInput, clueEnt
         }
       } catch {
         if (mountedRef.current) {
+          setPreview(null);
           setGenError(true);
           setGenerating(false);
         }
@@ -396,7 +406,7 @@ export default function CraftLivePreview({ type, wordInput, phraseInput, clueEnt
 
           {genError && (
             <p className="text-[11px] text-muted-foreground/60">
-              Couldn't generate a preview — try adjusting your words.
+              Couldn't generate a full preview — shorten the list or use shorter words.
             </p>
           )}
 

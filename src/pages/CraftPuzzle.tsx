@@ -571,8 +571,12 @@ const CraftPuzzle = () => {
     );
     setRevealMessage(draft.revealMessage);
     if (draft.settings) {
+      const restoredDifficulty = draft.settings.difficulty;
       setCraftSettings({
-        difficulty: draft.settings.difficulty ?? DEFAULT_CRAFT_SETTINGS.difficulty,
+        difficulty:
+          restoredDifficulty === "easy" || restoredDifficulty === "medium" || restoredDifficulty === "hard"
+            ? restoredDifficulty
+            : DEFAULT_CRAFT_SETTINGS.difficulty,
         hintsEnabled: draft.settings.hintsEnabled ?? DEFAULT_CRAFT_SETTINGS.hintsEnabled,
         revealEnabled: draft.settings.revealEnabled ?? DEFAULT_CRAFT_SETTINGS.revealEnabled,
         checkEnabled: draft.settings.checkEnabled ?? DEFAULT_CRAFT_SETTINGS.checkEnabled,
