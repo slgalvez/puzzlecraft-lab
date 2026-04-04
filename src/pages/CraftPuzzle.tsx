@@ -715,7 +715,24 @@ const CraftPuzzle = () => {
                     }
                   }}
                   onRevealTemplate={(tmpl) => setRevealMessage(tmpl)}
-                  onPrefillWords={(words) => setWordInput(words)}
+                  onPrefillWords={(words) => {
+                    if (!words.includes("\n")) {
+                      setWordInput((prev) => {
+                        const existing = prev.trim();
+                        if (!existing) return words;
+                        if (existing.includes(words)) return prev;
+                        return existing + "\n" + words;
+                      });
+                    } else {
+                      setWordInput(words);
+                    }
+                    if (selectedType === "crossword") {
+                      const wordList = words.split("\n").filter(Boolean);
+                      if (wordList.length > 0) {
+                        setClueEntries(wordList.map((w) => ({ answer: w, clue: "" })));
+                      }
+                    }
+                  }}
                   currentRevealMessage={revealMessage}
                   showWordSection={selectedType === "word-fill" || selectedType === "word-search"}
                 />
