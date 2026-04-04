@@ -58,6 +58,7 @@ import { setPrivateAccessGrant } from "@/lib/privateAccessGrant";
 import { cn } from "@/lib/utils";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
+import { MONTHLY_PRICE } from "@/lib/pricing";
 
 // ── Seeded mock leaderboard (fallback until real data exists) ─────────────────
 
