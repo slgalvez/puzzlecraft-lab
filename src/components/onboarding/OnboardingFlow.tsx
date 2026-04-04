@@ -25,7 +25,7 @@ interface OnboardingFlowProps {
 // ── Puzzle mini-preview SVG (crossword cells) ─────────────────────────────
 
 const CrosswordPreview = () => (
-  <svg viewBox="0 0 120 80" className="w-full h-full" aria-hidden>
+  <svg viewBox="0 0 120 80" className="w-full h-auto max-h-full" preserveAspectRatio="xMidYMid meet" aria-hidden>
     <rect x="2"  y="2"  width="22" height="22" rx="4" fill="hsl(32 80% 50% / 0.15)" stroke="hsl(32 80% 50%)" strokeWidth="1.5"/>
     <text x="13" y="18" fontSize="12" fontWeight="700" fill="hsl(32 80% 50%)" textAnchor="middle">P</text>
     <rect x="27" y="2"  width="22" height="22" rx="4" fill="currentColor" opacity="0.08" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.3"/>
