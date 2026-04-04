@@ -139,7 +139,7 @@ const IOSPlayTab = () => {
   const stats = useMemo(() => getProgressStats(), []);
   const inProgress = useMemo(() => findInProgressPuzzle(), []);
 
-  // Ranked types for personalised grid
+  // Ranked types for personalized grid
   const { ranked: rankedTypes, topTwo, isReturningUser } = useMemo(
     () => getRankedTypes(ALL_PUZZLE_TYPES),
     []
