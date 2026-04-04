@@ -13,7 +13,7 @@ import {
 type CraftType = "word-fill" | "cryptogram" | "crossword" | "word-search";
 
 interface CraftPuzzleSettings {
-  difficulty?: "easy" | "medium" | "hard";
+  difficulty?: "easy" | "medium" | "hard" | "extreme" | "insane";
   hintsEnabled?: boolean;
   revealEnabled?: boolean;
   checkEnabled?: boolean;
