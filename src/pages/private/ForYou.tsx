@@ -222,7 +222,7 @@ const ForYou = () => {
         case "word-fill": {
           const words = wordInput.split(/[,\n]+/).map(w => w.trim()).filter(Boolean);
           if (words.length < 3) { toast({ title: "Enter at least 3 words", variant: "destructive" }); return; }
-          data = generateCustomFillIn(words) as unknown as Record<string, unknown>;
+          data = generateCustomFillIn(words, "medium") as unknown as Record<string, unknown>;
           break;
         }
         case "cryptogram": {
