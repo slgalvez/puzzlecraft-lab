@@ -651,8 +651,10 @@ export function generateCustomCrossword(entries: { answer: string; clue: string 
   if (cleaned.length === 0) throw new Error("No valid entries");
 
   const maxLen = Math.max(...cleaned.map(e => e.answer.length));
-  const padding = difficulty === "easy" ? 6 : difficulty === "medium" ? 4 : 3;
-  const baseSize = Math.max(9, maxLen + padding);
+  const wordCount = cleaned.length;
+  const padding = difficulty === "easy" ? 6 : difficulty === "medium" ? 5 : 4;
+  const countPadding = Math.ceil(Math.sqrt(wordCount) * 1.2);
+  const baseSize = Math.max(9, maxLen + padding, countPadding + maxLen);
   const targetInt = TARGET_INTERSECTION_XWORD[difficulty];
 
   return selectBestLayout((seed) => {
