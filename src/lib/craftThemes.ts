@@ -119,7 +119,7 @@ export const CRAFT_THEMES: CraftTheme[] = [
     revealTemplates: [
       "Made this with love, just for you 💌",
       "Every word in this puzzle made me think of you ❤️",
-      "You're my favourite adventure 💕",
+      "You're my favorite adventure 💕",
     ],
     wordSuggestions: ["DARLING", "TREASURE", "DEVOTION", "PASSION", "ADORE", "BLOSSOM", "ETERNAL", "HEARTBEAT", "DREAM", "ENCHANTED"],
   },

@@ -60,7 +60,7 @@ export const CRAFT_TEMPLATES: CraftTemplate[] = [
       FUTURE: "What's ahead of you",
       PROUD: "How everyone feels about you",
     },
-    description: "Honour someone's big achievement",
+    description: "Honor someone's big achievement",
   },
   {
     id: "new_year",

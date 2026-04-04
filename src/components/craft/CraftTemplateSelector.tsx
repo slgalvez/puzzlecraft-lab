@@ -43,7 +43,7 @@ export function CraftTemplateSelector({
               : "Start from a template"}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {selected ? "Tap to change" : "Pre-filled words to customise"}
+            {selected ? "Tap to change" : "Pre-filled words to customize"}
           </p>
         </div>
         {expanded

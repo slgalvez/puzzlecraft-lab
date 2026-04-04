@@ -61,7 +61,7 @@ const EXAMPLE_PUZZLES = [
   {
     id: "example-2",
     type: "word-search",
-    title: "Our Favourite Things",
+    title: "Our Favorite Things",
     from: "Jamie",
     description: "Hidden words only we would know.",
     time: "2:14",

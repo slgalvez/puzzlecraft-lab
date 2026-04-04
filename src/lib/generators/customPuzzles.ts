@@ -743,7 +743,7 @@ export interface CustomWordSearchData {
   size: number;
 }
 
-/** Difficulty → standard Difficulty mapping for direction/size behaviour */
+/** Difficulty → standard Difficulty mapping for direction/size behavior */
 const CRAFT_TO_STD_DIFF: Record<CraftDifficulty, "easy" | "medium" | "hard"> = {
   easy: "easy",
   medium: "medium",
