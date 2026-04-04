@@ -284,14 +284,14 @@ const Index = () => {
                 {isReturning ? (
                   <>Welcome back.<br /><span className="text-primary">Your puzzles await.</span></>
                 ) : (
-                  <>Sharpen your mind,<br /><span className="text-primary">one puzzle at a time.</span></>
+                  <>Today's puzzle is<br /><span className="text-primary">waiting for you.</span></>
                 )}
               </h1>
 
               <p className="mt-4 text-base text-muted-foreground max-w-md leading-relaxed">
                 {isReturning
                   ? "Eight puzzle types. Daily challenges. Compete, create, and track your best times."
-                  : "Crosswords, sudoku, word search, and more — unlimited puzzles, beautifully crafted for every skill level."
+                  : "Eight puzzle types. Daily challenges. Compete, create, and track your best times."
                 }
               </p>
 
