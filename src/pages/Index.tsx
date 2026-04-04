@@ -7,9 +7,9 @@
  * Key changes from previous version:
  *  1. Daily challenge IS the hero — puzzle card front and center above the fold
  *  2. Live "played today" counter + daily leaderboard preview for social proof
- *  3. Returning users see personalised section (top types + stats) first
+ *  3. Returning users see personalized section (top types + stats) first
  *  4. Create section placed after play section (not buried at bottom)
- *  5. Puzzle type grid is 4-col, personalised for returning users
+ *  5. Puzzle type grid is 4-col, personalized for returning users
  *  6. Puzzlecraft+ section auto-shows when LAUNCHED = true
  *  7. Hero headline reduced — product speaks for itself
  */
