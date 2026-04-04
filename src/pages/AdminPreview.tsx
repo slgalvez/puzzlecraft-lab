@@ -981,31 +981,6 @@ export default function AdminPreview() {
           {/* ══════════════════════════════════════════════════════════════ */}
           <TabsContent value="notifications" className="space-y-6 mt-4">
 
-            {/* ── In-App Notification Banner ── */}
-            <section className="space-y-3 rounded-xl border border-border/30 p-4">
-              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Bell size={14} /> In-App Notification Banner
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Subtle banner that slides in from top, auto-dismisses after 3 seconds. Used for coded private notifications.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {NOTIFICATION_PHRASES.map((phrase, i) => (
-                  <Button
-                    key={i}
-                    size="sm"
-                    variant="outline"
-                    className="text-xs"
-                    onClick={() => setBannerPhrase(phrase)}
-                  >
-                    "{phrase}"
-                  </Button>
-                ))}
-              </div>
-              <p className="text-[10px] text-muted-foreground/60">
-                Click a phrase to trigger the banner at the top of the page.
-              </p>
-            </section>
 
             {/* ── Push Notification Payloads ── */}
             <section className="space-y-3 rounded-xl border border-border/30 p-4">
