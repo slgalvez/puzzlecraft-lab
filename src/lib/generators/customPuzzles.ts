@@ -193,7 +193,7 @@ function canPlace(
       if (grid[r][c] !== word[i]) return false;
       intersections++;
     } else {
-      // Perpendicular neighbours must be empty
+      // Perpendicular neighbors must be empty
       if (dir === "across") {
         if (r > 0 && grid[r - 1][c]) return false;
         if (r < size - 1 && grid[r + 1][c]) return false;
