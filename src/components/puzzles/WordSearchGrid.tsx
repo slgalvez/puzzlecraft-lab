@@ -211,6 +211,12 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
     setTapStart(null);
   };
 
+  const handleTouchCancel = () => {
+    setStartCell(null);
+    setHoverCell(null);
+    setIsDragging(false);
+  };
+
   const handleMouseDown = (r: number, c: number) => {
     if (timer.isSolved || isMobile || isRevealed) return;
     setStartCell([r, c]);
