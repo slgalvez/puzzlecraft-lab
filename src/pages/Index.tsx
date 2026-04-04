@@ -6,7 +6,7 @@
  *
  * STRUCTURE: 6 sections → 4
  *   1. Hero  — two-column: headline + CTAs left, daily challenge card right
- *   2. Types — puzzle grid, personalised for returning users
+ *   2. Types — puzzle grid, personalized for returning users
  *   3. Create — social/viral differentiator
  *   4. Progress — only shown to returning users (≥5 solves)
  *
@@ -497,7 +497,7 @@ const Index = () => {
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="font-display text-2xl font-semibold text-foreground">
-                {isReturning ? "Your favourites" : "Eight ways to play"}
+                {isReturning ? "Your favorites" : "Eight ways to play"}
               </h2>
               {isReturning && (
                 <p className="text-sm text-muted-foreground mt-0.5">Sorted by how often you play</p>
@@ -571,7 +571,7 @@ const Index = () => {
                 Make a puzzle.<br />Challenge someone.
               </h2>
               <p className="mt-4 text-muted-foreground leading-relaxed">
-                Use your own words — inside jokes, shared memories, names they'll recognise. Send the link. They get a personalised puzzle. You get to see exactly how fast they solve it.
+                Use your own words — inside jokes, shared memories, names they'll recognize. Send the link. They get a personalized puzzle. You get to see exactly how fast they solve it.
               </p>
               <ul className="mt-6 space-y-3">
                 {[
@@ -598,7 +598,7 @@ const Index = () => {
             <div className="space-y-2.5">
               {[
                 { emoji: "☀️", type: "Crossword",  from: "Alex",   title: "Summer Memories",      time: "3:47", beat: true,  status: null },
-                { emoji: "🔍", type: "Word Search", from: "Jamie",  title: "Our Favourite Things",  time: "2:14", beat: false, status: null },
+                { emoji: "🔍", type: "Word Search", from: "Jamie",  title: "Our Favorite Things",  time: "2:14", beat: false, status: null },
                 { emoji: "🔐", type: "Cryptogram",  from: "Taylor", title: "Secret Message",        time: null,  beat: false, status: "New" },
               ].map((ex) => (
                 <div key={ex.title} className="flex items-center gap-3.5 rounded-xl border bg-card px-4 py-3.5">

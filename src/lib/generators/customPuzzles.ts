@@ -193,7 +193,7 @@ function canPlace(
       if (grid[r][c] !== word[i]) return false;
       intersections++;
     } else {
-      // Perpendicular neighbours must be empty
+      // Perpendicular neighbors must be empty
       if (dir === "across") {
         if (r > 0 && grid[r - 1][c]) return false;
         if (r < size - 1 && grid[r + 1][c]) return false;
@@ -209,7 +209,7 @@ function canPlace(
 
 /**
  * Find the best placement for `word` that intersects with existing placed words.
- * Scores placement candidates by balance (push centre of mass toward grid centre).
+ * Scores placement candidates by balance (push center of mass toward grid center).
  * Same logic as fillGen.ts / crosswordGen.ts findPlacement.
  */
 function findPlacement(
@@ -228,7 +228,7 @@ function findPlacement(
 
   const candidates: Candidate[] = [];
 
-  // Centre of mass of existing words
+  // Center of mass of existing words
   let comR = 0, comC = 0, wCount = 0;
   for (let r = 0; r < size; r++)
     for (let c = 0; c < size; c++)
@@ -254,7 +254,7 @@ function findPlacement(
         }
         if (!canPlace(grid, word, nr, nc, newDir, size)) continue;
 
-        // Balance score: prefer placements that pull CoM toward centre
+        // Balance score: prefer placements that pull CoM toward center
         const dr = newDir === "down" ? 1 : 0;
         const dc = newDir === "across" ? 1 : 0;
         let midR = 0, midC = 0;
@@ -269,7 +269,7 @@ function findPlacement(
         const newComC = (comC * wCount + midC * word.length) / (wCount + word.length);
         const distBefore = Math.abs(comR - center) + Math.abs(comC - center);
         const distAfter = Math.abs(newComR - center) + Math.abs(newComC - center);
-        const balanceScore = distBefore - distAfter; // positive = pulls toward centre
+        const balanceScore = distBefore - distAfter; // positive = pulls toward center
 
         candidates.push({ row: nr, col: nc, dir: newDir, score: balanceScore });
       }
