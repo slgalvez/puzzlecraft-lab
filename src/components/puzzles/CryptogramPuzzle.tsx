@@ -252,7 +252,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
       )}
       <div className="flex flex-wrap gap-x-4 gap-y-4 mb-4">
         {words.map((word, wi) => (
-          <div key={wi} className="flex gap-0.5">
+          <div key={wi} className="flex gap-0.5 shrink-0">
             {word.split("").map((ch, ci) => {
               const isLetter = /[A-Z]/.test(ch);
               const idx = charIndex++;
