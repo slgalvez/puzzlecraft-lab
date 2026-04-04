@@ -234,28 +234,25 @@ export interface CustomFillInData {
 
 /**
  * Generates a custom word fill-in using the SAME placement logic as fillGen.ts.
- * Grid size scales with difficulty (matching standard gameplay) and grows
- * automatically until ALL user words are placed — words are NEVER dropped.
+ * The Create UI still exposes only easy/medium/hard, but generation can grow
+ * up to the standard insane board capacity before it gives up.
  */
 export function generateCustomFillIn(words: string[], difficulty: Difficulty = "medium"): CustomFillInData {
   const cleaned = words.map(w => w.toUpperCase().replace(/[^A-Z]/g, "")).filter(w => w.length >= 2);
   if (cleaned.length === 0) throw new Error("No valid words provided");
 
   const maxLen = Math.max(...cleaned.map(w => w.length));
+  if (maxLen > FILL_SIZES.insane) {
+    throw new Error(`Word Fill-In supports words up to ${FILL_SIZES.insane} letters.`);
+  }
+
   const wordCount = cleaned.length;
-
-  // Start with the standard gameplay size for this difficulty,
-  // but ensure it's at least large enough for the longest word + padding
   const standardSize = FILL_SIZES[difficulty];
-  const minSizeForWords = maxLen + 2;
-  const baseSize = Math.max(standardSize, minSizeForWords);
-
+  const baseSize = Math.max(standardSize, maxLen);
+  const maxSize = FILL_SIZES.insane;
   const baseSeed = Date.now() % 2147483646 || 1;
 
-  // Grow grid until all words are placed — up to insane-level max (19) + extra
-  const maxSize = Math.max(baseSize + 12, 25);
-
-  let bestOverall: { data: CustomFillInData; placedCount: number; score: number } | null = null;
+  let bestOverall: { data: CustomFillInData; placedCount: number } | null = null;
 
   for (let size = baseSize; size <= maxSize; size++) {
     const target = Math.min(wordCount, FILL_TARGETS[difficulty] || wordCount);
@@ -264,32 +261,26 @@ export function generateCustomFillIn(words: string[], difficulty: Difficulty = "
       (seed) => {
         const built = buildFillIn(cleaned, size, seed);
         if (built.placedCount === wordCount) {
-          // Perfect — score the layout quality
           const grid = solutionToLetterGrid(built.data.solution, built.data.gridSize);
           const placedEntries = extractPlacedEntries(grid, built.data.gridSize);
           const stats = analyzeGrid(grid, built.data.gridSize, placedEntries);
           const layoutScore = scoreGridLayout(stats, built.placedCount, target);
-          return { data: built.data, score: layoutScore + 1000 }; // +1000 completeness bonus
+          return { data: built.data, score: layoutScore + 1000 };
         }
-        // Incomplete — low score
         return { data: built.data, score: built.placedCount * 2 };
       },
       (baseSeed + size * 3571) % 2147483646 || 1,
-      5,  // candidates per batch
-      3,  // max batches
-      50  // threshold
+      5,
+      3,
+      50
     );
 
-    // Track placed count from the data
-    const placedCount = (result as CustomFillInData).entries.length;
-
+    const placedCount = result.entries.length;
     if (!bestOverall || placedCount > bestOverall.placedCount) {
-      bestOverall = { data: result, placedCount, score: 0 };
+      bestOverall = { data: result, placedCount };
     }
 
-    if (placedCount === wordCount) {
-      return result;
-    }
+    if (placedCount === wordCount) return result;
   }
 
   return bestOverall!.data;
