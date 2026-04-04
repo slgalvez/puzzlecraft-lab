@@ -537,8 +537,9 @@ function buildFillIn(words: string[], size: number, seed: number) {
     placed.push({ word, row, col, dir: "across" });
   }
 
-  // Place remaining with quality-aware placement
-  for (let pass = 0; pass < 2; pass++) {
+  // Place remaining with quality-aware placement — more passes for more words
+  const passes = sorted.length > 8 ? 4 : sorted.length > 5 ? 3 : 2;
+  for (let pass = 0; pass < passes; pass++) {
     for (let i = 1; i < sorted.length; i++) {
       const word = sorted[i];
       if (placed.some(p => p.word === word)) continue;
