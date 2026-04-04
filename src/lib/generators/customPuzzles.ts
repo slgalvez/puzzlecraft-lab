@@ -26,9 +26,9 @@ const FILL_SIZES: Record<Difficulty, number> = { easy: 7, medium: 9, hard: 13, e
 const XWORD_SIZES: Record<Difficulty, number> = { easy: 9, medium: 13, hard: 15, extreme: 19, insane: 21 };
 const FILL_TARGETS: Record<Difficulty, number> = { easy: 5, medium: 10, hard: 18, extreme: 28, insane: 40 };
 
-// Word search grid sizes from wordSearch.ts
 const WS_SIZES: Record<Difficulty, number> = { easy: 8, medium: 12, hard: 16, extreme: 20, insane: 22 };
-const WS_DIR_COUNTS: Record<Difficulty, number> = { easy: 2, medium: 4, hard: 6, extreme: 8, insane: 8 };
+const WS_WORD_COUNTS: Record<Difficulty, number> = { easy: 5, medium: 10, hard: 16, extreme: 22, insane: 28 };
+const WS_MIN_WORD_LEN: Record<Difficulty, number> = { easy: 3, medium: 4, hard: 5, extreme: 5, insane: 5 };
 
 // ═══════════════════════════════════════════════
 // Placement engine — same logic as fillGen.ts / crosswordGen.ts
