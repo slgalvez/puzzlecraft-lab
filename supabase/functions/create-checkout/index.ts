@@ -58,7 +58,6 @@ serve(async (req) => {
       success_url: successUrl,
       cancel_url: cancelUrl,
       subscription_data: {
-        trial_period_days: 7,
         metadata: { supabase_user_id: user.id },
       },
       metadata: { supabase_user_id: user.id },
