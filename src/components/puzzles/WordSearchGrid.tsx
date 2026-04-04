@@ -328,8 +328,8 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
   }, [puzzle.size, isMobile]);
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
-      <div className="flex-shrink-0 outline-none min-w-0" ref={containerRef} tabIndex={0} onKeyDown={handleKeyDown}>
+    <div className="flex flex-col gap-6 lg:flex-row lg:gap-10 scroll-mt-4">
+      <div className="flex-shrink-0 outline-none min-w-0 touch-manipulation" ref={containerRef} tabIndex={0} onKeyDown={handleKeyDown}>
         <PuzzleHeader
           puzzleType="word-search"
           difficulty={difficulty}
