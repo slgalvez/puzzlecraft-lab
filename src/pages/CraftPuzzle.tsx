@@ -628,16 +628,25 @@ const CraftPuzzle = () => {
               "font-medium",
               limitStatus.atLimit ? "text-destructive" : "text-muted-foreground/60"
             )}>
-              {limitStatus.atLimit
-                ? "No free puzzles left this month"
-                : `${limitStatus.remaining} free craft puzzle${limitStatus.remaining === 1 ? "" : "s"} remaining`
-              }
+              {limitStatus.atLimit ? (
+                "Monthly limit reached"
+              ) : limitStatus.used === 0 ? (
+                `${limitStatus.limit} free puzzles available this month`
+              ) : (
+                <>
+                  <span className="text-foreground/70">
+                    {limitStatus.used} puzzle{limitStatus.used !== 1 ? "s" : ""} created
+                  </span>
+                  <span className="text-muted-foreground/40 mx-1">·</span>
+                  <span>{limitStatus.remaining} remaining</span>
+                </>
+              )}
             </span>
             <button
               onClick={() => setUpgradeOpen(true)}
               className="text-primary text-[11px] font-medium hover:underline"
             >
-              Get unlimited →
+              {limitStatus.atLimit ? "Upgrade to continue →" : "Unlimited with Plus →"}
             </button>
           </div>
         )}
