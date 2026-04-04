@@ -470,9 +470,9 @@ export default function AccountPage() {
               </div>
             </div>
             <div className="mt-3 flex items-baseline gap-1.5">
-              <span className="font-mono text-2xl font-bold text-foreground">$2.99</span>
+              <span className="font-mono text-2xl font-bold text-foreground">{MONTHLY_PRICE}</span>
               <span className="text-sm text-muted-foreground">/month</span>
-              <span className="text-[11px] text-muted-foreground/50 ml-1">· $19.99/year</span>
+              <span className="text-[11px] text-muted-foreground/50 ml-1">· {ANNUAL_PRICE}/year</span>
             </div>
           </div>
 
