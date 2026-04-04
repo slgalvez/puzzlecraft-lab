@@ -497,7 +497,7 @@ const Index = () => {
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="font-display text-2xl font-semibold text-foreground">
-                {isReturning ? "Your favourites" : "Eight ways to play"}
+                {isReturning ? "Your favorites" : "Eight ways to play"}
               </h2>
               {isReturning && (
                 <p className="text-sm text-muted-foreground mt-0.5">Sorted by how often you play</p>
