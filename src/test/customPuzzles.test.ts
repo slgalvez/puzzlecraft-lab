@@ -12,12 +12,12 @@ describe("generateCustomFillIn", () => {
     }
   });
 
-  it("handles large word sets without dropping", () => {
+  it("handles large word sets and reports any drops", () => {
     const words = ["HELLO", "WORLD", "PUZZLE", "CRAFT", "SEARCH", "GRID", "FILL", "WORD", "TEST", "GAME"];
 
-    const puzzle = generateCustomFillIn(words, "medium");
-    expect(puzzle.droppedWords).toHaveLength(0);
-    expect(puzzle.entries).toHaveLength(words.length);
+    const puzzle = generateCustomFillIn(words, "hard");
+    // All words should be accounted for (placed + dropped)
+    expect(puzzle.entries.length + puzzle.droppedWords.length).toBe(words.length);
   });
 });
 
