@@ -144,7 +144,7 @@ export const PuzzleHeader = ({
           <span>{backLabel}</span>
         </button>
 
-        {/* Centre: badge + optional title */}
+        {/* Center: badge + optional title */}
         <div className="flex flex-col items-center gap-0.5 flex-1">
           <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-primary">
             {badgeText}
