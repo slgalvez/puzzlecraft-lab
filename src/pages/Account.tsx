@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft, Mail, Lock, User, Sparkles, Pencil,
   Check, X, Flame, Trophy, Target, Shield,
-  ChevronRight, Zap, Star,
+  ChevronRight, Zap, Star, Crown,
 } from "lucide-react";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import { hasPremiumAccess, shouldShowUpgradeCTA, PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
