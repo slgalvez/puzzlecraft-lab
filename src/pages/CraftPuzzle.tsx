@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share, Copy, Check, Loader2, Save, Trophy, AlertCircle, Palette } from "lucide-react";
-import { CraftSolveFirst } from "@/components/craft/CraftSolveFirst";
+
 
 import { usePremiumAccess } from "@/lib/premiumAccess";
 import UpgradeModal from "@/components/account/UpgradeModal";
@@ -593,7 +593,7 @@ const CraftPuzzle = () => {
         {/* Header */}
         <div className="mb-2 text-center">
           <h1 className="font-display text-2xl font-bold text-foreground">Create a Puzzle</h1>
-          <p className="text-sm text-muted-foreground mt-1">Create a custom puzzle and share it with someone</p>
+          <p className="text-sm text-muted-foreground mt-1">Make something personal — send it to anyone</p>
         </div>
 
         {/* View Nav */}
@@ -628,16 +628,25 @@ const CraftPuzzle = () => {
               "font-medium",
               limitStatus.atLimit ? "text-destructive" : "text-muted-foreground/60"
             )}>
-              {limitStatus.atLimit
-                ? "No free puzzles left this month"
-                : `${limitStatus.remaining} free craft puzzle${limitStatus.remaining === 1 ? "" : "s"} remaining`
-              }
+              {limitStatus.atLimit ? (
+                "Monthly limit reached"
+              ) : limitStatus.used === 0 ? (
+                `${limitStatus.limit} free puzzles available this month`
+              ) : (
+                <>
+                  <span className="text-foreground/70">
+                    {limitStatus.used} puzzle{limitStatus.used !== 1 ? "s" : ""} created
+                  </span>
+                  <span className="text-muted-foreground/40 mx-1">·</span>
+                  <span>{limitStatus.remaining} remaining</span>
+                </>
+              )}
             </span>
             <button
               onClick={() => setUpgradeOpen(true)}
               className="text-primary text-[11px] font-medium hover:underline"
             >
-              Get unlimited →
+              {limitStatus.atLimit ? "Upgrade to continue →" : "Unlimited with Plus →"}
             </button>
           </div>
         )}
@@ -904,18 +913,50 @@ const CraftPuzzle = () => {
                   </div>
                 )}
 
-                <CraftSolveFirst
-                  creatorSolveTime={creatorSolveTime}
-                  onSolveFirst={handleSolveFirst}
-                  onSkip={() => {}}
-                  puzzleTypeLabel={
-                    selectedType === "word-search" ? "Word Search" :
-                    selectedType === "crossword" ? "Crossword" :
-                    selectedType === "cryptogram" ? "Cryptogram" :
-                    selectedType === "word-fill" ? "Word Fill-In" :
-                    "Puzzle"
-                  }
-                />
+                {!creatorSolveTime ? (
+                  <div className="rounded-2xl border-2 border-primary/25 bg-primary/5 p-5">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 mt-0.5">
+                        <Trophy size={18} className="text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-foreground text-sm mb-0.5">
+                          Solve it yourself first (recommended)
+                        </p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Sets a challenge time for your recipient to beat. Makes it competitive and way more fun.
+                        </p>
+                        <div className="flex gap-2 mt-3">
+                          <Button onClick={handleSolveFirst} size="sm" className="gap-1.5">
+                            <Trophy size={13} /> Solve &amp; set challenge time
+                          </Button>
+                          <Button
+                            onClick={() => {}}
+                            size="sm"
+                            variant="ghost"
+                            className="text-muted-foreground text-xs"
+                          >
+                            Skip, just share
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15">
+                      <Trophy size={16} className="text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-foreground">
+                        Challenge time set: {Math.floor(creatorSolveTime / 60)}:{(creatorSolveTime % 60).toString().padStart(2, "0")}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Your recipient will see this as their target to beat
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {!isPremium && (
                   <div className={cn(
