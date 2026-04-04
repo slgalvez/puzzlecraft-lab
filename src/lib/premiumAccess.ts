@@ -1,79 +1,96 @@
 /**
- * premiumAccess.ts
+ * premiumAccess.ts  ← FULL REPLACEMENT
  * src/lib/premiumAccess.ts
  *
- * SUBSCRIPTION GATING — STRICT MODE
+ * ═══════════════════════════════════════════════════════════════
+ * SINGLE SOURCE OF TRUTH FOR ALL PUZZLECRAFT+ FEATURE GATING
+ * ═══════════════════════════════════════════════════════════════
  *
- * hasPremiumAccess() grants access ONLY when:
- *   1. The server-side check-subscription edge function returned true, AND
- *   2. The subscription has not expired
+ * FREE TIER LIMITS (enforced everywhere):
+ *   ┌─────────────────────────────────────────────┐
+ *   │  Craft puzzles:   10 per month               │
+ *   │  Difficulties:    Easy, Medium, Hard only     │
+ *   │  Endless cap:     Unlimited (not paywalled)   │
+ *   └─────────────────────────────────────────────┘
  *
- * Source of truth: UserAccountContext.subscribed
- *   - Set by check-subscription edge function (server-validated)
- *   - Refreshed on mount + every 60 seconds
- *   - Resets to false immediately on signout
- *   - Cannot be spoofed via localStorage or dev tools
+ * PUZZLECRAFT_PLUS_LAUNCHED = true
+ *   → Premium gating is ACTIVE
+ *   → Free users see the 10-creation limit
+ *   → Extreme/Insane difficulty locked behind subscription
+ *   → Rating/advanced stats locked behind subscription
  *
- * Safe defaults during loading:
- *   - isPremium = false while checkingSubscription = true
- *   - No premium content renders until the server check resolves
- *
- * Admin bypass:
- *   - isAdmin = true always grants access (for testing/support)
- *   - Admins are set server-side in user_profiles.is_admin
+ * To temporarily disable all gating (e.g. for internal testing):
+ *   Set PUZZLECRAFT_PLUS_LAUNCHED = false
+ *   → All signed-in users get full access
+ *   → Limit counters disappear
+ *   → Do NOT ship to production with this set to false
  */
 
 import { useUserAccount } from "@/contexts/UserAccountContext";
 
 // ─── Launch flag ──────────────────────────────────────────────────────────────
+
+/**
+ * PRODUCTION: true  — gating active, free users see 10-creation limit
+ * TESTING:    false — all signed-in users get full access (no limit shown)
+ */
 export const PUZZLECRAFT_PLUS_LAUNCHED = true;
 
 // ─── Free tier limits ─────────────────────────────────────────────────────────
-export const FREE_CRAFT_LIMIT_PER_MONTH = 10;
-export const FREE_DIFFICULTIES = ["easy", "medium", "hard"] as const;
-export const PLUS_DIFFICULTIES = ["easy", "medium", "hard", "extreme", "insane"] as const;
 
-export type Difficulty = (typeof PLUS_DIFFICULTIES)[number];
+/** Free users get 10 craft puzzle sends per calendar month. */
+export const FREE_CRAFT_LIMIT_PER_MONTH = 10;
+
+export const FREE_DIFFICULTIES  = ["easy", "medium", "hard"]                       as const;
+export const PLUS_DIFFICULTIES  = ["easy", "medium", "hard", "extreme", "insane"]  as const;
+
+export type Difficulty     = (typeof PLUS_DIFFICULTIES)[number];
 export type FreeDifficulty = (typeof FREE_DIFFICULTIES)[number];
 
-// ─── Core access check (pure function — no hooks) ─────────────────────────────
+// ─── Endless mode ─────────────────────────────────────────────────────────────
 
-export function hasPremiumAccess(
-  subscribed: boolean,
-  isAdmin: boolean,
-  loading: boolean = false
-): boolean {
-  if (loading) return false;
-  if (isAdmin) return true;
-  if (!PUZZLECRAFT_PLUS_LAUNCHED) return false;
-  return subscribed;
+/** Set to true to put Endless Mode behind a subscription. */
+export const ENDLESS_REQUIRES_PLUS  = false;
+export const FREE_ENDLESS_SESSION_CAP = 10; // puzzles per session (only used if ENDLESS_REQUIRES_PLUS = true)
+
+// ─── Core access check ───────────────────────────────────────────────────────
+
+type GateAccount = { isAdmin?: boolean; subscribed?: boolean } | null;
+
+/**
+ * Returns true if this account has active Puzzlecraft+ access.
+ *
+ * When LAUNCHED = false: any signed-in user passes (pre-launch mode).
+ * When LAUNCHED = true:  requires isAdmin=true OR subscribed=true.
+ */
+export function hasPremiumAccess(account: GateAccount): boolean {
+  if (!PUZZLECRAFT_PLUS_LAUNCHED) return !!account; // pre-launch: signed-in = full access
+  if (!account)                   return false;
+  return !!(account.isAdmin || account.subscribed);
 }
 
-export function shouldShowUpgradeCTA(
-  subscribed: boolean,
-  isAdmin: boolean,
-  loading: boolean
-): boolean {
-  if (loading) return false;
-  if (isAdmin) return false;
-  return !subscribed;
+/**
+ * Returns true if the upgrade CTA should be shown.
+ * Only fires when launched AND user is not premium.
+ */
+export function shouldShowUpgradeCTA(account: GateAccount): boolean {
+  if (!PUZZLECRAFT_PLUS_LAUNCHED) return false;
+  return !hasPremiumAccess(account);
 }
 
 // ─── Difficulty gating ────────────────────────────────────────────────────────
 
-export function isDifficultyLocked(
-  difficulty: Difficulty,
-  isPremium: boolean
-): boolean {
-  if (isPremium) return false;
+export function isDifficultyLocked(difficulty: Difficulty, account: GateAccount): boolean {
+  if (hasPremiumAccess(account)) return false;
   return !FREE_DIFFICULTIES.includes(difficulty as FreeDifficulty);
 }
 
-export function getAvailableDifficulties(isPremium: boolean): readonly Difficulty[] {
-  return isPremium ? PLUS_DIFFICULTIES : FREE_DIFFICULTIES;
+export function getAvailableDifficulties(account: GateAccount): readonly Difficulty[] {
+  return hasPremiumAccess(account) ? PLUS_DIFFICULTIES : FREE_DIFFICULTIES;
 }
 
 // ─── Craft puzzle limit ───────────────────────────────────────────────────────
+
 const CRAFT_STORAGE_KEY = "puzzlecraft_craft_sent";
 
 interface CraftSentRecord { id: string; sentAt: string; }
@@ -85,6 +102,7 @@ function getCraftSentRecords(): CraftSentRecord[] {
   } catch { return []; }
 }
 
+/** Number of craft puzzles sent in the current calendar month. */
 export function getCraftSentThisMonth(): number {
   const now = new Date();
   return getCraftSentRecords().filter((r) => {
@@ -93,102 +111,155 @@ export function getCraftSentThisMonth(): number {
   }).length;
 }
 
+/** Call once after a successful share to record against the monthly limit. */
 export function recordCraftSent(id: string): void {
   const records = getCraftSentRecords();
+  // Don't double-count the same puzzle ID
+  if (records.some((r) => r.id === id)) return;
   records.push({ id, sentAt: new Date().toISOString() });
   try { localStorage.setItem(CRAFT_STORAGE_KEY, JSON.stringify(records)); } catch {}
 }
 
-export function isCraftLimitReached(isPremium: boolean): boolean {
-  if (isPremium) return false;
+export function isCraftLimitReached(account: GateAccount): boolean {
+  if (hasPremiumAccess(account)) return false;
   return getCraftSentThisMonth() >= FREE_CRAFT_LIMIT_PER_MONTH;
 }
 
 export interface CraftLimitStatus {
-  isPremium: boolean;
-  used: number;
-  limit: number | null;
-  remaining: number | null;
-  isAtLimit: boolean;
-  isNearLimit: boolean;
-  resetDate: string | null;
+  isPremium:    boolean;
+  used:         number;
+  limit:        number | null;   // null = unlimited (Plus)
+  remaining:    number | null;   // null = unlimited (Plus)
+  isAtLimit:    boolean;
+  isNearLimit:  boolean;         // exactly 1 remaining
+  resetDate:    string | null;   // e.g. "May 1" — null for Plus
 }
 
-export function getCraftLimitStatus(isPremium: boolean): CraftLimitStatus {
+/**
+ * Full craft limit status for rendering counters and banners.
+ *
+ * Free users always see the 10-creation limit when LAUNCHED = true.
+ * The limit is per calendar month and resets on the 1st.
+ */
+export function getCraftLimitStatus(account: GateAccount): CraftLimitStatus {
+  const isPremium = hasPremiumAccess(account);
+
   if (isPremium) {
-    return { isPremium: true, used: getCraftSentThisMonth(), limit: null, remaining: null, isAtLimit: false, isNearLimit: false, resetDate: null };
+    return {
+      isPremium: true,
+      used:      getCraftSentThisMonth(),
+      limit:     null,
+      remaining: null,
+      isAtLimit: false,
+      isNearLimit: false,
+      resetDate: null,
+    };
   }
-  const used = getCraftSentThisMonth();
-  const limit = FREE_CRAFT_LIMIT_PER_MONTH;
+
+  const used      = getCraftSentThisMonth();
+  const limit     = FREE_CRAFT_LIMIT_PER_MONTH; // always 10
   const remaining = Math.max(0, limit - used);
-  const now = new Date();
-  const resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  const resetDate = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)
     .toLocaleDateString("en-US", { month: "long", day: "numeric" });
-  return { isPremium: false, used, limit, remaining, isAtLimit: used >= limit, isNearLimit: remaining === 1, resetDate };
+
+  return {
+    isPremium:   false,
+    used,
+    limit,                            // 10
+    remaining,                        // 10 → 0 as puzzles are sent
+    isAtLimit:   used >= limit,
+    isNearLimit: remaining === 1,
+    resetDate,                        // e.g. "May 1"
+  };
 }
 
 // ─── Endless mode ─────────────────────────────────────────────────────────────
-export const ENDLESS_REQUIRES_PLUS = false;
-export const FREE_ENDLESS_SESSION_CAP = 10;
 
-export function isEndlessLocked(isPremium: boolean): boolean {
+export function isEndlessLocked(account: GateAccount): boolean {
   if (!ENDLESS_REQUIRES_PLUS) return false;
-  return !isPremium;
+  return !hasPremiumAccess(account);
 }
 
-export function getEndlessSessionCap(isPremium: boolean): number | null {
-  if (isPremium) return null;
-  if (ENDLESS_REQUIRES_PLUS) return 0;
+export function getEndlessSessionCap(account: GateAccount): number | null {
+  if (hasPremiumAccess(account))  return null; // unlimited
+  if (ENDLESS_REQUIRES_PLUS)       return 0;   // locked
   return FREE_ENDLESS_SESSION_CAP;
 }
 
-// ─── Stats gating ─────────────────────────────────────────────────────────────
-export function canSeeFullStats(isPremium: boolean): boolean {
-  return isPremium;
+// ─── Stats gating ────────────────────────────────────────────────────────────
+
+export function canSeeFullStats(account: GateAccount): boolean {
+  return hasPremiumAccess(account);
 }
 
-// ─── React hook ───────────────────────────────────────────────────────────────
+// ─── React hook ──────────────────────────────────────────────────────────────
 
 export interface PremiumAccessState {
-  isPremium: boolean;
-  loading: boolean;
-  showUpgradeCTA: boolean;
-  craftStatus: CraftLimitStatus;
+  /** True only when server has confirmed an active subscription */
+  isPremium:            boolean;
+  /**
+   * True while auth session or subscription check is still loading.
+   * Components should not render premium content while this is true.
+   */
+  loading:              boolean;
+  /** True when the upgrade CTA should be shown */
+  showUpgradeCTA:       boolean;
+  /** Full craft limit status — always reflects the 10-creation limit */
+  craftStatus:          CraftLimitStatus;
+  /** Difficulty levels available to this user */
   availableDifficulties: readonly Difficulty[];
-  isDiffLocked: (d: Difficulty) => boolean;
-  isEndlessLocked: boolean;
-  endlessSessionCap: number | null;
-  canSeeFullStats: boolean;
-  recordCraftSent: (id: string) => void;
-  subscriptionEnd: string | null;
+  /** Whether a specific difficulty is locked for this user */
+  isDiffLocked:         (d: Difficulty) => boolean;
+  isEndlessLocked:      boolean;
+  endlessSessionCap:    number | null;
+  canSeeFullStats:      boolean;
+  /** Record a craft send against the monthly 10-creation limit */
+  recordCraftSent:      (id: string) => void;
+  /** ISO string of when the subscription expires — null if no subscription */
+  subscriptionEnd:      string | null;
 }
 
+/**
+ * usePremiumAccess — convenience hook for components.
+ *
+ * Returns the full gate surface for any component that needs to check
+ * whether the current user has access to a premium feature.
+ *
+ * Key values:
+ *   isPremium      — true if user is subscribed or admin
+ *   loading        — true while auth/subscription state is resolving
+ *   craftStatus    — contains .limit (10), .used, .remaining, .isAtLimit
+ *   isDiffLocked   — function: isDiffLocked("extreme") → true for free users
+ *
+ * Usage:
+ *   const { isPremium, craftStatus, isDiffLocked, loading } = usePremiumAccess();
+ */
 export function usePremiumAccess(): PremiumAccessState {
-  const {
-    account,
-    subscribed,
-    subscriptionEnd,
-    checkingSubscription,
-    loading: accountLoading,
-  } = useUserAccount();
+  const { account, subscribed, subscriptionEnd, checkingSubscription, loading: accountLoading } = useUserAccount();
 
-  const loading = accountLoading || checkingSubscription;
-  const isAdmin = account?.isAdmin ?? false;
-  const isPremium = hasPremiumAccess(subscribed, isAdmin, loading);
-  const showUpgradeCTA = shouldShowUpgradeCTA(subscribed, isAdmin, loading);
-  const craftStatus = getCraftLimitStatus(isPremium);
+  // Loading = auth session resolving OR server subscription check running
+  const loading = !!(accountLoading || checkingSubscription);
+
+  // Build the gate account shape
+  const gateAccount: GateAccount = account
+    ? { isAdmin: account.isAdmin, subscribed }
+    : null;
+
+  const isPremium      = loading ? false : hasPremiumAccess(gateAccount);
+  const showUpgradeCTA = loading ? false : shouldShowUpgradeCTA(gateAccount);
+  const craftStatus    = getCraftLimitStatus(loading ? null : gateAccount);
 
   return {
-    isPremium,
     loading,
+    isPremium,
     showUpgradeCTA,
     craftStatus,
-    availableDifficulties: getAvailableDifficulties(isPremium),
-    isDiffLocked: (d: Difficulty) => isDifficultyLocked(d, isPremium),
-    isEndlessLocked: isEndlessLocked(isPremium),
-    endlessSessionCap: getEndlessSessionCap(isPremium),
-    canSeeFullStats: canSeeFullStats(isPremium),
+    availableDifficulties: getAvailableDifficulties(loading ? null : gateAccount),
+    isDiffLocked:    (d: Difficulty) => isDifficultyLocked(d, loading ? null : gateAccount),
+    isEndlessLocked: isEndlessLocked(loading ? null : gateAccount),
+    endlessSessionCap: getEndlessSessionCap(loading ? null : gateAccount),
+    canSeeFullStats: canSeeFullStats(loading ? null : gateAccount),
     recordCraftSent,
-    subscriptionEnd,
+    subscriptionEnd: subscriptionEnd ?? null,
   };
 }
