@@ -44,7 +44,7 @@ export const CRAFT_TEMPLATES: CraftTemplate[] = [
       FOREVER: "How long this will last",
       CHERISH: "What we do with these memories",
     },
-    phrase: "Every love story is beautiful, but ours is my favourite.",
+    phrase: "Every love story is beautiful, but ours is my favorite.",
     description: "Celebrate a milestone together",
   },
   {
