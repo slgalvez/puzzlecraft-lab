@@ -737,7 +737,7 @@ const CraftPuzzle = () => {
                   showWordSection={selectedType === "word-fill" || selectedType === "word-search"}
                 />
 
-                <CraftColorPicker selected={colorPalette} onSelect={setColorPalette} />
+                <CraftColorPicker selected={colorPalette} onSelect={handleColorPaletteSelect} />
 
 {(selectedType === "word-fill" || selectedType === "word-search") && (
                   <div className="space-y-3">
