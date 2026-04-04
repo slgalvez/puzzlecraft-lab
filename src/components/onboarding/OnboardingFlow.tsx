@@ -92,7 +92,7 @@ const SCREENS = [
     bullets: [
       { icon: Trophy,  text: "8 puzzle types — daily challenges, quick play, endless mode" },
       { icon: Sparkles, text: "Track your rating, build streaks, unlock skill tiers" },
-      { icon: Users,   text: "Create personalised puzzles and challenge your friends" },
+      { icon: Users,   text: "Create personalized puzzles and challenge your friends" },
     ],
     cta: "Next",
   },

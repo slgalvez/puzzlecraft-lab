@@ -1,7 +1,7 @@
 /**
  * Puzzlecraft Craft Themes
  *
- * Themes personalise the puzzle-solving experience for the recipient.
+ * Themes personalize the puzzle-solving experience for the recipient.
  * Each theme provides:
  *  - A display emoji shown on the solve page header
  *  - An accent color (HSL values matching Tailwind/CSS vars pattern)
@@ -54,7 +54,7 @@ export const CRAFT_THEMES: CraftTheme[] = [
     revealTemplates: [
       "Happy Anniversary! Every year with you is a gift 💕",
       "Here's to another year of adventures together ✨",
-      "You're still my favourite puzzle to solve 💑",
+      "You're still my favorite puzzle to solve 💑",
     ],
     wordSuggestions: ["LOVE", "TOGETHER", "FOREVER", "MEMORIES", "ADVENTURE", "JOURNEY", "LAUGHTER", "CHERISH", "DEVOTION", "SOULMATE"],
   },
@@ -106,7 +106,7 @@ export const CRAFT_THEMES: CraftTheme[] = [
     revealTemplates: [
       "Made this just for you because you're the best 💛",
       "Friends like you make everything better 🌻",
-      "This one's for you — my favourite person ✨",
+      "This one's for you — my favorite person ✨",
     ],
     wordSuggestions: ["TOGETHER", "LAUGHTER", "MEMORIES", "LOYALTY", "KINDNESS", "SUPPORT", "SUNSHINE", "BESTIE", "FOREVER", "GRATEFUL"],
   },
@@ -119,7 +119,7 @@ export const CRAFT_THEMES: CraftTheme[] = [
     revealTemplates: [
       "Made this with love, just for you 💌",
       "Every word in this puzzle made me think of you ❤️",
-      "You're my favourite adventure 💕",
+      "You're my favorite adventure 💕",
     ],
     wordSuggestions: ["DARLING", "TREASURE", "DEVOTION", "PASSION", "ADORE", "BLOSSOM", "ETERNAL", "HEARTBEAT", "DREAM", "ENCHANTED"],
   },

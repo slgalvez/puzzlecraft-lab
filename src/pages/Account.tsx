@@ -280,7 +280,7 @@ export default function AccountPage() {
                   { icon: Trophy,   label: "Global leaderboard ranking", sub: "See where you stand among all players" },
                   { icon: Zap,      label: "Advanced stats + insights",  sub: "Rating, trends, personal bests" },
                   { icon: Target,   label: "90-day daily archive",       sub: "Replay any past daily challenge" },
-                  { icon: Flame,    label: "All 11 exclusive themes",        sub: "For heartfelt personalised puzzles" },
+                  { icon: Flame,    label: "All 11 exclusive themes",        sub: "For heartfelt personalized puzzles" },
                 ].map(({ icon: Icon, label, sub }) => (
                   <div key={label} className="flex items-start gap-3">
                     <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">

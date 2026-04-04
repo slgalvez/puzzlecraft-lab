@@ -41,7 +41,7 @@ const TYPE_EMOJIS: Record<CraftType, string> = {
 };
 
 /**
- * Build personalised share text for sending a puzzle.
+ * Build personalized share text for sending a puzzle.
  * Includes puzzle type, title, and optional challenge time.
  */
 export function buildCraftShareText(
@@ -79,7 +79,7 @@ export function buildCraftShareText(
 }
 
 /**
- * Build personalised share text for a recipient who just solved a puzzle.
+ * Build personalized share text for a recipient who just solved a puzzle.
  * Used for the "share your result" feature on the solve completion screen.
  */
 export function buildSolveResultShareText(

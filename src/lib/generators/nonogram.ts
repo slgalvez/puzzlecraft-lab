@@ -197,12 +197,12 @@ function scalePattern(pattern: number[][], targetSize: number, rng: SeededRandom
   for (let r = 0; r < targetSize; r++) {
     for (let c = 0; c < targetSize; c++) {
       if (!isFilled(r, c)) continue;
-      // Check 4 cardinal neighbours only for a thin, clean outline
-      const hasEmptyNeighbour =
+      // Check 4 cardinal neighbors only for a thin, clean outline
+      const hasEmptyNeighbor =
         r === 0 || c === 0 || r === targetSize - 1 || c === targetSize - 1 ||
         !isFilled(r - 1, c) || !isFilled(r + 1, c) ||
         !isFilled(r, c - 1) || !isFilled(r, c + 1);
-      if (hasEmptyNeighbour) grid[r][c] = true;
+      if (hasEmptyNeighbor) grid[r][c] = true;
     }
   }
 

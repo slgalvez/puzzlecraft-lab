@@ -30,7 +30,7 @@ export const CRAFT_TEMPLATES: CraftTemplate[] = [
       SURPRISE: "What this puzzle might be",
     },
     phrase: "Another year older, another year wiser, another year more amazing.",
-    description: "Perfect for sending a personalised birthday puzzle",
+    description: "Perfect for sending a personalized birthday puzzle",
   },
   {
     id: "anniversary",
@@ -44,7 +44,7 @@ export const CRAFT_TEMPLATES: CraftTemplate[] = [
       FOREVER: "How long this will last",
       CHERISH: "What we do with these memories",
     },
-    phrase: "Every love story is beautiful, but ours is my favourite.",
+    phrase: "Every love story is beautiful, but ours is my favorite.",
     description: "Celebrate a milestone together",
   },
   {
@@ -60,7 +60,7 @@ export const CRAFT_TEMPLATES: CraftTemplate[] = [
       FUTURE: "What's ahead of you",
       PROUD: "How everyone feels about you",
     },
-    description: "Honour someone's big achievement",
+    description: "Honor someone's big achievement",
   },
   {
     id: "new_year",

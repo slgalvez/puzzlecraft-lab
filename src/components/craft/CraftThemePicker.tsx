@@ -3,7 +3,7 @@
  *
  * Displayed in the content creation step.
  * Lets the creator pick a theme that:
- *  1. Sets an emoji + accent colour on the solve page
+ *  1. Sets an emoji + accent color on the solve page
  *  2. Pre-fills the reveal message with a template (they can edit it)
  *  3. Shows word suggestions relevant to the theme
  */
