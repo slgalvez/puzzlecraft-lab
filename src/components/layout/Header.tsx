@@ -3,17 +3,18 @@ import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import AccountHeaderButton from "@/components/account/AccountHeaderButton";
+
 const Header = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navLinks = [
-    { to: "/", label: "Home" },
-    { to: "/daily", label: "Daily Challenge" },
-    { to: "/puzzles", label: "Play" },
-    { to: "/generate/sudoku", label: "Puzzle Lab" },
-    { to: "/craft", label: "Craft" },
-    { to: "/stats", label: "Stats" },
+    { to: "/",               label: "Home"            },
+    { to: "/daily",          label: "Daily Challenge" },
+    { to: "/puzzles",        label: "Play"            },
+    { to: "/generate/sudoku",label: "Puzzle Lab"      },
+    { to: "/craft",          label: "Create"          }, // ← renamed from "Craft"
+    { to: "/stats",          label: "Stats"           },
   ];
 
   const isActive = (to: string) => {
@@ -24,7 +25,7 @@ const Header = () => {
   };
 
   return (
-    <header className="pwa-safe-top sticky top-0 z-50 border-b bg-surface-elevated/80 backdrop-blur-md" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+    <header className="pwa-safe-top sticky top-0 z-50 border-b bg-surface-elevated/80 backdrop-blur-md" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
       <div className="container flex h-16 items-center">
         <Link to="/" className="font-display text-2xl font-bold tracking-tight text-foreground">
           Puzzlecraft
@@ -49,10 +50,7 @@ const Header = () => {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 md:ml-2">
-          {/* Account button - always visible */}
           <AccountHeaderButton />
-
-          {/* Mobile toggle */}
           <button
             className="inline-flex items-center justify-center rounded-md p-2 text-foreground md:hidden"
             onClick={() => setMobileOpen(!mobileOpen)}
