@@ -240,6 +240,36 @@ const CraftPuzzle = () => {
 
       setGeneratedData(data);
 
+      // Detect dropped words and warn user
+      const inputWords = (() => {
+        if (!selectedType) return [];
+        if (selectedType === "crossword") {
+          return clueEntries.filter((e) => e.answer.trim() && e.clue.trim()).map((e) => e.answer.trim());
+        }
+        return wordInput.split(/[,\n]+/).map((w) => w.trim()).filter(Boolean);
+      })();
+      const placedCount = (() => {
+        if (!data || inputWords.length === 0) return inputWords.length;
+        try {
+          if (selectedType === "word-fill" || selectedType === "word-search") {
+            const entries = (data.entries as any[]) ?? (data.words as any[]) ?? [];
+            return entries.length;
+          }
+          if (selectedType === "crossword") {
+            return ((data.clues as any[]) ?? []).length;
+          }
+        } catch {}
+        return inputWords.length;
+      })();
+      const droppedCount = inputWords.length - placedCount;
+      if (droppedCount > 0) {
+        toast({
+          title: `${droppedCount} word${droppedCount > 1 ? "s" : ""} couldn't fit`,
+          description: `Try adding shorter words or using fewer words for better results.`,
+          variant: "destructive",
+        });
+      }
+
       const payload: CraftPayload = {
         type: selectedType,
         puzzleData: data,
