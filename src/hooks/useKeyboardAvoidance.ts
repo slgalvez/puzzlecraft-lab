@@ -45,10 +45,13 @@ export function useKeyboardAvoidance() {
       }
     };
 
+    let keyboardOpen = false;
+
     const onScroll = () => {
-      // Prevent the page from scrolling up when keyboard opens
-      // by pinning scroll to top (puzzles are fixed-layout, no scroll needed)
-      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+      // Only pin scroll when the keyboard is actually open
+      if (keyboardOpen) {
+        window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+      }
     };
 
     vv.addEventListener("resize", onResize);
