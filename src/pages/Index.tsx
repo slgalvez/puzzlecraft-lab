@@ -37,7 +37,7 @@ import { generateMockLeaderboard } from "@/lib/mockLeaderboard";
 
 const ALL_TYPES: PuzzleCategory[] = Object.keys(CATEGORY_INFO) as PuzzleCategory[];
 
-function getPersonalisedTypes(): { types: PuzzleCategory[]; isPersonalised: boolean } {
+function getPersonalizedTypes(): { types: PuzzleCategory[]; isPersonalized: boolean } {
   try {
     const records = getSolveRecords();
     if (records.length < 5) return { types: ALL_TYPES.slice(0, 8), isPersonalised: false };
