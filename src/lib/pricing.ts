@@ -26,8 +26,8 @@ export const ANNUAL_PRICE = "$19.99";
  */
 export const ANNUAL_SAVING_PCT = "44%";
 
-/** Free trial length in days */
-export const TRIAL_DAYS = 7;
+/** @deprecated Trial removed — kept for backward compat */
+export const TRIAL_DAYS = 0;
 
 /** Monthly equivalent of annual (for display: "just $1.67/mo") */
 export const ANNUAL_MONTHLY_EQUIV = "$1.67";
