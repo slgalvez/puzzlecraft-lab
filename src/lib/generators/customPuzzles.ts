@@ -428,6 +428,107 @@ interface PlacementCandidate {
   dir: "across" | "down";
   intersections: number;
   balance: number; // how well it balances the grid
+  score: number;
+}
+
+function getGridCenterOfMass(grid: string[][], size: number) {
+  let cx = 0, cy = 0, wCount = 0;
+  for (let r = 0; r < size; r++)
+    for (let c = 0; c < size; c++)
+      if (grid[r][c]) { cy += r; cx += c; wCount++; }
+
+  return {
+    comR: wCount > 0 ? cy / wCount : size / 2,
+    comC: wCount > 0 ? cx / wCount : size / 2,
+    wCount,
+    center: size / 2,
+  };
+}
+
+function getPlacementIntersections(
+  grid: string[][],
+  word: string,
+  row: number,
+  col: number,
+  dir: "across" | "down",
+  size: number,
+  requireIntersection = true
+): number | null {
+  const dr = dir === "down" ? 1 : 0;
+  const dc = dir === "across" ? 1 : 0;
+  if (row < 0 || col < 0 || row + dr * (word.length - 1) >= size || col + dc * (word.length - 1) >= size) return null;
+
+  const pR = row - dr, pC = col - dc;
+  if (pR >= 0 && pC >= 0 && grid[pR][pC]) return null;
+
+  const aR = row + dr * word.length, aC = col + dc * word.length;
+  if (aR < size && aC < size && grid[aR][aC]) return null;
+
+  let intersections = 0;
+  for (let i = 0; i < word.length; i++) {
+    const r = row + dr * i, c = col + dc * i;
+    if (grid[r][c]) {
+      if (grid[r][c] !== word[i]) return null;
+      intersections++;
+    } else if (dir === "across") {
+      if (r > 0 && grid[r - 1][c]) return null;
+      if (r < size - 1 && grid[r + 1][c]) return null;
+    } else {
+      if (c > 0 && grid[r][c - 1]) return null;
+      if (c < size - 1 && grid[r][c + 1]) return null;
+    }
+  }
+
+  if (requireIntersection && intersections === 0) return null;
+  return intersections;
+}
+
+function scoreOpenPlacement(
+  grid: string[][],
+  word: string,
+  row: number,
+  col: number,
+  dir: "across" | "down",
+  size: number
+) {
+  const { comR, comC, wCount, center } = getGridCenterOfMass(grid, size);
+  const currentDist = Math.abs(comR - center) + Math.abs(comC - center);
+  const dr = dir === "down" ? 1 : 0;
+  const dc = dir === "across" ? 1 : 0;
+
+  let midR = 0;
+  let midC = 0;
+  let crowdingPenalty = 0;
+  for (let i = 0; i < word.length; i++) {
+    const r = row + dr * i;
+    const c = col + dc * i;
+    midR += r;
+    midC += c;
+
+    for (let nr = r - 1; nr <= r + 1; nr++) {
+      for (let nc = c - 1; nc <= c + 1; nc++) {
+        if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
+        if (nr === r && nc === c) continue;
+        if (grid[nr][nc]) crowdingPenalty++;
+      }
+    }
+  }
+
+  midR /= word.length;
+  midC /= word.length;
+
+  const newComR = (comR * wCount + midR * word.length) / Math.max(1, wCount + word.length);
+  const newComC = (comC * wCount + midC * word.length) / Math.max(1, wCount + word.length);
+  const newDist = Math.abs(newComR - center) + Math.abs(newComC - center);
+  const balance = currentDist - newDist;
+
+  const borderTouches =
+    (row === 0 ? 1 : 0) +
+    (col === 0 ? 1 : 0) +
+    (row + dr * (word.length - 1) === size - 1 ? 1 : 0) +
+    (col + dc * (word.length - 1) === size - 1 ? 1 : 0);
+
+  return { balance, score: balance * 8 - crowdingPenalty * 1.5 - borderTouches * 2 };
 }
 
 function findBestPlacement(
@@ -439,14 +540,7 @@ function findBestPlacement(
 ): PlacementCandidate | null {
   const candidates: PlacementCandidate[] = [];
 
-  // Compute grid center of mass for balance scoring
-  let cx = 0, cy = 0, wCount = 0;
-  for (let r = 0; r < size; r++)
-    for (let c = 0; c < size; c++)
-      if (grid[r][c]) { cy += r; cx += c; wCount++; }
-  const comR = wCount > 0 ? cy / wCount : size / 2;
-  const comC = wCount > 0 ? cx / wCount : size / 2;
-  const center = size / 2;
+  const { comR, comC, wCount, center } = getGridCenterOfMass(grid, size);
 
   for (const existing of placed) {
     for (let i = 0; i < word.length; i++) {
@@ -479,7 +573,7 @@ function findBestPlacement(
         const newDist = Math.abs(newComR - center) + Math.abs(newComC - center);
         const balance = currentDist - newDist; // positive = improves balance
 
-        candidates.push({ row: nr, col: nc, dir: newDir, intersections: ints, balance });
+        candidates.push({ row: nr, col: nc, dir: newDir, intersections: ints, balance, score: ints * 100 + balance * 5 });
       }
     }
   }
@@ -487,14 +581,42 @@ function findBestPlacement(
   if (candidates.length === 0) return null;
 
   // Sort: most intersections first, then best balance
-  candidates.sort((a, b) => {
-    if (b.intersections !== a.intersections) return b.intersections - a.intersections;
-    return b.balance - a.balance;
-  });
+  candidates.sort((a, b) => b.score - a.score);
 
   // Pick from top tier with slight randomness
-  const topInts = candidates[0].intersections;
-  const topTier = candidates.filter(c => c.intersections >= topInts);
+  const topScore = candidates[0].score;
+  const topTier = candidates.filter(c => c.score >= topScore - 5);
+  return topTier[rng.nextInt(0, topTier.length - 1)];
+}
+
+function findOpenPlacement(
+  grid: string[][],
+  word: string,
+  size: number,
+  rng: SeededRandom
+): PlacementCandidate | null {
+  const candidates: PlacementCandidate[] = [];
+
+  for (const dir of ["across", "down"] as const) {
+    const maxRow = dir === "across" ? size - 1 : size - word.length;
+    const maxCol = dir === "across" ? size - word.length : size - 1;
+
+    for (let row = 0; row <= maxRow; row++) {
+      for (let col = 0; col <= maxCol; col++) {
+        const intersections = getPlacementIntersections(grid, word, row, col, dir, size, false);
+        if (intersections === null) continue;
+
+        const { balance, score } = scoreOpenPlacement(grid, word, row, col, dir, size);
+        candidates.push({ row, col, dir, intersections, balance, score });
+      }
+    }
+  }
+
+  if (candidates.length === 0) return null;
+
+  candidates.sort((a, b) => b.score - a.score);
+  const topScore = candidates[0].score;
+  const topTier = candidates.filter(c => c.score >= topScore - 6);
   return topTier[rng.nextInt(0, topTier.length - 1)];
 }
 
@@ -515,10 +637,12 @@ export function generateCustomFillIn(words: string[], difficulty: CraftDifficult
 
   const maxLen = Math.max(...cleaned.map(w => w.length));
   const wordCount = cleaned.length;
+  const totalLetters = cleaned.reduce((sum, word) => sum + word.length, 0);
   // Scale grid size with word count to avoid dropping words
   const padding = difficulty === "easy" ? 6 : difficulty === "medium" ? 5 : 4;
   const countPadding = Math.ceil(Math.sqrt(wordCount) * 1.2);
-  const baseSize = Math.max(9, maxLen + padding, countPadding + maxLen);
+  const packingSize = Math.ceil(Math.sqrt(totalLetters * (difficulty === "easy" ? 2.8 : difficulty === "medium" ? 2.3 : 1.9)));
+  const baseSize = Math.max(9, maxLen + padding, countPadding + maxLen, packingSize);
   const targetInt = TARGET_INTERSECTION_FILL[difficulty];
   const baseSeed = Date.now() % 2147483646 || 1;
   const maxSizeGrowth = difficulty === "hard"
@@ -559,30 +683,32 @@ export function generateCustomFillIn(words: string[], difficulty: CraftDifficult
 function buildFillIn(words: string[], size: number, seed: number) {
   const rng = new SeededRandom(seed);
   const grid: string[][] = Array.from({ length: size }, () => Array(size).fill(""));
-  const placed: { word: string; row: number; col: number; dir: "across" | "down" }[] = [];
+  const placed: { id: number; word: string; row: number; col: number; dir: "across" | "down" }[] = [];
 
   // Sort: longest first for structural anchoring
-  const sorted = rng.shuffle([...words]).sort((a, b) => b.length - a.length);
+  const sorted = rng
+    .shuffle(words.map((word, id) => ({ word, id })))
+    .sort((a, b) => b.word.length - a.word.length);
 
   // Place first word centered horizontally
   if (sorted.length > 0) {
-    const word = sorted[0];
+    const { word, id } = sorted[0];
     const row = Math.floor(size / 2);
     const col = Math.floor((size - word.length) / 2);
     writeWord(grid, word, row, col, "across");
-    placed.push({ word, row, col, dir: "across" });
+    placed.push({ id, word, row, col, dir: "across" });
   }
 
   // Place remaining with quality-aware placement — more passes for more words
   const passes = sorted.length > 8 ? 4 : sorted.length > 5 ? 3 : 2;
   for (let pass = 0; pass < passes; pass++) {
     for (let i = 1; i < sorted.length; i++) {
-      const word = sorted[i];
-      if (placed.some(p => p.word === word)) continue;
-      const result = findBestPlacement(grid, word, placed, size, rng);
+      const { word, id } = sorted[i];
+      if (placed.some(p => p.id === id)) continue;
+      const result = findBestPlacement(grid, word, placed, size, rng) ?? findOpenPlacement(grid, word, size, rng);
       if (result) {
         writeWord(grid, word, result.row, result.col, result.dir);
-        placed.push({ word, row: result.row, col: result.col, dir: result.dir });
+        placed.push({ id, word, row: result.row, col: result.col, dir: result.dir });
       }
     }
   }
