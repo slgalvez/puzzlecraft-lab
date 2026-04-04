@@ -485,7 +485,7 @@ const Index = () => {
                         </span>
                       </div>
                     ))}
-                    {!playerCount && (
+                    {leaderRows.length === 0 && (
                       <p className="text-[10px] text-muted-foreground/40 italic pt-0.5">
                         Be the first on the board today
                       </p>
