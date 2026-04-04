@@ -54,7 +54,6 @@ export function CraftSolveFirst({
             </p>
             <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
               Solve your own puzzle to set a time friends will try to beat.
-              This is what makes Puzzlecraft unique — no other app does this.
             </p>
           </div>
         </div>
