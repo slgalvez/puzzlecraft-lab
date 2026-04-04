@@ -1107,7 +1107,7 @@ export default function AdminPreview() {
 
       {/* ── Global overlays ── */}
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
-      <NotificationBanner phrase={bannerPhrase} onDismissed={() => setBannerPhrase(null)} />
+      
 
       {/* ── Onboarding overlay ── */}
       {showOnboarding && (
