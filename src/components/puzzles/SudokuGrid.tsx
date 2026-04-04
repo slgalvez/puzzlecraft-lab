@@ -290,7 +290,10 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
                   if (!isMobile) containerRef.current?.focus();
                 }}
               >
-                <span className={cn("text-sm sm:text-lg font-semibold", given ? "text-foreground" : "text-primary")}>
+                <span className={cn(
+                  "text-sm sm:text-base md:text-lg lg:text-xl font-semibold",
+                  given ? "text-foreground" : "text-primary"
+                )}>
                   {grid[r][c]?.toString() || ""}
                 </span>
               </div>
