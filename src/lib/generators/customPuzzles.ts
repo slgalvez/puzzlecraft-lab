@@ -686,7 +686,7 @@ function buildCrossword(
   }
 
   // Multiple passes for denser interlocking
-  const passes = difficulty === "hard" ? 3 : 2;
+  const passes = sorted.length > 8 ? 4 : difficulty === "hard" ? 3 : 2;
   for (let pass = 0; pass < passes; pass++) {
     for (let i = 1; i < sorted.length; i++) {
       const { answer, clue } = sorted[i];
