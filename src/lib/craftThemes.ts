@@ -1,7 +1,7 @@
 /**
  * Puzzlecraft Craft Themes
  *
- * Themes personalise the puzzle-solving experience for the recipient.
+ * Themes personalize the puzzle-solving experience for the recipient.
  * Each theme provides:
  *  - A display emoji shown on the solve page header
  *  - An accent color (HSL values matching Tailwind/CSS vars pattern)
