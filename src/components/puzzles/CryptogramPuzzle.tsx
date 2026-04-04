@@ -222,7 +222,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
   let charIndex = 0;
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} className="puzzle-keyboard-aware">
       <PuzzleHeader
         puzzleType="cryptogram"
         difficulty={difficulty}
