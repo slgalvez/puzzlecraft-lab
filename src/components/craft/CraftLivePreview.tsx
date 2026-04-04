@@ -175,8 +175,9 @@ function MiniGrid({ data, type }: { data: Record<string, unknown>; type: "word-f
 function MiniWordSearch({ data }: { data: Record<string, unknown> }) {
   const grid = (data.grid as string[][]) || [];
   const wordPositions = (data.wordPositions as { word: string; row: number; col: number; dr: number; dc: number }[]) || [];
-  const size = Math.min(grid.length, 14);
-  const cellSize = Math.min(18, Math.floor(260 / size));
+  const size = grid.length || 1;
+  const maxPreviewWidth = 320;
+  const cellSize = Math.max(10, Math.min(18, Math.floor(maxPreviewWidth / Math.max(size, 1))));
   const fontSize = Math.max(6, cellSize * 0.55);
 
   const solutionCells = useMemo(() => {
@@ -190,35 +191,38 @@ function MiniWordSearch({ data }: { data: Record<string, unknown> }) {
   }, [wordPositions]);
 
   return (
-    <div
-      className="inline-grid gap-0 rounded overflow-hidden"
-      style={{ gridTemplateColumns: `repeat(${size}, ${cellSize}px)` }}
-    >
-      {Array.from({ length: size }, (_, r) =>
-        Array.from({ length: size }, (_, c) => {
-          const isSolution = solutionCells.has(`${r}-${c}`);
-          return (
-            <div
-              key={`${r}-${c}`}
-              className="flex items-center justify-center font-mono"
-              style={{
-                width: cellSize,
-                height: cellSize,
-                fontSize,
-                backgroundColor: isSolution
-                  ? "hsl(var(--puzzle-cell-highlight, 32 60% 92%))"
-                  : "hsl(var(--puzzle-cell, 0 0% 100%))",
-                color: isSolution
-                  ? "hsl(var(--puzzle-cell-text, var(--foreground)))"
-                  : "hsl(var(--puzzle-cell-text, var(--foreground)) / 0.35)",
-                fontWeight: isSolution ? "600" : "400",
-              }}
-            >
-              {grid[r]?.[c] || "·"}
-            </div>
-          );
-        })
-      )}
+    <div className="max-w-full overflow-x-auto overflow-y-hidden pb-1">
+      <div
+        className="inline-grid gap-0 rounded overflow-hidden border border-border/40"
+        style={{ gridTemplateColumns: `repeat(${size}, ${cellSize}px)` }}
+      >
+        {Array.from({ length: size }, (_, r) =>
+          Array.from({ length: size }, (_, c) => {
+            const isSolution = solutionCells.has(`${r}-${c}`);
+            return (
+              <div
+                key={`${r}-${c}`}
+                className="flex items-center justify-center font-mono"
+                style={{
+                  width: cellSize,
+                  height: cellSize,
+                  fontSize,
+                  backgroundColor: isSolution
+                    ? "hsl(var(--puzzle-cell-highlight, 32 60% 92%))"
+                    : "hsl(var(--puzzle-cell, 0 0% 100%))",
+                  color: isSolution
+                    ? "hsl(var(--puzzle-cell-text, var(--foreground)))"
+                    : "hsl(var(--puzzle-cell-text, var(--foreground)) / 0.35)",
+                  border: "0.5px solid hsl(var(--puzzle-border, 220 15% 70%) / 0.18)",
+                  fontWeight: isSolution ? "600" : "400",
+                }}
+              >
+                {grid[r]?.[c] || "·"}
+              </div>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }
@@ -406,7 +410,7 @@ export default function CraftLivePreview({ type, wordInput, phraseInput, clueEnt
 
           {genError && (
             <p className="text-[11px] text-muted-foreground/60">
-              Couldn't generate a full preview — shorten the list or use shorter words.
+              Couldn't generate a full preview — the current words exceed this layout's capacity.
             </p>
           )}
 
