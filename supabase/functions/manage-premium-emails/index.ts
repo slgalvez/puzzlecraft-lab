@@ -135,6 +135,17 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // ── UPDATE NOTE ──
+    if (action === "update-note") {
+      if (!id) return json({ error: "ID is required" }, 400);
+      const { error: upErr } = await adminClient
+        .from("premium_emails")
+        .update({ note: typeof note === "string" ? note.trim() || null : null })
+        .eq("id", id);
+      if (upErr) return json({ error: upErr.message }, 500);
+      return json({ ok: true });
+    }
+
     return json({ error: "Unknown action" }, 400);
   } catch (e) {
     return json({ error: String(e) }, 500);

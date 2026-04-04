@@ -5,7 +5,7 @@ import Layout from "@/components/layout/Layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Plus, Trash2, Crown, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Crown, Loader2, Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface PremiumEmail {
@@ -24,6 +24,8 @@ export default function AdminPremiumEmails() {
   const [newNote, setNewNote] = useState("");
   const [adding, setAdding] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editNoteValue, setEditNoteValue] = useState("");
 
   const api = useCallback(async (action: string, body: Record<string, unknown> = {}) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -166,8 +168,49 @@ export default function AdminPremiumEmails() {
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-foreground truncate">{entry.email}</p>
-                  {entry.note && (
-                    <p className="text-[11px] text-muted-foreground truncate">{entry.note}</p>
+                  {editingNoteId === entry.id ? (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Input
+                        value={editNoteValue}
+                        onChange={(e) => setEditNoteValue(e.target.value)}
+                        placeholder="Add a note..."
+                        className="h-6 text-[11px] px-2 py-0"
+                        autoFocus
+                        onKeyDown={async (e) => {
+                          if (e.key === "Enter") {
+                            await api("update-note", { id: entry.id, note: editNoteValue });
+                            setEmails((prev) => prev.map((em) => em.id === entry.id ? { ...em, note: editNoteValue.trim() || null } : em));
+                            setEditingNoteId(null);
+                            toast.success("Note updated");
+                          }
+                          if (e.key === "Escape") setEditingNoteId(null);
+                        }}
+                      />
+                      <button
+                        className="text-primary hover:text-primary/80"
+                        onClick={async () => {
+                          await api("update-note", { id: entry.id, note: editNoteValue });
+                          setEmails((prev) => prev.map((em) => em.id === entry.id ? { ...em, note: editNoteValue.trim() || null } : em));
+                          setEditingNoteId(null);
+                          toast.success("Note updated");
+                        }}
+                      >
+                        <Check size={12} />
+                      </button>
+                      <button className="text-muted-foreground hover:text-foreground" onClick={() => setEditingNoteId(null)}>
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="flex items-center gap-1 mt-0.5 group/note"
+                      onClick={() => { setEditingNoteId(entry.id); setEditNoteValue(entry.note || ""); }}
+                    >
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {entry.note || "Add note..."}
+                      </p>
+                      <Pencil size={9} className="text-muted-foreground/30 group-hover/note:text-muted-foreground transition-colors shrink-0" />
+                    </button>
                   )}
                   <p className="text-[10px] text-muted-foreground/50 mt-0.5">
                     Added {new Date(entry.created_at).toLocaleDateString()}
