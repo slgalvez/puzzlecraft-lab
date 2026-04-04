@@ -1,3 +1,13 @@
+/**
+ * CraftSettingsPanel.tsx  ← FULL REPLACEMENT
+ * src/components/craft/CraftSettingsPanel.tsx
+ *
+ * Changes from previous version:
+ *  - Difficulty pills now show a description of what the level means
+ *    for the generated puzzle layout (not solver difficulty)
+ *  - Description appears below the pill row when a difficulty is active
+ */
+
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 
@@ -15,10 +25,26 @@ export const DEFAULT_CRAFT_SETTINGS: CraftSettings = {
   checkEnabled: true,
 };
 
-const DIFFICULTY_OPTIONS: { value: CraftSettings["difficulty"]; label: string }[] = [
-  { value: "easy", label: "Easy" },
-  { value: "medium", label: "Medium" },
-  { value: "hard", label: "Hard" },
+const DIFFICULTY_OPTIONS: {
+  value: CraftSettings["difficulty"];
+  label: string;
+  desc: string;
+}[] = [
+  {
+    value: "easy",
+    label: "Easy",
+    desc: "More spacing, fewer crossings — relaxed layout",
+  },
+  {
+    value: "medium",
+    label: "Medium",
+    desc: "Balanced grid — good for most puzzles",
+  },
+  {
+    value: "hard",
+    label: "Hard",
+    desc: "Dense grid, many crossings — a tighter challenge",
+  },
 ];
 
 interface Props {
@@ -30,48 +56,81 @@ export default function CraftSettingsPanel({ value, onChange }: Props) {
   const set = <K extends keyof CraftSettings>(key: K, val: CraftSettings[K]) =>
     onChange({ ...value, [key]: val });
 
+  const activeDiff = DIFFICULTY_OPTIONS.find((o) => o.value === value.difficulty)!;
+
   return (
     <div className="space-y-4 pt-1">
       <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-medium">
         Puzzle Settings
       </p>
 
-      {/* Difficulty + Toggles in a clean row layout */}
-      <div className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 items-center">
-        {/* Difficulty label */}
-        <span className="text-[11px] text-muted-foreground whitespace-nowrap">Difficulty</span>
-        {/* Difficulty pills */}
-        <div className="inline-flex rounded-full border border-border bg-muted/30 p-0.5 w-fit">
-          {DIFFICULTY_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => set("difficulty", opt.value)}
-              className={cn(
-                "px-3 py-1 rounded-full text-[11px] font-medium transition-colors",
-                value.difficulty === opt.value
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
+      <div className="space-y-3">
+        {/* Difficulty row */}
+        <div className="grid grid-cols-[auto_1fr] gap-x-6 items-start">
+          <span className="text-[11px] text-muted-foreground whitespace-nowrap pt-1.5">
+            Layout
+          </span>
+          <div className="space-y-1.5">
+            <div className="inline-flex rounded-full border border-border bg-muted/30 p-0.5 w-fit">
+              {DIFFICULTY_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => set("difficulty", opt.value)}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-[11px] font-medium transition-colors",
+                    value.difficulty === opt.value
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {/* Active difficulty description */}
+            <p className="text-[10px] text-muted-foreground/60 pl-0.5">
+              {activeDiff.desc}
+            </p>
+          </div>
         </div>
 
-        {/* Solver tools label */}
-        <span className="text-[11px] text-muted-foreground whitespace-nowrap">Solver tools</span>
-        {/* Toggle row */}
-        <div className="flex items-center gap-4">
-          <ToggleChip label="Hints" checked={value.hintsEnabled} onToggle={(v) => set("hintsEnabled", v)} />
-          <ToggleChip label="Check" checked={value.checkEnabled} onToggle={(v) => set("checkEnabled", v)} />
-          <ToggleChip label="Reveal" checked={value.revealEnabled} onToggle={(v) => set("revealEnabled", v)} />
+        {/* Solver tools row */}
+        <div className="grid grid-cols-[auto_1fr] gap-x-6 items-center">
+          <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+            Solver tools
+          </span>
+          <div className="flex items-center gap-4">
+            <ToggleChip
+              label="Hints"
+              checked={value.hintsEnabled}
+              onToggle={(v) => set("hintsEnabled", v)}
+            />
+            <ToggleChip
+              label="Check"
+              checked={value.checkEnabled}
+              onToggle={(v) => set("checkEnabled", v)}
+            />
+            <ToggleChip
+              label="Reveal"
+              checked={value.revealEnabled}
+              onToggle={(v) => set("revealEnabled", v)}
+            />
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function ToggleChip({ label, checked, onToggle }: { label: string; checked: boolean; onToggle: (v: boolean) => void }) {
+function ToggleChip({
+  label,
+  checked,
+  onToggle,
+}: {
+  label: string;
+  checked: boolean;
+  onToggle: (v: boolean) => void;
+}) {
   return (
     <label className="flex items-center gap-1.5 cursor-pointer select-none">
       <Switch
