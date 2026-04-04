@@ -614,6 +614,45 @@ export default function AdminPreview() {
               )}
             </section>
 
+            {/* ── Daily Challenge Confetti ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Sparkles size={14} /> Daily Challenge Completion Confetti
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Confetti burst + animated trophy banner that plays when a user solves the daily puzzle.
+              </p>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setShowDailyConfetti(false);
+                  requestAnimationFrame(() => setShowDailyConfetti(true));
+                }}
+              >
+                Fire Confetti
+              </Button>
+              <div className="relative mt-3 rounded-xl border border-border/20 p-4 bg-secondary/5 overflow-hidden min-h-[120px]">
+                {showDailyConfetti && <DailyConfettiPreview />}
+                <div className={cn(
+                  "flex items-center gap-3",
+                  showDailyConfetti && "animate-scale-in"
+                )}>
+                  <div className={cn(
+                    "h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0",
+                    showDailyConfetti && "animate-[dailyTrophyPulse_0.6s_ease-out]"
+                  )}>
+                    <Trophy size={20} className="text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-display font-semibold text-foreground">Challenge Complete!</p>
+                    <p className="text-sm text-muted-foreground">
+                      You solved today's Crossword in 3:05. Come back tomorrow for a new challenge.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             {/* ── Milestone Tiles ── */}
             <section className="space-y-3 rounded-xl border border-border/30 p-4">
               <div className="flex items-center justify-between">
