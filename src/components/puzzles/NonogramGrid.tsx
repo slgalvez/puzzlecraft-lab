@@ -249,8 +249,9 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
     <div
       ref={containerRef}
       tabIndex={0}
-      className="outline-none"
+      className="outline-none scroll-mt-4"
       onKeyDown={handleKeyDown}
+      style={{ touchAction: isMobile && !timer.isSolved ? "none" : "auto" }}
     >
       <PuzzleHeader
         puzzleType="nonogram"
