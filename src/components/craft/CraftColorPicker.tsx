@@ -127,7 +127,7 @@ interface CraftColorPickerProps {
 export function CraftColorPicker({ selected, onSelect }: CraftColorPickerProps) {
   return (
     <div className="space-y-2">
-      <p className="text-xs font-medium text-muted-foreground">Puzzle colour theme</p>
+      <p className="text-xs font-medium text-muted-foreground">Puzzle color theme</p>
       <div className="flex flex-wrap gap-2">
         {CRAFT_PALETTES.map((palette) => {
           const isActive = selected === palette.id;
