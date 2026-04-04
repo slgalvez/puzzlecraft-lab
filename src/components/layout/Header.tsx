@@ -9,12 +9,12 @@ const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navLinks = [
-    { to: "/",               label: "Home"            },
-    { to: "/daily",          label: "Daily Challenge" },
-    { to: "/puzzles",        label: "Play"            },
-    { to: "/generate/sudoku",label: "Puzzle Lab"      },
-    { to: "/craft",          label: "Create"          }, // ← renamed from "Craft"
-    { to: "/stats",          label: "Stats"           },
+    { to: "/",                label: "Home"      },
+    { to: "/daily",           label: "Daily"     },
+    { to: "/puzzles",         label: "Play"      },
+    { to: "/generate/sudoku", label: "Generate"  }, // ← was "Puzzle Lab"
+    { to: "/craft",           label: "Create"    },
+    { to: "/stats",           label: "Stats"     },
   ];
 
   const isActive = (to: string) => {
@@ -25,7 +25,10 @@ const Header = () => {
   };
 
   return (
-    <header className="pwa-safe-top sticky top-0 z-50 border-b bg-surface-elevated/80 backdrop-blur-md" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+    <header
+      className="pwa-safe-top sticky top-0 z-50 border-b bg-surface-elevated/80 backdrop-blur-md"
+      style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+    >
       <div className="container flex h-16 items-center">
         <Link to="/" className="font-display text-2xl font-bold tracking-tight text-foreground">
           Puzzlecraft
