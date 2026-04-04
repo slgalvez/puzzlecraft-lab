@@ -30,7 +30,7 @@ export function hasPremiumAccess(account: {
   subscribed?: boolean;
   isAdmin?: boolean;
 } | null): boolean {
-  if (!PUZZLECRAFT_PLUS_LAUNCHED) return true; // pre-launch: everyone gets full access
+  if (!PUZZLECRAFT_PLUS_LAUNCHED) return !!account; // pre-launch: signed-in users get full access
   if (!account) return false;
   return !!(account.isAdmin || account.subscribed);
 }
