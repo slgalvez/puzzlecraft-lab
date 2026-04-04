@@ -30,7 +30,7 @@ export const CRAFT_TEMPLATES: CraftTemplate[] = [
       SURPRISE: "What this puzzle might be",
     },
     phrase: "Another year older, another year wiser, another year more amazing.",
-    description: "Perfect for sending a personalised birthday puzzle",
+    description: "Perfect for sending a personalized birthday puzzle",
   },
   {
     id: "anniversary",
