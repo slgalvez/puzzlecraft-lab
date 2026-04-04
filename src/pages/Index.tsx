@@ -383,7 +383,7 @@ const Index = () => {
       </section>
 
       {/* ════════════════════════════════════════════════════════
-          SECTION 2 — PUZZLE TYPES (personalised for returning users)
+          SECTION 2 — PUZZLE TYPES (personalized for returning users)
       ════════════════════════════════════════════════════════ */}
       <section className="border-b">
         <div className="container py-12">
