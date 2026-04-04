@@ -39,7 +39,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight, Flame, CheckCircle2, Trophy, Clock,
   Target, Infinity, Dices, Send, Users, Zap,
-  ChevronRight, TrendingUp, Star,
+  ChevronRight, TrendingUp, Star, Crown,
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
