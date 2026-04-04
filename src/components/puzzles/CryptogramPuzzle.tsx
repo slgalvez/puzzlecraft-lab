@@ -229,7 +229,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
   let charIndex = 0;
 
   return (
-    <div ref={containerRef} className="puzzle-keyboard-aware">
+    <div ref={containerRef} className="scroll-mt-4 [overscroll-behavior:contain] puzzle-keyboard-aware">
       <PuzzleHeader
         puzzleType="cryptogram"
         difficulty={difficulty}
