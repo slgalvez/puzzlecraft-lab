@@ -233,7 +233,7 @@ const ForYou = () => {
         case "crossword": {
           const valid = clueEntries.filter(e => e.answer.trim() && e.clue.trim());
           if (valid.length < 3) { toast({ title: "Enter at least 3 answer + clue pairs", variant: "destructive" }); return; }
-          data = generateCustomCrossword(valid) as unknown as Record<string, unknown>;
+          data = generateCustomCrossword(valid, "medium") as unknown as Record<string, unknown>;
           break;
         }
         case "word-search": {
