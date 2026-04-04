@@ -132,7 +132,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
       if (allCorrect) completedWords++;
     }
     session.setProgress(completedWords, totalWords);
-  }, [grid, clues, session]);
+  }, [grid, clues, session.setProgress]);
 
   useEffect(() => {
     for (let r = 0; r < gridSize; r++)

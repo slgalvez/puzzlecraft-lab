@@ -85,7 +85,7 @@ const KakuroGrid = ({ seed, difficulty: rawDifficulty, onNewPuzzle, onSolve, tim
       if (!isBlack[r][c]) { totalWhite++; if (grid[r][c]) filledCount++; }
     }
     session.setProgress(filledCount, totalWhite);
-  }, [grid, size, isBlack, session]);
+  }, [grid, size, isBlack, session.setProgress]);
 
   const clueMap = useMemo(() => {
     const map = new Map<string, { across?: number; down?: number }>();

@@ -84,7 +84,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
   // Track progress: found words vs total
   useEffect(() => {
     session.setProgress(foundWords.size, puzzle.words.length);
-  }, [foundWords, puzzle.words.length, session]);
+  }, [foundWords, puzzle.words.length, session.setProgress]);
 
   useEffect(() => {
     setCursor([0, 0]);

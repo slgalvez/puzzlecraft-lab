@@ -79,7 +79,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
     let filled = 0;
     for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (!isGiven(r, c) && grid[r][c] !== null) filled++;
     session.setProgress(filled, 81 - prefillCount);
-  }, [grid, prefillCount, session]);
+  }, [grid, prefillCount, session.setProgress]);
 
   useEffect(() => {
     containerRef.current?.focus();

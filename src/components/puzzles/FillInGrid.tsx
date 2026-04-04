@@ -140,7 +140,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
       if (slot.cells.every(([r, c]) => grid[r]?.[c])) filledSlots++;
     }
     session.setProgress(filledSlots, entrySlots.length);
-  }, [grid, entrySlots, session]);
+  }, [grid, entrySlots, session.setProgress]);
 
   const cellToSlots = useMemo(() => {
     const map = new Map<string, EntrySlot[]>();
