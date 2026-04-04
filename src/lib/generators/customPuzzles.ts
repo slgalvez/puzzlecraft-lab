@@ -228,7 +228,7 @@ function findPlacement(
 
   const candidates: Candidate[] = [];
 
-  // Centre of mass of existing words
+  // Center of mass of existing words
   let comR = 0, comC = 0, wCount = 0;
   for (let r = 0; r < size; r++)
     for (let c = 0; c < size; c++)
