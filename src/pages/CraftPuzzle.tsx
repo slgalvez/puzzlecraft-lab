@@ -215,7 +215,7 @@ const CraftPuzzle = () => {
   };
 
   /** Pure generation — builds puzzle data without any DB/share/sent logic */
-  const buildPuzzleData = useCallback((): Record<string, unknown> | null => {
+  const buildPuzzleData = useCallback((): (Record<string, unknown> & { droppedWords?: string[] }) | null => {
     if (!selectedType) return null;
     switch (selectedType) {
       case "word-fill": {
