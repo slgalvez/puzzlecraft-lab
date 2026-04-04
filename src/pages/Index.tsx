@@ -571,7 +571,7 @@ const Index = () => {
                 Make a puzzle.<br />Challenge someone.
               </h2>
               <p className="mt-4 text-muted-foreground leading-relaxed">
-                Use your own words — inside jokes, shared memories, names they'll recognise. Send the link. They get a personalised puzzle. You get to see exactly how fast they solve it.
+                Use your own words — inside jokes, shared memories, names they'll recognize. Send the link. They get a personalized puzzle. You get to see exactly how fast they solve it.
               </p>
               <ul className="mt-6 space-y-3">
                 {[
