@@ -25,7 +25,7 @@ interface OnboardingFlowProps {
 // ── Puzzle mini-preview SVG (crossword cells) ─────────────────────────────
 
 const CrosswordPreview = () => (
-  <svg viewBox="0 0 120 80" className="w-full h-full" aria-hidden>
+  <svg viewBox="0 0 120 80" className="w-full h-auto max-h-full" preserveAspectRatio="xMidYMid meet" aria-hidden>
     <rect x="2"  y="2"  width="22" height="22" rx="4" fill="hsl(32 80% 50% / 0.15)" stroke="hsl(32 80% 50%)" strokeWidth="1.5"/>
     <text x="13" y="18" fontSize="12" fontWeight="700" fill="hsl(32 80% 50%)" textAnchor="middle">P</text>
     <rect x="27" y="2"  width="22" height="22" rx="4" fill="currentColor" opacity="0.08" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.3"/>
@@ -53,7 +53,7 @@ const CrosswordPreview = () => (
 );
 
 const CraftPreview = () => (
-  <svg viewBox="0 0 140 90" className="w-full h-full" aria-hidden>
+  <svg viewBox="0 0 140 90" className="w-full h-auto max-h-full" preserveAspectRatio="xMidYMid meet" aria-hidden>
     {/* Phone A — creator */}
     <rect x="4" y="8" width="50" height="74" rx="7" fill="currentColor" opacity="0.06" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.25"/>
     <rect x="10" y="18" width="38" height="6" rx="2" fill="hsl(32 80% 50%)" opacity="0.7"/>
@@ -148,7 +148,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background overflow-hidden"
+    <div className="fixed inset-0 z-50 flex flex-col bg-background overflow-hidden overflow-x-hidden"
       style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>
 
       {/* Skip button — top right, small, always visible */}
@@ -179,13 +179,13 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       {/* Screen content */}
       <div
         className={cn(
-          "flex-1 flex flex-col items-center px-6 transition-all duration-180",
+          "flex-1 flex flex-col items-center px-6 overflow-hidden transition-all duration-180",
           exiting ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
         )}
       >
         {/* Visual */}
         {current.visual && (
-          <div className="w-full max-w-[280px] aspect-[4/3] mb-8 mt-2">
+          <div className="w-full max-w-[260px] aspect-[3/2] mb-8 mt-2 overflow-hidden rounded-2xl flex items-center justify-center">
             {current.visual}
           </div>
         )}
