@@ -102,7 +102,7 @@ function validateClues(entries: { answer: string; clue: string }[]): ValidationR
   if (count <= 8) {
     return { valid: true, count, feedback: `${count} pairs — great`, hint: "", color: "green" };
   }
-  return { valid: true, count, feedback: `${count} pairs — full puzzle`, hint: "Some words may not fit — that's normal", color: "amber" };
+  return { valid: true, count, feedback: `${count} pairs — full puzzle`, hint: "If they exceed the board capacity, you'll be prompted before generating", color: "amber" };
 }
 
 // ── Mini grid renderer ─────────────────────────────────────────────────────
