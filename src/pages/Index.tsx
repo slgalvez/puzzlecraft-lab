@@ -44,7 +44,7 @@ import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 const ALL_TYPES: PuzzleCategory[] = Object.keys(CATEGORY_INFO) as PuzzleCategory[];
 
 /** Top 4 puzzle types by solve count for this user, falls back to default order */
-function getPersonalisedTypes(): { types: PuzzleCategory[]; isPersonalised: boolean } {
+function getPersonalizedTypes(): { types: PuzzleCategory[]; isPersonalized: boolean } {
   try {
     const records = getSolveRecords();
     if (records.length < 5) return { types: ALL_TYPES.slice(0, 8), isPersonalised: false };
