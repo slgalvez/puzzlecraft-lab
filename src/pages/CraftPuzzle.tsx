@@ -250,34 +250,17 @@ const CraftPuzzle = () => {
 
       setGeneratedData(data);
 
-      // Detect dropped words and warn user
-      const inputWords = (() => {
-        if (!selectedType) return [];
-        if (selectedType === "crossword") {
-          return clueEntries.filter((e) => e.answer.trim() && e.clue.trim()).map((e) => e.answer.trim());
-        }
-        return wordInput.split(/[,\n]+/).map((w) => w.trim()).filter(Boolean);
-      })();
-      const placedCount = (() => {
-        if (!data || inputWords.length === 0) return inputWords.length;
-        try {
-          if (selectedType === "word-fill" || selectedType === "word-search") {
-            const entries = (data.entries as any[]) ?? (data.words as any[]) ?? [];
-            return entries.length;
-          }
-          if (selectedType === "crossword") {
-            return ((data.clues as any[]) ?? []).length;
-          }
-        } catch {}
-        return inputWords.length;
-      })();
-      const droppedCount = Math.max(0, inputWords.length - placedCount);
-      if (droppedCount > 0) {
+      // Use the droppedWords field returned by the generator
+      const droppedWords: string[] = (data as any).droppedWords ?? [];
+      if (droppedWords.length > 0) {
+        const count = droppedWords.length;
+        const wordList = droppedWords.slice(0, 3).join(", ");
+        const more = droppedWords.length > 3 ? ` +${droppedWords.length - 3} more` : "";
         toast({
-          title: `${droppedCount} word${droppedCount > 1 ? "s" : ""} won't fit`,
-          description: droppedCount > 2
-            ? `Remove ${droppedCount} words or use shorter words, then try again.`
-            : `Try removing ${droppedCount === 1 ? "a word" : "a couple of words"} or using shorter ones.`,
+          title: `${count} word${count > 1 ? "s" : ""} couldn't fit`,
+          description: selectedType === "crossword"
+            ? `${wordList}${more} — try words that share more letters with each other.`
+            : `${wordList}${more} — try removing long words or reducing the total count.`,
           variant: "destructive",
         });
         setSaving(false);
