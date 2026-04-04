@@ -145,10 +145,10 @@ const DailyPuzzle = () => {
 
   // Track completion from puzzle timer callback
   const handleNewPuzzle = useCallback(() => {
-    // Daily puzzle doesn't regenerate - just refresh completion state
     const comp = getDailyCompletion(challenge.dateStr);
     setCompletion(comp);
     if (comp) {
+      setJustSolved(true);
       writeDailyScore(comp.time);
     }
   }, [challenge.dateStr, writeDailyScore]);
