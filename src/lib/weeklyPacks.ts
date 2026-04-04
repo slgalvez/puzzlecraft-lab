@@ -163,7 +163,7 @@ export function getCurrentWeeklyPack(
   }
 
   // ── Unlock state ────────────────────────────────────────────────────────────
-  const isPremium = hasPremiumAccess(account?.subscribed ?? false, account?.isAdmin ?? false);
+  const isPremium = hasPremiumAccess({ subscribed: account?.subscribed ?? false, isAdmin: account?.isAdmin ?? false });
   const isUnlocked = isPremium ? now >= plusEarlyDate : now >= releaseDate;
 
   let unlocksIn: string | null = null;

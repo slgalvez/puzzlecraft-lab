@@ -83,8 +83,8 @@ export default function AccountPage() {
 
   if (account) {
     const isAdmin = account.isAdmin;
-    const premiumAccess = hasPremiumAccess(subscribed, isAdmin, checkingSubscription);
-    const showUpgrade = shouldShowUpgradeCTA(subscribed, isAdmin, checkingSubscription);
+    const premiumAccess = hasPremiumAccess({ subscribed, isAdmin });
+    const showUpgrade = shouldShowUpgradeCTA({ subscribed, isAdmin });
     const initial = (account.displayName || account.email)[0]?.toUpperCase();
 
     return (
