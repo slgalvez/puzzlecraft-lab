@@ -482,7 +482,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
           />
         )}
 
-        <div className="max-w-full overflow-x-auto">
+        <div className="max-w-full overflow-x-auto [overscroll-behavior:contain] scroll-mt-4">
         <div
           ref={containerRef}
           tabIndex={0}
