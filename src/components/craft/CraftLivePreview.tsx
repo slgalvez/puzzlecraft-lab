@@ -406,7 +406,7 @@ export default function CraftLivePreview({ type, wordInput, phraseInput, clueEnt
 
           {genError && (
             <p className="text-[11px] text-muted-foreground/60">
-              Couldn't generate a preview — try adjusting your words.
+              Couldn't generate a full preview — shorten the list or use shorter words.
             </p>
           )}
 
