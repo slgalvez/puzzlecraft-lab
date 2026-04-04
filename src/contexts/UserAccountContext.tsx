@@ -35,6 +35,7 @@ interface UserAccountContextType {
   subscriptionEnd: string | null;
   checkingSubscription: boolean;
   refreshSubscription: () => Promise<void>;
+  refreshAccount: () => Promise<void>;
   startCheckout: () => Promise<void>;
   openCustomerPortal: () => Promise<void>;
 }
