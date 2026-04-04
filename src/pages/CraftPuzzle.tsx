@@ -96,6 +96,16 @@ const CraftPuzzle = () => {
   const [selectedTheme, setSelectedTheme] = useState<string>("none");
   const [colorPalette, setColorPalette] = useState("default");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  const handleColorPaletteSelect = (id: string) => {
+    setColorPalette(id);
+    const palette = CRAFT_PALETTES.find((p) => p.id === id);
+    if (palette) {
+      applyPalette(palette);
+    } else {
+      applyPalette({ id: "default", label: "Default", cell: "", active: "", highlight: "", correct: "", border: "", text: "" });
+    }
+  };
   
   const sentRecorded = useRef(false);
 
