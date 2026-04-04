@@ -428,6 +428,7 @@ export default function AdminPreview() {
             <TabsTrigger value="premium" className="text-xs flex-1 min-w-0">Premium</TabsTrigger>
             <TabsTrigger value="ios" className="text-xs flex-1 min-w-0">iOS App</TabsTrigger>
             <TabsTrigger value="notifications" className="text-xs flex-1 min-w-0">Notifications</TabsTrigger>
+            <TabsTrigger value="craft" className="text-xs flex-1 min-w-0">Craft</TabsTrigger>
             <TabsTrigger value="patterns" className="text-xs flex-1 min-w-0">Patterns</TabsTrigger>
           </TabsList>
 
