@@ -459,6 +459,20 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
           </p>
         )}
 
+        {isMobile && !timer.isSolved && !isRevealed && (
+          <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+            <span>
+              <span className="font-semibold text-foreground">
+                {entrySlots.filter(s => s.cells.every(([r, c]) => grid[r]?.[c])).length}
+              </span>
+              /{entrySlots.length} slots filled
+            </span>
+            {usedEntries.size > 0 && (
+              <span className="text-primary font-medium">{usedEntries.size} word{usedEntries.size !== 1 ? "s" : ""} checked off</span>
+            )}
+          </div>
+        )}
+
         {!isNumbers && (
           <MobileLetterInput
             ref={mobileInputRef}
