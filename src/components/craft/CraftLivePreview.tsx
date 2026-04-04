@@ -114,7 +114,6 @@ function MiniGrid({ data, type }: { data: Record<string, unknown>; type: "word-f
   const cellSize = Math.min(22, Math.floor(240 / gridSize));
   const fontSize = Math.max(6, cellSize * 0.5);
 
-  // Build solution grid from data
   const solutionGrid: (string | null)[][] = [];
   if (type === "word-fill" && data.solution) {
     const sol = data.solution as (string | null)[][];
@@ -133,8 +132,11 @@ function MiniGrid({ data, type }: { data: Record<string, unknown>; type: "word-f
 
   return (
     <div
-      className="inline-grid gap-0 border border-border/50 rounded overflow-hidden"
-      style={{ gridTemplateColumns: `repeat(${gridSize}, ${cellSize}px)` }}
+      className="inline-grid gap-0 rounded overflow-hidden"
+      style={{
+        gridTemplateColumns: `repeat(${gridSize}, ${cellSize}px)`,
+        border: "1px solid hsl(var(--puzzle-border, 220 15% 70%))",
+      }}
     >
       {Array.from({ length: gridSize }, (_, r) =>
         Array.from({ length: gridSize }, (_, c) => {
@@ -143,14 +145,24 @@ function MiniGrid({ data, type }: { data: Record<string, unknown>; type: "word-f
           return (
             <div
               key={`${r}-${c}`}
-              className={cn(
-                "border border-border/20 flex items-center justify-center",
-                isBlack ? "bg-foreground/80" : "bg-card"
-              )}
-              style={{ width: cellSize, height: cellSize, fontSize }}
+              className="flex items-center justify-center"
+              style={{
+                width: cellSize,
+                height: cellSize,
+                fontSize,
+                backgroundColor: isBlack
+                  ? "hsl(var(--puzzle-cell-black, 220 20% 14%))"
+                  : "hsl(var(--puzzle-cell, 0 0% 100%))",
+                border: "0.5px solid hsl(var(--puzzle-border, 220 15% 70%) / 0.3)",
+              }}
             >
               {!isBlack && letter && (
-                <span className="font-mono font-medium text-foreground/70 leading-none">{letter}</span>
+                <span
+                  className="font-mono font-medium leading-none"
+                  style={{ color: "hsl(var(--foreground))", opacity: 0.7 }}
+                >
+                  {letter}
+                </span>
               )}
             </div>
           );
@@ -167,7 +179,6 @@ function MiniWordSearch({ data }: { data: Record<string, unknown> }) {
   const cellSize = Math.min(18, Math.floor(260 / size));
   const fontSize = Math.max(6, cellSize * 0.55);
 
-  // Build a set of solution cells
   const solutionCells = useMemo(() => {
     const cells = new Set<string>();
     for (const wp of wordPositions) {
@@ -180,7 +191,7 @@ function MiniWordSearch({ data }: { data: Record<string, unknown> }) {
 
   return (
     <div
-      className="inline-grid gap-0 border border-border/30 rounded overflow-hidden"
+      className="inline-grid gap-0 rounded overflow-hidden"
       style={{ gridTemplateColumns: `repeat(${size}, ${cellSize}px)` }}
     >
       {Array.from({ length: size }, (_, r) =>
@@ -189,13 +200,19 @@ function MiniWordSearch({ data }: { data: Record<string, unknown> }) {
           return (
             <div
               key={`${r}-${c}`}
-              className={cn(
-                "flex items-center justify-center font-mono",
-                isSolution
-                  ? "bg-primary/15 text-primary font-semibold"
-                  : "text-foreground/25"
-              )}
-              style={{ width: cellSize, height: cellSize, fontSize }}
+              className="flex items-center justify-center font-mono"
+              style={{
+                width: cellSize,
+                height: cellSize,
+                fontSize,
+                backgroundColor: isSolution
+                  ? "hsl(var(--puzzle-cell-highlight, 32 60% 92%))"
+                  : "hsl(var(--puzzle-cell, 0 0% 100%))",
+                color: isSolution
+                  ? "hsl(var(--primary))"
+                  : "hsl(var(--foreground) / 0.25)",
+                fontWeight: isSolution ? "600" : "400",
+              }}
             >
               {grid[r]?.[c] || "·"}
             </div>
@@ -229,7 +246,7 @@ function MiniCryptogram({ data }: { data: Record<string, unknown> }) {
           </span>
         ))}
       </div>
-      <p className="text-[10px] text-muted-foreground/50 italic">Solution shown above in colour</p>
+      <p className="text-[10px] text-muted-foreground/50 italic">Solution shown above in color</p>
     </div>
   );
 }
