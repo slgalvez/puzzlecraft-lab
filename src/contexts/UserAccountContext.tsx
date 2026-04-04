@@ -314,11 +314,20 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const refreshAccount = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const profile = await fetchProfile(session.user.id);
+      setAccount(profile);
+    }
+    await refreshSubscription();
+  }, [refreshSubscription]);
+
   return (
     <UserAccountContext.Provider value={{
       account, loading, signUp, signIn, signOut, pendingMerge, resolveMerge,
       subscribed, subscriptionEnd, checkingSubscription, refreshSubscription,
-      startCheckout, openCustomerPortal,
+      refreshAccount, startCheckout, openCustomerPortal,
     }}>
       {children}
     </UserAccountContext.Provider>
