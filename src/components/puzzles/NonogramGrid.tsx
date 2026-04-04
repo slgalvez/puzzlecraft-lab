@@ -119,18 +119,6 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
     containerRef.current?.focus();
   }, [seed, difficulty]);
 
-  useEffect(() => {
-    const el = gridScrollRef.current;
-    if (!el) return;
-    const check = () => setCanScrollRight(el.scrollWidth > el.clientWidth + 4);
-    check();
-    el.addEventListener("scroll", check, { passive: true });
-    window.addEventListener("resize", check, { passive: true });
-    return () => {
-      el.removeEventListener("scroll", check);
-      window.removeEventListener("resize", check);
-    };
-  }, [rows, cols, cellPx]);
 
   const setCellState = (r: number, c: number, state: CellState) => {
     if (timer.isSolved || isRevealed) return;
