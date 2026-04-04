@@ -35,6 +35,7 @@ interface CrosswordState {
 
 const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode, showHints = true, showReveal = true, maxHints }: Props) => {
   const { gridSize, blackCells, clues } = puzzle;
+  useKeyboardAvoidance();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const timerKey = `crossword-${puzzle.id}`;
