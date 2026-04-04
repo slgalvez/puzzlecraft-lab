@@ -115,7 +115,14 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
 
   const focusIdx = (idx: number) => {
     setActiveIdx(idx);
-    inputRefs.current.get(idx)?.focus();
+    const el = inputRefs.current.get(idx);
+    if (!el) return;
+    el.focus();
+    if (isMobile) {
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 320);
+    }
   };
 
   const findNextEditable = (fromIdx: number, dir: number): number | null => {
