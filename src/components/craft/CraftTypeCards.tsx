@@ -32,17 +32,6 @@ const TYPE_OPTIONS: TypeOption[] = [
     iconBg: "bg-sky-400/10 text-sky-500",
   },
   {
-    value: "word-fill",
-    label: "Word Fill-In",
-    tagline: "Build a grid from your words",
-    youDo: "Give the words, set the grid",
-    theyGet: "Place every word perfectly",
-    exampleWords: ["VACATION", "BEACH", "SUMMER"],
-    difficulty: "Medium",
-    accentClass: "hover:border-emerald-400/40 hover:bg-emerald-400/[0.03]",
-    iconBg: "bg-emerald-400/10 text-emerald-500",
-  },
-  {
     value: "crossword",
     label: "Crossword",
     tagline: "Write the clues, set the trap",
@@ -179,7 +168,6 @@ export default function CraftTypeCards({ onSelect }: { onSelect: (type: CraftTyp
               )}
                 style={{
                   background: opt.value === "word-search" ? "hsl(200 80% 60%)" :
-                              opt.value === "word-fill"   ? "hsl(142 60% 50%)" :
                               opt.value === "crossword"   ? "hsl(32 80% 50%)"  :
                                                            "hsl(260 60% 60%)",
                 }}
