@@ -35,6 +35,7 @@ interface UserAccountContextType {
   subscriptionEnd: string | null;
   checkingSubscription: boolean;
   refreshSubscription: () => Promise<void>;
+  refreshAccount: () => Promise<void>;
   startCheckout: () => Promise<void>;
   openCustomerPortal: () => Promise<void>;
 }
@@ -192,10 +193,12 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const handleSession = useCallback(async (session: Session | null, event?: string) => {
+    // Reset subscription state on every session change
+    setSubscribed(false);
+    setSubscriptionEnd(null);
+
     if (!session?.user) {
       setAccount(null);
-      setSubscribed(false);
-      setSubscriptionEnd(null);
       setLoading(false);
       return;
     }
@@ -311,11 +314,20 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const refreshAccount = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const profile = await fetchProfile(session.user.id);
+      setAccount(profile);
+    }
+    await refreshSubscription();
+  }, [refreshSubscription]);
+
   return (
     <UserAccountContext.Provider value={{
       account, loading, signUp, signIn, signOut, pendingMerge, resolveMerge,
       subscribed, subscriptionEnd, checkingSubscription, refreshSubscription,
-      startCheckout, openCustomerPortal,
+      refreshAccount, startCheckout, openCustomerPortal,
     }}>
       {children}
     </UserAccountContext.Provider>

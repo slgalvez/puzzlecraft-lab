@@ -13,8 +13,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { hasPremiumAccess } from "@/lib/premiumAccess";
-import { useUserAccount } from "@/contexts/UserAccountContext";
+import { usePremiumAccess } from "@/lib/premiumAccess";
 
 // ── Storage keys ──────────────────────────────────────────────────────────
 const SHIELD_COUNT_KEY   = "puzzlecraft_shield_count";
@@ -100,8 +99,7 @@ export interface StreakShieldState {
 }
 
 export function useStreakShield(): StreakShieldState {
-  const { account } = useUserAccount();
-  const isPremium = hasPremiumAccess(account);
+  const { isPremium } = usePremiumAccess();
 
   const [shieldCount, setShieldCountState] = useState(getShieldCount);
   const [shieldAutoUsedLastNight, setShieldAutoUsedLastNight] = useState(false);
