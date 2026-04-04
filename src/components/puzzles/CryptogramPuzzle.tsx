@@ -34,6 +34,7 @@ interface CryptogramState {
 const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode, showHints = true, showReveal = true, maxHints }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  useKeyboardAvoidance();
   const puzzle = useMemo(() => generateCryptogram(seed, difficulty), [seed, difficulty]);
   const { encoded, decoded, reverseCipher, hints } = puzzle;
   const timerKey = `cryptogram-${seed}-${difficulty}`;
