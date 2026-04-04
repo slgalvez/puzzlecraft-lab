@@ -27,7 +27,7 @@ import { isNativeApp } from "@/lib/appMode";
 export default function AccountPage() {
   const navigate = useNavigate();
   const native = isNativeApp();
-  const { account, signIn, signUp, signOut, subscribed, subscriptionEnd, openCustomerPortal } = useUserAccount();
+  const { account, signIn, signUp, signOut, subscribed, subscriptionEnd, checkingSubscription, openCustomerPortal } = useUserAccount();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [tab, setTab] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
