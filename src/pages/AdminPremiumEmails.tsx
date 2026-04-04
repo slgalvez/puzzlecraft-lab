@@ -24,6 +24,8 @@ export default function AdminPremiumEmails() {
   const [newNote, setNewNote] = useState("");
   const [adding, setAdding] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editNoteValue, setEditNoteValue] = useState("");
 
   const api = useCallback(async (action: string, body: Record<string, unknown> = {}) => {
     const { data: { session } } = await supabase.auth.getSession();
