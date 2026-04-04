@@ -372,6 +372,65 @@ function LeaderboardPreview() {
 // MAIN COMPONENT
 // ══════════════════════════════════════════════════════════════════════════
 
+function fmtTime(s: number): string {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+}
+
+function MockCraftAnalytics({ title, totalSent, totalStarted, totalCompleted, avgTime, fastestTime, creatorTime, solvers }: {
+  title: string; totalSent: number; totalStarted: number; totalCompleted: number;
+  avgTime: number | null; fastestTime: number | null; creatorTime: number | null;
+  solvers: { name: string; time: number }[];
+}) {
+  const completionRate = totalSent > 0 ? totalCompleted / totalSent : 0;
+  const stats = [
+    { icon: Users, label: "Recipients", value: totalSent, sub: `${totalStarted} started` },
+    { icon: Trophy, label: "Completed", value: `${Math.round(completionRate * 100)}%`, sub: `${totalCompleted} of ${totalSent}`, highlight: completionRate > 0.7 },
+    { icon: Clock, label: "Avg time", value: avgTime ? fmtTime(avgTime) : "—", sub: creatorTime ? `You: ${fmtTime(creatorTime)}` : "No solves yet" },
+    { icon: Target, label: "Fastest", value: fastestTime ? fmtTime(fastestTime) : "—", sub: fastestTime && creatorTime ? (fastestTime < creatorTime ? "Beat your time 🏆" : "Yours is fastest") : "", highlight: !!(fastestTime && creatorTime && fastestTime < creatorTime) },
+  ];
+
+  return (
+    <div className="rounded-2xl border border-border/50 bg-card overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40">
+        <Star size={14} className="text-primary" />
+        <p className="text-sm font-semibold text-foreground">"{title}" analytics</p>
+      </div>
+      <div className="grid grid-cols-2 gap-px bg-border/30">
+        {stats.map(({ icon: Icon, label, value, sub, highlight }) => (
+          <div key={label} className={cn("flex flex-col gap-0.5 bg-card p-3.5", highlight && "bg-emerald-50/50 dark:bg-emerald-950/20")}>
+            <div className="flex items-center gap-1.5">
+              <Icon size={12} className={highlight ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"} />
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</span>
+            </div>
+            <p className={cn("text-lg font-bold leading-none font-mono", highlight ? "text-emerald-700 dark:text-emerald-300" : "text-foreground")}>{value}</p>
+            {sub && <p className="text-[10px] text-muted-foreground mt-0.5">{sub}</p>}
+          </div>
+        ))}
+      </div>
+      {solvers.length > 0 ? (
+        <div className="border-t border-border/40">
+          <p className="px-4 py-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Solvers</p>
+          {solvers.map((s, i) => (
+            <div key={i} className={cn("flex items-center gap-3 px-4 py-2.5", i < solvers.length - 1 && "border-b border-border/30")}>
+              <span className="text-sm w-4 text-center text-muted-foreground/60 font-bold">{i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}</span>
+              <span className="flex-1 text-sm text-foreground truncate">{s.name}</span>
+              <span className="font-mono text-sm font-medium text-foreground">{fmtTime(s.time)}</span>
+              {creatorTime && s.time < creatorTime && <span className="text-[10px] text-emerald-600 font-medium">beat you</span>}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="px-4 py-5 text-center">
+          <p className="text-sm text-muted-foreground">No solves yet</p>
+          <p className="text-xs text-muted-foreground/60 mt-0.5">Share the puzzle link to get solvers on the board</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminPreview() {
   // ── Core previews state ──
   const [showCompletion, setShowCompletion] = useState(false);
@@ -428,6 +487,7 @@ export default function AdminPreview() {
             <TabsTrigger value="premium" className="text-xs flex-1 min-w-0">Premium</TabsTrigger>
             <TabsTrigger value="ios" className="text-xs flex-1 min-w-0">iOS App</TabsTrigger>
             <TabsTrigger value="notifications" className="text-xs flex-1 min-w-0">Notifications</TabsTrigger>
+            <TabsTrigger value="craft" className="text-xs flex-1 min-w-0">Craft</TabsTrigger>
             <TabsTrigger value="patterns" className="text-xs flex-1 min-w-0">Patterns</TabsTrigger>
           </TabsList>
 
@@ -1091,6 +1151,59 @@ export default function AdminPreview() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </section>
+          </TabsContent>
+
+          {/* ══════════════════════════════════════════════════════════════ */}
+          {/* TAB: CRAFT ANALYTICS                                            */}
+          {/* ══════════════════════════════════════════════════════════════ */}
+          <TabsContent value="craft" className="space-y-6 mt-4">
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Star size={14} /> Craft Analytics Card
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Shows puzzle creators how their shared puzzles are performing — recipients, completion rates, solve times, and a solver leaderboard.
+              </p>
+
+              {/* Mock analytics card — same visual structure as CraftAnalyticsCard */}
+              <div className="max-w-md">
+                <MockCraftAnalytics
+                  title="Weekend Brain Teaser"
+                  totalSent={8}
+                  totalStarted={6}
+                  totalCompleted={5}
+                  avgTime={243}
+                  fastestTime={128}
+                  creatorTime={195}
+                  solvers={[
+                    { name: "Alex", time: 128 },
+                    { name: "Jordan", time: 172 },
+                    { name: "Sam", time: 195 },
+                    { name: "Casey", time: 310 },
+                    { name: "Morgan", time: 412 },
+                  ]}
+                />
+              </div>
+            </section>
+
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground">Empty State</h2>
+              <p className="text-xs text-muted-foreground">
+                What creators see before anyone has solved their puzzle.
+              </p>
+              <div className="max-w-md">
+                <MockCraftAnalytics
+                  title="My First Puzzle"
+                  totalSent={3}
+                  totalStarted={0}
+                  totalCompleted={0}
+                  avgTime={null}
+                  fastestTime={null}
+                  creatorTime={145}
+                  solvers={[]}
+                />
               </div>
             </section>
           </TabsContent>
