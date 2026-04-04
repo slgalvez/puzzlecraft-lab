@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft, Mail, Lock, User, Sparkles, Pencil,
   Check, X, Flame, Trophy, Target, Shield,
-  ChevronRight, Zap, Star,
+  ChevronRight, Zap, Star, Crown,
 } from "lucide-react";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import { hasPremiumAccess, shouldShowUpgradeCTA, PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
@@ -195,12 +195,21 @@ export default function AccountPage() {
 
           {/* ── Puzzlecraft+ block ── */}
           {isAdmin && (
-            <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
+            <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 space-y-3">
               <div className="flex items-center gap-2 mb-1">
                 <Sparkles size={16} className="text-primary" />
                 <span className="font-semibold text-foreground">Puzzlecraft+ (Admin)</span>
               </div>
               <p className="text-xs text-muted-foreground">Full access enabled via admin override.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => navigate("/admin/premium-emails")}
+              >
+                <Crown size={14} className="mr-2" />
+                Manage Premium Access
+              </Button>
             </div>
           )}
 

@@ -557,6 +557,27 @@ export type Database = {
           },
         ]
       }
+      premium_emails: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          note: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          note?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          note?: string | null
+        }
+        Relationships: []
+      }
       private_puzzles: {
         Row: {
           created_at: string
