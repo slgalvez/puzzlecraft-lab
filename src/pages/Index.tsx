@@ -47,7 +47,7 @@ const ALL_TYPES: PuzzleCategory[] = Object.keys(CATEGORY_INFO) as PuzzleCategory
 function getPersonalizedTypes(): { types: PuzzleCategory[]; isPersonalized: boolean } {
   try {
     const records = getSolveRecords();
-    if (records.length < 5) return { types: ALL_TYPES.slice(0, 8), isPersonalised: false };
+    if (records.length < 5) return { types: ALL_TYPES.slice(0, 8), isPersonalized: false };
     const counts: Record<string, number> = {};
     for (const r of records) counts[r.puzzleType] = (counts[r.puzzleType] ?? 0) + 1;
     const sorted = [...ALL_TYPES].sort((a, b) => (counts[b] ?? 0) - (counts[a] ?? 0));
