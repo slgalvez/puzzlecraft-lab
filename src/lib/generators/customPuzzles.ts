@@ -209,7 +209,7 @@ function canPlace(
 
 /**
  * Find the best placement for `word` that intersects with existing placed words.
- * Scores placement candidates by balance (push centre of mass toward grid centre).
+ * Scores placement candidates by balance (push center of mass toward grid center).
  * Same logic as fillGen.ts / crosswordGen.ts findPlacement.
  */
 function findPlacement(
