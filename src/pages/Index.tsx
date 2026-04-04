@@ -288,35 +288,38 @@ const Index = () => {
 
               {/* Returning user: inline stats bar */}
               {isReturning && (
-                <div className="mt-5 flex flex-wrap items-center gap-4">
-                  {dailyStreak.current > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <Flame size={13} className="text-primary" />
-                      <span className="text-sm font-bold text-foreground">{dailyStreak.current}</span>
-                      <span className="text-sm text-muted-foreground">day streak</span>
-                    </div>
-                  )}
-                  {dailyStreak.current > 0 && stats.totalSolved > 0 && (
-                    <div className="h-3.5 w-px bg-border" />
-                  )}
-                  {stats.totalSolved > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <Target size={13} className="text-primary" />
-                      <span className="text-sm font-bold text-foreground">{stats.totalSolved}</span>
-                      <span className="text-sm text-muted-foreground">solved</span>
-                    </div>
-                  )}
-                  {stats.bestTime !== null && (
-                    <>
-                      <div className="h-3.5 w-px bg-border" />
+                <div className="mt-5 space-y-2">
+                  {/* Stats bar */}
+                  <div className="flex flex-wrap items-center gap-4">
+                    {dailyStreak.current > 0 && (
                       <div className="flex items-center gap-1.5">
-                        <Clock size={13} className="text-primary" />
-                        <span className="text-sm font-bold text-foreground">{formatTime(stats.bestTime)}</span>
-                        <span className="text-sm text-muted-foreground">best</span>
+                        <Flame size={13} className="text-primary" />
+                        <span className="text-sm font-bold text-foreground">{dailyStreak.current}</span>
+                        <span className="text-sm text-muted-foreground">day streak</span>
                       </div>
-                    </>
-                  )}
-                  <Link to="/stats" className="text-xs font-medium text-primary hover:underline ml-auto">
+                    )}
+                    {dailyStreak.current > 0 && stats.totalSolved > 0 && (
+                      <div className="h-3.5 w-px bg-border" />
+                    )}
+                    {stats.totalSolved > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <Target size={13} className="text-primary" />
+                        <span className="text-sm font-bold text-foreground">{stats.totalSolved}</span>
+                        <span className="text-sm text-muted-foreground">solved</span>
+                      </div>
+                    )}
+                    {stats.bestTime !== null && (
+                      <>
+                        <div className="h-3.5 w-px bg-border" />
+                        <div className="flex items-center gap-1.5">
+                          <Clock size={13} className="text-primary" />
+                          <span className="text-sm font-bold text-foreground">{formatTime(stats.bestTime)}</span>
+                          <span className="text-sm text-muted-foreground">best</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <Link to="/stats" className="text-xs font-medium text-primary hover:underline">
                     Full stats →
                   </Link>
                 </div>
