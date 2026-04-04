@@ -93,6 +93,20 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
     return sg;
   }, [clues, gridSize]);
 
+  const activeClue = useMemo((): CrosswordClue | null => {
+    if (!activeCell) return null;
+    const [ar, ac] = activeCell;
+    return clues.find((cl) => {
+      if (cl.direction !== direction) return false;
+      const dr = cl.direction === "down" ? 1 : 0;
+      const dc = cl.direction === "across" ? 1 : 0;
+      for (let i = 0; i < cl.answer.length; i++) {
+        if (cl.row + dr * i === ar && cl.col + dc * i === ac) return true;
+      }
+      return false;
+    }) ?? null;
+  }, [activeCell, direction, clues]);
+
   const gridRef2 = useRef(grid);
   gridRef2.current = grid;
   const { status: saveStatus, debouncedSave } = useAutoSave<CrosswordState>({
