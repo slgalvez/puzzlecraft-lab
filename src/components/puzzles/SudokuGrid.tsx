@@ -221,20 +221,24 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
     clearProgress(timerKey);
   };
 
-  const getHighlightSet = (): Set<string> => {
+  const highlightSet = useMemo((): Set<string> => {
     if (!activeCell) return new Set();
     const [ar, ac] = activeCell;
     const cells = new Set<string>();
-    for (let i = 0; i < 9; i++) { cells.add(`${ar}-${i}`); cells.add(`${i}-${ac}`); }
-    const br = Math.floor(ar / 3) * 3, bc = Math.floor(ac / 3) * 3;
-    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) cells.add(`${br + i}-${bc + j}`);
+    for (let i = 0; i < 9; i++) {
+      cells.add(`${ar}-${i}`);
+      cells.add(`${i}-${ac}`);
+    }
+    const br = Math.floor(ar / 3) * 3;
+    const bc = Math.floor(ac / 3) * 3;
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j < 3; j++)
+        cells.add(`${br + i}-${bc + j}`);
     return cells;
-  };
-
-  const highlightSet = getHighlightSet();
+  }, [activeCell]);
 
   return (
-    <div>
+    <div className="scroll-mt-4">
       <PuzzleHeader
         puzzleType="sudoku"
         difficulty={difficulty}
@@ -250,7 +254,10 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
           Arrow keys to move • 1–9 to enter • Delete to clear
         </p>
       )}
-      <div className="max-w-full overflow-x-auto">
+      <div
+        className="max-w-full overflow-x-auto [overscroll-behavior:contain]"
+        style={{ touchAction: isMobile ? "none" : "auto" }}
+      >
       <div
         ref={containerRef}
         tabIndex={0}
@@ -269,7 +276,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
               <div
                 key={`${r}-${c}`}
                 className={cn(
-                  "relative w-8 h-8 sm:w-11 sm:h-11 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
+                  "relative w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
                   c % 3 === 2 && c < 8 && "border-r-2 border-r-foreground",
                   r % 3 === 2 && r < 8 && "border-b-2 border-b-foreground",
                   hasError && "bg-puzzle-cell-error",
@@ -283,7 +290,10 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
                   if (!isMobile) containerRef.current?.focus();
                 }}
               >
-                <span className={cn("text-sm sm:text-lg font-semibold", given ? "text-foreground" : "text-primary")}>
+                <span className={cn(
+                  "text-sm sm:text-base md:text-lg lg:text-xl font-semibold",
+                  given ? "text-foreground" : "text-primary"
+                )}>
                   {grid[r][c]?.toString() || ""}
                 </span>
               </div>
