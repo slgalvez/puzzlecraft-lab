@@ -7,7 +7,7 @@ import PremiumStats from "@/components/account/PremiumStats";
 import { StatsPremiumPreview, LoginPremiumPreview } from "@/components/account/PremiumPreview";
 import PremiumLockedCard from "@/components/account/PremiumLockedCard";
 import UpgradeModal from "@/components/account/UpgradeModal";
-import { NotificationBanner } from "@/components/private/NotificationBanner";
+
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import { CraftTemplateSelector } from "@/components/craft/CraftTemplateSelector";
 import { ActivityCalendar } from "@/components/stats/ActivityCalendar";
