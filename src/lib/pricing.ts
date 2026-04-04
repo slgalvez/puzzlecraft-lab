@@ -40,6 +40,6 @@ export const PRICING = {
   annual:           `${ANNUAL_PRICE}/year`,
   annualSaving:     `Save ${ANNUAL_SAVING_PCT}`,
   annualEquiv:      `${ANNUAL_MONTHLY_EQUIV}/mo billed annually`,
-  trial:            `${TRIAL_DAYS}-day free trial`,
+  trial:            "",
   inline:           `${MONTHLY_PRICE}/month · ${ANNUAL_PRICE}/year`,
 } as const;

@@ -682,10 +682,10 @@ const Index = () => {
               <div className="mt-8 flex flex-col items-center gap-2">
                 <Button asChild size="lg" className="gap-2 px-8">
                   <Link to="/account">
-                    <Crown size={16} /> Start 7-day free trial
+                    <Crown size={16} /> Get Puzzlecraft+
                   </Link>
                 </Button>
-                <p className="text-xs text-muted-foreground">Cancel anytime · No commitment</p>
+                <p className="text-xs text-muted-foreground">{MONTHLY_PRICE}/month · Cancel anytime</p>
               </div>
             </div>
           </div>

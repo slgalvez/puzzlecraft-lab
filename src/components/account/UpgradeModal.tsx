@@ -189,7 +189,7 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
 
             {native && (
               <p className="text-center text-[11px] text-muted-foreground">
-                {TRIAL_DAYS}-day free trial · Cancel anytime · Billed via App Store
+                Cancel anytime · Billed via App Store
               </p>
             )}
 
