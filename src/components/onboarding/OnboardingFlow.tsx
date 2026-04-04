@@ -53,7 +53,7 @@ const CrosswordPreview = () => (
 );
 
 const CraftPreview = () => (
-  <svg viewBox="0 0 140 90" className="w-full h-full" aria-hidden>
+  <svg viewBox="0 0 140 90" className="w-full h-auto max-h-full" preserveAspectRatio="xMidYMid meet" aria-hidden>
     {/* Phone A — creator */}
     <rect x="4" y="8" width="50" height="74" rx="7" fill="currentColor" opacity="0.06" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.25"/>
     <rect x="10" y="18" width="38" height="6" rx="2" fill="hsl(32 80% 50%)" opacity="0.7"/>
