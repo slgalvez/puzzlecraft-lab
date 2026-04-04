@@ -438,7 +438,10 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
   };
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:gap-10 puzzle-keyboard-aware">
+    <div
+      className="flex flex-col gap-6 lg:flex-row lg:gap-10 puzzle-keyboard-aware scroll-mt-4"
+      style={{ touchAction: isMobile ? "none" : "auto" }}
+    >
       <div className="flex-shrink-0">
         <PuzzleHeader
           puzzleType={puzzle.type as any}
@@ -456,6 +459,20 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
           </p>
         )}
 
+        {isMobile && !timer.isSolved && !isRevealed && (
+          <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+            <span>
+              <span className="font-semibold text-foreground">
+                {entrySlots.filter(s => s.cells.every(([r, c]) => grid[r]?.[c])).length}
+              </span>
+              /{entrySlots.length} slots filled
+            </span>
+            {usedEntries.size > 0 && (
+              <span className="text-primary font-medium">{usedEntries.size} word{usedEntries.size !== 1 ? "s" : ""} checked off</span>
+            )}
+          </div>
+        )}
+
         {!isNumbers && (
           <MobileLetterInput
             ref={mobileInputRef}
@@ -465,7 +482,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
           />
         )}
 
-        <div className="max-w-full overflow-x-auto">
+        <div className="max-w-full overflow-x-auto [overscroll-behavior:contain] scroll-mt-4">
         <div
           ref={containerRef}
           tabIndex={0}
@@ -484,7 +501,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
                 <div
                   key={`${r}-${c}`}
                   className={cn(
-                    "relative w-8 h-8 sm:w-12 sm:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
+                    "relative w-7 h-7 sm:w-9 sm:h-9 md:w-11 md:h-11 lg:w-12 lg:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
                     black && "bg-puzzle-cell-black",
                     !black && hasError && "bg-puzzle-cell-error",
                     !black && !hasError && isActive && "bg-puzzle-cell-active",
@@ -494,7 +511,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
                   onClick={() => handleCellClick(r, c)}
                 >
                   {!black && (
-                    <span className="text-sm sm:text-xl font-semibold text-foreground uppercase">{grid[r][c]}</span>
+                    <span className="text-xs sm:text-sm md:text-lg lg:text-xl font-semibold text-foreground uppercase">{grid[r][c]}</span>
                   )}
                 </div>
               );
