@@ -57,6 +57,7 @@ import IOSPlayTab from "@/components/ios/IOSPlayTab";
 import { setPrivateAccessGrant } from "@/lib/privateAccessGrant";
 import { cn } from "@/lib/utils";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
+import { PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
 
 // ── Seeded mock leaderboard (fallback until real data exists) ─────────────────
 
