@@ -416,6 +416,15 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
           </div>
         )}
 
+        {isMobile && activeClue && !timer.isSolved && !isRevealed && (
+          <div className="mb-2 rounded-lg border bg-card/95 px-3 py-2 text-sm leading-snug">
+            <span className="font-semibold text-primary mr-1.5">
+              {activeClue.number}{activeClue.direction === "across" ? "A" : "D"}
+            </span>
+            <span className="text-foreground">{activeClue.clue}</span>
+          </div>
+        )}
+
         {!isMobile && (
           <p className="mb-2 text-xs text-muted-foreground">
             Arrow keys to move • Tab for next word • Click cell to toggle direction
