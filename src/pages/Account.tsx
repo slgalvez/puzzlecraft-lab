@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import { hasPremiumAccess, shouldShowUpgradeCTA, PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
+import { MONTHLY_PRICE, ANNUAL_PRICE, TRIAL_DAYS } from "@/lib/pricing";
 import { supabase } from "@/integrations/supabase/client";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 import { toast } from "sonner";
@@ -261,9 +262,9 @@ export default function AccountPage() {
                 </div>
                 <p className="text-sm text-muted-foreground">Unlock everything — unlimited puzzles, advanced stats, and more.</p>
                 <div className="mt-3 flex items-baseline gap-1">
-                  <span className="font-mono text-3xl font-bold text-foreground">$2.99</span>
-                  <span className="text-sm text-muted-foreground">/month</span>
-                  <span className="ml-2 text-[11px] text-muted-foreground/60">or $19.99/year</span>
+                 <span className="font-mono text-3xl font-bold text-foreground">{MONTHLY_PRICE}</span>
+                 <span className="text-sm text-muted-foreground">/month</span>
+                 <span className="ml-2 text-[11px] text-muted-foreground/60">or {ANNUAL_PRICE}/year</span>
                 </div>
               </div>
               <div className="px-5 py-4 space-y-2.5 border-t border-border/60">
@@ -469,9 +470,9 @@ export default function AccountPage() {
               </div>
             </div>
             <div className="mt-3 flex items-baseline gap-1.5">
-              <span className="font-mono text-2xl font-bold text-foreground">$2.99</span>
+              <span className="font-mono text-2xl font-bold text-foreground">{MONTHLY_PRICE}</span>
               <span className="text-sm text-muted-foreground">/month</span>
-              <span className="text-[11px] text-muted-foreground/50 ml-1">· $19.99/year</span>
+              <span className="text-[11px] text-muted-foreground/50 ml-1">· {ANNUAL_PRICE}/year</span>
             </div>
           </div>
 

@@ -1,6 +1,14 @@
 /**
- * UpgradeModal.tsx — Full replacement
- * Uses useSubscription() for cross-platform purchases.
+ * UpgradeModal.tsx  ← FULL REPLACEMENT
+ * src/components/account/UpgradeModal.tsx
+ *
+ * Change from previous version:
+ *   MONTHLY_PRICE "$3.99" → "$2.99"  (via shared pricing.ts)
+ *   ANNUAL_PRICE  "$27.99" → "$19.99" (via shared pricing.ts)
+ *   ANNUAL_SAVING_PCT "42%" → "44%"  (recalculated: $19.99 vs $35.88)
+ *
+ * All pricing now imported from src/lib/pricing.ts.
+ * All other logic is identical to the previous version.
  */
 
 import { useState } from "react";
@@ -12,19 +20,15 @@ import { cn } from "@/lib/utils";
 import { useSubscription } from "@/hooks/useSubscription";
 import { isNativeApp } from "@/lib/appMode";
 import { PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
-
-const MONTHLY_PRICE = "$3.99";
-const ANNUAL_PRICE  = "$27.99";
-const ANNUAL_SAVING_PCT = "42%";
-const TRIAL_DAYS = 7;
+import { MONTHLY_PRICE, ANNUAL_PRICE, ANNUAL_SAVING_PCT, TRIAL_DAYS } from "@/lib/pricing";
 
 const FEATURES = [
   { icon: InfinityIcon, text: "Unlimited craft puzzles (free: 10/month)" },
-  { icon: Zap,          text: "Extreme & Insane difficulty levels" },
+  { icon: Zap,          text: "Extreme & Insane difficulty levels"        },
   { icon: BarChart2,    text: "Full analytics — accuracy, trends, personal bests" },
-  { icon: Crown,        text: "Skill rating & tier progression" },
+  { icon: Crown,        text: "Skill rating & tier progression"           },
   { icon: Shield,       text: "Streak Shield — protect your streak once a month" },
-  { icon: Star,         text: "Early access to new puzzle types" },
+  { icon: Star,         text: "Early access to new puzzle types"          },
 ];
 
 interface UpgradeModalProps {
@@ -84,13 +88,9 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
     );
   }
 
-  // CTA copy
   const ctaCopy = () => {
     if (purchasing) return "Opening…";
-    if (native) {
-      // On web build, RevenueCat is never available — always show website CTA
-      return "Subscribe on our website";
-    }
+    if (native) return "Subscribe on our website";
     return annual
       ? `Subscribe — ${ANNUAL_PRICE}/year`
       : `Subscribe — ${MONTHLY_PRICE}/month`;
@@ -124,6 +124,7 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
             </p>
           </div>
 
+          {/* Monthly / Annual toggle */}
           <div className="flex rounded-2xl bg-muted/50 p-1 gap-1">
             <button
               onClick={() => setAnnual(false)}
@@ -153,6 +154,7 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
             </button>
           </div>
 
+          {/* Features */}
           <div className="space-y-2.5">
             {FEATURES.map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-start gap-3">
