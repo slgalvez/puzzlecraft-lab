@@ -283,11 +283,20 @@ const DailyPuzzle = () => {
           </div>
         </div>
 
+        {/* Confetti on fresh solve */}
+        {justSolved && <DailyConfetti />}
+
         {/* Completion banner */}
         {completion && (
-          <div className="mb-8 rounded-xl border bg-card p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className={cn(
+            "mb-8 rounded-xl border bg-card p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4",
+            justSolved && "animate-scale-in"
+          )}>
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <div className={cn(
+                "h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center",
+                justSolved && "animate-[dailyTrophyPulse_0.6s_ease-out]"
+              )}>
                 <Trophy size={20} className="text-primary" />
               </div>
               <div>
