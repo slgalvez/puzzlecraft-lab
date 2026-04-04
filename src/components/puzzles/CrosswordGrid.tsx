@@ -468,7 +468,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
                   onClick={() => handleCellClick(r, c)}
                 >
                   {num && !black && (
-                    <span className="absolute left-0.5 top-0 text-[9px] font-medium text-puzzle-number leading-tight">{num}</span>
+                    <span className="absolute left-0.5 top-0 text-[7px] sm:text-[8px] md:text-[9px] font-medium text-puzzle-number leading-tight">{num}</span>
                   )}
                   {!black && (
                     <span className="text-sm sm:text-xl font-semibold text-foreground uppercase">{grid[r][c]}</span>
