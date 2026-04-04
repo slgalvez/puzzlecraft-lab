@@ -511,7 +511,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
                   onClick={() => handleCellClick(r, c)}
                 >
                   {!black && (
-                    <span className="text-sm sm:text-xl font-semibold text-foreground uppercase">{grid[r][c]}</span>
+                    <span className="text-xs sm:text-sm md:text-lg lg:text-xl font-semibold text-foreground uppercase">{grid[r][c]}</span>
                   )}
                 </div>
               );
