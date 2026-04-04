@@ -12,7 +12,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { getSolveRecords } from "@/lib/solveTracker";
 import { computePlayerRating, getSkillTier, getTierColor, getTierProgress } from "@/lib/solveScoring";
 import { hasPremiumAccess } from "@/lib/premiumAccess";
-import { usePremiumAccess } from "@/lib/premiumAccess";
 
 interface LeaderboardEntry {
   user_id: string;
