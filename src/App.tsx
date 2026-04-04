@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { trackNavigation } from "@/lib/navigation";
 import { pruneStaleProgress } from "@/lib/puzzleProgress";
 import ScrollToTop from "@/components/ScrollToTop";
@@ -30,6 +30,7 @@ import DataMergeModal from "./components/account/DataMergeModal";
 import { MilestoneModalManager } from "./components/puzzles/MilestoneModalManager";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import { useOnboarding } from "@/hooks/useOnboarding";
+import { useRatingSync } from "@/hooks/useRatingSync";
 // Private app — completely separate auth system (custom JWT, separate DB tables)
 import { isNativeApp } from "./lib/appMode";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -51,6 +52,19 @@ pruneStaleProgress();
 function NavigationTracker() {
   const location = useLocation();
   useEffect(() => { trackNavigation(); }, [location.pathname]);
+  return null;
+}
+
+/*
+ * ──────────────────────────────────────────────────────────────
+ * Mounts global background hooks that need to live above all routes.
+ * Renders nothing — purely side-effects.
+ * ──────────────────────────────────────────────────────────────
+ */
+function GlobalHooks() {
+  // Syncs the player's computed rating to Supabase after every solve,
+  // and restores it on reinstall/new device from Supabase.
+  useRatingSync();
   return null;
 }
 
@@ -80,12 +94,21 @@ function NavigationTracker() {
 function PublicRoutes() {
   const { onboardingComplete, completeOnboarding } = useOnboarding();
 
-  if (!onboardingComplete) {
+  // If this is a shared craft puzzle link (/s/:id), skip onboarding entirely.
+  // The recipient came from a friend's share — that IS their first experience.
+  // Marking onboarding complete so they don't see it when they open the app properly.
+  const isShareLink = window.location.pathname.startsWith("/s/");
+  if (isShareLink && !onboardingComplete) {
+    completeOnboarding();
+  }
+
+  if (!onboardingComplete && !isShareLink) {
     return <OnboardingFlow onComplete={completeOnboarding} />;
   }
 
   return (
     <UserAccountProvider>
+      <GlobalHooks />
       <DataMergeModal />
       {/* Global milestone celebration modal — fires after any solve */}
       <MilestoneModalManager />
