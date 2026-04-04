@@ -337,11 +337,11 @@ const IOSPlayTab = () => {
       {/* ── Puzzle type section ── */}
       <div className="space-y-3">
 
-        {/* Returning users: top 2 "Your favourites" cards */}
+        {/* Returning users: top 2 "Your favorites" cards */}
         {isReturningUser && topTwo.length > 0 && (
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-0.5">
-              Your favourites
+              Your favorites
             </p>
             <div className="flex gap-3">
               {topTwo.map((type) => {

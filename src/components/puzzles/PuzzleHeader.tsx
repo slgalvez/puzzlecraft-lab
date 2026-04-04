@@ -156,7 +156,7 @@ export const PuzzleHeader = ({
           )}
         </div>
 
-        {/* Spacer to keep badge centred */}
+        {/* Spacer to keep badge centered */}
         <div className="min-w-[60px]" />
       </div>
 

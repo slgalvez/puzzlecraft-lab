@@ -269,7 +269,7 @@ function findPlacement(
         const newComC = (comC * wCount + midC * word.length) / (wCount + word.length);
         const distBefore = Math.abs(comR - center) + Math.abs(comC - center);
         const distAfter = Math.abs(newComR - center) + Math.abs(newComC - center);
-        const balanceScore = distBefore - distAfter; // positive = pulls toward centre
+        const balanceScore = distBefore - distAfter; // positive = pulls toward center
 
         candidates.push({ row: nr, col: nc, dir: newDir, score: balanceScore });
       }

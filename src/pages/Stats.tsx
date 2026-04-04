@@ -168,7 +168,7 @@ const Stats = () => {
     return stats.solvedDates[0] !== today;
   }, [stats]);
 
-  // Personalised heading
+  // Personalized heading
   const headingLabel = useMemo(() => {
     if (stats.totalSolved === 0) return "Your Progress";
     const tierLabel = localRating?.tier ?? null;

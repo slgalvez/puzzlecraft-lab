@@ -6,7 +6,7 @@
  *
  * STRUCTURE: 6 sections → 4
  *   1. Hero  — two-column: headline + CTAs left, daily challenge card right
- *   2. Types — puzzle grid, personalised for returning users
+ *   2. Types — puzzle grid, personalized for returning users
  *   3. Create — social/viral differentiator
  *   4. Progress — only shown to returning users (≥5 solves)
  *

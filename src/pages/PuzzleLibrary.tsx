@@ -148,7 +148,7 @@ const PuzzleLibrary = () => {
           <div>
             <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Play</h1>
             <p className="mt-1.5 text-muted-foreground text-sm">
-              {isReturningUser ? "Your favourites, sorted by play frequency." : "Eight puzzle types. Pick one and start solving."}
+              {isReturningUser ? "Your favorites, sorted by play frequency." : "Eight puzzle types. Pick one and start solving."}
             </p>
           </div>
         </div>
