@@ -4,12 +4,26 @@ import Layout from "@/components/layout/Layout";
 import CompletionPanel from "@/components/puzzles/CompletionPanel";
 import MilestoneModal, { type MilestoneToShow } from "@/components/puzzles/MilestoneModal";
 import PremiumStats from "@/components/account/PremiumStats";
+import { StatsPremiumPreview, LoginPremiumPreview } from "@/components/account/PremiumPreview";
+import PremiumLockedCard from "@/components/account/PremiumLockedCard";
+import UpgradeModal from "@/components/account/UpgradeModal";
+import { NotificationBanner } from "@/components/private/NotificationBanner";
+import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
+import { CraftTemplateSelector } from "@/components/craft/CraftTemplateSelector";
+import ActivityCalendar from "@/components/stats/ActivityCalendar";
+import { WeeklyPackCard } from "@/components/ios/WeeklyPackCard";
+import { DailyLeaderboard } from "@/components/ios/DailyLeaderboard";
+import { StreakShieldBanner } from "@/components/ios/StreakShieldBanner";
+import { PremiumGate, PremiumBadge, PremiumLockRow } from "@/components/premium/PremiumGate";
 import type { MilestoneIcon } from "@/lib/milestones";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Clock, Users } from "lucide-react";
+import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Clock, Users, Bell, Smartphone, Eye, Shield, Sparkles, X } from "lucide-react";
 import { generateNonogram } from "@/lib/generators/nonogram";
+
+// ── Icon map ───────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ICON_MAP: Record<MilestoneIcon, any> = {
@@ -43,6 +57,8 @@ const MOCK_MILESTONES: MilestoneToShow[] = [
 ];
 
 const ICON_OPTIONS: MilestoneIcon[] = ["puzzle", "flame", "trophy", "medal", "zap", "crown", "target", "award", "bolt"];
+
+// ── Shared sub-components ──────────────────────────────────────────────────
 
 function ConfettiParticles() {
   return (
@@ -96,6 +112,8 @@ function NonogramMiniGrid({ solution }: { solution: boolean[][] }) {
   );
 }
 
+// ── Share messages ─────────────────────────────────────────────────────────
+
 const SHARE_MESSAGES = [
   {
     label: "Daily Challenge Result",
@@ -104,52 +122,28 @@ const SHARE_MESSAGES = [
   },
   {
     label: "Puzzle Result (Quick Play)",
-    description: "Sent when a user shares a completed puzzle from Quick Play or Puzzle Lab",
+    description: "Sent when a user shares a completed puzzle from Quick Play",
     text: `Just tackled a Puzzlecraft puzzle 🧠\n\nSudoku • Hard • 12:05\n\nCan you beat this time?\n\nPlay: https://puzzlecraft-lab.lovable.app/play?code=sudoku-307144639-hard\n\nPuzzle Code: 307144639`,
   },
   {
     label: "Crafted Puzzle (with challenge time)",
     description: "Sent when a creator shares a crafted puzzle with a challenge time set",
-    text: buildCraftShareText(
-      "Birthday Brain Teaser",
-      "Alex",
-      "https://puzzlecraft-lab.lovable.app/s/abc123-craft-id",
-      "crossword",
-      202
-    ),
+    text: buildCraftShareText("Birthday Brain Teaser", "Alex", "https://puzzlecraft-lab.lovable.app/s/abc123-craft-id", "crossword", 202),
   },
   {
     label: "Crafted Puzzle (no challenge)",
     description: "Sent when a creator shares a crafted puzzle without solving it first",
-    text: buildCraftShareText(
-      undefined,
-      "Jordan",
-      "https://puzzlecraft-lab.lovable.app/s/xyz789-craft-id",
-      "word-search",
-      null
-    ),
+    text: buildCraftShareText(undefined, "Jordan", "https://puzzlecraft-lab.lovable.app/s/xyz789-craft-id", "word-search", null),
   },
   {
     label: "Solve Result (beat creator)",
     description: "Sent when a recipient solves a crafted puzzle faster than the creator",
-    text: buildSolveResultShareText(
-      "Birthday Brain Teaser",
-      "crossword",
-      185,
-      202,
-      "https://puzzlecraft-lab.lovable.app/s/abc123-craft-id"
-    ),
+    text: buildSolveResultShareText("Birthday Brain Teaser", "crossword", 185, 202, "https://puzzlecraft-lab.lovable.app/s/abc123-craft-id"),
   },
   {
     label: "Solve Result (missed)",
     description: "Sent when a recipient solves but doesn't beat the creator's time",
-    text: buildSolveResultShareText(
-      "Weekend Challenge",
-      "cryptogram",
-      310,
-      245,
-      "https://puzzlecraft-lab.lovable.app/s/def456-craft-id"
-    ),
+    text: buildSolveResultShareText("Weekend Challenge", "cryptogram", 310, 245, "https://puzzlecraft-lab.lovable.app/s/def456-craft-id"),
   },
 ];
 
@@ -167,7 +161,6 @@ function ShareMessagePreviews() {
               <span className="text-xs font-medium text-foreground">{msg.label}</span>
               <span className="text-[10px] text-muted-foreground/60">{msg.description}</span>
             </div>
-            {/* iMessage-style bubble */}
             <div className="max-w-sm ml-auto">
               <div className="rounded-2xl rounded-br-md bg-[#007AFF] text-white px-4 py-2.5 text-sm whitespace-pre-line leading-relaxed shadow-sm">
                 {msg.text}
@@ -180,6 +173,8 @@ function ShareMessagePreviews() {
     </section>
   );
 }
+
+// ── Nonogram preview ──────────────────────────────────────────────────────
 
 const NONOGRAM_DIFFICULTIES = [
   { label: "5×5", value: "easy" as const },
@@ -201,7 +196,6 @@ function NonogramPreview() {
     });
   }, [difficulty]);
 
-  // Reset page when difficulty changes
   useEffect(() => { setPage(0); }, [difficulty]);
 
   const totalPages = Math.ceil(puzzles.length / perPage);
@@ -248,6 +242,8 @@ function NonogramPreview() {
   );
 }
 
+// ── Leaderboard preview ───────────────────────────────────────────────────
+
 const MOCK_LEADERBOARD = [
   { rank: 1, name: "Sarah", time: 98, emoji: "🥇", highlight: false },
   { rank: 2, name: "You", time: 125, emoji: "🥈", highlight: true },
@@ -286,10 +282,8 @@ function LeaderboardPreview() {
         ))}
       </div>
 
-      {/* Mock leaderboard card */}
       <div className="max-w-sm mx-auto">
         <div className="rounded-2xl border bg-card overflow-hidden">
-          {/* Header */}
           <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Trophy size={14} className="text-primary" />
@@ -301,12 +295,10 @@ function LeaderboardPreview() {
             </div>
           </div>
 
-          {/* Rank callout */}
           <div className="px-4 py-2.5 text-sm font-semibold border-b border-border/40 bg-primary/8 text-primary">
             🥈 You're in second place
           </div>
 
-          {/* Rows */}
           <div className="divide-y divide-border/40">
             {MOCK_LEADERBOARD.slice(0, solverCount).map((entry) => (
               <div
@@ -349,7 +341,6 @@ function LeaderboardPreview() {
         </div>
       </div>
 
-      {/* Name input preview */}
       <div className="max-w-sm mx-auto mt-3">
         <div className="rounded-2xl border bg-card p-4 space-y-3">
           <div className="flex items-center gap-2">
@@ -377,7 +368,12 @@ function LeaderboardPreview() {
   );
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ══════════════════════════════════════════════════════════════════════════
+
 export default function AdminPreview() {
+  // ── Core previews state ──
   const [showCompletion, setShowCompletion] = useState(false);
   const [showMilestone, setShowMilestone] = useState(false);
   const [showPremiumStats, setShowPremiumStats] = useState(false);
@@ -387,10 +383,24 @@ export default function AdminPreview() {
   const [achievedIds, setAchievedIds] = useState<Set<string>>(new Set());
   const [celebratingIds, setCelebratingIds] = useState<Set<string>>(new Set());
 
+  // ── Premium / modals state ──
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // ── Notification banner state ──
+  const [bannerPhrase, setBannerPhrase] = useState<string | null>(null);
+
+  const NOTIFICATION_PHRASES = [
+    "Hey — need to check something",
+    "Quick thought for you",
+    "Something came up 🔔",
+    "Don't forget to look at this",
+    "Ping! You there?",
+  ];
+
   const handleAchieve = useCallback((id: string) => {
     setAchievedIds((prev) => new Set(prev).add(id));
     setCelebratingIds((prev) => new Set(prev).add(id));
-    // Clear celebration animation after 1.5s
     setTimeout(() => {
       setCelebratingIds((prev) => {
         const next = new Set(prev);
@@ -414,244 +424,730 @@ export default function AdminPreview() {
 
   return (
     <Layout>
-      <div className="max-w-3xl mx-auto p-6 space-y-8">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Admin Preview</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Preview UI features with mock data — no need to solve puzzles.
+            Preview ALL UI features with mock data — onboarding, premium, iOS, notifications, and more.
           </p>
         </div>
 
-        {/* ── Completion Panel ── */}
-        <section className="space-y-3 rounded-xl border border-border/30 p-4">
-          <h2 className="text-sm font-semibold text-foreground">Completion Panel</h2>
-          <div className="flex flex-wrap gap-2 items-end">
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Category</label>
-              <select
-                value={completionCategory}
-                onChange={(e) => setCompletionCategory(e.target.value)}
-                className="text-xs rounded-md border border-border bg-background px-2 py-1.5"
-              >
-                {["crossword", "word-fill", "number-fill", "sudoku", "kakuro", "word-search", "cryptogram", "nonogram"].map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Difficulty</label>
-              <select
-                value={completionDifficulty}
-                onChange={(e) => setCompletionDifficulty(e.target.value)}
-                className="text-xs rounded-md border border-border bg-background px-2 py-1.5"
-              >
-                {["easy", "medium", "hard", "extreme", "insane"].map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Time (sec)</label>
-              <input
-                type="number"
-                value={completionTime}
-                onChange={(e) => setCompletionTime(Number(e.target.value))}
-                className="text-xs rounded-md border border-border bg-background px-2 py-1.5 w-20"
-              />
-            </div>
-            <Button size="sm" onClick={() => setShowCompletion(!showCompletion)}>
-              {showCompletion ? "Hide" : "Show"}
-            </Button>
-          </div>
-          {showCompletion && (
-            <div className="mt-3 rounded-lg border border-border/20 p-3 bg-secondary/5">
-              <CompletionPanel
-                time={completionTime}
-                difficulty={completionDifficulty as any}
-                category={completionCategory as any}
-                onPlayAgain={() => setShowCompletion(false)}
-                accuracy={92}
-                assisted={false}
-                hintsUsed={1}
-                mistakesCount={3}
-                seed={42}
-              />
-            </div>
-          )}
-        </section>
+        <Tabs defaultValue="core" className="w-full">
+          <TabsList className="w-full flex overflow-x-auto gap-1 bg-muted/50 p-1 rounded-xl">
+            <TabsTrigger value="core" className="text-xs flex-1 min-w-0">Core UI</TabsTrigger>
+            <TabsTrigger value="premium" className="text-xs flex-1 min-w-0">Premium</TabsTrigger>
+            <TabsTrigger value="ios" className="text-xs flex-1 min-w-0">iOS App</TabsTrigger>
+            <TabsTrigger value="notifications" className="text-xs flex-1 min-w-0">Notifications</TabsTrigger>
+            <TabsTrigger value="patterns" className="text-xs flex-1 min-w-0">Patterns</TabsTrigger>
+          </TabsList>
 
-        {/* ── Milestone Tiles with Confetti ── */}
-        <section className="space-y-3 rounded-xl border border-border/30 p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-foreground">Milestone Tiles</h2>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="text-xs" onClick={handleAchieveAll}>
-                Achieve All
-              </Button>
-              <Button size="sm" variant="outline" className="text-xs" onClick={handleResetTiles}>
-                Reset
-              </Button>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Click a tile to trigger the achievement confetti animation.
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {ALL_MILESTONES.map((m) => {
-              const IconComp = ICON_MAP[m.icon] ?? Target;
-              const isAchieved = achievedIds.has(m.id);
-              const isCelebrating = celebratingIds.has(m.id);
-              const mockProgress = isAchieved ? 100 : Math.floor(Math.random() * 60 + 20);
+          {/* ══════════════════════════════════════════════════════════════ */}
+          {/* TAB 1: CORE UI                                                */}
+          {/* ══════════════════════════════════════════════════════════════ */}
+          <TabsContent value="core" className="space-y-6 mt-4">
 
-              return (
-                <button
-                  key={m.id}
-                  onClick={() => !isAchieved && handleAchieve(m.id)}
-                  className={cn(
-                    "rounded-lg border p-3 transition-all relative text-left",
-                    isAchieved && "bg-primary/5 border-primary/25",
-                    !isAchieved && "bg-card border-border hover:border-primary/20 hover:bg-primary/[0.02]",
-                    isCelebrating && "ring-2 ring-primary/30",
-                  )}
-                >
-                  {isCelebrating && <ConfettiParticles />}
-                  {isCelebrating && (
-                    <>
-                      <span className="absolute top-1 right-1 text-primary animate-pulse text-xs">✦</span>
-                      <span className="absolute bottom-1 left-2 text-primary/60 animate-pulse text-[10px]" style={{ animationDelay: "0.2s" }}>✦</span>
-                    </>
-                  )}
-                  <div className="flex items-start gap-2.5">
-                    <IconComp
-                      size={18}
+            {/* ── Onboarding Flow ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Eye size={14} /> Welcome / Onboarding Screens
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                The 3-screen first-launch walkthrough — preview it without clearing localStorage.
+              </p>
+              <Button size="sm" onClick={() => setShowOnboarding(true)}>
+                Show Onboarding Flow
+              </Button>
+            </section>
+
+            {/* ── Completion Panel ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground">Completion Panel</h2>
+              <div className="flex flex-wrap gap-2 items-end">
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Category</label>
+                  <select
+                    value={completionCategory}
+                    onChange={(e) => setCompletionCategory(e.target.value)}
+                    className="text-xs rounded-md border border-border bg-background px-2 py-1.5"
+                  >
+                    {["crossword", "word-fill", "number-fill", "sudoku", "kakuro", "word-search", "cryptogram", "nonogram"].map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Difficulty</label>
+                  <select
+                    value={completionDifficulty}
+                    onChange={(e) => setCompletionDifficulty(e.target.value)}
+                    className="text-xs rounded-md border border-border bg-background px-2 py-1.5"
+                  >
+                    {["easy", "medium", "hard", "extreme", "insane"].map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Time (sec)</label>
+                  <input
+                    type="number"
+                    value={completionTime}
+                    onChange={(e) => setCompletionTime(Number(e.target.value))}
+                    className="text-xs rounded-md border border-border bg-background px-2 py-1.5 w-20"
+                  />
+                </div>
+                <Button size="sm" onClick={() => setShowCompletion(!showCompletion)}>
+                  {showCompletion ? "Hide" : "Show"}
+                </Button>
+              </div>
+              {showCompletion && (
+                <div className="mt-3 rounded-lg border border-border/20 p-3 bg-secondary/5">
+                  <CompletionPanel
+                    time={completionTime}
+                    difficulty={completionDifficulty as any}
+                    category={completionCategory as any}
+                    onPlayAgain={() => setShowCompletion(false)}
+                    accuracy={92}
+                    assisted={false}
+                    hintsUsed={1}
+                    mistakesCount={3}
+                    seed={42}
+                  />
+                </div>
+              )}
+            </section>
+
+            {/* ── Milestone Tiles ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-foreground">Milestone Tiles</h2>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="text-xs" onClick={handleAchieveAll}>
+                    Achieve All
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs" onClick={handleResetTiles}>
+                    Reset
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Click a tile to trigger the achievement confetti animation.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {ALL_MILESTONES.map((m) => {
+                  const IconComp = ICON_MAP[m.icon] ?? Target;
+                  const isAchieved = achievedIds.has(m.id);
+                  const isCelebrating = celebratingIds.has(m.id);
+                  const mockProgress = isAchieved ? 100 : Math.floor(Math.random() * 60 + 20);
+
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => !isAchieved && handleAchieve(m.id)}
                       className={cn(
-                        "shrink-0 mt-0.5 transition-colors",
-                        isAchieved ? "text-primary" : "text-muted-foreground",
+                        "rounded-lg border p-3 transition-all relative text-left",
+                        isAchieved && "bg-primary/5 border-primary/25",
+                        !isAchieved && "bg-card border-border hover:border-primary/20 hover:bg-primary/[0.02]",
+                        isCelebrating && "ring-2 ring-primary/30",
                       )}
-                    />
+                    >
+                      {isCelebrating && <ConfettiParticles />}
+                      {isCelebrating && (
+                        <>
+                          <span className="absolute top-1 right-1 text-primary animate-pulse text-xs">✦</span>
+                          <span className="absolute bottom-1 left-2 text-primary/60 animate-pulse text-[10px]" style={{ animationDelay: "0.2s" }}>✦</span>
+                        </>
+                      )}
+                      <div className="flex items-start gap-2.5">
+                        <IconComp
+                          size={18}
+                          className={cn(
+                            "shrink-0 mt-0.5 transition-colors",
+                            isAchieved ? "text-primary" : "text-muted-foreground",
+                          )}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className={cn(
+                            "text-xs leading-tight",
+                            isAchieved ? "text-foreground font-medium" : "text-muted-foreground"
+                          )}>{m.label}</p>
+                          {!isAchieved && (
+                            <div className="mt-1.5 space-y-1">
+                              <Progress value={mockProgress} className="h-1.5" />
+                              <p className="text-[10px] text-muted-foreground">{mockProgress}%</p>
+                            </div>
+                          )}
+                          {isAchieved && (
+                            <p className="text-[10px] text-primary/70 mt-0.5">Achieved ✓</p>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* ── Milestone Modal ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground">Milestone Celebration Modal</h2>
+              <p className="text-xs text-muted-foreground">
+                Opens as a full-screen overlay with confetti and haptic feedback.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={() => setShowMilestone(true)}>
+                  Show All 3 Milestones
+                </Button>
+                {ICON_OPTIONS.map((icon) => (
+                  <Button
+                    key={icon}
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowMilestone(true)}
+                    className="text-xs capitalize"
+                  >
+                    {icon}
+                  </Button>
+                ))}
+              </div>
+            </section>
+
+            {showMilestone && (
+              <MilestoneModal
+                milestones={MOCK_MILESTONES}
+                onDismiss={() => setShowMilestone(false)}
+              />
+            )}
+
+            {/* ── Share Messages ── */}
+            <ShareMessagePreviews />
+
+            {/* ── Craft Leaderboard ── */}
+            <LeaderboardPreview />
+
+            {/* ── Craft Template Selector ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Sparkles size={14} /> Craft Template Selector
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Template picker shown in Step 1 of the craft flow. Try each puzzle type:
+              </p>
+              {(["crossword", "word-search", "word-fill", "cryptogram"] as const).map((type) => (
+                <div key={type} className="space-y-1">
+                  <p className="text-[11px] font-medium text-muted-foreground capitalize">{type}</p>
+                  <CraftTemplateSelector
+                    puzzleType={type}
+                    onSelect={(t) => console.log("Selected template:", t.id, t.label)}
+                  />
+                </div>
+              ))}
+            </section>
+
+            {/* ── Activity Calendar ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Clock size={14} /> Activity Calendar
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Monthly calendar from the Stats page — shows daily challenge completions.
+              </p>
+              <ActivityCalendar />
+            </section>
+
+            {/* ── Data Controls ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground">Data Controls</h2>
+              <p className="text-xs text-muted-foreground">
+                Generate or clear demo data to test features with realistic numbers.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    import("@/lib/demoStats").then((mod) => {
+                      mod.generateDemoSolves(50);
+                      window.location.reload();
+                    });
+                  }}
+                >
+                  Generate 50 Demo Solves
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    import("@/lib/demoStats").then((mod) => {
+                      mod.clearDemoSolves();
+                      window.location.reload();
+                    });
+                  }}
+                >
+                  Clear Demo Solves
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    localStorage.removeItem("puzzlecraft-milestones-shown");
+                    localStorage.removeItem("puzzlecraft-milestones-celebrated");
+                    window.location.reload();
+                  }}
+                >
+                  Reset Milestones
+                </Button>
+              </div>
+            </section>
+          </TabsContent>
+
+          {/* ══════════════════════════════════════════════════════════════ */}
+          {/* TAB 2: PREMIUM                                                */}
+          {/* ══════════════════════════════════════════════════════════════ */}
+          <TabsContent value="premium" className="space-y-6 mt-4">
+
+            {/* ── Upgrade Modal ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Crown size={14} /> Upgrade Modal (Bottom Sheet)
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                The Puzzlecraft+ upsell modal. Shows pricing, features, purchase CTA, and restore button.
+              </p>
+              <Button size="sm" onClick={() => setUpgradeOpen(true)}>
+                Open Upgrade Modal
+              </Button>
+            </section>
+
+            {/* ── Premium Gate Component ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Shield size={14} /> PremiumGate Wrapper
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Wraps content and shows a blurred teaser + upgrade CTA for non-premium users.
+              </p>
+              <PremiumGate feature="Advanced Analytics" description="Track accuracy, trends, and personal bests">
+                <div className="rounded-xl border bg-card p-4 space-y-2">
+                  <p className="text-sm font-semibold text-foreground">🎯 Premium Content Here</p>
+                  <p className="text-xs text-muted-foreground">This would be premium analytics, exclusive features, etc.</p>
+                </div>
+              </PremiumGate>
+            </section>
+
+            {/* ── Premium Badge ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground">Premium Badge & Lock Row</h2>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-sm text-foreground">Inline badge:</span>
+                <PremiumBadge />
+              </div>
+              <PremiumLockRow label="Extreme difficulty" onUpgrade={() => setUpgradeOpen(true)} />
+              <PremiumLockRow label="Insane difficulty" onUpgrade={() => setUpgradeOpen(true)} />
+              <PremiumLockRow label="Unlimited crafts" onUpgrade={() => setUpgradeOpen(true)} />
+            </section>
+
+            {/* ── Premium Locked Card ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground">Premium Locked Cards</h2>
+              <p className="text-xs text-muted-foreground">
+                Two states: "Coming Soon" (pre-launch) and "Unlock" (post-launch).
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <PremiumLockedCard comingSoon />
+                <PremiumLockedCard onUpgrade={() => setUpgradeOpen(true)} />
+              </div>
+            </section>
+
+            {/* ── Stats Premium Preview ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground">Stats Premium Preview (Blurred Teaser)</h2>
+              <p className="text-xs text-muted-foreground">
+                Shown on the Stats page for non-premium users — blurred cards + upgrade overlay.
+              </p>
+              <StatsPremiumPreview onUpgrade={() => setUpgradeOpen(true)} />
+            </section>
+
+            {/* ── Login Premium Preview ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground">Login Premium Preview</h2>
+              <p className="text-xs text-muted-foreground">
+                Shown on the Login page — lighter blurred teaser with "Coming soon" overlay.
+              </p>
+              <LoginPremiumPreview />
+            </section>
+
+            {/* ── Premium Stats ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground">Full Premium Stats & Insights</h2>
+              <p className="text-xs text-muted-foreground">
+                The full premium analytics panel: rating, milestones, accuracy insights, personal bests, solve history.
+              </p>
+              <Button size="sm" onClick={() => setShowPremiumStats(!showPremiumStats)}>
+                {showPremiumStats ? "Hide" : "Show Premium Stats"}
+              </Button>
+              {showPremiumStats && (
+                <div className="mt-3">
+                  <PremiumStats />
+                </div>
+              )}
+            </section>
+          </TabsContent>
+
+          {/* ══════════════════════════════════════════════════════════════ */}
+          {/* TAB 3: iOS APP                                                */}
+          {/* ══════════════════════════════════════════════════════════════ */}
+          <TabsContent value="ios" className="space-y-6 mt-4">
+
+            {/* ── Weekly Pack Card ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Puzzle size={14} /> Weekly Pack Card
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Featured weekly puzzle pack shown on the iOS Play tab. Shows progress and unlock state.
+              </p>
+              <div className="max-w-sm">
+                <WeeklyPackCard />
+              </div>
+            </section>
+
+            {/* ── Streak Shield Banner ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Shield size={14} /> Streak Shield Banner
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Shows streak protection status — auto-used, ready, or at-risk states.
+              </p>
+              <div className="space-y-3 max-w-sm">
+                {/* State A: Streak at risk (simulated) */}
+                <div className="flex w-full items-center justify-between rounded-2xl border border-border/50 bg-muted/30 px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <Shield size={14} className="text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">
+                      Protect your 12-day streak with Streak Shield
+                    </span>
+                  </div>
+                  <span className="text-xs font-medium text-primary">Upgrade</span>
+                </div>
+
+                {/* State B: Shield ready */}
+                <div className="flex items-center justify-center gap-1.5 py-1">
+                  <Shield size={11} className="text-primary/60" />
+                  <span className="text-[11px] text-muted-foreground">
+                    2 Streak Shields ready
+                  </span>
+                </div>
+
+                {/* State C: Shield auto-used */}
+                <div className="flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
+                  <Shield size={16} className="text-primary mt-0.5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground">
+                      Streak Shield activated
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Your 12-day streak was protected while you were away.
+                      You have 1 shield remaining.
+                    </p>
+                  </div>
+                  <button className="text-muted-foreground hover:text-foreground transition-colors mt-0.5">
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            {/* ── Daily Leaderboard ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Trophy size={14} /> Daily Leaderboard
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Shows today's daily challenge leaderboard. Locked state shown when user hasn't completed today.
+              </p>
+              <div className="max-w-sm space-y-4">
+                <div>
+                  <p className="text-[11px] font-medium text-muted-foreground mb-2">Not completed today:</p>
+                  <DailyLeaderboard hasCompletedToday={false} />
+                </div>
+                <div>
+                  <p className="text-[11px] font-medium text-muted-foreground mb-2">Completed today:</p>
+                  <DailyLeaderboard hasCompletedToday={true} />
+                </div>
+              </div>
+            </section>
+
+            {/* ── iOS Tab Bar Preview ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Smartphone size={14} /> iOS Tab Bar
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Native-feel bottom tab bar with spring animations. Only shown in the native iOS app.
+              </p>
+              <div className="max-w-sm mx-auto rounded-2xl border bg-card overflow-hidden">
+                <div className="h-32 flex items-center justify-center text-muted-foreground/30 text-sm">
+                  (App content area)
+                </div>
+                {/* Mock tab bar — static representation */}
+                <div className="border-t border-border/40 bg-background/95 backdrop-blur-sm px-2 py-2">
+                  <div className="flex items-center justify-around">
+                    {[
+                      { icon: "🎲", label: "Play", active: true },
+                      { icon: "🎨", label: "Create", active: false, badge: 0 },
+                      { icon: "📊", label: "Stats", active: false },
+                      { icon: "👤", label: "Account", active: false },
+                    ].map((tab) => (
+                      <div key={tab.label} className="flex flex-col items-center gap-0.5 relative">
+                        <span className={cn("text-lg", tab.active ? "" : "opacity-40")}>{tab.icon}</span>
+                        <span className={cn("text-[10px]", tab.active ? "text-primary font-semibold" : "text-muted-foreground")}>
+                          {tab.label}
+                        </span>
+                        {tab.badge ? (
+                          <span className="absolute -top-1 -right-2 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                            {tab.badge}
+                          </span>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ── Friend Activity Feed (mock) ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Users size={14} /> Friend Activity Feed
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Shows recent friend puzzle activity — solves and sends. Fetches from craft_recipients in real-time.
+              </p>
+              <div className="max-w-sm space-y-2">
+                {[
+                  { name: "Alex", action: "solved your puzzle", time: "2m ago", emoji: "✅" },
+                  { name: "Jordan", action: "sent you a puzzle", time: "1h ago", emoji: "📩" },
+                  { name: "Sam", action: "beat your time!", time: "3h ago", emoji: "🏆" },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 rounded-xl border border-border/40 bg-card px-3 py-2.5">
+                    <span className="text-lg">{item.emoji}</span>
                     <div className="flex-1 min-w-0">
-                      <p className={cn(
-                        "text-xs leading-tight",
-                        isAchieved ? "text-foreground font-medium" : "text-muted-foreground"
-                      )}>{m.label}</p>
-                      {!isAchieved && (
-                        <div className="mt-1.5 space-y-1">
-                          <Progress value={mockProgress} className="h-1.5" />
-                          <p className="text-[10px] text-muted-foreground">{mockProgress}%</p>
+                      <p className="text-sm text-foreground">
+                        <span className="font-medium">{item.name}</span>{" "}
+                        <span className="text-muted-foreground">{item.action}</span>
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground shrink-0">{item.time}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* ── Puzzle Type Picker (mock) ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Puzzle size={14} /> Puzzle Type Picker (Difficulty Sheet)
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Bottom sheet shown when tapping a puzzle type tile. Shows difficulty options with premium locks.
+              </p>
+              <div className="max-w-sm mx-auto rounded-2xl border bg-card overflow-hidden">
+                <div className="px-4 py-3 border-b border-border/40">
+                  <p className="text-sm font-semibold text-foreground">Crossword</p>
+                  <p className="text-xs text-muted-foreground">Classic clue-based word grid</p>
+                </div>
+                <div className="divide-y divide-border/30">
+                  {[
+                    { label: "Easy", subtitle: "Great for beginners", locked: false },
+                    { label: "Medium", subtitle: "A balanced challenge", locked: false },
+                    { label: "Hard", subtitle: "For experienced solvers", locked: false },
+                    { label: "Extreme", subtitle: "Push your limits", locked: true },
+                    { label: "Insane", subtitle: "Only for the elite", locked: true },
+                  ].map((d) => (
+                    <div key={d.label} className={cn(
+                      "flex items-center justify-between px-4 py-3",
+                      d.locked && "opacity-50"
+                    )}>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{d.label}</p>
+                        <p className="text-xs text-muted-foreground">{d.subtitle}</p>
+                      </div>
+                      {d.locked && (
+                        <div className="flex items-center gap-1 text-xs text-primary">
+                          <Crown size={12} /> Plus
                         </div>
                       )}
-                      {isAchieved && (
-                        <p className="text-[10px] text-primary/70 mt-0.5">Achieved ✓</p>
-                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </TabsContent>
+
+          {/* ══════════════════════════════════════════════════════════════ */}
+          {/* TAB 4: NOTIFICATIONS                                          */}
+          {/* ══════════════════════════════════════════════════════════════ */}
+          <TabsContent value="notifications" className="space-y-6 mt-4">
+
+            {/* ── In-App Notification Banner ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Bell size={14} /> In-App Notification Banner
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Subtle banner that slides in from top, auto-dismisses after 3 seconds. Used for coded private notifications.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {NOTIFICATION_PHRASES.map((phrase, i) => (
+                  <Button
+                    key={i}
+                    size="sm"
+                    variant="outline"
+                    className="text-xs"
+                    onClick={() => setBannerPhrase(phrase)}
+                  >
+                    "{phrase}"
+                  </Button>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground/60">
+                Click a phrase to trigger the banner at the top of the page.
+              </p>
+            </section>
+
+            {/* ── Push Notification Payloads ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Smartphone size={14} /> Push Notification Payloads
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Reference payloads sent from the server via Web Push / APNs.
+              </p>
+              <div className="space-y-3">
+                {[
+                  {
+                    title: "Streak at risk 🔥",
+                    body: "You haven't played today — your 7-day streak is at risk!",
+                    trigger: "Cron job, 8pm local if no solve",
+                  },
+                  {
+                    title: "Alex solved your puzzle! 🏆",
+                    body: "They finished in 3:22 — can you set a harder challenge?",
+                    trigger: "craft_recipients.completed_at update",
+                  },
+                  {
+                    title: "New puzzle from Jordan 📩",
+                    body: "A word search is waiting for you — think you can beat their time?",
+                    trigger: "shared_puzzles.insert",
+                  },
+                  {
+                    title: "Quick thought for you",
+                    body: "(coded private message)",
+                    trigger: "messages.insert (private system)",
+                  },
+                ].map((notif, i) => (
+                  <div key={i} className="rounded-xl border border-border/40 bg-card overflow-hidden">
+                    {/* iOS notification style */}
+                    <div className="flex items-start gap-3 px-4 py-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                        <Puzzle size={18} className="text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold text-foreground">{notif.title}</p>
+                          <span className="text-[10px] text-muted-foreground">now</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">{notif.body}</p>
+                      </div>
+                    </div>
+                    <div className="px-4 py-1.5 bg-muted/30 border-t border-border/20">
+                      <p className="text-[10px] text-muted-foreground/60">
+                        Trigger: {notif.trigger}
+                      </p>
                     </div>
                   </div>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+                ))}
+              </div>
+            </section>
 
-        {/* ── Milestone Modal ── */}
-        <section className="space-y-3 rounded-xl border border-border/30 p-4">
-          <h2 className="text-sm font-semibold text-foreground">Milestone Celebration Modal</h2>
-          <p className="text-xs text-muted-foreground">
-            Opens as a full-screen overlay with confetti and haptic feedback.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => setShowMilestone(true)}>
-              Show All 3 Milestones
-            </Button>
-            {ICON_OPTIONS.map((icon) => (
-              <Button
-                key={icon}
-                size="sm"
-                variant="outline"
-                onClick={() => setShowMilestone(true)}
-                className="text-xs capitalize"
-              >
-                {icon}
-              </Button>
-            ))}
-          </div>
-        </section>
+            {/* ── Notification Settings Mock ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground">Notification Settings</h2>
+              <p className="text-xs text-muted-foreground">
+                User-facing notification preferences available in the private settings.
+              </p>
+              <div className="max-w-sm space-y-2">
+                {[
+                  { label: "Coded notifications", desc: "In-app banners with randomized phrases", on: true },
+                  { label: "Push notifications", desc: "Alerts when app is closed", on: false },
+                  { label: "Streak reminders", desc: "Daily reminder if you haven't played", on: true },
+                  { label: "Friend activity", desc: "When friends solve your puzzles", on: true },
+                ].map((setting) => (
+                  <div key={setting.label} className="flex items-center justify-between rounded-xl border border-border/40 bg-card px-4 py-3">
+                    <div>
+                      <p className="text-sm text-foreground">{setting.label}</p>
+                      <p className="text-[11px] text-muted-foreground">{setting.desc}</p>
+                    </div>
+                    <div className={cn(
+                      "w-10 h-6 rounded-full transition-colors relative",
+                      setting.on ? "bg-primary" : "bg-muted"
+                    )}>
+                      <div className={cn(
+                        "absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform",
+                        setting.on ? "translate-x-4" : "translate-x-0.5"
+                      )} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
 
-        {showMilestone && (
-          <MilestoneModal
-            milestones={MOCK_MILESTONES}
-            onDismiss={() => setShowMilestone(false)}
-          />
-        )}
+            {/* ── Paywall Timing Triggers ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Zap size={14} /> Paywall Timing Triggers
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                The upgrade modal fires at high-emotion moments. Each trigger is gated to once per 48 hours.
+              </p>
+              <div className="space-y-2 max-w-sm">
+                {[
+                  { trigger: "After 7-day streak", icon: "🔥", condition: "streak ≥ 7 && !shown in 48h" },
+                  { trigger: "After friend solves your puzzle", icon: "🏆", condition: "craft_recipients.completed_at" },
+                  { trigger: "After completing Hard difficulty", icon: "💪", condition: "difficulty ≥ hard && !shown in 48h" },
+                  { trigger: "After 3rd solve in a session", icon: "⚡", condition: "sessionSolves ≥ 3 && !shown in 48h" },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-3 rounded-xl border border-border/40 bg-card px-3 py-2.5">
+                    <span className="text-lg mt-0.5">{item.icon}</span>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{item.trigger}</p>
+                      <p className="text-[10px] font-mono text-muted-foreground/60">{item.condition}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </TabsContent>
 
-        {/* ── Premium Stats / Insights ── */}
-        <section className="space-y-3 rounded-xl border border-border/30 p-4">
-          <h2 className="text-sm font-semibold text-foreground">Premium Stats & Insights</h2>
-          <p className="text-xs text-muted-foreground">
-            Shows the full premium analytics panel including milestones progress, accuracy insights, personal bests, and solve history.
-          </p>
-          <Button size="sm" onClick={() => setShowPremiumStats(!showPremiumStats)}>
-            {showPremiumStats ? "Hide" : "Show Premium Stats"}
-          </Button>
-          {showPremiumStats && (
-            <div className="mt-3">
-              <PremiumStats />
-            </div>
-          )}
-        </section>
-
-        {/* ── Share Message Previews ── */}
-        <ShareMessagePreviews />
-
-        {/* ── Craft Leaderboard Preview ── */}
-        <LeaderboardPreview />
-
-        {/* ── Nonogram Pattern Preview ── */}
-        <NonogramPreview />
-
-        {/* ── Quick actions ── */}
-        <section className="space-y-3 rounded-xl border border-border/30 p-4">
-          <h2 className="text-sm font-semibold text-foreground">Data Controls</h2>
-          <p className="text-xs text-muted-foreground">
-            Generate or clear demo data to test features with realistic numbers.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                import("@/lib/demoStats").then((mod) => {
-                  mod.generateDemoSolves(50);
-                  window.location.reload();
-                });
-              }}
-            >
-              Generate 50 Demo Solves
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                import("@/lib/demoStats").then((mod) => {
-                  mod.clearDemoSolves();
-                  window.location.reload();
-                });
-              }}
-            >
-              Clear Demo Solves
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                localStorage.removeItem("puzzlecraft-milestones-shown");
-                localStorage.removeItem("puzzlecraft-milestones-celebrated");
-                window.location.reload();
-              }}
-            >
-              Reset Milestones
-            </Button>
-          </div>
-        </section>
+          {/* ══════════════════════════════════════════════════════════════ */}
+          {/* TAB 5: PATTERNS                                               */}
+          {/* ══════════════════════════════════════════════════════════════ */}
+          <TabsContent value="patterns" className="space-y-6 mt-4">
+            <NonogramPreview />
+          </TabsContent>
+        </Tabs>
       </div>
+
+      {/* ── Global overlays ── */}
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+      <NotificationBanner phrase={bannerPhrase} onDismissed={() => setBannerPhrase(null)} />
+
+      {/* ── Onboarding overlay ── */}
+      {showOnboarding && (
+        <OnboardingFlow onComplete={() => setShowOnboarding(false)} />
+      )}
     </Layout>
   );
 }
