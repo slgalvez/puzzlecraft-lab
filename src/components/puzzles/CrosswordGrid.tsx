@@ -378,8 +378,8 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   const downClues = clues.filter((c) => c.direction === "down");
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:gap-10 puzzle-keyboard-aware">
-      <div className="flex-shrink-0">
+    <div className="flex flex-col gap-6 lg:flex-row lg:gap-10 scroll-mt-4 puzzle-keyboard-aware">
+      <div className="flex-shrink-0 [overscroll-behavior:contain]">
         <PuzzleHeader
           puzzleType="crossword"
           difficulty={puzzle.difficulty as any}
