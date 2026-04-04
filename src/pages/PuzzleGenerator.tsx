@@ -59,6 +59,8 @@ const PuzzleGenerator = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { isDiffLocked } = usePremiumAccess();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const hintLimits: { value: number | null; label: string }[] = [
     { value: 1, label: "1" },
