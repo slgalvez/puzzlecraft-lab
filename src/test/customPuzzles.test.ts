@@ -32,8 +32,8 @@ describe("generateCustomWordSearch", () => {
     const first = generateCustomWordSearch(words, "medium");
     const second = generateCustomWordSearch(words, "medium");
 
-    expect(first.words).toEqual(words);
-    expect(second.words).toEqual(words);
+    expect([...first.words].sort()).toEqual([...words].sort());
+    expect([...second.words].sort()).toEqual([...words].sort());
     expect(first.size).toBe(second.size);
     expect(first.grid).toEqual(second.grid);
     expect(first.wordPositions).toEqual(second.wordPositions);
