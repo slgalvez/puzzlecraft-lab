@@ -913,18 +913,50 @@ const CraftPuzzle = () => {
                   </div>
                 )}
 
-                <CraftSolveFirst
-                  creatorSolveTime={creatorSolveTime}
-                  onSolveFirst={handleSolveFirst}
-                  onSkip={() => {}}
-                  puzzleTypeLabel={
-                    selectedType === "word-search" ? "Word Search" :
-                    selectedType === "crossword" ? "Crossword" :
-                    selectedType === "cryptogram" ? "Cryptogram" :
-                    selectedType === "word-fill" ? "Word Fill-In" :
-                    "Puzzle"
-                  }
-                />
+                {!creatorSolveTime ? (
+                  <div className="rounded-2xl border-2 border-primary/25 bg-primary/5 p-5">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 mt-0.5">
+                        <Trophy size={18} className="text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-foreground text-sm mb-0.5">
+                          Solve it yourself first (recommended)
+                        </p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Sets a challenge time for your recipient to beat. Makes it competitive and way more fun.
+                        </p>
+                        <div className="flex gap-2 mt-3">
+                          <Button onClick={handleSolveFirst} size="sm" className="gap-1.5">
+                            <Trophy size={13} /> Solve &amp; set challenge time
+                          </Button>
+                          <Button
+                            onClick={() => {}}
+                            size="sm"
+                            variant="ghost"
+                            className="text-muted-foreground text-xs"
+                          >
+                            Skip, just share
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15">
+                      <Trophy size={16} className="text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-foreground">
+                        Challenge time set: {Math.floor(creatorSolveTime / 60)}:{(creatorSolveTime % 60).toString().padStart(2, "0")}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Your recipient will see this as their target to beat
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {!isPremium && (
                   <div className={cn(
