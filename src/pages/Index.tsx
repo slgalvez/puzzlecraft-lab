@@ -291,7 +291,7 @@ const Index = () => {
               <p className="mt-4 text-base text-muted-foreground max-w-md leading-relaxed">
                 {isReturning
                   ? "Eight puzzle types. Daily challenges. Compete, create, and track your best times."
-                  : "Crosswords, sudoku, word search, and more — unlimited puzzles, beautifully crafted for every skill level."
+                  : "Eight puzzle types. Daily challenges. Compete, create, and track your best times."
                 }
               </p>
 
