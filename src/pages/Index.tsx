@@ -395,7 +395,7 @@ const Index = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="font-display text-2xl font-semibold text-foreground">
-                {isPersonalised ? "Your favourites" : "Eight ways to play"}
+                {isPersonalized ? "Your favorites" : "Eight ways to play"}
               </h2>
               {isPersonalised && (
                 <p className="text-sm text-muted-foreground mt-0.5">Sorted by how often you play</p>
