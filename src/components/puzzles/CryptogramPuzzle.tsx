@@ -12,6 +12,7 @@ import { loadProgress, clearProgress } from "@/lib/puzzleProgress";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import type { Difficulty } from "@/lib/puzzleTypes";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
+import { useKeyboardAvoidance } from "@/hooks/useKeyboardAvoidance";
 
 interface Props {
   seed: number;

@@ -16,6 +16,7 @@ import { haptic } from "@/lib/haptic";
 import { loadProgress, clearProgress } from "@/lib/puzzleProgress";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import type { PuzzlePerformance } from "@/lib/endlessDifficulty";
+import { useKeyboardAvoidance } from "@/hooks/useKeyboardAvoidance";
 
 interface Props {
   puzzle: FillInPuzzle;
