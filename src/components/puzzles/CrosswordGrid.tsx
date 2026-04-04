@@ -65,14 +65,16 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
 
   const timer = usePuzzleTimer(timerKey, { category: "crossword", difficulty: puzzle.difficulty, initialElapsed: saved?.elapsed ?? 0, timeLimit });
 
-  const blackSet = useCallback(() => {
+  const blacks = useMemo(() => {
     const set = new Set<string>();
     blackCells.forEach(([r, c]) => set.add(`${r}-${c}`));
     return set;
   }, [blackCells]);
 
-  const blacks = blackSet();
-  const isBlack = (r: number, c: number) => blacks.has(`${r}-${c}`);
+  const isBlack = useCallback(
+    (r: number, c: number) => blacks.has(`${r}-${c}`),
+    [blacks]
+  );
 
   const getCellNumber = (r: number, c: number) => {
     const clue = clues.find((cl) => cl.row === r && cl.col === c);
@@ -90,6 +92,20 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
     }
     return sg;
   }, [clues, gridSize]);
+
+  const activeClue = useMemo((): CrosswordClue | null => {
+    if (!activeCell) return null;
+    const [ar, ac] = activeCell;
+    return clues.find((cl) => {
+      if (cl.direction !== direction) return false;
+      const dr = cl.direction === "down" ? 1 : 0;
+      const dc = cl.direction === "across" ? 1 : 0;
+      for (let i = 0; i < cl.answer.length; i++) {
+        if (cl.row + dr * i === ar && cl.col + dc * i === ac) return true;
+      }
+      return false;
+    }) ?? null;
+  }, [activeCell, direction, clues]);
 
   const gridRef2 = useRef(grid);
   gridRef2.current = grid;
@@ -376,8 +392,8 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   const downClues = clues.filter((c) => c.direction === "down");
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:gap-10 puzzle-keyboard-aware">
-      <div className="flex-shrink-0">
+    <div className="flex flex-col gap-6 lg:flex-row lg:gap-10 scroll-mt-4 puzzle-keyboard-aware">
+      <div className="flex-shrink-0 [overscroll-behavior:contain]">
         <PuzzleHeader
           puzzleType="crossword"
           difficulty={puzzle.difficulty as any}
@@ -414,6 +430,15 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
           </div>
         )}
 
+        {isMobile && activeClue && !timer.isSolved && !isRevealed && (
+          <div className="mb-2 rounded-lg border bg-card/95 px-3 py-2 text-sm leading-snug">
+            <span className="font-semibold text-primary mr-1.5">
+              {activeClue.number}{activeClue.direction === "across" ? "A" : "D"}
+            </span>
+            <span className="text-foreground">{activeClue.clue}</span>
+          </div>
+        )}
+
         {!isMobile && (
           <p className="mb-2 text-xs text-muted-foreground">
             Arrow keys to move • Tab for next word • Click cell to toggle direction
@@ -447,7 +472,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
                 <div
                   key={`${r}-${c}`}
                   className={cn(
-                    "relative w-8 h-8 sm:w-12 sm:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
+                    "relative w-7 h-7 sm:w-9 sm:h-9 md:w-11 md:h-11 lg:w-12 lg:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
                     black && "bg-puzzle-cell-black",
                     !black && hasError && "bg-puzzle-cell-error",
                     !black && !hasError && isActive && "bg-puzzle-cell-active",
@@ -457,10 +482,10 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
                   onClick={() => handleCellClick(r, c)}
                 >
                   {num && !black && (
-                    <span className="absolute left-0.5 top-0 text-[9px] font-medium text-puzzle-number leading-tight">{num}</span>
+                    <span className="absolute left-0.5 top-0 text-[7px] sm:text-[8px] md:text-[9px] font-medium text-puzzle-number leading-tight">{num}</span>
                   )}
                   {!black && (
-                    <span className="text-sm sm:text-xl font-semibold text-foreground uppercase">{grid[r][c]}</span>
+                    <span className="text-xs sm:text-sm md:text-lg lg:text-xl font-semibold text-foreground uppercase">{grid[r][c]}</span>
                   )}
                 </div>
               );
