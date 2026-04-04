@@ -211,6 +211,12 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
     setTapStart(null);
   };
 
+  const handleTouchCancel = () => {
+    setStartCell(null);
+    setHoverCell(null);
+    setIsDragging(false);
+  };
+
   const handleMouseDown = (r: number, c: number) => {
     if (timer.isSolved || isMobile || isRevealed) return;
     setStartCell([r, c]);
@@ -328,8 +334,8 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
   }, [puzzle.size, isMobile]);
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
-      <div className="flex-shrink-0 outline-none min-w-0" ref={containerRef} tabIndex={0} onKeyDown={handleKeyDown}>
+    <div className="flex flex-col gap-6 lg:flex-row lg:gap-10 scroll-mt-4">
+      <div className="flex-shrink-0 outline-none min-w-0 touch-manipulation" ref={containerRef} tabIndex={0} onKeyDown={handleKeyDown}>
         <PuzzleHeader
           puzzleType="word-search"
           difficulty={difficulty}
@@ -351,7 +357,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
           </p>
         )}
 
-        <div style={{ touchAction: isMobile ? "none" : "auto" }}>
+        <div style={{ touchAction: isMobile ? "none" : "auto" }} className="[overscroll-behavior:contain]">
         <div
           ref={gridRef}
           className="inline-grid border-2 border-puzzle-border select-none outline-none"
@@ -359,6 +365,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchCancel}
           onMouseUp={handleMouseUp}
         >
           {puzzle.grid.map((row, r) =>
