@@ -199,6 +199,8 @@ const Stats = () => {
 
         {stats.totalSolved > 0 && (
           <>
+            {/* Personal insights */}
+            <InsightsBanner className="mt-6" />
             {/* ── Rating hero card (premium) ── */}
             {showGeneral && premiumAccess && localRating && (
               <div className={cn(
