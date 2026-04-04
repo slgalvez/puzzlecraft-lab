@@ -210,14 +210,6 @@ const CraftPuzzle = () => {
   }, [selectedType, puzzleTitle, puzzleFrom, wordInput, phraseInput, clueEntries, revealMessage, craftSettings, refreshDraftCount]);
 
   const handleSelectType = (type: CraftType) => {
-    if (type === "word-fill") {
-      toast({
-        title: "Word Fill-In unavailable",
-        description: "This mode was removed because it could not render reliably.",
-        variant: "destructive",
-      });
-      return;
-    }
     setSelectedType(type);
     setStep("content");
   };
@@ -566,14 +558,6 @@ const CraftPuzzle = () => {
   };
 
   const handleResumeDraft = useCallback((draft: CraftDraft) => {
-    if (draft.type === "word-fill") {
-      toast({
-        title: "Word Fill-In unavailable",
-        description: "This draft can't be reopened because that mode was removed.",
-        variant: "destructive",
-      });
-      return;
-    }
     activeDraftId.current = draft.id;
     setSelectedType(draft.type);
     setPuzzleTitle(draft.title);
@@ -601,7 +585,7 @@ const CraftPuzzle = () => {
     setStep("content");
     setView("create");
     setEnteredFromDraft(true);
-  }, [toast]);
+  }, []);
 
   const handleWordSuggestions = (words: string) => {
     if (!words.includes("\n")) {
