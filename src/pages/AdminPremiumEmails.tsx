@@ -5,7 +5,7 @@ import Layout from "@/components/layout/Layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Plus, Trash2, Crown, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Crown, Loader2, Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface PremiumEmail {
