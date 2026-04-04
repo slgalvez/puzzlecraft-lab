@@ -1,18 +1,16 @@
 /**
- * CraftSettingsPanel.tsx  ← FULL REPLACEMENT
- * src/components/craft/CraftSettingsPanel.tsx
- *
- * Changes from previous version:
- *  - Difficulty pills now show a description of what the level means
- *    for the generated puzzle layout (not solver difficulty)
- *  - Description appears below the pill row when a difficulty is active
+ * CraftSettingsPanel.tsx
+ * 
+ * Full difficulty range (Easy → Insane) matching standard gameplay.
+ * Difficulty controls actual grid generation — not just UI.
  */
 
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
+import type { Difficulty } from "@/lib/puzzleTypes";
 
 export interface CraftSettings {
-  difficulty: "easy" | "medium" | "hard";
+  difficulty: Difficulty;
   hintsEnabled: boolean;
   revealEnabled: boolean;
   checkEnabled: boolean;
@@ -26,7 +24,7 @@ export const DEFAULT_CRAFT_SETTINGS: CraftSettings = {
 };
 
 const DIFFICULTY_OPTIONS: {
-  value: CraftSettings["difficulty"];
+  value: Difficulty;
   label: string;
   desc: string;
 }[] = [
@@ -44,6 +42,16 @@ const DIFFICULTY_OPTIONS: {
     value: "hard",
     label: "Hard",
     desc: "Dense grid, many crossings — a tighter challenge",
+  },
+  {
+    value: "extreme",
+    label: "Extreme",
+    desc: "Very dense — heavy interlocking, large grids",
+  },
+  {
+    value: "insane",
+    label: "Insane",
+    desc: "Maximum density — as tight as the generator allows",
   },
 ];
 
@@ -71,7 +79,7 @@ export default function CraftSettingsPanel({ value, onChange }: Props) {
             Layout
           </span>
           <div className="space-y-1.5">
-            <div className="inline-flex rounded-full border border-border bg-muted/30 p-0.5 w-fit">
+            <div className="inline-flex flex-wrap rounded-full border border-border bg-muted/30 p-0.5 w-fit gap-0.5">
               {DIFFICULTY_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}

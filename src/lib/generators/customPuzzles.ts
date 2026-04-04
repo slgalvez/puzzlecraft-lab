@@ -1,339 +1,184 @@
 /**
- * Custom puzzle generators for crafted "For You" puzzles.
+ * Custom puzzle generators for crafted puzzles.
  *
- * Design philosophy: deterministic, quality-first generation.
- * - Difficulty controls STRUCTURE, not randomness
- * - Strict quality constraints with automatic rejection/regeneration
- * - Grid trimming to produce compact, intentional layouts
- * - User words are NEVER modified or supplemented
+ * Uses the SAME core logic as the standard gameplay generators:
+ * - Same placement rules (writeWord, canPlace, findPlacement from fillGen/crosswordGen)
+ * - Same grid sizes per difficulty (matching SIZES maps in fillGen.ts)
+ * - Full difficulty range: easy → insane
+ * - User words are NEVER dropped silently — grid grows until all fit
  */
 
 import { SeededRandom } from "../seededRandom";
+import type { Difficulty } from "../puzzleTypes";
 import {
   tryGenerateWordSearch,
   scoreWordSearchPuzzle,
   validateWordSearchGrid,
   type WordSearchPuzzle,
 } from "./wordSearch";
-
-type CraftDifficulty = "easy" | "medium" | "hard";
-
-// ═══════════════════════════════════════════════
-// Quality constraints by difficulty
-// ═══════════════════════════════════════════════
-
-const MAX_BLACK_DENSITY: Record<CraftDifficulty, number> = { easy: 0.15, medium: 0.20, hard: 0.25 };
-const TARGET_INTERSECTION_FILL: Record<CraftDifficulty, number> = { easy: 0.20, medium: 0.35, hard: 0.50 };
-const TARGET_INTERSECTION_XWORD: Record<CraftDifficulty, number> = { easy: 0.30, medium: 0.50, hard: 0.70 };
-
-/** Candidates per batch */
-const CANDIDATES_PER_BATCH = 5;
-/** Max batches before accepting best-so-far */
-const MAX_BATCHES = 3;
-/** Minimum acceptable score (0-100 scale) */
-const QUALITY_THRESHOLD = 40;
+import { analyzeGrid, scoreGridLayout, selectBestCandidate } from "./layoutScoring";
 
 // ═══════════════════════════════════════════════
-// Scoring weights by difficulty
+// Grid sizes matching standard gameplay generators
+// (from fillGen.ts and crosswordGen.ts)
 // ═══════════════════════════════════════════════
 
-interface ScoringWeights {
-  balance: number;     // Even distribution, centering
-  connectivity: number; // Strong interconnection
-  cleanliness: number;  // No noise, jagged edges, black clusters
-  intersection: number; // Natural word crossings
-  readability: number;  // Understandable at a glance
+const FILL_SIZES: Record<Difficulty, number> = { easy: 7, medium: 9, hard: 13, extreme: 15, insane: 19 };
+const XWORD_SIZES: Record<Difficulty, number> = { easy: 9, medium: 13, hard: 15, extreme: 19, insane: 21 };
+const FILL_TARGETS: Record<Difficulty, number> = { easy: 5, medium: 10, hard: 18, extreme: 28, insane: 40 };
+
+// Word search grid sizes from wordSearch.ts
+const WS_SIZES: Record<Difficulty, number> = { easy: 8, medium: 12, hard: 16, extreme: 20, insane: 22 };
+const WS_DIR_COUNTS: Record<Difficulty, number> = { easy: 2, medium: 4, hard: 6, extreme: 8, insane: 8 };
+
+// ═══════════════════════════════════════════════
+// Placement engine — same logic as fillGen.ts / crosswordGen.ts
+// ═══════════════════════════════════════════════
+
+function writeWord(grid: string[][], word: string, row: number, col: number, dir: "across" | "down") {
+  const dr = dir === "down" ? 1 : 0;
+  const dc = dir === "across" ? 1 : 0;
+  for (let i = 0; i < word.length; i++) grid[row + dr * i][col + dc * i] = word[i];
 }
 
-const SCORING_WEIGHTS: Record<CraftDifficulty, ScoringWeights> = {
-  easy:   { balance: 0.20, connectivity: 0.15, cleanliness: 0.20, intersection: 0.15, readability: 0.30 },
-  medium: { balance: 0.25, connectivity: 0.20, cleanliness: 0.20, intersection: 0.20, readability: 0.15 },
-  hard:   { balance: 0.20, connectivity: 0.25, cleanliness: 0.15, intersection: 0.30, readability: 0.10 },
-};
+/**
+ * canPlace — identical to fillGen.ts / crosswordGen.ts canPlace.
+ * Checks bounds, before/after gaps, perpendicular isolation, and intersection validity.
+ */
+function canPlace(grid: string[][], word: string, row: number, col: number, dir: "across" | "down", size: number): boolean {
+  const dr = dir === "down" ? 1 : 0;
+  const dc = dir === "across" ? 1 : 0;
+  if (row < 0 || col < 0 || row + dr * (word.length - 1) >= size || col + dc * (word.length - 1) >= size) return false;
 
-// ═══════════════════════════════════════════════
-// Shared quality analysis
-// ═══════════════════════════════════════════════
+  const pR = row - dr, pC = col - dc;
+  if (pR >= 0 && pC >= 0 && grid[pR][pC]) return false;
 
-interface GridStats {
-  size: number;
-  whiteCells: number;
-  blackCells: number;
-  blackDensity: number;
-  isolatedBlacks: number;
-  blackClusterMax: number;
-  thinDeadZones: number;
-  fullyConnected: boolean;
-  intersectionRatio: number;
-  symmetryScore: number;
-  balanceScore: number;   // 0-1: how centered/evenly distributed content is
-  jaggedEdges: number;    // count of jagged boundary transitions
-}
+  const aR = row + dr * word.length, aC = col + dc * word.length;
+  if (aR < size && aC < size && grid[aR][aC]) return false;
 
-function analyzeGrid(
-  grid: string[][],
-  size: number,
-  placed: { row: number; col: number; dir: "across" | "down"; word: string }[]
-): GridStats {
-  let whiteCells = 0;
-  let blackCells = 0;
-
-  for (let r = 0; r < size; r++)
-    for (let c = 0; c < size; c++)
-      if (grid[r][c]) whiteCells++;
-      else blackCells++;
-
-  const totalCells = size * size;
-  const blackDensity = totalCells > 0 ? blackCells / totalCells : 0;
-
-  // Isolated single black cells
-  let isolatedBlacks = 0;
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
-      if (grid[r][c]) continue;
-      const adj: [number, number][] = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
-      const blackNeighbors = adj.filter(([nr, nc]) =>
-        nr >= 0 && nr < size && nc >= 0 && nc < size && !grid[nr][nc]
-      ).length;
-      if (blackNeighbors === 0) {
-        const whiteNeighbors = adj.filter(([nr, nc]) =>
-          nr >= 0 && nr < size && nc >= 0 && nc < size && grid[nr][nc]
-        ).length;
-        if (whiteNeighbors >= 2) isolatedBlacks++;
+  let intersections = 0;
+  for (let i = 0; i < word.length; i++) {
+    const r = row + dr * i, c = col + dc * i;
+    if (grid[r][c]) {
+      if (grid[r][c] !== word[i]) return false;
+      intersections++;
+    } else {
+      if (dir === "across") {
+        if (r > 0 && grid[r - 1][c]) return false;
+        if (r < size - 1 && grid[r + 1][c]) return false;
+      } else {
+        if (c > 0 && grid[r][c - 1]) return false;
+        if (c < size - 1 && grid[r][c + 1]) return false;
       }
     }
   }
+  return intersections > 0;
+}
 
-  // Largest black cell cluster (flood-fill)
-  let blackClusterMax = 0;
-  const visitedBlack = new Set<string>();
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
-      if (grid[r][c] || visitedBlack.has(`${r}-${c}`)) continue;
-      let clusterSize = 0;
-      const stack: [number, number][] = [[r, c]];
-      while (stack.length) {
-        const [cr, cc] = stack.pop()!;
-        const key = `${cr}-${cc}`;
-        if (visitedBlack.has(key)) continue;
-        visitedBlack.add(key);
-        clusterSize++;
-        for (const [nr, nc] of [[cr - 1, cc], [cr + 1, cc], [cr, cc - 1], [cr, cc + 1]] as [number, number][]) {
-          if (nr >= 0 && nr < size && nc >= 0 && nc < size && !grid[nr][nc] && !visitedBlack.has(`${nr}-${nc}`))
-            stack.push([nr, nc]);
+/**
+ * findPlacement — same algorithm as fillGen.ts / crosswordGen.ts.
+ * Tries all character intersections between new word and existing placed words.
+ */
+function findPlacement(
+  grid: string[][],
+  word: string,
+  placed: { word: string; row: number; col: number; dir: "across" | "down" }[],
+  size: number,
+  rng: SeededRandom
+): { row: number; col: number; dir: "across" | "down" } | null {
+  const shuffled = rng.shuffle([...placed]);
+  for (const existing of shuffled) {
+    for (let i = 0; i < word.length; i++) {
+      for (let j = 0; j < existing.word.length; j++) {
+        if (word[i] !== existing.word[j]) continue;
+        const newDir: "across" | "down" = existing.dir === "across" ? "down" : "across";
+        let nr: number, nc: number;
+        if (newDir === "down") { nr = existing.row - i; nc = existing.col + j; }
+        else { nr = existing.row + j; nc = existing.col - i; }
+        if (canPlace(grid, word, nr, nc, newDir, size)) return { row: nr, col: nc, dir: newDir };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * findOpenPlacement — fallback when no intersection exists.
+ * Finds the best non-intersecting position that balances the grid.
+ */
+function findOpenPlacement(
+  grid: string[][],
+  word: string,
+  size: number,
+  rng: SeededRandom
+): { row: number; col: number; dir: "across" | "down" } | null {
+  // Compute center of mass of existing content
+  let comR = 0, comC = 0, wCount = 0;
+  for (let r = 0; r < size; r++)
+    for (let c = 0; c < size; c++)
+      if (grid[r][c]) { comR += r; comC += c; wCount++; }
+  if (wCount > 0) { comR /= wCount; comC /= wCount; }
+  const center = (size - 1) / 2;
+
+  type Candidate = { row: number; col: number; dir: "across" | "down"; score: number };
+  let best: Candidate | null = null;
+
+  for (const dir of ["across", "down"] as const) {
+    const dr = dir === "down" ? 1 : 0;
+    const dc = dir === "across" ? 1 : 0;
+    const maxRow = dir === "across" ? size - 1 : size - word.length;
+    const maxCol = dir === "across" ? size - word.length : size - 1;
+
+    for (let row = 0; row <= maxRow; row++) {
+      for (let col = 0; col <= maxCol; col++) {
+        // Check if placement is valid (no conflicts, allow 0 intersections)
+        if (row + dr * (word.length - 1) >= size) continue;
+        if (col + dc * (word.length - 1) >= size) continue;
+
+        // Before/after must be empty
+        const pR = row - dr, pC = col - dc;
+        if (pR >= 0 && pC >= 0 && grid[pR][pC]) continue;
+        const aR = row + dr * word.length, aC = col + dc * word.length;
+        if (aR < size && aC < size && grid[aR][aC]) continue;
+
+        let valid = true;
+        let crowding = 0;
+        for (let i = 0; i < word.length; i++) {
+          const r = row + dr * i, c = col + dc * i;
+          if (grid[r][c]) { valid = false; break; }
+          // Check perpendicular neighbors
+          if (dir === "across") {
+            if (r > 0 && grid[r - 1][c]) { valid = false; break; }
+            if (r < size - 1 && grid[r + 1][c]) { valid = false; break; }
+          } else {
+            if (c > 0 && grid[r][c - 1]) { valid = false; break; }
+            if (c < size - 1 && grid[r][c + 1]) { valid = false; break; }
+          }
+          // Count nearby occupied cells for crowding penalty
+          for (let nr = r - 1; nr <= r + 1; nr++)
+            for (let nc = c - 1; nc <= c + 1; nc++)
+              if (nr >= 0 && nr < size && nc >= 0 && nc < size && grid[nr][nc]) crowding++;
+        }
+        if (!valid) continue;
+
+        // Score: prefer positions that balance the grid
+        const midR = row + dr * (word.length - 1) / 2;
+        const midC = col + dc * (word.length - 1) / 2;
+        const currentDist = Math.abs(comR - center) + Math.abs(comC - center);
+        const newComR = (comR * wCount + midR * word.length) / Math.max(1, wCount + word.length);
+        const newComC = (comC * wCount + midC * word.length) / Math.max(1, wCount + word.length);
+        const newDist = Math.abs(newComR - center) + Math.abs(newComC - center);
+        const balance = currentDist - newDist;
+
+        const score = balance * 8 - crowding * 1.5;
+        if (!best || score > best.score) {
+          best = { row, col, dir, score };
         }
       }
-      blackClusterMax = Math.max(blackClusterMax, clusterSize);
     }
   }
 
-  // Thin 1-cell-wide dead zones
-  let thinDeadZones = 0;
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
-      if (!grid[r][c]) continue;
-      const adj: [number, number][] = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
-      const whiteNeighbors = adj.filter(([nr, nc]) =>
-        nr >= 0 && nr < size && nc >= 0 && nc < size && grid[nr][nc]
-      ).length;
-      if (whiteNeighbors <= 1) thinDeadZones++;
-    }
-  }
-
-  // Jagged edges: transitions at the white/black boundary
-  let jaggedEdges = 0;
-  for (let r = 0; r < size - 1; r++) {
-    for (let c = 0; c < size - 1; c++) {
-      const a = !!grid[r][c], b = !!grid[r][c + 1], d = !!grid[r + 1][c], e = !!grid[r + 1][c + 1];
-      const transitions = [a !== b, b !== e, e !== d, d !== a].filter(Boolean).length;
-      if (transitions >= 3) jaggedEdges++;
-    }
-  }
-
-  // Connectivity via flood-fill
-  const fullyConnected = checkConnectivity(grid, size);
-
-  // Intersection ratio
-  const cellUsage = new Map<string, number>();
-  for (const p of placed) {
-    const dr = p.dir === "down" ? 1 : 0;
-    const dc = p.dir === "across" ? 1 : 0;
-    for (let i = 0; i < p.word.length; i++) {
-      const key = `${p.row + dr * i}-${p.col + dc * i}`;
-      cellUsage.set(key, (cellUsage.get(key) || 0) + 1);
-    }
-  }
-  const intersections = [...cellUsage.values()].filter(v => v >= 2).length;
-  const intersectionRatio = whiteCells > 0 ? intersections / whiteCells : 0;
-
-  // Symmetry score (0-1)
-  let symmetricPairs = 0, totalPairs = 0;
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
-      const mr = size - 1 - r, mc = size - 1 - c;
-      if (r * size + c >= mr * size + mc) continue;
-      totalPairs++;
-      if (!!grid[r][c] === !!grid[mr][mc]) symmetricPairs++;
-    }
-  }
-  const symmetryScore = totalPairs > 0 ? symmetricPairs / totalPairs : 1;
-
-  // Balance score: how close is the center of mass to the grid center
-  let comR = 0, comC = 0;
-  for (let r = 0; r < size; r++)
-    for (let c = 0; c < size; c++)
-      if (grid[r][c]) { comR += r; comC += c; }
-  if (whiteCells > 0) { comR /= whiteCells; comC /= whiteCells; }
-  const center = (size - 1) / 2;
-  const maxDist = center * 2;
-  const dist = Math.abs(comR - center) + Math.abs(comC - center);
-  const balanceScore = maxDist > 0 ? Math.max(0, 1 - dist / maxDist) : 1;
-
-  return {
-    size, whiteCells, blackCells, blackDensity, isolatedBlacks, blackClusterMax,
-    thinDeadZones, fullyConnected, intersectionRatio, symmetryScore, balanceScore, jaggedEdges,
-  };
-}
-
-function checkConnectivity(grid: string[][], size: number): boolean {
-  let startR = -1, startC = -1, totalWhite = 0;
-  for (let r = 0; r < size; r++)
-    for (let c = 0; c < size; c++)
-      if (grid[r][c]) {
-        totalWhite++;
-        if (startR === -1) { startR = r; startC = c; }
-      }
-  if (totalWhite <= 1) return true;
-
-  const visited = new Set<string>();
-  const stack: [number, number][] = [[startR, startC]];
-  while (stack.length) {
-    const [r, c] = stack.pop()!;
-    const key = `${r}-${c}`;
-    if (visited.has(key)) continue;
-    visited.add(key);
-    for (const [nr, nc] of [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]]) {
-      if (nr >= 0 && nr < size && nc >= 0 && nc < size && grid[nr][nc] && !visited.has(`${nr}-${nc}`)) {
-        stack.push([nr, nc]);
-      }
-    }
-  }
-  return visited.size === totalWhite;
-}
-
-// ═══════════════════════════════════════════════
-// Visual scoring engine (0–100 scale)
-// ═══════════════════════════════════════════════
-
-/**
- * Score a layout across 5 weighted dimensions.
- * Returns 0–100 where higher = better visual quality.
- */
-function scoreLayout(
-  stats: GridStats,
-  difficulty: CraftDifficulty,
-  placedCount: number,
-  totalWords: number,
-  targetIntersection: number
-): number {
-  const w = SCORING_WEIGHTS[difficulty];
-  const placementRatio = totalWords > 0 ? placedCount / totalWords : 0;
-
-  // ── A) Balance (0–100) ──
-  let balanceRaw = stats.balanceScore * 70 + stats.symmetryScore * 30;
-  // Penalty if content clusters in one quadrant
-  balanceRaw = Math.min(100, balanceRaw);
-
-  // ── B) Connectivity (0–100) ──
-  let connectRaw = stats.fullyConnected ? 80 : 0;
-  // Bonus for high placement ratio (more words = better connected)
-  connectRaw += placementRatio * 20;
-  connectRaw = Math.min(100, connectRaw);
-
-  // ── C) Cleanliness (0–100) ──
-  let cleanRaw = 100;
-  // Isolated black cells: -15 each
-  cleanRaw -= stats.isolatedBlacks * 15;
-  // Large black clusters: -5 per cell above 3
-  cleanRaw -= Math.max(0, stats.blackClusterMax - 3) * 5;
-  // Thin dead zones: -8 each above 2
-  cleanRaw -= Math.max(0, stats.thinDeadZones - 2) * 8;
-  // Jagged edges: -4 each above 3
-  cleanRaw -= Math.max(0, stats.jaggedEdges - 3) * 4;
-  // Black density over limit
-  const maxDensity = MAX_BLACK_DENSITY[difficulty];
-  if (stats.blackDensity > maxDensity) cleanRaw -= (stats.blackDensity - maxDensity) * 200;
-  cleanRaw = Math.max(0, Math.min(100, cleanRaw));
-
-  // ── D) Intersection Quality (0–100) ──
-  const intDiff = Math.abs(stats.intersectionRatio - targetIntersection);
-  let intRaw = Math.max(0, 100 - intDiff * 300);
-  // Bonus for exceeding target (better than missing)
-  if (stats.intersectionRatio >= targetIntersection) intRaw = Math.min(100, intRaw + 10);
-  intRaw = Math.min(100, intRaw);
-
-  // ── E) Readability (0–100) ──
-  let readRaw = 100;
-  // Placement ratio is the biggest readability factor
-  readRaw *= placementRatio;
-  // Symmetry helps readability
-  readRaw = readRaw * 0.7 + stats.symmetryScore * 30;
-  // Jagged edges hurt readability
-  readRaw -= stats.jaggedEdges * 3;
-  readRaw = Math.max(0, Math.min(100, readRaw));
-
-  // ── Weighted total ──
-  const total =
-    balanceRaw * w.balance +
-    connectRaw * w.connectivity +
-    cleanRaw * w.cleanliness +
-    intRaw * w.intersection +
-    readRaw * w.readability;
-
-  // ── Hard penalties (applied after weighting) ──
-  let penalty = 0;
-  if (!stats.fullyConnected) penalty += 30;
-  if (stats.isolatedBlacks > 3) penalty += 15;
-  if (stats.blackClusterMax > 6) penalty += 10;
-  if (placementRatio < 0.5) penalty += 20;
-
-  return Math.max(0, Math.min(100, total - penalty));
-}
-
-/**
- * Generate multiple candidates, score them all, and return the best.
- * If no candidate meets the quality threshold after MAX_BATCHES,
- * returns the highest-scoring candidate found.
- */
-function selectBestLayoutCandidate<TResult extends { score: number }>(
-  buildFn: (seed: number) => TResult,
-  baseSeed: number
-): TResult {
-  let bestResult: TResult | null = null;
-  let bestScore = -Infinity;
-
-  for (let batch = 0; batch < MAX_BATCHES; batch++) {
-    for (let i = 0; i < CANDIDATES_PER_BATCH; i++) {
-      const seed = (baseSeed + batch * CANDIDATES_PER_BATCH * 7919 + i * 7919) % 2147483646 || 1;
-      const result = buildFn(seed);
-      const { score } = result;
-      if (score > bestScore) {
-        bestScore = score;
-        bestResult = result;
-      }
-    }
-    // If we found a high-quality layout, stop early
-    if (bestScore >= QUALITY_THRESHOLD) break;
-  }
-
-  return bestResult!;
-}
-
-function selectBestLayout<T>(
-  buildFn: (seed: number) => { data: T; score: number },
-  baseSeed: number
-): T {
-  return selectBestLayoutCandidate(buildFn, baseSeed).data;
+  return best;
 }
 
 // ═══════════════════════════════════════════════
@@ -354,13 +199,11 @@ function trimGrid<T extends { row: number; col: number }>(
       }
   if (minR > maxR) return { grid, size, placed };
 
-  // 1-cell padding
   minR = Math.max(0, minR - 1);
   maxR = Math.min(size - 1, maxR + 1);
   minC = Math.max(0, minC - 1);
   maxC = Math.min(size - 1, maxC + 1);
 
-  // Make square
   const h = maxR - minR + 1, w = maxC - minC + 1;
   const newSize = Math.max(h, w);
   const rowPad = Math.floor((newSize - h) / 2);
@@ -380,247 +223,6 @@ function trimGrid<T extends { row: number; col: number }>(
 }
 
 // ═══════════════════════════════════════════════
-// Placement engine
-// ═══════════════════════════════════════════════
-
-function writeWord(grid: string[][], word: string, row: number, col: number, dir: "across" | "down") {
-  const dr = dir === "down" ? 1 : 0;
-  const dc = dir === "across" ? 1 : 0;
-  for (let i = 0; i < word.length; i++) grid[row + dr * i][col + dc * i] = word[i];
-}
-
-function canPlace(grid: string[][], word: string, row: number, col: number, dir: "across" | "down", size: number): boolean {
-  const dr = dir === "down" ? 1 : 0;
-  const dc = dir === "across" ? 1 : 0;
-  if (row < 0 || col < 0 || row + dr * (word.length - 1) >= size || col + dc * (word.length - 1) >= size) return false;
-
-  // Cell before word must be empty/border
-  const pR = row - dr, pC = col - dc;
-  if (pR >= 0 && pC >= 0 && grid[pR][pC]) return false;
-
-  // Cell after word must be empty/border
-  const aR = row + dr * word.length, aC = col + dc * word.length;
-  if (aR < size && aC < size && grid[aR][aC]) return false;
-
-  let intersections = 0;
-  for (let i = 0; i < word.length; i++) {
-    const r = row + dr * i, c = col + dc * i;
-    if (grid[r][c]) {
-      if (grid[r][c] !== word[i]) return false;
-      intersections++;
-    } else {
-      // Perpendicular neighbors must be empty
-      if (dir === "across") {
-        if (r > 0 && grid[r - 1][c]) return false;
-        if (r < size - 1 && grid[r + 1][c]) return false;
-      } else {
-        if (c > 0 && grid[r][c - 1]) return false;
-        if (c < size - 1 && grid[r][c + 1]) return false;
-      }
-    }
-  }
-  return intersections > 0;
-}
-
-interface PlacementCandidate {
-  row: number;
-  col: number;
-  dir: "across" | "down";
-  intersections: number;
-  balance: number; // how well it balances the grid
-  score: number;
-}
-
-function getGridCenterOfMass(grid: string[][], size: number) {
-  let cx = 0, cy = 0, wCount = 0;
-  for (let r = 0; r < size; r++)
-    for (let c = 0; c < size; c++)
-      if (grid[r][c]) { cy += r; cx += c; wCount++; }
-
-  return {
-    comR: wCount > 0 ? cy / wCount : size / 2,
-    comC: wCount > 0 ? cx / wCount : size / 2,
-    wCount,
-    center: size / 2,
-  };
-}
-
-function getPlacementIntersections(
-  grid: string[][],
-  word: string,
-  row: number,
-  col: number,
-  dir: "across" | "down",
-  size: number,
-  requireIntersection = true
-): number | null {
-  const dr = dir === "down" ? 1 : 0;
-  const dc = dir === "across" ? 1 : 0;
-  if (row < 0 || col < 0 || row + dr * (word.length - 1) >= size || col + dc * (word.length - 1) >= size) return null;
-
-  const pR = row - dr, pC = col - dc;
-  if (pR >= 0 && pC >= 0 && grid[pR][pC]) return null;
-
-  const aR = row + dr * word.length, aC = col + dc * word.length;
-  if (aR < size && aC < size && grid[aR][aC]) return null;
-
-  let intersections = 0;
-  for (let i = 0; i < word.length; i++) {
-    const r = row + dr * i, c = col + dc * i;
-    if (grid[r][c]) {
-      if (grid[r][c] !== word[i]) return null;
-      intersections++;
-    } else if (dir === "across") {
-      if (r > 0 && grid[r - 1][c]) return null;
-      if (r < size - 1 && grid[r + 1][c]) return null;
-    } else {
-      if (c > 0 && grid[r][c - 1]) return null;
-      if (c < size - 1 && grid[r][c + 1]) return null;
-    }
-  }
-
-  if (requireIntersection && intersections === 0) return null;
-  return intersections;
-}
-
-function scoreOpenPlacement(
-  grid: string[][],
-  word: string,
-  row: number,
-  col: number,
-  dir: "across" | "down",
-  size: number
-) {
-  const { comR, comC, wCount, center } = getGridCenterOfMass(grid, size);
-  const currentDist = Math.abs(comR - center) + Math.abs(comC - center);
-  const dr = dir === "down" ? 1 : 0;
-  const dc = dir === "across" ? 1 : 0;
-
-  let midR = 0;
-  let midC = 0;
-  let crowdingPenalty = 0;
-  for (let i = 0; i < word.length; i++) {
-    const r = row + dr * i;
-    const c = col + dc * i;
-    midR += r;
-    midC += c;
-
-    for (let nr = r - 1; nr <= r + 1; nr++) {
-      for (let nc = c - 1; nc <= c + 1; nc++) {
-        if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
-        if (nr === r && nc === c) continue;
-        if (grid[nr][nc]) crowdingPenalty++;
-      }
-    }
-  }
-
-  midR /= word.length;
-  midC /= word.length;
-
-  const newComR = (comR * wCount + midR * word.length) / Math.max(1, wCount + word.length);
-  const newComC = (comC * wCount + midC * word.length) / Math.max(1, wCount + word.length);
-  const newDist = Math.abs(newComR - center) + Math.abs(newComC - center);
-  const balance = currentDist - newDist;
-
-  const borderTouches =
-    (row === 0 ? 1 : 0) +
-    (col === 0 ? 1 : 0) +
-    (row + dr * (word.length - 1) === size - 1 ? 1 : 0) +
-    (col + dc * (word.length - 1) === size - 1 ? 1 : 0);
-
-  return { balance, score: balance * 8 - crowdingPenalty * 1.5 - borderTouches * 2 };
-}
-
-function findBestPlacement(
-  grid: string[][],
-  word: string,
-  placed: { word: string; row: number; col: number; dir: "across" | "down" }[],
-  size: number,
-  rng: SeededRandom
-): PlacementCandidate | null {
-  const candidates: PlacementCandidate[] = [];
-
-  const { comR, comC, wCount, center } = getGridCenterOfMass(grid, size);
-
-  for (const existing of placed) {
-    for (let i = 0; i < word.length; i++) {
-      for (let j = 0; j < existing.word.length; j++) {
-        if (word[i] !== existing.word[j]) continue;
-        const newDir: "across" | "down" = existing.dir === "across" ? "down" : "across";
-        let nr: number, nc: number;
-        if (newDir === "down") { nr = existing.row - i; nc = existing.col + j; }
-        else { nr = existing.row + j; nc = existing.col - i; }
-
-        if (!canPlace(grid, word, nr, nc, newDir, size)) continue;
-
-        // Count intersections
-        const dr = newDir === "down" ? 1 : 0;
-        const dc = newDir === "across" ? 1 : 0;
-        let ints = 0;
-        let midR = 0, midC = 0;
-        for (let k = 0; k < word.length; k++) {
-          const cr = nr + dr * k, cc = nc + dc * k;
-          if (grid[cr][cc] === word[k]) ints++;
-          midR += cr; midC += cc;
-        }
-        midR /= word.length;
-        midC /= word.length;
-
-        // Balance: prefer placements that pull center of mass toward grid center
-        const currentDist = Math.abs(comR - center) + Math.abs(comC - center);
-        const newComR = (comR * wCount + midR * word.length) / (wCount + word.length);
-        const newComC = (comC * wCount + midC * word.length) / (wCount + word.length);
-        const newDist = Math.abs(newComR - center) + Math.abs(newComC - center);
-        const balance = currentDist - newDist; // positive = improves balance
-
-        candidates.push({ row: nr, col: nc, dir: newDir, intersections: ints, balance, score: ints * 100 + balance * 5 });
-      }
-    }
-  }
-
-  if (candidates.length === 0) return null;
-
-  // Sort: most intersections first, then best balance
-  candidates.sort((a, b) => b.score - a.score);
-
-  // Pick from top tier with slight randomness
-  const topScore = candidates[0].score;
-  const topTier = candidates.filter(c => c.score >= topScore - 5);
-  return topTier[rng.nextInt(0, topTier.length - 1)];
-}
-
-function findOpenPlacement(
-  grid: string[][],
-  word: string,
-  size: number,
-  rng: SeededRandom
-): PlacementCandidate | null {
-  const candidates: PlacementCandidate[] = [];
-
-  for (const dir of ["across", "down"] as const) {
-    const maxRow = dir === "across" ? size - 1 : size - word.length;
-    const maxCol = dir === "across" ? size - word.length : size - 1;
-
-    for (let row = 0; row <= maxRow; row++) {
-      for (let col = 0; col <= maxCol; col++) {
-        const intersections = getPlacementIntersections(grid, word, row, col, dir, size, false);
-        if (intersections === null) continue;
-
-        const { balance, score } = scoreOpenPlacement(grid, word, row, col, dir, size);
-        candidates.push({ row, col, dir, intersections, balance, score });
-      }
-    }
-  }
-
-  if (candidates.length === 0) return null;
-
-  candidates.sort((a, b) => b.score - a.score);
-  const topScore = candidates[0].score;
-  const topTier = candidates.filter(c => c.score >= topScore - 6);
-  return topTier[rng.nextInt(0, topTier.length - 1)];
-}
-
-// ═══════════════════════════════════════════════
 // Custom Word Fill-In
 // ═══════════════════════════════════════════════
 
@@ -631,53 +233,104 @@ export interface CustomFillInData {
   solution: (string | null)[][];
 }
 
-export function generateCustomFillIn(words: string[], difficulty: CraftDifficulty = "medium"): CustomFillInData {
+/**
+ * Generates a custom word fill-in using the SAME placement logic as fillGen.ts.
+ * Grid size scales with difficulty (matching standard gameplay) and grows
+ * automatically until ALL user words are placed — words are NEVER dropped.
+ */
+export function generateCustomFillIn(words: string[], difficulty: Difficulty = "medium"): CustomFillInData {
   const cleaned = words.map(w => w.toUpperCase().replace(/[^A-Z]/g, "")).filter(w => w.length >= 2);
   if (cleaned.length === 0) throw new Error("No valid words provided");
 
   const maxLen = Math.max(...cleaned.map(w => w.length));
   const wordCount = cleaned.length;
-  const totalLetters = cleaned.reduce((sum, word) => sum + word.length, 0);
-  // Scale grid size with word count to avoid dropping words
-  const padding = difficulty === "easy" ? 6 : difficulty === "medium" ? 5 : 4;
-  const countPadding = Math.ceil(Math.sqrt(wordCount) * 1.2);
-  const packingSize = Math.ceil(Math.sqrt(totalLetters * (difficulty === "easy" ? 2.8 : difficulty === "medium" ? 2.3 : 1.9)));
-  const baseSize = Math.max(9, maxLen + padding, countPadding + maxLen, packingSize);
-  const targetInt = TARGET_INTERSECTION_FILL[difficulty];
+
+  // Start with the standard gameplay size for this difficulty,
+  // but ensure it's at least large enough for the longest word + padding
+  const standardSize = FILL_SIZES[difficulty];
+  const minSizeForWords = maxLen + 2;
+  const baseSize = Math.max(standardSize, minSizeForWords);
+
   const baseSeed = Date.now() % 2147483646 || 1;
-  const maxSizeGrowth = difficulty === "hard"
-    ? Math.max(8, Math.ceil(wordCount * 0.75))
-    : Math.max(6, Math.ceil(wordCount / 2));
 
-  let bestFallback: { data: CustomFillInData; score: number; placedCount: number } | null = null;
+  // Grow grid until all words are placed — up to insane-level max (19) + extra
+  const maxSize = Math.max(baseSize + 12, 25);
 
-  for (let sizeGrowth = 0; sizeGrowth <= maxSizeGrowth; sizeGrowth++) {
-    const candidate = selectBestLayoutCandidate((seed) => {
-      const result = buildFillIn(cleaned, baseSize + sizeGrowth, seed);
-      const completenessBonus = result.placedCount === cleaned.length ? 1000 : 0;
-      const score = scoreLayout(result.stats, difficulty, result.placedCount, cleaned.length, targetInt) + completenessBonus;
+  let bestOverall: { data: CustomFillInData; placedCount: number; score: number } | null = null;
 
-      return {
-        data: result.data,
-        placedCount: result.placedCount,
-        score,
-      };
-    }, (baseSeed + sizeGrowth * 3571) % 2147483646 || 1);
+  for (let size = baseSize; size <= maxSize; size++) {
+    const target = Math.min(wordCount, FILL_TARGETS[difficulty] || wordCount);
 
-    if (
-      !bestFallback ||
-      candidate.placedCount > bestFallback.placedCount ||
-      (candidate.placedCount === bestFallback.placedCount && candidate.score > bestFallback.score)
-    ) {
-      bestFallback = candidate;
+    const result = selectBestCandidate(
+      (seed) => {
+        const built = buildFillIn(cleaned, size, seed);
+        if (built.placedCount === wordCount) {
+          // Perfect — score the layout quality
+          const grid = solutionToLetterGrid(built.data.solution, built.data.gridSize);
+          const placedEntries = extractPlacedEntries(grid, built.data.gridSize);
+          const stats = analyzeGrid(grid, built.data.gridSize, placedEntries);
+          const layoutScore = scoreGridLayout(stats, built.placedCount, target);
+          return { data: built.data, score: layoutScore + 1000 }; // +1000 completeness bonus
+        }
+        // Incomplete — low score
+        return { data: built.data, score: built.placedCount * 2 };
+      },
+      (baseSeed + size * 3571) % 2147483646 || 1,
+      5,  // candidates per batch
+      3,  // max batches
+      50  // threshold
+    );
+
+    // Track placed count from the data
+    const placedCount = (result as CustomFillInData).entries.length;
+
+    if (!bestOverall || placedCount > bestOverall.placedCount) {
+      bestOverall = { data: result, placedCount, score: 0 };
     }
 
-    if (candidate.placedCount === cleaned.length) {
-      return candidate.data;
+    if (placedCount === wordCount) {
+      return result;
     }
   }
 
-  return bestFallback!.data;
+  return bestOverall!.data;
+}
+
+function solutionToLetterGrid(solution: (string | null)[][], size: number): string[][] {
+  return Array.from({ length: size }, (_, r) =>
+    Array.from({ length: size }, (_, c) => solution[r][c] || "")
+  );
+}
+
+function extractPlacedEntries(grid: string[][], size: number): { row: number; col: number; dir: "across" | "down"; word: string }[] {
+  const result: { row: number; col: number; dir: "across" | "down"; word: string }[] = [];
+  for (let r = 0; r < size; r++) {
+    let start = -1;
+    for (let c = 0; c <= size; c++) {
+      if (c < size && grid[r][c]) { if (start === -1) start = c; }
+      else {
+        if (start !== -1 && c - start >= 2) {
+          result.push({ row: r, col: start, dir: "across", word: grid[r].slice(start, c).join("") });
+        }
+        start = -1;
+      }
+    }
+  }
+  for (let c = 0; c < size; c++) {
+    let start = -1;
+    for (let r = 0; r <= size; r++) {
+      if (r < size && grid[r][c]) { if (start === -1) start = r; }
+      else {
+        if (start !== -1 && r - start >= 2) {
+          let word = "";
+          for (let i = start; i < r; i++) word += grid[i][c];
+          result.push({ row: start, col: c, dir: "down", word });
+        }
+        start = -1;
+      }
+    }
+  }
+  return result;
 }
 
 function buildFillIn(words: string[], size: number, seed: number) {
@@ -685,7 +338,7 @@ function buildFillIn(words: string[], size: number, seed: number) {
   const grid: string[][] = Array.from({ length: size }, () => Array(size).fill(""));
   const placed: { id: number; word: string; row: number; col: number; dir: "across" | "down" }[] = [];
 
-  // Sort: longest first for structural anchoring
+  // Sort: longest first for structural anchoring, with shuffle for variety
   const sorted = rng
     .shuffle(words.map((word, id) => ({ word, id })))
     .sort((a, b) => b.word.length - a.word.length);
@@ -699,21 +352,31 @@ function buildFillIn(words: string[], size: number, seed: number) {
     placed.push({ id, word, row, col, dir: "across" });
   }
 
-  // Place remaining with quality-aware placement — more passes for more words
-  const passes = sorted.length > 8 ? 4 : sorted.length > 5 ? 3 : 2;
+  // Multiple passes — same approach as fillGen.ts
+  const passes = words.length > 15 ? 5 : words.length > 8 ? 4 : 3;
   for (let pass = 0; pass < passes; pass++) {
     for (let i = 1; i < sorted.length; i++) {
       const { word, id } = sorted[i];
       if (placed.some(p => p.id === id)) continue;
-      const result = findBestPlacement(grid, word, placed, size, rng) ?? findOpenPlacement(grid, word, size, rng);
+
+      // Try intersection-based placement first (same as fillGen.ts findPlacement)
+      const result = findPlacement(grid, word, placed, size, rng);
       if (result) {
         writeWord(grid, word, result.row, result.col, result.dir);
         placed.push({ id, word, row: result.row, col: result.col, dir: result.dir });
+        continue;
+      }
+
+      // Fallback: open placement (no intersection required)
+      const open = findOpenPlacement(grid, word, size, rng);
+      if (open) {
+        writeWord(grid, word, open.row, open.col, open.dir);
+        placed.push({ id, word, row: open.row, col: open.col, dir: open.dir });
       }
     }
   }
 
-  // Trim
+  // Trim to compact grid
   const trimmed = trimGrid(grid, size, placed);
 
   const blackCells: [number, number][] = [];
@@ -723,11 +386,8 @@ function buildFillIn(words: string[], size: number, seed: number) {
       if (trimmed.grid[r][c]) solution[r][c] = trimmed.grid[r][c];
       else blackCells.push([r, c]);
 
-  const stats = analyzeGrid(trimmed.grid, trimmed.size, trimmed.placed);
-
   return {
     data: { gridSize: trimmed.size, blackCells, entries: trimmed.placed.map(p => p.word), solution } as CustomFillInData,
-    stats,
     placedCount: placed.length,
   };
 }
@@ -744,25 +404,21 @@ export interface CustomCryptogramData {
   hints: Record<string, string>;
 }
 
-export function generateCustomCryptogram(phrase: string, difficulty: CraftDifficulty = "medium"): CustomCryptogramData {
-  // Normalize smart/curly quotes to straight equivalents before filtering
+export function generateCustomCryptogram(phrase: string, difficulty: Difficulty = "medium"): CustomCryptogramData {
   const normalized = phrase
-    .replace(/[\u2018\u2019\u201A\u2032]/g, "'")   // curly single quotes → straight apostrophe
-    .replace(/[\u201C\u201D\u201E\u2033]/g, '"');   // curly double quotes → straight quote
+    .replace(/[\u2018\u2019\u201A\u2032]/g, "'")
+    .replace(/[\u201C\u201D\u201E\u2033]/g, '"');
   const decoded = normalized.toUpperCase().replace(/[^A-Z .,!?;:'"()-]/g, "");
   if (decoded.replace(/[^A-Z]/g, "").length < 3) throw new Error("Phrase too short");
 
   const rng = new SeededRandom(Date.now() % 2147483646 || 1);
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-  // Difficulty affects cipher quality:
-  // Hard: cipher avoids common letter frequency patterns (E→E-like swaps)
   let shuffled: string[];
   let attempts = 0;
   do {
     shuffled = rng.shuffle([...alphabet]);
     attempts++;
-    // Ensure no letter maps to itself
   } while (shuffled.some((c, i) => c === alphabet[i]) && attempts < 100);
 
   const cipher: Record<string, string> = {};
@@ -774,11 +430,10 @@ export function generateCustomCryptogram(phrase: string, difficulty: CraftDiffic
 
   const encoded = decoded.split("").map(ch => cipher[ch] || ch).join("");
 
-  // Hint count: easy=3, medium=2, hard=0
-  const hintCount = difficulty === "easy" ? 3 : difficulty === "medium" ? 2 : 0;
+  // Hint count scales with difficulty
+  const hintCount = difficulty === "easy" ? 3 : difficulty === "medium" ? 2 : difficulty === "hard" ? 1 : 0;
   const uniqueLetters = [...new Set(decoded.split("").filter(ch => /[A-Z]/.test(ch)))];
 
-  // Prefer revealing common letters for easier difficulty
   const letterFreq = uniqueLetters.map(l => ({
     letter: l,
     count: decoded.split("").filter(ch => ch === l).length,
@@ -806,7 +461,11 @@ export interface CustomCrosswordData {
   clues: { number: number; clue: string; answer: string; row: number; col: number; direction: "across" | "down" }[];
 }
 
-export function generateCustomCrossword(entries: { answer: string; clue: string }[], difficulty: CraftDifficulty = "medium"): CustomCrosswordData {
+/**
+ * Generates a custom crossword using the same placement logic as crosswordGen.ts.
+ * Grid grows until all entries are placed.
+ */
+export function generateCustomCrossword(entries: { answer: string; clue: string }[], difficulty: Difficulty = "medium"): CustomCrosswordData {
   const cleaned = entries
     .map(e => ({ answer: e.answer.toUpperCase().replace(/[^A-Z]/g, ""), clue: e.clue.trim() }))
     .filter(e => e.answer.length >= 2 && e.clue.length > 0);
@@ -814,23 +473,60 @@ export function generateCustomCrossword(entries: { answer: string; clue: string 
 
   const maxLen = Math.max(...cleaned.map(e => e.answer.length));
   const wordCount = cleaned.length;
-  const padding = difficulty === "easy" ? 6 : difficulty === "medium" ? 5 : 4;
-  const countPadding = Math.ceil(Math.sqrt(wordCount) * 1.2);
-  const baseSize = Math.max(9, maxLen + padding, countPadding + maxLen);
-  const targetInt = TARGET_INTERSECTION_XWORD[difficulty];
 
-  return selectBestLayout((seed) => {
-    const { data, stats, placedCount } = buildCrossword(cleaned, baseSize, seed, difficulty);
-    const score = scoreLayout(stats, difficulty, placedCount, cleaned.length, targetInt) + stats.symmetryScore * 8;
-    return { data, score };
-  }, Date.now());
+  const standardSize = XWORD_SIZES[difficulty];
+  const minSizeForWords = maxLen + 2;
+  const baseSize = Math.max(standardSize, minSizeForWords);
+  const maxSize = Math.max(baseSize + 12, 25);
+  const baseSeed = Date.now() % 2147483646 || 1;
+
+  let bestOverall: { data: CustomCrosswordData; placedCount: number } | null = null;
+
+  for (let size = baseSize; size <= maxSize; size++) {
+    const result = selectBestCandidate(
+      (seed) => {
+        const built = buildCrossword(cleaned, size, seed);
+        if (built.placedCount === wordCount) {
+          const grid = reconstructCrosswordGrid(built.data);
+          const placedArr = built.data.clues.map(c => ({
+            row: c.row, col: c.col, dir: c.direction, word: c.answer,
+          }));
+          const stats = analyzeGrid(grid, built.data.gridSize, placedArr);
+          const layoutScore = scoreGridLayout(stats, built.placedCount, wordCount);
+          return { data: built.data, score: layoutScore + 1000 };
+        }
+        return { data: built.data, score: built.placedCount * 2 };
+      },
+      (baseSeed + size * 3571) % 2147483646 || 1,
+      5, 3, 50
+    );
+
+    const placedCount = (result as CustomCrosswordData).clues.length;
+    if (!bestOverall || placedCount > bestOverall.placedCount) {
+      bestOverall = { data: result, placedCount };
+    }
+    if (placedCount === wordCount) return result;
+  }
+
+  return bestOverall!.data;
+}
+
+function reconstructCrosswordGrid(data: CustomCrosswordData): string[][] {
+  const grid: string[][] = Array.from({ length: data.gridSize }, () => Array(data.gridSize).fill(""));
+  for (const clue of data.clues) {
+    const dr = clue.direction === "down" ? 1 : 0;
+    const dc = clue.direction === "across" ? 1 : 0;
+    for (let i = 0; i < clue.answer.length; i++) {
+      grid[clue.row + dr * i][clue.col + dc * i] = clue.answer[i];
+    }
+  }
+  return grid;
 }
 
 function buildCrossword(
   entries: { answer: string; clue: string }[],
   size: number,
-  seed: number,
-  difficulty: CraftDifficulty
+  seed: number
 ) {
   const rng = new SeededRandom(seed);
   const grid: string[][] = Array.from({ length: size }, () => Array(size).fill(""));
@@ -838,7 +534,6 @@ function buildCrossword(
 
   const sorted = rng.shuffle([...entries]).sort((a, b) => b.answer.length - a.answer.length);
 
-  // Place first word centered
   if (sorted.length > 0) {
     const { answer, clue } = sorted[0];
     const row = Math.floor(size / 2);
@@ -847,13 +542,12 @@ function buildCrossword(
     placed.push({ word: answer, clue, row, col, dir: "across" });
   }
 
-  // Multiple passes for denser interlocking
-  const passes = sorted.length > 8 ? 4 : difficulty === "hard" ? 3 : 2;
+  const passes = entries.length > 15 ? 5 : entries.length > 8 ? 4 : 3;
   for (let pass = 0; pass < passes; pass++) {
     for (let i = 1; i < sorted.length; i++) {
       const { answer, clue } = sorted[i];
       if (placed.some(p => p.word === answer)) continue;
-      const result = findBestPlacement(grid, answer, placed, size, rng);
+      const result = findPlacement(grid, answer, placed, size, rng);
       if (result) {
         writeWord(grid, answer, result.row, result.col, result.dir);
         placed.push({ word: answer, clue, row: result.row, col: result.col, dir: result.dir });
@@ -861,7 +555,6 @@ function buildCrossword(
     }
   }
 
-  // Trim
   const trimmed = trimGrid(grid, size, placed);
 
   const blackCells: [number, number][] = [];
@@ -869,7 +562,6 @@ function buildCrossword(
     for (let c = 0; c < trimmed.size; c++)
       if (!trimmed.grid[r][c]) blackCells.push([r, c]);
 
-  // Number cells
   const blackSet = new Set(blackCells.map(([r, c]) => `${r}-${c}`));
   const numbers = new Map<string, number>();
   let num = 1;
@@ -891,17 +583,14 @@ function buildCrossword(
     direction: p.dir,
   }));
 
-  const stats = analyzeGrid(trimmed.grid, trimmed.size, trimmed.placed);
-
   return {
     data: { gridSize: trimmed.size, blackCells, clues } as CustomCrosswordData,
-    stats,
     placedCount: placed.length,
   };
 }
 
 // ═══════════════════════════════════════════════
-// Custom Word Search — delegates to the standard site-wide generator
+// Custom Word Search — uses the standard generator
 // ═══════════════════════════════════════════════
 
 export interface CustomWordSearchData {
@@ -911,43 +600,150 @@ export interface CustomWordSearchData {
   size: number;
 }
 
-/** Difficulty → standard Difficulty mapping for direction/size behavior */
-const CRAFT_TO_STD_DIFF: Record<CraftDifficulty, "easy" | "medium" | "hard"> = {
-  easy: "easy",
-  medium: "medium",
-  hard: "hard",
-};
+const MAX_CRAFT_WS_ATTEMPTS = 30;
 
-const MAX_CRAFT_WS_ATTEMPTS = 25;
-
-export function generateCustomWordSearch(words: string[], difficulty: CraftDifficulty = "medium"): CustomWordSearchData {
+/**
+ * Generates a custom word search using the same tryGenerateWordSearch logic.
+ * Grid size scales to fit ALL user words — never drops words.
+ */
+export function generateCustomWordSearch(words: string[], difficulty: Difficulty = "medium"): CustomWordSearchData {
   const cleaned = words.map(w => w.toUpperCase().replace(/[^A-Z]/g, "")).filter(w => w.length >= 2);
   if (cleaned.length === 0) throw new Error("No valid words provided");
 
-  const stdDiff = CRAFT_TO_STD_DIFF[difficulty];
-
-  // Use the exact same generation pipeline as site-wide word searches
-  let bestResult: WordSearchPuzzle | null = null;
-  let bestScore = -Infinity;
   const baseSeed = Date.now() % 2147483646 || 1;
+  const maxLen = Math.max(...cleaned.map(w => w.length));
 
-  for (let attempt = 0; attempt < MAX_CRAFT_WS_ATTEMPTS; attempt++) {
-    const result = tryGenerateWordSearch(baseSeed + attempt * 7919, stdDiff, cleaned);
-    if (result.words.length === 0) continue;
-    if (!validateWordSearchGrid(result)) continue;
+  // Standard grid size for this difficulty, but ensure it fits all words
+  const standardSize = WS_SIZES[difficulty];
+  // Need at least maxLen for the longest word, and scale with word count
+  const minSizeForCount = Math.ceil(Math.sqrt(cleaned.length * maxLen * 1.8));
+  const baseSize = Math.max(standardSize, maxLen, minSizeForCount);
 
-    const score = scoreWordSearchPuzzle(result, stdDiff);
-    if (score > bestScore) {
-      bestScore = score;
-      bestResult = result;
+  // Try progressively larger grids until all words are placed
+  const maxSize = Math.max(baseSize + 8, 28);
+
+  let bestResult: WordSearchPuzzle | null = null;
+  let bestPlacedCount = 0;
+
+  for (let size = baseSize; size <= maxSize; size++) {
+    const dirCount = WS_DIR_COUNTS[difficulty];
+
+    for (let attempt = 0; attempt < MAX_CRAFT_WS_ATTEMPTS; attempt++) {
+      const result = tryGenerateWordSearchWithSize(baseSeed + attempt * 7919 + size * 31, cleaned, size, dirCount);
+      if (!validateWordSearchGrid(result)) continue;
+
+      if (result.words.length > bestPlacedCount) {
+        bestPlacedCount = result.words.length;
+        bestResult = result;
+      }
+
+      if (result.words.length >= cleaned.length) {
+        return result as CustomWordSearchData;
+      }
     }
-    if (result.words.length >= cleaned.length && score > 60) break;
+
+    // If we placed all words at this size, return
+    if (bestPlacedCount >= cleaned.length && bestResult) {
+      return bestResult as CustomWordSearchData;
+    }
   }
 
-  if (!bestResult) {
-    // Fallback: run with easy difficulty for max placement
-    bestResult = tryGenerateWordSearch(baseSeed, "easy", cleaned);
+  // Return best result even if not all words placed
+  if (bestResult) return bestResult as CustomWordSearchData;
+
+  // Final fallback
+  return tryGenerateWordSearch(baseSeed, "easy", cleaned) as CustomWordSearchData;
+}
+
+/**
+ * Word search generation with explicit size control.
+ * Uses the same placement logic as the standard wordSearch.ts generator.
+ */
+function tryGenerateWordSearchWithSize(
+  seed: number,
+  words: string[],
+  size: number,
+  dirCount: number
+): WordSearchPuzzle {
+  const DIRECTIONS: [number, number][] = [
+    [0, 1], [1, 0], [1, 1], [-1, 1], [0, -1], [-1, 0], [-1, -1], [1, -1],
+  ];
+
+  const rng = new SeededRandom(seed);
+  const dirs = DIRECTIONS.slice(0, dirCount);
+  const grid: string[][] = Array.from({ length: size }, () => Array(size).fill(""));
+
+  const shuffled = rng.shuffle([...words]);
+  shuffled.sort((a, b) => b.length - a.length);
+
+  const placed: WordSearchPuzzle["wordPositions"] = [];
+  const placedWords = new Set<string>();
+
+  for (const word of shuffled) {
+    if (placedWords.has(word)) continue;
+
+    const shuffledDirs = rng.shuffle([...dirs]);
+    let bestPos: { r: number; c: number; dr: number; dc: number; score: number } | null = null;
+
+    for (const [dr, dc] of shuffledDirs) {
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (!canPlaceWS(grid, word, r, c, dr, dc, size)) continue;
+
+          let overlaps = 0;
+          for (let i = 0; i < word.length; i++) {
+            if (grid[r + dr * i][c + dc * i] !== "") overlaps++;
+          }
+          if (word.length > 0 && overlaps / word.length > 0.3) continue;
+
+          // Simple distance-based scoring
+          const midR = r + dr * (word.length - 1) / 2;
+          const midC = c + dc * (word.length - 1) / 2;
+          let minMidDist = size * 2;
+          for (const pw of placed) {
+            const pmR = pw.row + pw.dr * (pw.word.length - 1) / 2;
+            const pmC = pw.col + pw.dc * (pw.word.length - 1) / 2;
+            const dist = Math.abs(midR - pmR) + Math.abs(midC - pmC);
+            if (dist < minMidDist) minMidDist = dist;
+          }
+          if (placed.length === 0) minMidDist = size;
+
+          const posScore = minMidDist * 10 - overlaps * 2;
+          if (!bestPos || posScore > bestPos.score) {
+            bestPos = { r, c, dr, dc, score: posScore };
+          }
+        }
+      }
+    }
+
+    if (bestPos) {
+      placeWordWS(grid, word, bestPos.r, bestPos.c, bestPos.dr, bestPos.dc);
+      placed.push({ word, row: bestPos.r, col: bestPos.c, dr: bestPos.dr, dc: bestPos.dc });
+      placedWords.add(word);
+    }
   }
 
-  return bestResult as CustomWordSearchData;
+  // Fill empty cells
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  for (let r = 0; r < size; r++)
+    for (let c = 0; c < size; c++)
+      if (!grid[r][c]) grid[r][c] = letters[rng.nextInt(0, 25)];
+
+  return { grid, words: placed.map(p => p.word), wordPositions: placed, size };
+}
+
+function canPlaceWS(grid: string[][], word: string, row: number, col: number, dr: number, dc: number, size: number): boolean {
+  for (let i = 0; i < word.length; i++) {
+    const r = row + dr * i;
+    const c = col + dc * i;
+    if (r < 0 || r >= size || c < 0 || c >= size) return false;
+    if (grid[r][c] && grid[r][c] !== word[i]) return false;
+  }
+  return true;
+}
+
+function placeWordWS(grid: string[][], word: string, row: number, col: number, dr: number, dc: number) {
+  for (let i = 0; i < word.length; i++) {
+    grid[row + dr * i][col + dc * i] = word[i];
+  }
 }
