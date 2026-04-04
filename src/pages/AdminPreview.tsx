@@ -1045,10 +1045,9 @@ export default function AdminPreview() {
               </p>
               <div className="max-w-sm space-y-2">
                 {[
-                  { label: "Coded notifications", desc: "In-app banners with randomized phrases", on: true },
-                  { label: "Push notifications", desc: "Alerts when app is closed", on: false },
                   { label: "Streak reminders", desc: "Daily reminder if you haven't played", on: true },
                   { label: "Friend activity", desc: "When friends solve your puzzles", on: true },
+                  { label: "Push notifications", desc: "Alerts when app is closed", on: false },
                 ].map((setting) => (
                   <div key={setting.label} className="flex items-center justify-between rounded-xl border border-border/40 bg-card px-4 py-3">
                     <div>
