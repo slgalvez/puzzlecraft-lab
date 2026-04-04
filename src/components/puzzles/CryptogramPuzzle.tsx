@@ -115,7 +115,14 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
 
   const focusIdx = (idx: number) => {
     setActiveIdx(idx);
-    inputRefs.current.get(idx)?.focus();
+    const el = inputRefs.current.get(idx);
+    if (!el) return;
+    el.focus();
+    if (isMobile) {
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 320);
+    }
   };
 
   const findNextEditable = (fromIdx: number, dir: number): number | null => {
@@ -222,7 +229,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
   let charIndex = 0;
 
   return (
-    <div ref={containerRef} className="puzzle-keyboard-aware">
+    <div ref={containerRef} className="scroll-mt-4 [overscroll-behavior:contain] puzzle-keyboard-aware">
       <PuzzleHeader
         puzzleType="cryptogram"
         difficulty={difficulty}
@@ -245,7 +252,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
       )}
       <div className="flex flex-wrap gap-x-4 gap-y-4 mb-4">
         {words.map((word, wi) => (
-          <div key={wi} className="flex gap-0.5">
+          <div key={wi} className="flex gap-0.5 shrink-0">
             {word.split("").map((ch, ci) => {
               const isLetter = /[A-Z]/.test(ch);
               const idx = charIndex++;
@@ -267,7 +274,7 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
                   <input
                     ref={(el) => { if (el) inputRefs.current.set(idx, el); }}
                     className={cn(
-                      "w-8 h-10 sm:h-9 text-center text-lg font-semibold outline-none border-b-2 bg-transparent uppercase touch-manipulation",
+                      "w-8 h-11 sm:w-8 sm:h-9 text-center text-base sm:text-lg font-semibold outline-none border-b-2 bg-transparent uppercase touch-manipulation",
                       isHint && "text-primary border-primary/50",
                       hasError && "text-destructive border-destructive",
                       !isHint && !hasError && isActive && "text-foreground border-primary",
@@ -280,7 +287,14 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
                     autoCapitalize="characters"
                     autoComplete="off"
                     autoCorrect="off"
-                    onChange={(e) => handleInput(ch, e.target.value, idx)}
+                    onChange={(e) => {
+                      if (e.nativeEvent instanceof InputEvent && e.nativeEvent.isComposing) return;
+                      handleInput(ch, e.target.value, idx);
+                    }}
+                    onCompositionEnd={(e) => {
+                      const val = (e.target as HTMLInputElement).value;
+                      handleInput(ch, val, idx);
+                    }}
                     onKeyDown={(e) => handleKeyDown(e, ch, idx)}
                     onFocus={() => setActiveIdx(idx)}
                   />
