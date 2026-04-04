@@ -295,7 +295,11 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
         </p>
       )}
 
-      <div className="max-w-full overflow-x-auto pb-2">
+      <div className="relative">
+        <div
+          ref={gridScrollRef}
+          className="max-w-full overflow-x-auto pb-2 [overscroll-behavior:contain]"
+        >
         <div
           className="inline-grid"
           style={{
