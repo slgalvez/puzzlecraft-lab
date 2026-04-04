@@ -669,24 +669,6 @@ const CraftPuzzle = () => {
                   </h2>
                 </div>
 
-                {/* Template selector */}
-                <CraftTemplateSelector
-                  puzzleType={selectedType as "crossword" | "word-search" | "word-fill" | "cryptogram"}
-                  onSelect={(template) => {
-                    if (template.words.length > 0) {
-                      setWordInput(template.words.join("\n"));
-                    }
-                    if (template.clues) {
-                      setClueEntries(
-                        Object.entries(template.clues).map(([answer, clue]) => ({ answer, clue }))
-                      );
-                    }
-                    if (template.phrase) {
-                      setPhraseInput(template.phrase);
-                    }
-                  }}
-                />
-
                 <div className="space-y-3">
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-muted-foreground">Puzzle title (optional)</label>
