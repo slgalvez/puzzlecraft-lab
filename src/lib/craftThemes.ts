@@ -54,7 +54,7 @@ export const CRAFT_THEMES: CraftTheme[] = [
     revealTemplates: [
       "Happy Anniversary! Every year with you is a gift 💕",
       "Here's to another year of adventures together ✨",
-      "You're still my favourite puzzle to solve 💑",
+      "You're still my favorite puzzle to solve 💑",
     ],
     wordSuggestions: ["LOVE", "TOGETHER", "FOREVER", "MEMORIES", "ADVENTURE", "JOURNEY", "LAUGHTER", "CHERISH", "DEVOTION", "SOULMATE"],
   },
