@@ -195,12 +195,21 @@ export default function AccountPage() {
 
           {/* ── Puzzlecraft+ block ── */}
           {isAdmin && (
-            <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
+            <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 space-y-3">
               <div className="flex items-center gap-2 mb-1">
                 <Sparkles size={16} className="text-primary" />
                 <span className="font-semibold text-foreground">Puzzlecraft+ (Admin)</span>
               </div>
               <p className="text-xs text-muted-foreground">Full access enabled via admin override.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => navigate("/admin/premium-emails")}
+              >
+                <Crown size={14} className="mr-2" />
+                Manage Premium Access
+              </Button>
             </div>
           )}
 
