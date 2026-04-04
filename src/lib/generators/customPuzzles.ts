@@ -608,44 +608,157 @@ function getDeterministicSeed(parts: string[]): number {
  * The Create UI stays easy/medium/hard, and the selected difficulty directly
  * controls the same board size, word-count budget, and filler complexity as normal gameplay.
  */
+/**
+ * Dynamically picks the tightest grid size that can fit the user's words,
+ * then uses the difficulty's direction count to control how tricky placement is.
+ * This keeps boards dense and challenging regardless of word count.
+ */
 export function generateCustomWordSearch(words: string[], difficulty: Difficulty = "medium"): CustomWordSearchData {
   const cleaned = words.map(w => w.toUpperCase().replace(/[^A-Z]/g, "")).filter(w => w.length >= 2);
   if (cleaned.length === 0) throw new Error("No valid words provided");
 
   const maxLen = Math.max(...cleaned.map(w => w.length));
   const minLen = Math.min(...cleaned.map(w => w.length));
-  const sizeLimit = WS_SIZES[difficulty];
-  const wordLimit = WS_WORD_COUNTS[difficulty];
+  const maxGridSize = WS_SIZES.insane; // 22 — absolute ceiling
   const minWordLen = WS_MIN_WORD_LEN[difficulty];
 
-  if (maxLen > sizeLimit) {
-    throw new Error(`${difficulty[0].toUpperCase() + difficulty.slice(1)} word search supports words up to ${sizeLimit} letters.`);
+  if (maxLen > maxGridSize) {
+    throw new Error(`Word search supports words up to ${maxGridSize} letters.`);
   }
   if (minLen < minWordLen) {
-    throw new Error(`${difficulty[0].toUpperCase() + difficulty.slice(1)} word search needs words with at least ${minWordLen} letters.`);
+    throw new Error(`This layout needs words with at least ${minWordLen} letters.`);
   }
-  if (cleaned.length > wordLimit) {
-    throw new Error(`${difficulty[0].toUpperCase() + difficulty.slice(1)} word search fits up to ${wordLimit} words. Remove a few words or change the layout.`);
-  }
+
+  // Calculate total letter volume to estimate a tight grid size
+  const totalLetters = cleaned.reduce((s, w) => s + w.length, 0);
+  // Target ~35-50% letter density depending on difficulty
+  // Harder = denser board (fewer filler cells to hide in)
+  const densityTarget = difficulty === "easy" ? 0.30 : difficulty === "medium" ? 0.38 : 0.45;
+  const idealArea = Math.ceil(totalLetters / densityTarget);
+  const idealSize = Math.ceil(Math.sqrt(idealArea));
+  // Grid must be at least as wide as the longest word
+  const minSize = Math.max(maxLen, Math.min(idealSize, maxGridSize));
 
   const seed = getDeterministicSeed([difficulty, ...cleaned.slice().sort()]);
 
   let bestResult: WordSearchPuzzle | null = null;
   let bestPlacedCount = 0;
 
-  for (let attempt = 0; attempt < MAX_CRAFT_WS_ATTEMPTS; attempt++) {
-    const result = tryGenerateWordSearch(seed + attempt * 7919, difficulty, cleaned);
-    if (!validateWordSearchGrid(result)) continue;
+  // Try progressively larger grids starting from the tight size
+  for (let size = minSize; size <= Math.min(minSize + 6, maxGridSize); size++) {
+    // Build a custom difficulty config that uses this size but the real direction count
+    const effectiveDifficulty = findClosestDifficulty(size);
 
-    if (result.words.length > bestPlacedCount) {
-      bestPlacedCount = result.words.length;
-      bestResult = result;
+    for (let attempt = 0; attempt < MAX_CRAFT_WS_ATTEMPTS; attempt++) {
+      const result = tryGenerateWordSearch(seed + attempt * 7919 + size * 131, effectiveDifficulty, cleaned);
+      if (!validateWordSearchGrid(result)) continue;
+
+      if (result.words.length > bestPlacedCount) {
+        bestPlacedCount = result.words.length;
+        bestResult = result;
+      }
+
+      if (result.words.length === cleaned.length) {
+        // Shrink the grid if it's larger than needed — trim empty border rows/cols
+        const trimmed = trimWordSearchGrid(result);
+        return trimmed as CustomWordSearchData;
+      }
     }
 
-    if (result.words.length === cleaned.length) {
-      return result as CustomWordSearchData;
+    // If we placed all words, break out of size loop
+    if (bestPlacedCount === cleaned.length && bestResult) {
+      return trimWordSearchGrid(bestResult) as CustomWordSearchData;
     }
   }
 
-  throw new Error(`This ${difficulty} word search could not fit all ${cleaned.length} words cleanly. Remove a few words or shorten them.`);
+  if (bestResult && bestPlacedCount === cleaned.length) {
+    return trimWordSearchGrid(bestResult) as CustomWordSearchData;
+  }
+
+  throw new Error(`Could not fit all ${cleaned.length} words. Try removing a word or shortening the longest ones.`);
+}
+
+/** Find the standard difficulty whose grid size is closest to the target */
+function findClosestDifficulty(targetSize: number): Difficulty {
+  const diffs: Difficulty[] = ["easy", "medium", "hard", "extreme", "insane"];
+  let best: Difficulty = "easy";
+  let bestDelta = Infinity;
+  for (const d of diffs) {
+    const delta = Math.abs(WS_SIZES[d] - targetSize);
+    if (delta < bestDelta || (delta === bestDelta && WS_SIZES[d] >= targetSize)) {
+      bestDelta = delta;
+      best = d;
+    }
+  }
+  // If target is larger than the best match, pick the next size up
+  if (WS_SIZES[best] < targetSize) {
+    const idx = diffs.indexOf(best);
+    if (idx < diffs.length - 1) best = diffs[idx + 1];
+  }
+  return best;
+}
+
+/** Trim empty border rows/cols from a word search to keep it tight */
+function trimWordSearchGrid(puzzle: WordSearchPuzzle): WordSearchPuzzle {
+  const { grid, wordPositions, size } = puzzle;
+  
+  // Find bounding box of all placed word cells
+  let minR = size, maxR = 0, minC = size, maxC = 0;
+  for (const wp of wordPositions) {
+    for (let i = 0; i < wp.word.length; i++) {
+      const r = wp.row + wp.dr * i;
+      const c = wp.col + wp.dc * i;
+      minR = Math.min(minR, r); maxR = Math.max(maxR, r);
+      minC = Math.min(minC, c); maxC = Math.max(maxC, c);
+    }
+  }
+  
+  if (minR > maxR) return puzzle; // no words placed
+  
+  // Add 1-cell padding around the bounding box for filler
+  minR = Math.max(0, minR - 1);
+  maxR = Math.min(size - 1, maxR + 1);
+  minC = Math.max(0, minC - 1);
+  maxC = Math.min(size - 1, maxC + 1);
+  
+  const newH = maxR - minR + 1;
+  const newW = maxC - minC + 1;
+  const newSize = Math.max(newH, newW);
+  
+  // Don't trim if it would only save 1-2 rows — not worth it
+  if (newSize >= size - 2) return puzzle;
+  
+  // Center the content in a square grid
+  const rowPad = Math.floor((newSize - newH) / 2);
+  const colPad = Math.floor((newSize - newW) / 2);
+  const offR = minR - rowPad;
+  const offC = minC - colPad;
+  
+  const newGrid: string[][] = Array.from({ length: newSize }, () => Array(newSize).fill(""));
+  const rng = new SeededRandom(size * 31 + wordPositions.length * 17);
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  
+  for (let r = 0; r < newSize; r++) {
+    for (let c = 0; c < newSize; c++) {
+      const or = r + offR, oc = c + offC;
+      if (or >= 0 && or < size && oc >= 0 && oc < size && grid[or][oc]) {
+        newGrid[r][c] = grid[or][oc];
+      } else {
+        newGrid[r][c] = letters[rng.nextInt(0, 25)];
+      }
+    }
+  }
+  
+  const newPositions = wordPositions.map(wp => ({
+    ...wp,
+    row: wp.row - offR,
+    col: wp.col - offC,
+  }));
+  
+  return {
+    grid: newGrid,
+    words: puzzle.words,
+    wordPositions: newPositions,
+    size: newSize,
+  };
 }
