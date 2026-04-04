@@ -1,18 +1,37 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+/**
+ * PuzzleLibrary.tsx
+ * Personal best on every card, "New" badge, play-frequency sorting,
+ * always-visible difficulty pills, Endless Mode feature card, daily nudge.
+ */
+
+import { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import SavedPuzzlesSection from "@/components/puzzles/SavedPuzzlesSection";
-import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory, type Difficulty, isDifficultyDisabled } from "@/lib/puzzleTypes";
+import {
+  CATEGORY_INFO,
+  DIFFICULTY_LABELS,
+  type PuzzleCategory,
+  type Difficulty,
+  isDifficultyDisabled,
+} from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
 import { cn } from "@/lib/utils";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import HowToPlay from "@/components/puzzles/HowToPlay";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import { usePremiumAccess, PLUS_DIFFICULTIES } from "@/lib/premiumAccess";
-import { Play, ChevronDown, Lock, Crown } from "lucide-react";
+import { getProgressStats } from "@/lib/progressTracker";
+import { getSolveRecords } from "@/lib/solveTracker";
+import { getTodaysChallenge, getDailyCompletion } from "@/lib/dailyChallenge";
+import { formatTime } from "@/hooks/usePuzzleTimer";
+import {
+  Infinity, ChevronDown, Lock, Crown,
+  Flame, TrendingUp, ArrowRight, Sparkles,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-// Only show difficulties that exist in PLUS_DIFFICULTIES (the full set)
-const difficulties = PLUS_DIFFICULTIES.map((val) => [val, DIFFICULTY_LABELS[val]] as [Difficulty, string]);
+// ── Difficulty persistence ─────────────────────────────────────────────────────
 
 function loadDifficulties(): Record<string, Difficulty> {
   try { return JSON.parse(localStorage.getItem("play_difficulties") || "{}"); }
@@ -27,19 +46,78 @@ function saveDifficulty(type: string, d: Difficulty) {
   } catch {}
 }
 
-const categories = Object.entries(CATEGORY_INFO) as [PuzzleCategory, typeof CATEGORY_INFO[PuzzleCategory]][];
+// ── Per-type stats from local history ─────────────────────────────────────────
+
+interface TypeStats {
+  solveCount: number;
+  bestTime: number | null;
+  isNew: boolean;
+}
+
+function buildTypeStats(): Record<string, TypeStats> {
+  try {
+    const records = getSolveRecords();
+    const stats = getProgressStats();
+    const result: Record<string, TypeStats> = {};
+
+    for (const type of Object.keys(CATEGORY_INFO)) {
+      const count = records.filter((r) => r.puzzleType === type).length;
+      const best = (stats.byCategory as any)?.[type]?.bestTime ?? null;
+      result[type] = { solveCount: count, bestTime: best, isNew: count === 0 };
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+// ── Sort order: most-played types first for returning users ───────────────────
+
+function getSortedCategories(
+  typeStats: Record<string, TypeStats>
+): [PuzzleCategory, typeof CATEGORY_INFO[PuzzleCategory]][] {
+  const entries = Object.entries(CATEGORY_INFO) as [
+    PuzzleCategory,
+    typeof CATEGORY_INFO[PuzzleCategory]
+  ][];
+
+  const totalSolves = Object.values(typeStats).reduce((s, t) => s + t.solveCount, 0);
+  if (totalSolves < 5) return entries;
+
+  return [...entries].sort(([a], [b]) => {
+    const ca = typeStats[a]?.solveCount ?? 0;
+    const cb = typeStats[b]?.solveCount ?? 0;
+    return cb - ca;
+  });
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 const PuzzleLibrary = () => {
   const navigate = useNavigate();
-  const { isDiffLocked, availableDifficulties } = usePremiumAccess();
+  const { isDiffLocked } = usePremiumAccess();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const [storedDiffs] = useState(loadDifficulties);
-  const [perTypeDifficulty, setPerTypeDifficulty] = useState<Record<string, Difficulty>>(() => storedDiffs);
+  const [perTypeDifficulty, setPerTypeDifficulty] = useState<Record<string, Difficulty>>(
+    loadDifficulties
+  );
   const [expandedType, setExpandedType] = useState<string | null>(null);
 
+  const typeStats = useMemo(buildTypeStats, []);
+  const sortedCategories = useMemo(() => getSortedCategories(typeStats), [typeStats]);
+
+  const todayChallenge = useMemo(() => getTodaysChallenge(), []);
+  const dailyDone = useMemo(
+    () => !!getDailyCompletion(todayChallenge.dateStr),
+    [todayChallenge.dateStr]
+  );
+
+  const isReturningUser = useMemo(
+    () => Object.values(typeStats).reduce((s, t) => s + t.solveCount, 0) >= 5,
+    [typeStats]
+  );
+
   const getDifficulty = (type: PuzzleCategory): Difficulty => {
-    const stored = perTypeDifficulty[type] || "medium";
-    // If the stored difficulty is now locked (subscription changed), downgrade to hard
+    const stored = perTypeDifficulty[type] ?? "medium";
     if (isDiffLocked(stored)) return "hard";
     return stored;
   };
@@ -51,11 +129,7 @@ const PuzzleLibrary = () => {
   };
 
   const handleDifficultyChange = (type: PuzzleCategory, d: Difficulty) => {
-    // Gate premium difficulties
-    if (isDiffLocked(d)) {
-      setUpgradeOpen(true);
-      return;
-    }
+    if (isDiffLocked(d)) { setUpgradeOpen(true); return; }
     setPerTypeDifficulty((prev) => ({ ...prev, [type]: d }));
     saveDifficulty(type, d);
   };
@@ -67,111 +141,226 @@ const PuzzleLibrary = () => {
 
   return (
     <Layout>
-      <div className="container py-6 md:py-14 pb-20 md:pb-28">
-        <div className="max-w-xl">
-          <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Play</h1>
-          <p className="mt-2 text-muted-foreground">Pick a puzzle and start solving instantly.</p>
+      <div className="container py-6 md:py-12 pb-20 md:pb-28">
+
+        {/* ── Page header ── */}
+        <div className="flex items-end justify-between mb-6">
+          <div>
+            <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Play</h1>
+            <p className="mt-1.5 text-muted-foreground text-sm">
+              {isReturningUser ? "Your favourites, sorted by play frequency." : "Eight puzzle types. Pick one and start solving."}
+            </p>
+          </div>
         </div>
 
+        {/* ── Daily challenge nudge ── */}
+        {!dailyDone && (
+          <Link
+            to="/daily"
+            className="flex items-center justify-between gap-4 rounded-xl border border-primary/25 bg-primary/5 px-4 py-3 mb-6 hover:bg-primary/8 transition-colors group"
+          >
+            <div className="flex items-center gap-3">
+              <Flame size={15} className="text-primary shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  Today's daily challenge is waiting
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {CATEGORY_INFO[todayChallenge.category].name} · {todayChallenge.difficulty} · Everyone plays the same puzzle
+                </p>
+              </div>
+            </div>
+            <ArrowRight size={14} className="text-primary shrink-0 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+        )}
+
+        {/* ── Saved puzzles ── */}
         <SavedPuzzlesSection />
 
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map(([type, info]) => {
+        {/* ── Endless Mode feature card ── */}
+        <div className="mt-8 mb-6 rounded-2xl border-2 border-border bg-card overflow-hidden hover:border-primary/40 hover:shadow-md transition-all group">
+          <div className="grid sm:grid-cols-[1fr_auto] gap-0">
+            <button
+              onClick={() => navigate("/quick-play/sudoku?mode=endless")}
+              className="flex items-center gap-5 p-5 text-left w-full"
+            >
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <Infinity size={22} className="text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <h3 className="font-display text-base font-bold text-foreground group-hover:text-primary transition-colors">
+                    Endless Mode
+                  </h3>
+                  <span className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                    Adaptive
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground leading-snug">
+                  Cycles through all 8 puzzle types. Gets harder when you win, easier when you struggle — automatically.
+                </p>
+              </div>
+            </button>
+            <div className="flex items-center px-5 border-t sm:border-t-0 sm:border-l border-border/60">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 whitespace-nowrap"
+                onClick={() => navigate("/quick-play/sudoku?mode=endless")}
+              >
+                Start <ArrowRight size={13} />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Puzzle type section header ── */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+            {isReturningUser ? "Puzzle types" : "All puzzles"}
+          </h2>
+          {isReturningUser && (
+            <p className="text-xs text-muted-foreground/60">sorted by your play frequency</p>
+          )}
+        </div>
+
+        {/* ── Puzzle type grid ── */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {sortedCategories.map(([type, info]) => {
             const currentDiff = getDifficulty(type);
             const isExpanded = expandedType === type;
+            const ts = typeStats[type] ?? { solveCount: 0, bestTime: null, isNew: true };
 
             return (
-              <div key={type} className="relative flex flex-col rounded-xl border-2 border-border bg-card transition-all hover:border-primary/50 hover:shadow-md">
+              <div
+                key={type}
+                className="relative flex flex-col rounded-xl border-2 border-border bg-card transition-all hover:border-primary/40 hover:shadow-md"
+              >
+                {/* How to play */}
                 <div className="absolute top-3 right-3 z-10">
                   <HowToPlay type={type} />
                 </div>
 
+                {/* "New" badge */}
+                {ts.isNew && (
+                  <div className="absolute top-3 left-3 z-10">
+                    <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      New
+                    </span>
+                  </div>
+                )}
+
+                {/* Main clickable area */}
                 <button
                   onClick={() => handlePlay(type)}
-                  className="group flex flex-1 flex-col items-start p-5 pb-4 text-left active:scale-[0.98] transition-transform"
+                  className="group flex flex-1 flex-col items-start p-5 pb-3 text-left active:scale-[0.98] transition-transform"
                 >
-                  <div className="flex h-9 items-center">
-                    <PuzzleIcon type={type} size={36} className="text-foreground opacity-80 group-hover:opacity-100 transition-opacity" />
+                  {/* Icon */}
+                  <div className={cn("flex h-9 items-center", ts.isNew && "mt-4")}>
+                    <PuzzleIcon
+                      type={type}
+                      size={34}
+                      className="text-foreground opacity-80 group-hover:opacity-100 transition-opacity"
+                    />
                   </div>
-                  <h3 className="mt-3 font-display text-[1.1rem] font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
+
+                  {/* Name */}
+                  <h3 className="mt-3 font-display text-[1.05rem] font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
                     {info.name}
                   </h3>
-                  <p className="mt-1.5 text-sm text-muted-foreground/80 leading-snug font-normal">
-                    {info.description}
-                  </p>
-                  <div className="mt-auto pt-4">
-                    <span className="text-sm font-semibold text-primary">Play</span>
-                    <span className="block text-[11px] text-muted-foreground/70 font-medium mt-0.5">
+
+                  {/* Personal best OR description */}
+                  {!ts.isNew && ts.bestTime !== null ? (
+                    <div className="mt-1.5 flex items-center gap-1.5">
+                      <TrendingUp size={11} className="text-primary/70 shrink-0" />
+                      <span className="text-xs font-mono font-semibold text-primary/80">
+                        Best: {formatTime(ts.bestTime)}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground/60">
+                        · {ts.solveCount} solve{ts.solveCount !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="mt-1.5 text-xs text-muted-foreground/80 leading-snug line-clamp-2">
+                      {info.description}
+                    </p>
+                  )}
+
+                  {/* Bottom: difficulty label + play CTA */}
+                  <div className="mt-auto pt-3 flex items-center justify-between w-full">
+                    <span className="text-[11px] text-muted-foreground/60 font-medium capitalize">
                       {DIFFICULTY_LABELS[currentDiff]}
+                    </span>
+                    <span className="text-sm font-semibold text-primary group-hover:underline">
+                      Play →
                     </span>
                   </div>
                 </button>
 
-                {/* Difficulty toggle strip */}
-                <div className="border-t border-border/60 px-4 py-2">
-                  <button
-                    onClick={(e) => toggleExpanded(type, e)}
-                    className="flex w-full items-center justify-between text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <span>
-                      Difficulty:{" "}
-                      <span className="font-medium text-foreground">{DIFFICULTY_LABELS[currentDiff]}</span>
-                    </span>
-                    <ChevronDown size={12} className={cn("transition-transform", isExpanded && "rotate-180")} />
-                  </button>
+                {/* Difficulty strip — always visible pills */}
+                <div className="border-t border-border/50 px-3 py-2">
+                  <div className="flex items-center justify-between gap-1 flex-wrap">
+                    <span className="text-[10px] text-muted-foreground/50 shrink-0">Difficulty</span>
+                    <div className="flex items-center gap-1 flex-wrap justify-end">
+                      {PLUS_DIFFICULTIES.map((val) => {
+                        const label = DIFFICULTY_LABELS[val];
+                        const structDisabled = isDifficultyDisabled(type, val);
+                        const premLocked = isDiffLocked(val);
+                        const isActive = currentDiff === val && !structDisabled;
 
-                  {isExpanded && (
-                    <div className="mt-2 flex flex-wrap gap-1.5 pb-1 animate-in fade-in slide-in-from-top-1 duration-150">
-                      {difficulties.map(([val, label]) => {
-                        const structurallyDisabled = isDifficultyDisabled(type, val);
-                        const premiumLocked = isDiffLocked(val);
-                        const isDisabled = structurallyDisabled;
+                        if (structDisabled) return null;
 
                         return (
                           <button
                             key={val}
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (isDisabled) return;
                               handleDifficultyChange(type, val);
                             }}
                             className={cn(
-                              "relative rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors flex items-center gap-1",
-                              isDisabled
-                                ? "border-border text-muted-foreground/40 cursor-not-allowed"
-                                : premiumLocked
-                                ? "border-primary/30 text-muted-foreground/60 cursor-pointer hover:border-primary/50"
-                                : currentDiff === val
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+                              "relative flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
+                              premLocked
+                                ? "text-muted-foreground/40 cursor-pointer"
+                                : isActive
+                                ? "bg-primary/15 text-primary"
+                                : "text-muted-foreground hover:text-foreground"
                             )}
-                            title={
-                              isDisabled
-                                ? `${label} not available for ${info.name}`
-                                : premiumLocked
-                                ? `${label} requires Puzzlecraft+`
-                                : undefined
-                            }
+                            title={premLocked ? `${label} requires Puzzlecraft+` : label}
                           >
-                            {premiumLocked && !isDisabled && (
-                              <Lock size={9} className="shrink-0" />
-                            )}
-                            {label}
-                            {premiumLocked && !isDisabled && (
-                              <span className="absolute -top-2 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary">
-                                <Crown size={8} className="text-primary-foreground" />
+                            {premLocked && <Lock size={8} className="shrink-0" />}
+                            {val === "extreme" ? "Ext" : val === "insane" ? "Ins" : label}
+                            {premLocked && (
+                              <span className="absolute -top-1.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-primary">
+                                <Crown size={6} className="text-primary-foreground" />
                               </span>
                             )}
                           </button>
                         );
                       })}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
+
+        {/* ── Surprise Me footer row ── */}
+        <div className="mt-6 flex items-center justify-center">
+          <button
+            onClick={() => {
+              const types = Object.keys(CATEGORY_INFO) as PuzzleCategory[];
+              const type = types[Math.floor(Math.random() * types.length)];
+              const diff: Difficulty = "medium";
+              navigate(`/quick-play/${type}?d=${diff}&mode=surprise`);
+            }}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+          >
+            <Sparkles size={14} />
+            Surprise me — random type &amp; difficulty
+          </button>
+        </div>
+
       </div>
 
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
