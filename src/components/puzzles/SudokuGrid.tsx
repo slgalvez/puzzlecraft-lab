@@ -221,17 +221,21 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
     clearProgress(timerKey);
   };
 
-  const getHighlightSet = (): Set<string> => {
+  const highlightSet = useMemo((): Set<string> => {
     if (!activeCell) return new Set();
     const [ar, ac] = activeCell;
     const cells = new Set<string>();
-    for (let i = 0; i < 9; i++) { cells.add(`${ar}-${i}`); cells.add(`${i}-${ac}`); }
-    const br = Math.floor(ar / 3) * 3, bc = Math.floor(ac / 3) * 3;
-    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) cells.add(`${br + i}-${bc + j}`);
+    for (let i = 0; i < 9; i++) {
+      cells.add(`${ar}-${i}`);
+      cells.add(`${i}-${ac}`);
+    }
+    const br = Math.floor(ar / 3) * 3;
+    const bc = Math.floor(ac / 3) * 3;
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j < 3; j++)
+        cells.add(`${br + i}-${bc + j}`);
     return cells;
-  };
-
-  const highlightSet = getHighlightSet();
+  }, [activeCell]);
 
   return (
     <div>
