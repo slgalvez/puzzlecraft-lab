@@ -148,7 +148,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background overflow-hidden"
+    <div className="fixed inset-0 z-50 flex flex-col bg-background overflow-hidden overflow-x-hidden"
       style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>
 
       {/* Skip button — top right, small, always visible */}
@@ -179,13 +179,13 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       {/* Screen content */}
       <div
         className={cn(
-          "flex-1 flex flex-col items-center px-6 transition-all duration-180",
+          "flex-1 flex flex-col items-center px-6 overflow-hidden transition-all duration-180",
           exiting ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
         )}
       >
         {/* Visual */}
         {current.visual && (
-          <div className="w-full max-w-[280px] aspect-[4/3] mb-8 mt-2">
+          <div className="w-full max-w-[260px] aspect-[3/2] mb-8 mt-2 overflow-hidden rounded-2xl flex items-center justify-center">
             {current.visual}
           </div>
         )}
