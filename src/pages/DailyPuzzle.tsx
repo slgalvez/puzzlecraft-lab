@@ -31,6 +31,51 @@ import { generateCrossword } from "@/lib/generators/crosswordGen";
 import { generateWordFillIn, generateNumberFillIn } from "@/lib/generators/fillGen";
 import type { CrosswordPuzzle, FillInPuzzle } from "@/data/puzzles";
 
+const CONFETTI_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--accent))",
+  "#fbbf24", "#f97316", "#ef4444", "#8b5cf6", "#06b6d4",
+];
+
+function DailyConfetti() {
+  const [particles] = useState(() =>
+    Array.from({ length: 40 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      delay: Math.random() * 0.6,
+      duration: 1.2 + Math.random() * 1.0,
+      size: 4 + Math.random() * 6,
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+      rotation: Math.random() * 360,
+      drift: (Math.random() - 0.5) * 60,
+    }))
+  );
+
+  return (
+    <div className="fixed inset-0 z-[100] pointer-events-none overflow-hidden" aria-hidden>
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className="absolute animate-[dailyConfettiFall_var(--dur)_ease-out_var(--delay)_forwards]"
+          style={{
+            left: `${p.x}%`,
+            top: "-10px",
+            width: p.size,
+            height: p.size * 1.4,
+            backgroundColor: p.color,
+            borderRadius: "2px",
+            transform: `rotate(${p.rotation}deg)`,
+            opacity: 0,
+            "--delay": `${p.delay}s`,
+            "--dur": `${p.duration}s`,
+            "--drift": `${p.drift}px`,
+          } as React.CSSProperties}
+        />
+      ))}
+    </div>
+  );
+}
+
 const DailyPuzzle = () => {
   console.log("[DailyPuzzle] mount");
   const { toast } = useToast();
@@ -42,11 +87,19 @@ const DailyPuzzle = () => {
     return c;
   }, [dateOverride]);
   const [completion, setCompletion] = useState(() => getDailyCompletion(challenge.dateStr));
+  const [justSolved, setJustSolved] = useState(false);
   const streak = useMemo(() => getDailyStreak(), []);
   const info = CATEGORY_INFO[challenge.category];
   console.log("[DailyPuzzle] info:", info?.name, "completion:", !!completion);
 
   useEffect(() => { setPuzzleOrigin("daily"); }, []);
+
+  // Auto-dismiss confetti
+  useEffect(() => {
+    if (!justSolved) return;
+    const t = setTimeout(() => setJustSolved(false), 3000);
+    return () => clearTimeout(t);
+  }, [justSolved]);
 
   // ── Daily score write ──
   const hasWrittenScore = useRef(false);
