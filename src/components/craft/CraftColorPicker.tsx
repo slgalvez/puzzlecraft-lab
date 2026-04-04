@@ -80,12 +80,12 @@ export const CRAFT_PALETTES: CraftColorPalette[] = [
   {
     id: "midnight",
     label: "Midnight",
-    cell:      "220 25% 14%",
-    active:    "220 55% 30%",
-    highlight: "220 35% 22%",
-    correct:   "142 40% 20%",
-    border:    "220 15% 28%",
-    text:      "220 20% 88%",
+    cell:      "220 28% 12%",
+    active:    "220 48% 24%",
+    highlight: "220 36% 18%",
+    correct:   "142 36% 22%",
+    border:    "220 18% 34%",
+    text:      "210 40% 96%",
   },
   {
     id: "ink",

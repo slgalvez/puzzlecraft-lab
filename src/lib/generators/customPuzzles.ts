@@ -305,27 +305,35 @@ function scoreLayout(
  * If no candidate meets the quality threshold after MAX_BATCHES,
  * returns the highest-scoring candidate found.
  */
-function selectBestLayout<T>(
-  buildFn: (seed: number) => { data: T; score: number },
+function selectBestLayoutCandidate<TResult extends { score: number }>(
+  buildFn: (seed: number) => TResult,
   baseSeed: number
-): T {
-  let bestData: T | null = null;
+): TResult {
+  let bestResult: TResult | null = null;
   let bestScore = -Infinity;
 
   for (let batch = 0; batch < MAX_BATCHES; batch++) {
     for (let i = 0; i < CANDIDATES_PER_BATCH; i++) {
       const seed = (baseSeed + batch * CANDIDATES_PER_BATCH * 7919 + i * 7919) % 2147483646 || 1;
-      const { data, score } = buildFn(seed);
+      const result = buildFn(seed);
+      const { score } = result;
       if (score > bestScore) {
         bestScore = score;
-        bestData = data;
+        bestResult = result;
       }
     }
     // If we found a high-quality layout, stop early
     if (bestScore >= QUALITY_THRESHOLD) break;
   }
 
-  return bestData!;
+  return bestResult!;
+}
+
+function selectBestLayout<T>(
+  buildFn: (seed: number) => { data: T; score: number },
+  baseSeed: number
+): T {
+  return selectBestLayoutCandidate(buildFn, baseSeed).data;
 }
 
 // ═══════════════════════════════════════════════
@@ -512,12 +520,40 @@ export function generateCustomFillIn(words: string[], difficulty: CraftDifficult
   const countPadding = Math.ceil(Math.sqrt(wordCount) * 1.2);
   const baseSize = Math.max(9, maxLen + padding, countPadding + maxLen);
   const targetInt = TARGET_INTERSECTION_FILL[difficulty];
+  const baseSeed = Date.now() % 2147483646 || 1;
+  const maxSizeGrowth = difficulty === "hard"
+    ? Math.max(8, Math.ceil(wordCount * 0.75))
+    : Math.max(6, Math.ceil(wordCount / 2));
 
-  return selectBestLayout((seed) => {
-    const { data, stats, placedCount } = buildFillIn(cleaned, baseSize, seed);
-    const score = scoreLayout(stats, difficulty, placedCount, cleaned.length, targetInt);
-    return { data, score };
-  }, Date.now());
+  let bestFallback: { data: CustomFillInData; score: number; placedCount: number } | null = null;
+
+  for (let sizeGrowth = 0; sizeGrowth <= maxSizeGrowth; sizeGrowth++) {
+    const candidate = selectBestLayoutCandidate((seed) => {
+      const result = buildFillIn(cleaned, baseSize + sizeGrowth, seed);
+      const completenessBonus = result.placedCount === cleaned.length ? 1000 : 0;
+      const score = scoreLayout(result.stats, difficulty, result.placedCount, cleaned.length, targetInt) + completenessBonus;
+
+      return {
+        data: result.data,
+        placedCount: result.placedCount,
+        score,
+      };
+    }, (baseSeed + sizeGrowth * 3571) % 2147483646 || 1);
+
+    if (
+      !bestFallback ||
+      candidate.placedCount > bestFallback.placedCount ||
+      (candidate.placedCount === bestFallback.placedCount && candidate.score > bestFallback.score)
+    ) {
+      bestFallback = candidate;
+    }
+
+    if (candidate.placedCount === cleaned.length) {
+      return candidate.data;
+    }
+  }
+
+  return bestFallback!.data;
 }
 
 function buildFillIn(words: string[], size: number, seed: number) {

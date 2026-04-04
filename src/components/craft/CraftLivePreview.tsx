@@ -157,10 +157,10 @@ function MiniGrid({ data, type }: { data: Record<string, unknown>; type: "word-f
               }}
             >
               {!isBlack && letter && (
-                <span
-                  className="font-mono font-medium leading-none"
-                  style={{ color: "hsl(var(--puzzle-cell-text, var(--foreground)))", opacity: 0.7 }}
-                >
+                  <span
+                    className="font-mono font-medium leading-none"
+                    style={{ color: "hsl(var(--puzzle-cell-text, var(--foreground)))" }}
+                  >
                   {letter}
                 </span>
               )}
@@ -209,8 +209,8 @@ function MiniWordSearch({ data }: { data: Record<string, unknown> }) {
                   ? "hsl(var(--puzzle-cell-highlight, 32 60% 92%))"
                   : "hsl(var(--puzzle-cell, 0 0% 100%))",
                 color: isSolution
-                  ? "hsl(var(--primary))"
-                  : "hsl(var(--foreground) / 0.25)",
+                  ? "hsl(var(--puzzle-cell-text, var(--foreground)))"
+                  : "hsl(var(--puzzle-cell-text, var(--foreground)) / 0.35)",
                 fontWeight: isSolution ? "600" : "400",
               }}
             >
