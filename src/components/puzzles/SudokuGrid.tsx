@@ -238,7 +238,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
   }, [activeCell]);
 
   return (
-    <div>
+    <div className="scroll-mt-4">
       <PuzzleHeader
         puzzleType="sudoku"
         difficulty={difficulty}
