@@ -441,6 +441,13 @@ const NonogramGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEnd
             </>
           ))}
         </div>
+        </div>
+        {canScrollRight && isMobile && (
+          <div
+            className="pointer-events-none absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-background/80 to-transparent"
+            aria-hidden
+          />
+        )}
       </div>
 
       <PuzzleToolbar
