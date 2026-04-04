@@ -7,7 +7,7 @@ import PremiumStats from "@/components/account/PremiumStats";
 import { StatsPremiumPreview, LoginPremiumPreview } from "@/components/account/PremiumPreview";
 import PremiumLockedCard from "@/components/account/PremiumLockedCard";
 import UpgradeModal from "@/components/account/UpgradeModal";
-import { NotificationBanner } from "@/components/private/NotificationBanner";
+
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import { CraftTemplateSelector } from "@/components/craft/CraftTemplateSelector";
 import { ActivityCalendar } from "@/components/stats/ActivityCalendar";
@@ -387,16 +387,6 @@ export default function AdminPreview() {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // ── Notification banner state ──
-  const [bannerPhrase, setBannerPhrase] = useState<string | null>(null);
-
-  const NOTIFICATION_PHRASES = [
-    "Hey — need to check something",
-    "Quick thought for you",
-    "Something came up 🔔",
-    "Don't forget to look at this",
-    "Ping! You there?",
-  ];
 
   const handleAchieve = useCallback((id: string) => {
     setAchievedIds((prev) => new Set(prev).add(id));
@@ -991,31 +981,6 @@ export default function AdminPreview() {
           {/* ══════════════════════════════════════════════════════════════ */}
           <TabsContent value="notifications" className="space-y-6 mt-4">
 
-            {/* ── In-App Notification Banner ── */}
-            <section className="space-y-3 rounded-xl border border-border/30 p-4">
-              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Bell size={14} /> In-App Notification Banner
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Subtle banner that slides in from top, auto-dismisses after 3 seconds. Used for coded private notifications.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {NOTIFICATION_PHRASES.map((phrase, i) => (
-                  <Button
-                    key={i}
-                    size="sm"
-                    variant="outline"
-                    className="text-xs"
-                    onClick={() => setBannerPhrase(phrase)}
-                  >
-                    "{phrase}"
-                  </Button>
-                ))}
-              </div>
-              <p className="text-[10px] text-muted-foreground/60">
-                Click a phrase to trigger the banner at the top of the page.
-              </p>
-            </section>
 
             {/* ── Push Notification Payloads ── */}
             <section className="space-y-3 rounded-xl border border-border/30 p-4">
@@ -1142,7 +1107,7 @@ export default function AdminPreview() {
 
       {/* ── Global overlays ── */}
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
-      <NotificationBanner phrase={bannerPhrase} onDismissed={() => setBannerPhrase(null)} />
+      
 
       {/* ── Onboarding overlay ── */}
       {showOnboarding && (
