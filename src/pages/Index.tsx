@@ -121,7 +121,7 @@ const Index = () => {
   const challengeInfo = CATEGORY_INFO[challenge.category];
   const countdown = useMidnightCountdown();
   const leaderPreview = useDailyLeaderPreview(challenge.dateStr);
-  const { types: rankedTypes, isPersonalised } = useMemo(getPersonalisedTypes, []);
+  const { types: rankedTypes, isPersonalized } = useMemo(getPersonalizedTypes, []);
 
   const isReturningUser = stats.totalSolved >= 5;
 
