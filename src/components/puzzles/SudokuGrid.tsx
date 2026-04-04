@@ -276,7 +276,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
               <div
                 key={`${r}-${c}`}
                 className={cn(
-                  "relative w-8 h-8 sm:w-11 sm:h-11 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
+                  "relative w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
                   c % 3 === 2 && c < 8 && "border-r-2 border-r-foreground",
                   r % 3 === 2 && r < 8 && "border-b-2 border-b-foreground",
                   hasError && "bg-puzzle-cell-error",
