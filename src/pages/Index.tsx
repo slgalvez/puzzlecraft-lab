@@ -58,6 +58,7 @@ import { setPrivateAccessGrant } from "@/lib/privateAccessGrant";
 import { cn } from "@/lib/utils";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
+import { MONTHLY_PRICE } from "@/lib/pricing";
 
 // ── Seeded mock leaderboard (fallback until real data exists) ─────────────────
 
@@ -682,10 +683,10 @@ const Index = () => {
               <div className="mt-8 flex flex-col items-center gap-2">
                 <Button asChild size="lg" className="gap-2 px-8">
                   <Link to="/account">
-                    <Crown size={16} /> Start 7-day free trial
+                    <Crown size={16} /> Get Puzzlecraft+
                   </Link>
                 </Button>
-                <p className="text-xs text-muted-foreground">Cancel anytime · No commitment</p>
+                <p className="text-xs text-muted-foreground">{MONTHLY_PRICE}/month · Cancel anytime</p>
               </div>
             </div>
           </div>

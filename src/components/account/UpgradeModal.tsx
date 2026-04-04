@@ -119,7 +119,7 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
             </div>
             <h2 className="text-xl font-bold text-foreground">Puzzlecraft+</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              {native ? `${TRIAL_DAYS}-day free trial, then ` : ""}
+              {native ? "Starting at " : ""}
               {annual ? `${ANNUAL_PRICE}/year` : `${MONTHLY_PRICE}/month`}
             </p>
           </div>
@@ -189,7 +189,7 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
 
             {native && (
               <p className="text-center text-[11px] text-muted-foreground">
-                {TRIAL_DAYS}-day free trial · Cancel anytime · Billed via App Store
+                Cancel anytime · Billed via App Store
               </p>
             )}
 
