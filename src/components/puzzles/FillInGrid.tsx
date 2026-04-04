@@ -438,7 +438,10 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
   };
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:gap-10 puzzle-keyboard-aware">
+    <div
+      className="flex flex-col gap-6 lg:flex-row lg:gap-10 puzzle-keyboard-aware scroll-mt-4"
+      style={{ touchAction: isMobile ? "none" : "auto" }}
+    >
       <div className="flex-shrink-0">
         <PuzzleHeader
           puzzleType={puzzle.type as any}
