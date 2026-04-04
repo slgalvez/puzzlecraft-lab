@@ -431,6 +431,53 @@ function MockCraftAnalytics({ title, totalSent, totalStarted, totalCompleted, av
   );
 }
 
+// ── Daily Confetti preview (mirrors DailyPuzzle confetti) ──────────────────
+
+const DAILY_CONFETTI_COLORS_PREVIEW = [
+  "hsl(var(--primary))",
+  "hsl(var(--accent))",
+  "#fbbf24", "#f97316", "#ef4444", "#8b5cf6", "#06b6d4",
+];
+
+function DailyConfettiPreview() {
+  const [particles] = useState(() =>
+    Array.from({ length: 40 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      delay: Math.random() * 0.6,
+      duration: 1.2 + Math.random() * 1.0,
+      size: 4 + Math.random() * 6,
+      color: DAILY_CONFETTI_COLORS_PREVIEW[Math.floor(Math.random() * DAILY_CONFETTI_COLORS_PREVIEW.length)],
+      rotation: Math.random() * 360,
+      drift: (Math.random() - 0.5) * 60,
+    }))
+  );
+
+  return (
+    <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden rounded-xl" aria-hidden>
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className="absolute animate-[dailyConfettiFall_var(--dur)_ease-out_var(--delay)_forwards]"
+          style={{
+            left: `${p.x}%`,
+            top: "-10px",
+            width: p.size,
+            height: p.size * 1.4,
+            backgroundColor: p.color,
+            borderRadius: "2px",
+            transform: `rotate(${p.rotation}deg)`,
+            opacity: 0,
+            "--delay": `${p.delay}s`,
+            "--dur": `${p.duration}s`,
+            "--drift": `${p.drift}px`,
+          } as React.CSSProperties}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function AdminPreview() {
   // ── Core previews state ──
   const [showCompletion, setShowCompletion] = useState(false);
@@ -441,11 +488,11 @@ export default function AdminPreview() {
   const [completionTime, setCompletionTime] = useState(185);
   const [achievedIds, setAchievedIds] = useState<Set<string>>(new Set());
   const [celebratingIds, setCelebratingIds] = useState<Set<string>>(new Set());
+  const [showDailyConfetti, setShowDailyConfetti] = useState(false);
 
   // ── Premium / modals state ──
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-
 
   const handleAchieve = useCallback((id: string) => {
     setAchievedIds((prev) => new Set(prev).add(id));
