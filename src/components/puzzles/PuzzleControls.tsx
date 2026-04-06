@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { RotateCcw, CheckCircle2, Shuffle, Eye, Lightbulb, Bookmark } from "lucide-react";
+import { RotateCcw, Shuffle, Bookmark, Code } from "lucide-react";
 import { useState, useCallback } from "react";
 import { CompletionSheet } from "./CompletionSheet";
 import SaveIndicator from "./SaveIndicator";
@@ -25,7 +25,7 @@ interface Props {
   onReveal?: () => void;
   onHint?: () => void;
   hintCount?: number;
-  maxHints?: number | null; // null or undefined = unlimited
+  maxHints?: number | null;
   isRevealed?: boolean;
   puzzleCode?: string;
   solveData?: {
@@ -42,14 +42,16 @@ interface Props {
   saveStatus?: "idle" | "saving" | "saved";
 }
 
-const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintCount = 0, maxHints, isRevealed, puzzleCode, solveData, saveStatus = "idle" }: Props) => {
-  const [open, setOpen] = useState(false);
+const PuzzleControls = ({
+  onReset, onCheck, onNewPuzzle, onReveal, onHint,
+  hintCount = 0, maxHints, isRevealed, puzzleCode,
+  solveData, saveStatus = "idle",
+}: Props) => {
   const [showRevealConfirm, setShowRevealConfirm] = useState(false);
+  const [codeOpen, setCodeOpen] = useState(false);
   const isMobile = useIsMobile();
   const { toast } = useToast();
-  const hintLimitReached = maxHints != null && hintCount >= maxHints;
 
-  // Save for later
   const canSave = solveData?.category && solveData?.seed != null && !solveData?.isSolved && !isRevealed && !solveData?.isEndless;
   const puzzleSaveId = canSave ? `${solveData!.category}-${solveData!.seed}-${solveData!.difficulty}` : null;
   const [saved, setSaved] = useState(() => puzzleSaveId ? isSaved(puzzleSaveId) : false);
@@ -70,7 +72,6 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
       };
       const ok = savePuzzle(puzzle);
       if (!ok) {
-        // At limit — replace oldest
         savePuzzleReplacingOldest(puzzle);
         toast({ title: "Saved (oldest removed)" });
       } else {
@@ -84,7 +85,7 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
   const showControls = !solveData?.isSolved && !isRevealed;
 
   return (
-    <div className="mt-8 space-y-3">
+    <div className="mt-6 space-y-3">
       <CompletionSheet
         open={!!showCompletion && !!solveData}
         time={solveData?.time ?? 0}
@@ -96,176 +97,142 @@ const PuzzleControls = ({ onReset, onCheck, onNewPuzzle, onReveal, onHint, hintC
         seed={solveData?.seed}
         dailyCode={solveData?.dailyCode}
       />
-      {!showCompletion && (isRevealed ? (
-        <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-          <p className="mb-3">Solution revealed. This puzzle won't count toward your stats.</p>
-          <Button size="sm" onClick={onNewPuzzle}>
-            <Shuffle className="mr-1.5 h-4 w-4" /> New Puzzle
-          </Button>
-        </div>
-      ) : isMobile ? (
-        /* ── Mobile layout ── */
-        <div className="space-y-3">
-          {/* Save + Status + Reset — top-right aligned, icon-only, low emphasis */}
-          <div className="flex items-center justify-end gap-1">
-            <SaveIndicator status={saveStatus} />
-            {canSave && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`h-9 w-9 ${saved ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
-                onClick={toggleSave}
-                aria-label={saved ? "Remove bookmark" : "Save for later"}
-              >
-                <Bookmark className="h-4 w-4" fill={saved ? "currentColor" : "none"} />
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 text-muted-foreground hover:text-foreground"
-              onClick={onReset}
-              aria-label="Reset puzzle"
-            >
-              <RotateCcw className="h-4 w-4" />
+
+      {!showCompletion && (
+        isRevealed ? (
+          <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+            <p className="mb-3">Solution revealed. This puzzle won't count toward your stats.</p>
+            <Button size="sm" onClick={onNewPuzzle}>
+              <Shuffle className="mr-1.5 h-4 w-4" /> New Puzzle
             </Button>
           </div>
-
-          {/* Primary — Check Solution, full width */}
-          {onCheck && (
-            <Button className="w-full h-11" onClick={onCheck}>
-              <CheckCircle2 className="mr-1.5 h-4 w-4" /> Check Solution
-            </Button>
-          )}
-
-          {/* Secondary — Hint + Reveal side by side */}
-          {showControls && (onHint || onReveal) && (
-            <div className="grid grid-cols-2 gap-2.5">
-              {onHint && (
-                <Button
-                  variant="outline"
-                  className="h-11 text-muted-foreground hover:text-foreground"
-                  onClick={onHint}
-                  disabled={hintLimitReached}
-                >
-                  <Lightbulb className="mr-1.5 h-4 w-4" />
-                  Hint{hintCount > 0 ? ` (${hintCount}${maxHints != null ? `/${maxHints}` : ""})` : maxHints != null ? ` (0/${maxHints})` : ""}
-                </Button>
-              )}
-              {onReveal && (
-                <Button
-                  variant="ghost"
-                  className="h-11 text-muted-foreground hover:text-foreground"
-                  onClick={() => setShowRevealConfirm(true)}
-                >
-                  <Eye className="mr-1.5 h-4 w-4" /> Reveal
-                </Button>
-              )}
-            </div>
-          )}
-
-          {/* Separated — New Puzzle on its own row */}
-          <div className="pt-3">
+        ) : isMobile ? (
+          /* ── Mobile layout ─────────────────────────────────────────── */
+          <div className="space-y-2.5">
+            {/* New Puzzle — primary action, full width, top of controls */}
             <Button variant="outline" className="w-full h-11" onClick={onNewPuzzle}>
               <Shuffle className="mr-1.5 h-4 w-4" /> New Puzzle
             </Button>
-          </div>
 
-          {puzzleCode && (
-            <details
-              className="text-xs text-muted-foreground"
-              open={open}
-              onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}
-            >
-              <summary className="cursor-pointer hover:text-foreground transition-colors select-none w-fit">
-                Advanced
-              </summary>
-              <div className="mt-1.5 flex items-center gap-2">
-                <span className="text-muted-foreground">Puzzle code:</span>
-                <code className="rounded bg-muted px-2 py-0.5 font-mono text-foreground select-all">
-                  {puzzleCode}
-                </code>
-              </div>
-            </details>
-          )}
-        </div>
-      ) : (
-        /* ── Desktop layout ── */
-        <div className="space-y-4">
-          {/* All controls in one unified row */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            {onCheck && (
-              <Button size="sm" onClick={onCheck}>
-                <CheckCircle2 className="mr-1.5 h-4 w-4" /> Check Solution
-              </Button>
-            )}
-            {onHint && showControls && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-muted-foreground hover:text-foreground"
-                onClick={onHint}
-                disabled={hintLimitReached}
-              >
-                <Lightbulb className="h-4 w-4" />
-                Hint{hintCount > 0 ? ` (${hintCount}${maxHints != null ? `/${maxHints}` : ""})` : maxHints != null ? ` (0/${maxHints})` : ""}
-              </Button>
-            )}
-            {onReveal && showControls && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-muted-foreground hover:text-foreground"
-                onClick={() => setShowRevealConfirm(true)}
-              >
-                <Eye className="mr-1.5 h-4 w-4" /> Reveal
-              </Button>
-            )}
-            <Button variant="outline" size="sm" onClick={onNewPuzzle}>
-              <Shuffle className="mr-1.5 h-4 w-4" /> New Puzzle
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground/60 hover:text-foreground"
-              onClick={onReset}
-              aria-label="Reset puzzle"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-            </Button>
-            {canSave && (
+            {/* Save + Reset — compact row below New Puzzle, ergonomic position */}
+            <div className="flex items-center gap-1 justify-end">
+              <SaveIndicator status={saveStatus} />
+              {canSave && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-9 w-9 ${saved ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={toggleSave}
+                  aria-label={saved ? "Remove bookmark" : "Save for later"}
+                >
+                  <Bookmark className="h-4 w-4" fill={saved ? "currentColor" : "none"} />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
-                className={`h-8 w-8 ${saved ? "text-primary" : "text-muted-foreground/60 hover:text-foreground"}`}
-                onClick={toggleSave}
-                aria-label={saved ? "Remove bookmark" : "Save for later"}
+                className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                onClick={onReset}
+                aria-label="Reset puzzle"
               >
-                <Bookmark className="h-3.5 w-3.5" fill={saved ? "currentColor" : "none"} />
+                <RotateCcw className="h-4 w-4" />
               </Button>
-            )}
-            <SaveIndicator status={saveStatus} />
-          </div>
+            </div>
 
-          {puzzleCode && (
-            <details
-              className="text-xs text-muted-foreground"
-              open={open}
-              onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}
-            >
-              <summary className="cursor-pointer hover:text-foreground transition-colors select-none w-fit">
-                Advanced
-              </summary>
-              <div className="mt-1.5 flex items-center gap-2">
-                <span className="text-muted-foreground">Puzzle code:</span>
-                <code className="rounded bg-muted px-2 py-0.5 font-mono text-foreground select-all">
-                  {puzzleCode}
-                </code>
+            {/* ── Puzzle Code — renamed from "Advanced" ── */}
+            {puzzleCode && (
+              <div className="pt-1">
+                <button
+                  onClick={() => setCodeOpen((v) => !v)}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors select-none"
+                >
+                  <Code size={12} />
+                  Puzzle Code
+                  <span className="text-muted-foreground/50">{codeOpen ? "▲" : "▼"}</span>
+                </button>
+                {codeOpen && (
+                  <div className="mt-1.5 flex items-center gap-2 animate-in fade-in duration-150">
+                    <code className="rounded bg-muted px-2 py-1 font-mono text-xs text-foreground select-all">
+                      {puzzleCode}
+                    </code>
+                    <button
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(puzzleCode);
+                        toast({ title: "Code copied" });
+                      }}
+                      className="text-[10px] text-primary hover:underline"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                )}
               </div>
-            </details>
-          )}
-        </div>
-      ))}
+            )}
+          </div>
+        ) : (
+          /* ── Desktop layout ─────────────────────────────────────────── */
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Button variant="outline" size="sm" onClick={onNewPuzzle}>
+                <Shuffle className="mr-1.5 h-4 w-4" /> New Puzzle
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground/60 hover:text-foreground"
+                onClick={onReset}
+                aria-label="Reset puzzle"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </Button>
+              {canSave && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-8 w-8 ${saved ? "text-primary" : "text-muted-foreground/60 hover:text-foreground"}`}
+                  onClick={toggleSave}
+                  aria-label={saved ? "Remove bookmark" : "Save for later"}
+                >
+                  <Bookmark className="h-3.5 w-3.5" fill={saved ? "currentColor" : "none"} />
+                </Button>
+              )}
+              <SaveIndicator status={saveStatus} />
+            </div>
+
+            {/* ── Puzzle Code — renamed from "Advanced" ── */}
+            {puzzleCode && (
+              <div>
+                <button
+                  onClick={() => setCodeOpen((v) => !v)}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors select-none"
+                >
+                  <Code size={11} />
+                  Puzzle Code
+                  <span className="text-muted-foreground/40">{codeOpen ? "▲" : "▼"}</span>
+                </button>
+                {codeOpen && (
+                  <div className="mt-1.5 flex items-center gap-2 animate-in fade-in duration-150">
+                    <span className="text-xs text-muted-foreground">Code:</span>
+                    <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs text-foreground select-all">
+                      {puzzleCode}
+                    </code>
+                    <button
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(puzzleCode);
+                        toast({ title: "Code copied" });
+                      }}
+                      className="text-[10px] text-primary hover:underline"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      )}
+
       <AlertDialog open={showRevealConfirm} onOpenChange={setShowRevealConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
