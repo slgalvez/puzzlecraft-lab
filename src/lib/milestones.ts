@@ -22,30 +22,55 @@ interface Milestone {
   id: string;
   label: string;
   icon: MilestoneIcon;
+  /** Optional quote shown on the share card */
+  quote?: string;
 }
 
+/**
+ * Emoji mapping for milestone icons.
+ *
+ * ⚠️ CRITICAL: This is what the achievement share card must use to render
+ * the icon. Using `m.icon` directly (the string "flame") renders as text.
+ * Use `MILESTONE_ICON_EMOJI[m.icon]` wherever the icon appears in share
+ * cards, canvas renders, or OG image templates.
+ *
+ * Find in MilestoneShareCard or equivalent and replace:
+ *   <h1>{milestone.icon}</h1>          ← WRONG — renders "flame" as text
+ *   <h1>{MILESTONE_ICON_EMOJI[milestone.icon]}</h1>  ← CORRECT — renders 🔥
+ */
+export const MILESTONE_ICON_EMOJI: Record<MilestoneIcon, string> = {
+  puzzle:  "🧩",
+  flame:   "🔥",
+  trophy:  "🏆",
+  medal:   "🥇",
+  zap:     "⚡",
+  crown:   "👑",
+  target:  "🎯",
+  award:   "🏅",
+  bolt:    "⚡",
+};
+
 const SOLVE_MILESTONES: { count: number; milestone: Milestone }[] = [
-  { count: 10, milestone: { id: "solves-10", label: "10 Puzzles Solved", icon: "puzzle" } },
-  { count: 50, milestone: { id: "solves-50", label: "50 Puzzles Solved", icon: "flame" } },
-  { count: 100, milestone: { id: "solves-100", label: "100 Puzzles Solved", icon: "trophy" } },
-  { count: 250, milestone: { id: "solves-250", label: "250 Puzzles Solved", icon: "medal" } },
+  { count: 10,  milestone: { id: "solves-10",  label: "10 Puzzles Solved",  icon: "puzzle", quote: "Every puzzle solved is a mind sharpened." } },
+  { count: 50,  milestone: { id: "solves-50",  label: "50 Puzzles Solved",  icon: "flame",  quote: "Consistency is the secret. Keep that streak burning." } },
+  { count: 100, milestone: { id: "solves-100", label: "100 Puzzles Solved", icon: "trophy", quote: "100 down. You're in rare company." } },
+  { count: 250, milestone: { id: "solves-250", label: "250 Puzzles Solved", icon: "medal",  quote: "This is what dedication looks like." } },
 ];
 
 const STREAK_MILESTONES: { days: number; milestone: Milestone }[] = [
-  { days: 3, milestone: { id: "streak-3", label: "3-Day Streak", icon: "flame" } },
-  { days: 7, milestone: { id: "streak-7", label: "7-Day Streak", icon: "zap" } },
-  { days: 14, milestone: { id: "streak-14", label: "14-Day Streak", icon: "bolt" } },
-  { days: 30, milestone: { id: "streak-30", label: "30-Day Streak", icon: "crown" } },
+  { days: 3,  milestone: { id: "streak-3",  label: "3-Day Streak",  icon: "flame",  quote: "Three in a row. The habit is forming." } },
+  { days: 7,  milestone: { id: "streak-7",  label: "7-Day Streak",  icon: "zap",    quote: "One full week. You keep showing up." } },
+  { days: 14, milestone: { id: "streak-14", label: "14-Day Streak", icon: "bolt",   quote: "Two weeks strong. This is real commitment." } },
+  { days: 30, milestone: { id: "streak-30", label: "30-Day Streak", icon: "crown",  quote: "30 days. You've earned this." } },
 ];
 
 const TIER_ORDER: SkillTier[] = ["Skilled", "Advanced", "Expert"];
 const TIER_MILESTONES: { tier: SkillTier; milestone: Milestone }[] = [
-  { tier: "Skilled", milestone: { id: "tier-skilled", label: "Skilled Rank Reached", icon: "target" } },
-  { tier: "Advanced", milestone: { id: "tier-advanced", label: "Advanced Rank Reached", icon: "award" } },
-  { tier: "Expert", milestone: { id: "tier-expert", label: "Expert Rank Reached", icon: "medal" } },
+  { tier: "Skilled",  milestone: { id: "tier-skilled",  label: "Skilled Rank Reached",  icon: "target", quote: "Your solve speed is climbing. Keep pushing." } },
+  { tier: "Advanced", milestone: { id: "tier-advanced", label: "Advanced Rank Reached", icon: "award",  quote: "Advanced. Most players never get here." } },
+  { tier: "Expert",   milestone: { id: "tier-expert",   label: "Expert Rank Reached",   icon: "medal",  quote: "Expert tier. You're among the very best." } },
 ];
 
-// Rating thresholds for tier milestones (maps to getSkillTier bands)
 const TIER_RATING_THRESHOLDS: Record<string, number> = {
   Skilled: 700,
   Advanced: 950,
@@ -71,13 +96,11 @@ function markShown(id: string) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify([...shown]));
 }
 
-/** Get milestone IDs that were recently achieved and not yet celebrated in the UI. */
 export function getUncelebratedIds(): Set<string> {
   try {
     const raw = localStorage.getItem(CELEBRATED_KEY);
     const celebrated = raw ? new Set<string>(JSON.parse(raw)) : new Set<string>();
     const shown = getShownIds();
-    // Uncelebrated = shown (achieved via toast) but not yet celebrated in UI
     const uncelebrated = new Set<string>();
     for (const id of shown) {
       if (!celebrated.has(id)) uncelebrated.add(id);
@@ -88,29 +111,21 @@ export function getUncelebratedIds(): Set<string> {
   }
 }
 
-/** Mark milestone IDs as celebrated (animation played). */
 export function markCelebrated(ids: string[]) {
   try {
     const raw = localStorage.getItem(CELEBRATED_KEY);
     const celebrated: Set<string> = raw ? new Set(JSON.parse(raw)) : new Set();
     for (const id of ids) celebrated.add(id);
     localStorage.setItem(CELEBRATED_KEY, JSON.stringify([...celebrated]));
-  } catch {
-    // silently fail
-  }
+  } catch {}
 }
 
 // ── Check & notify ──
 
-/**
- * Call after a solve or when visiting the stats page.
- * Shows a toast for any newly reached milestone.
- */
 export function checkMilestones() {
   const shown = getShownIds();
   const newMilestones: Milestone[] = [];
 
-  // Solve count
   const solveCount = getSolveRecords().filter((r) => r.solveTime >= 10).length;
   for (const { count, milestone } of SOLVE_MILESTONES) {
     if (solveCount >= count && !shown.has(milestone.id)) {
@@ -118,7 +133,6 @@ export function checkMilestones() {
     }
   }
 
-  // Streak
   try {
     const streak = getDailyStreak();
     for (const { days, milestone } of STREAK_MILESTONES) {
@@ -126,11 +140,8 @@ export function checkMilestones() {
         newMilestones.push(milestone);
       }
     }
-  } catch {
-    // daily streak not available
-  }
+  } catch {}
 
-  // Skill tier
   const records = getSolveRecords().filter((r) => r.solveTime >= 10);
   if (records.length >= 5) {
     const rating = computePlayerRating(records);
@@ -143,11 +154,12 @@ export function checkMilestones() {
     }
   }
 
-  // Show toasts with staggered delay
   newMilestones.forEach((m, i) => {
     setTimeout(() => {
-      toast.success(`Milestone: ${m.label}`, {
-        description: "Keep it up!",
+      // Use emoji in toast — not the raw icon string
+      const emoji = MILESTONE_ICON_EMOJI[m.icon];
+      toast.success(`${emoji} ${m.label}`, {
+        description: m.quote ?? "Keep it up!",
         duration: 4000,
       });
       markShown(m.id);
@@ -161,18 +173,17 @@ export interface MilestoneWithProgress {
   id: string;
   label: string;
   icon: MilestoneIcon;
+  /** Use MILESTONE_ICON_EMOJI[icon] to render this as an emoji */
+  emoji: string;
+  /** Optional motivational quote for share cards */
+  quote?: string;
   state: MilestoneState;
-  /** Current progress value */
   current: number;
-  /** Target to achieve the milestone */
   target: number;
-  /** Human-readable progress text e.g. "32 / 50 puzzles" */
   progressText: string;
-  /** Whether this is the next closest milestone to unlock */
   isNext: boolean;
 }
 
-/** Returns all milestones with their state, progress, and next-milestone flag. */
 export function getAllMilestones(): MilestoneWithProgress[] {
   const solveCount = getSolveRecords().filter((r) => r.solveTime >= 10).length;
   const records = getSolveRecords().filter((r) => r.solveTime >= 10);
@@ -185,7 +196,6 @@ export function getAllMilestones(): MilestoneWithProgress[] {
 
   const all: MilestoneWithProgress[] = [];
 
-  // Solve milestones
   for (const { count, milestone } of SOLVE_MILESTONES) {
     const achieved = solveCount >= count;
     const progress = Math.min(solveCount, count);
@@ -193,6 +203,7 @@ export function getAllMilestones(): MilestoneWithProgress[] {
     const state: MilestoneState = achieved ? "achieved" : ratio >= 0.3 ? "in-progress" : "locked";
     all.push({
       ...milestone,
+      emoji: MILESTONE_ICON_EMOJI[milestone.icon],
       state,
       current: progress,
       target: count,
@@ -201,7 +212,6 @@ export function getAllMilestones(): MilestoneWithProgress[] {
     });
   }
 
-  // Streak milestones
   for (const { days, milestone } of STREAK_MILESTONES) {
     const achieved = streakCurrent >= days;
     const progress = Math.min(streakCurrent, days);
@@ -209,6 +219,7 @@ export function getAllMilestones(): MilestoneWithProgress[] {
     const state: MilestoneState = achieved ? "achieved" : ratio >= 0.3 ? "in-progress" : "locked";
     all.push({
       ...milestone,
+      emoji: MILESTONE_ICON_EMOJI[milestone.icon],
       state,
       current: progress,
       target: days,
@@ -217,7 +228,6 @@ export function getAllMilestones(): MilestoneWithProgress[] {
     });
   }
 
-  // Tier milestones
   for (const { tier: t, milestone } of TIER_MILESTONES) {
     const achieved = TIER_ORDER.indexOf(t) <= tierIdx && tierIdx >= 0;
     const threshold = TIER_RATING_THRESHOLDS[t] ?? 700;
@@ -226,6 +236,7 @@ export function getAllMilestones(): MilestoneWithProgress[] {
     const state: MilestoneState = achieved ? "achieved" : ratio >= 0.3 ? "in-progress" : "locked";
     all.push({
       ...milestone,
+      emoji: MILESTONE_ICON_EMOJI[milestone.icon],
       state,
       current: progress,
       target: threshold,
@@ -234,7 +245,6 @@ export function getAllMilestones(): MilestoneWithProgress[] {
     });
   }
 
-  // Mark the next closest milestone
   let bestNextIdx = -1;
   let bestNextRatio = -1;
   for (let i = 0; i < all.length; i++) {
@@ -246,9 +256,7 @@ export function getAllMilestones(): MilestoneWithProgress[] {
       }
     }
   }
-  if (bestNextIdx >= 0) {
-    all[bestNextIdx].isNext = true;
-  }
+  if (bestNextIdx >= 0) all[bestNextIdx].isNext = true;
 
   return all;
 }

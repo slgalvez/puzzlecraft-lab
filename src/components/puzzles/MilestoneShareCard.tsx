@@ -5,6 +5,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { hapticSuccess } from "@/lib/haptic";
+import { MILESTONE_ICON_EMOJI, type MilestoneIcon } from "@/lib/milestones";
 
 interface Milestone {
   id: string;
@@ -59,7 +60,7 @@ async function renderMilestoneCard(
   ctx.font = "160px serif";
   ctx.textAlign = "center";
   ctx.fillStyle = "#ffffff";
-  ctx.fillText(milestone.icon, CARD_WIDTH / 2, 280);
+  ctx.fillText(MILESTONE_ICON_EMOJI[milestone.icon as MilestoneIcon] ?? "🏆", CARD_WIDTH / 2, 280);
 
   ctx.font = "bold 72px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   ctx.fillStyle = "#ffffff";
