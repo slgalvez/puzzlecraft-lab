@@ -3,8 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
+
     <title>Puzzlecraft — Daily Crosswords, Number &amp; Word Fill-In Puzzles</title>
-    <meta name="description" content="Generate unlimited puzzles, solve daily challenges, and sharpen your logic with handcrafted puzzle experiences.">
+    <meta name="description" content="8 puzzle types. Daily challenges. Create personalised puzzles and challenge your friends." />
     <meta name="author" content="Puzzlecraft" />
 
     <!-- PWA / Mobile -->
@@ -12,22 +13,37 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Puzzlecraft" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/jpeg" href="/favicon.jpeg" />
 
-    <!-- Splash screens for iOS -->
+    <!-- Favicons — all formats for full cross-browser / PWA / iOS support -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- iOS splash screens -->
     <link rel="apple-touch-startup-image" href="/pwa-icon-512.png" />
 
-    <!-- OG / Twitter -->
+    <!-- Open Graph — use production domain, not Lovable dev domain -->
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://puzzlecraft-lab.lovable.app/og-image.png">
+    <meta property="og:url" content="https://www.puzzlecrft.com/" />
+    <meta property="og:site_name" content="Puzzlecraft" />
+    <meta property="og:title" content="Puzzlecraft — Daily Crosswords &amp; Word Puzzles" />
+    <meta property="og:description" content="8 puzzle types. Daily challenges. Create personalised puzzles and challenge your friends." />
+    <meta property="og:image" content="https://www.puzzlecrft.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+
+    <!-- Twitter / X card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@Puzzlecraft" />
-    <meta name="twitter:image" content="https://puzzlecraft-lab.lovable.app/og-image.png">
-    <meta property="og:title" content="Puzzlecraft — Daily Crosswords, Number &amp; Word Fill-In Puzzles">
-    <meta name="twitter:title" content="Puzzlecraft — Daily Crosswords, Number &amp; Word Fill-In Puzzles">
-    <meta property="og:description" content="Generate unlimited puzzles, solve daily challenges, and sharpen your logic with handcrafted puzzle experiences.">
-    <meta name="twitter:description" content="Generate unlimited puzzles, solve daily challenges, and sharpen your logic with handcrafted puzzle experiences.">
+    <meta name="twitter:title" content="Puzzlecraft — Daily Crosswords &amp; Word Puzzles" />
+    <meta name="twitter:description" content="8 puzzle types. Daily challenges. Create personalised puzzles and challenge your friends." />
+    <meta name="twitter:image" content="https://www.puzzlecrft.com/og-image.png" />
+
+    <!-- iMessage / Link preview — Apple requires og: tags above, which are set -->
+    <!-- No additional tags needed; iMessage uses og:title, og:description, og:image -->
   </head>
 
   <body>
