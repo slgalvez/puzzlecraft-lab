@@ -177,6 +177,8 @@ const PuzzleLibrary = () => {
         {/* ── Saved puzzles ── */}
         <SavedPuzzlesSection />
 
+        <WeeklyPackSection />
+
         {/* ── Endless Mode feature card ── */}
         <div className="mt-8 mb-6 rounded-2xl border-2 border-border bg-card overflow-hidden hover:border-primary/40 hover:shadow-md transition-all group">
           <div className="grid sm:grid-cols-[1fr_auto] gap-0">

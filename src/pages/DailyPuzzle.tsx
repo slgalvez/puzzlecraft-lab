@@ -167,7 +167,8 @@ const DailyPuzzle = () => {
 
   return (
     <Layout>
-      <div className="container py-6 md:py-10">
+       <div className="container py-6 md:py-10 relative">
+          <BackgroundLogo position="bottom-right" size={240} opacityClass="opacity-[0.035]" />
 
         {/* Back */}
         <div className="mb-4">
