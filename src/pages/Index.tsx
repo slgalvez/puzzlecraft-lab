@@ -42,7 +42,7 @@ import {
   ChevronRight, TrendingUp, Star, Crown,
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
-import BackgroundLogo from "@/components/ui/BackgroundLogo";
+
 import { WeeklyPackSection } from "@/components/puzzles/WeeklyPackSection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -256,8 +256,8 @@ const Index = () => {
           Left: headlines, CTAs, code input
           Right: daily challenge card with live leaderboard
       ═══════════════════════════════════════════════════════ */}
-      <section className="border-b bg-surface-warm relative overflow-hidden">
-        <BackgroundLogo position="right" size={340} opacityClass="opacity-[0.04]" />
+      <section className="border-b bg-surface-warm">
+
         <div className="container py-10 sm:py-14">
           <div className="grid lg:grid-cols-[1fr_400px] gap-10 lg:gap-14 items-start">
 
