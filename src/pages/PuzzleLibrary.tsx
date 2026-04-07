@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import SavedPuzzlesSection from "@/components/puzzles/SavedPuzzlesSection";
+import { WeeklyPackSection } from "@/components/puzzles/WeeklyPackSection";
 import {
   CATEGORY_INFO,
   DIFFICULTY_LABELS,
@@ -176,6 +177,8 @@ const PuzzleLibrary = () => {
 
         {/* ── Saved puzzles ── */}
         <SavedPuzzlesSection />
+
+        <WeeklyPackSection />
 
         {/* ── Endless Mode feature card ── */}
         <div className="mt-8 mb-6 rounded-2xl border-2 border-border bg-card overflow-hidden hover:border-primary/40 hover:shadow-md transition-all group">

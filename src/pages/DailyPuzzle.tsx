@@ -12,6 +12,7 @@ import {
 import { Calendar, Flame, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
+import BackgroundLogo from "@/components/ui/BackgroundLogo";
 import { supabase } from "@/integrations/supabase/client";
 import DailyPostSolve from "@/components/daily/DailyPostSolve";
 
@@ -167,7 +168,8 @@ const DailyPuzzle = () => {
 
   return (
     <Layout>
-      <div className="container py-6 md:py-10">
+       <div className="container py-6 md:py-10 relative">
+          <BackgroundLogo position="bottom-right" size={240} opacityClass="opacity-[0.035]" />
 
         {/* Back */}
         <div className="mb-4">
