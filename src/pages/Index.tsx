@@ -42,6 +42,8 @@ import {
   ChevronRight, TrendingUp, Star, Crown,
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
+import BackgroundLogo from "@/components/ui/BackgroundLogo";
+import { WeeklyPackSection } from "@/components/puzzles/WeeklyPackSection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";

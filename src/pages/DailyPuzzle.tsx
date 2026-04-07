@@ -12,6 +12,7 @@ import {
 import { Calendar, Flame, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
+import BackgroundLogo from "@/components/ui/BackgroundLogo";
 import { supabase } from "@/integrations/supabase/client";
 import DailyPostSolve from "@/components/daily/DailyPostSolve";
 

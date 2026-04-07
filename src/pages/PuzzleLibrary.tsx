@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import SavedPuzzlesSection from "@/components/puzzles/SavedPuzzlesSection";
+import { WeeklyPackSection } from "@/components/puzzles/WeeklyPackSection";
 import {
   CATEGORY_INFO,
   DIFFICULTY_LABELS,
