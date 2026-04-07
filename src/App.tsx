@@ -25,6 +25,7 @@ import PlayCraftPuzzle from "./pages/PlayCraftPuzzle";
 import SharedCraftPuzzle from "./pages/SharedCraftPuzzle";
 import Account from "./pages/Account";
 import AdminPreview from "./pages/AdminPreview";
+import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminHomepagePreview from "./pages/AdminHomepagePreview";
 import AdminPremiumEmails from "./pages/AdminPremiumEmails";
 import { UserAccountProvider } from "./contexts/UserAccountContext";
@@ -134,7 +135,8 @@ function PublicRoutes() {
         <Route path="/account" element={<Account />} />
         <Route path="/admin-preview" element={<AdminPreview />} />
         <Route path="/admin-preview/homepage" element={<AdminHomepagePreview />} />
-        <Route path="/admin/premium-emails" element={<AdminPremiumEmails />} />
+         <Route path="/admin/premium-emails" element={<AdminPremiumEmails />} />
+         <Route path="/admin-analytics" element={<AdminAnalytics />} />
       </Routes>
     </UserAccountProvider>
   );
