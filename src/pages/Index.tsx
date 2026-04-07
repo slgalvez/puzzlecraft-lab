@@ -511,7 +511,7 @@ const Index = () => {
       <section className="border-b">
         <div className="container py-12">
           {isReturning && <WeeklyPackSection compact />}
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between mb-5 mt-8">
             <div>
               <h2 className="font-display text-2xl font-semibold text-foreground">
                 {isReturning ? "Your favorites" : "Eight ways to play"}
