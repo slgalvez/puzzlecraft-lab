@@ -17,7 +17,7 @@ const STRIPE_ANNUAL_PRICE_ID  = import.meta.env.VITE_STRIPE_ANNUAL_PRICE_ID ?? "
 
 const RC_ENTITLEMENT_ID = "puzzlecraft_plus";
 
-const SUBSCRIBE_WEB_URL = "https://puzzlecraft-lab.lovable.app/account?upgrade=1";
+const SUBSCRIBE_WEB_URL = "https://www.puzzlecrft.com/account?upgrade=1";
 
 // ── Hidden dynamic import helper ──────────────────────────────────────────
 // Uses a variable to prevent Vite/Rollup from statically analysing the specifier.
