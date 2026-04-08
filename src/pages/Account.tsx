@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft, Mail, Lock, User, Sparkles, Pencil,
   Check, X, Flame, Trophy, Target, Shield,
-  ChevronRight, Zap, Star, Crown,
+  ChevronRight, Zap, Star, Crown, Bell,
 } from "lucide-react";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import { hasPremiumAccess, shouldShowUpgradeCTA, PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
@@ -57,6 +57,8 @@ export default function AccountPage() {
   const [editingName,  setEditingName] = useState(false);
   const [newName,      setNewName]     = useState("");
   const [nameSaving,   setNameSaving]  = useState(false);
+  const [notifyEmail,  setNotifyEmail] = useState("");
+  const [notifySubmitted, setNotifySubmitted] = useState(false);
 
   const stats      = useMemo(() => getProgressStats(), []);
   const streak     = useMemo(() => getDailyStreak(), []);
@@ -471,23 +473,39 @@ export default function AccountPage() {
             ))}
           </div>
 
-          {/* CTA — scrolls to form AND switches to signup tab */}
-          <div className="px-5 pb-5">
-            <Button
-              onClick={() => {
-                setTab("signup");
-                // Small delay so the tab switch renders before scroll
-                setTimeout(() => {
-                  authFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }, 50);
-              }}
-              className="w-full h-11 rounded-xl font-semibold gap-2"
-            >
-              <Crown size={14} /> Create a free account
-            </Button>
-            <p className="text-center text-[11px] text-muted-foreground mt-2">
-              Cancel anytime · No commitment
-            </p>
+          {/* Notify me CTA */}
+          <div className="px-5 pb-5 space-y-2.5">
+            {notifySubmitted ? (
+              <div className="w-full rounded-2xl bg-emerald-500/10 border border-emerald-500/20 py-4 text-center">
+                <Check size={20} className="text-emerald-500 mx-auto mb-1.5" />
+                <p className="text-sm font-semibold text-foreground">You're on the list!</p>
+                <p className="text-xs text-muted-foreground mt-0.5">We'll email you when Plus launches.</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-2">
+                  <Input
+                    type="email"
+                    placeholder="your@email.com"
+                    value={notifyEmail}
+                    onChange={(e) => setNotifyEmail(e.target.value)}
+                    className="flex-1 rounded-xl"
+                  />
+                  <Button
+                    onClick={() => {
+                      if (notifyEmail.includes("@")) setNotifySubmitted(true);
+                    }}
+                    className="shrink-0 rounded-xl gap-1.5"
+                    disabled={!notifyEmail.includes("@")}
+                  >
+                    <Bell size={14} /> Notify me
+                  </Button>
+                </div>
+                <p className="text-center text-[11px] text-muted-foreground">
+                  Early access · Special launch pricing · No spam
+                </p>
+              </>
+            )}
           </div>
         </div>
 
