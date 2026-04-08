@@ -59,6 +59,11 @@ const CrosswordPreview = () => (
 
 const CraftPreview = () => (
   <svg viewBox="0 0 140 90" className="w-full h-auto max-h-full" preserveAspectRatio="xMidYMid meet" aria-hidden>
+    <defs>
+      <clipPath id="craft-preview-right-card">
+        <rect x="86" y="8" width="50" height="74" rx="7" />
+      </clipPath>
+    </defs>
     <rect x="4" y="8" width="50" height="74" rx="7" fill="currentColor" opacity="0.06" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.25"/>
     <rect x="10" y="18" width="38" height="6" rx="2" fill="hsl(32 80% 50%)" opacity="0.7"/>
     <rect x="10" y="28" width="28" height="4" rx="2" fill="currentColor" opacity="0.2"/>
@@ -69,16 +74,19 @@ const CraftPreview = () => (
     <path d="M60 45 L80 45" stroke="hsl(32 80% 50%)" strokeWidth="2" strokeLinecap="round"/>
     <polyline points="76,41 80,45 76,49" stroke="hsl(32 80% 50%)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
     <rect x="86" y="8" width="50" height="74" rx="7" fill="currentColor" opacity="0.06" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.25"/>
-    <rect x="92" y="18" width="38" height="5" rx="2" fill="currentColor" opacity="0.15"/>
-    <text x="111" y="29" fontSize="5.5" fill="currentColor" opacity="0.5" textAnchor="middle">Alex sent you a puzzle!</text>
-    <rect x="93" y="33" width="36" height="36" rx="4" fill="currentColor" opacity="0.05" stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.2"/>
-    {[0,1,2,3,4].map(r => [0,1,2,3,4].map(c => (
-      <rect key={`${r}-${c}`} x={95 + c*7} y={35 + r*7} width="6" height="6" rx="1"
-        fill={((r+c)%5===0) ? "#1a1a1a" : "currentColor"} opacity={((r+c)%5===0) ? 1 : 0.1}
-        stroke="currentColor" strokeWidth="0.3" strokeOpacity="0.2"/>
-    )))}
-    <rect x="96" y="74" width="30" height="7" rx="3" fill="hsl(142 60% 40% / 0.15)" stroke="hsl(142 60% 40%)" strokeWidth="0.75"/>
-    <text x="111" y="79.5" fontSize="5" fontWeight="700" fill="hsl(142 60% 40%)" textAnchor="middle">Solved in 2:14!</text>
+    <g clipPath="url(#craft-preview-right-card)">
+      <rect x="93" y="18" width="36" height="5" rx="2" fill="currentColor" opacity="0.15"/>
+      <text x="111" y="30" fontSize="4.2" fill="currentColor" opacity="0.5" textAnchor="middle">Alex sent</text>
+      <text x="111" y="35" fontSize="4.2" fill="currentColor" opacity="0.5" textAnchor="middle">you a puzzle!</text>
+      <rect x="96" y="39" width="30" height="30" rx="4" fill="currentColor" opacity="0.05" stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.2"/>
+      {[0,1,2,3,4].map(r => [0,1,2,3,4].map(c => (
+        <rect key={`${r}-${c}`} x={98 + c * 6} y={41 + r * 6} width="5" height="5" rx="1"
+          fill={((r+c)%5===0) ? "#1a1a1a" : "currentColor"} opacity={((r+c)%5===0) ? 1 : 0.1}
+          stroke="currentColor" strokeWidth="0.3" strokeOpacity="0.2"/>
+      )))}
+      <rect x="98" y="73" width="26" height="6" rx="3" fill="hsl(142 60% 40% / 0.15)" stroke="hsl(142 60% 40%)" strokeWidth="0.75"/>
+      <text x="111" y="77.2" fontSize="4.1" fontWeight="700" fill="hsl(142 60% 40%)" textAnchor="middle">Solved in 2:14!</text>
+    </g>
   </svg>
 );
 
