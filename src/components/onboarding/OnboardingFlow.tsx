@@ -30,30 +30,30 @@ interface OnboardingFlowProps {
 // ── Puzzle mini-preview SVG ───────────────────────────────────────────────
 
 const CrosswordPreview = () => (
-  <svg viewBox="0 0 120 80" className="w-full h-auto max-h-full" preserveAspectRatio="xMidYMid meet" aria-hidden>
-    <rect x="2"  y="2"  width="22" height="22" rx="4" fill="hsl(32 80% 50% / 0.15)" stroke="hsl(32 80% 50%)" strokeWidth="1.5"/>
-    <text x="13" y="18" fontSize="12" fontWeight="700" fill="hsl(32 80% 50%)" textAnchor="middle">P</text>
-    <rect x="27" y="2"  width="22" height="22" rx="4" fill="currentColor" opacity="0.08" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.3"/>
-    <text x="38" y="18" fontSize="12" fontWeight="700" fill="currentColor" textAnchor="middle" opacity="0.6">U</text>
-    <rect x="52" y="2"  width="22" height="22" rx="4" fill="currentColor" opacity="0.08" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.3"/>
-    <text x="63" y="18" fontSize="12" fontWeight="700" fill="currentColor" textAnchor="middle" opacity="0.6">Z</text>
+  <svg viewBox="0 0 130 82" className="w-full h-auto max-h-full" preserveAspectRatio="xMidYMid meet" aria-hidden>
+    <rect x="5"  y="2"  width="22" height="22" rx="4" fill="hsl(32 80% 50% / 0.15)" stroke="hsl(32 80% 50%)" strokeWidth="1.5"/>
+    <text x="16" y="18" fontSize="12" fontWeight="700" fill="hsl(32 80% 50%)" textAnchor="middle">P</text>
+    <rect x="29" y="2"  width="22" height="22" rx="4" fill="currentColor" opacity="0.08" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.3"/>
+    <text x="40" y="18" fontSize="12" fontWeight="700" fill="currentColor" textAnchor="middle" opacity="0.6">U</text>
+    <rect x="53" y="2"  width="22" height="22" rx="4" fill="currentColor" opacity="0.08" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.3"/>
+    <text x="64" y="18" fontSize="12" fontWeight="700" fill="currentColor" textAnchor="middle" opacity="0.6">Z</text>
     <rect x="77" y="2"  width="22" height="22" rx="4" fill="currentColor" opacity="0.08" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.3"/>
     <text x="88" y="18" fontSize="12" fontWeight="700" fill="currentColor" textAnchor="middle" opacity="0.6">Z</text>
-    <rect x="96" y="2"  width="22" height="22" rx="4" fill="hsl(32 80% 50% / 0.08)" stroke="hsl(32 80% 50% / 0.3)" strokeWidth="0.75"/>
+    <rect x="101" y="2"  width="22" height="22" rx="4" fill="hsl(32 80% 50% / 0.08)" stroke="hsl(32 80% 50% / 0.3)" strokeWidth="0.75"/>
 
-    <rect x="2"  y="27" width="22" height="22" rx="4" fill="currentColor" opacity="0.04" stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.2"/>
-    <rect x="27" y="27" width="22" height="22" rx="4" fill="#1a1a1a"/>
-    <rect x="52" y="27" width="22" height="22" rx="4" fill="hsl(142 60% 40% / 0.15)" stroke="hsl(142 60% 40%)" strokeWidth="1.5"/>
-    <text x="63" y="43" fontSize="12" fontWeight="700" fill="hsl(142 60% 40%)" textAnchor="middle">L</text>
-    <rect x="77" y="27" width="22" height="22" rx="4" fill="currentColor" opacity="0.08" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.3"/>
-    <rect x="96" y="27" width="22" height="22" rx="4" fill="currentColor" opacity="0.08" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.3"/>
+    <rect x="5"  y="28" width="22" height="22" rx="4" fill="currentColor" opacity="0.04" stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.2"/>
+    <rect x="29" y="28" width="22" height="22" rx="4" fill="#1a1a1a"/>
+    <rect x="53" y="28" width="22" height="22" rx="4" fill="hsl(142 60% 40% / 0.15)" stroke="hsl(142 60% 40%)" strokeWidth="1.5"/>
+    <text x="64" y="44" fontSize="12" fontWeight="700" fill="hsl(142 60% 40%)" textAnchor="middle">L</text>
+    <rect x="77" y="28" width="22" height="22" rx="4" fill="currentColor" opacity="0.08" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.3"/>
+    <rect x="101" y="28" width="22" height="22" rx="4" fill="currentColor" opacity="0.08" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.3"/>
 
-    <rect x="2"  y="52" width="22" height="22" rx="4" fill="currentColor" opacity="0.04" stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.2"/>
-    <rect x="27" y="52" width="22" height="22" rx="4" fill="currentColor" opacity="0.04" stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.2"/>
-    <rect x="52" y="52" width="22" height="22" rx="4" fill="currentColor" opacity="0.08" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.3"/>
-    <text x="63" y="68" fontSize="12" fontWeight="700" fill="currentColor" textAnchor="middle" opacity="0.4">E</text>
-    <rect x="77" y="52" width="22" height="22" rx="4" fill="currentColor" opacity="0.08" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.3"/>
-    <rect x="96" y="52" width="22" height="22" rx="4" fill="#1a1a1a"/>
+    <rect x="5"  y="54" width="22" height="22" rx="4" fill="currentColor" opacity="0.04" stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.2"/>
+    <rect x="29" y="54" width="22" height="22" rx="4" fill="currentColor" opacity="0.04" stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.2"/>
+    <rect x="53" y="54" width="22" height="22" rx="4" fill="currentColor" opacity="0.08" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.3"/>
+    <text x="64" y="70" fontSize="12" fontWeight="700" fill="currentColor" textAnchor="middle" opacity="0.4">E</text>
+    <rect x="77" y="54" width="22" height="22" rx="4" fill="currentColor" opacity="0.08" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.3"/>
+    <rect x="101" y="54" width="22" height="22" rx="4" fill="#1a1a1a"/>
   </svg>
 );
 
