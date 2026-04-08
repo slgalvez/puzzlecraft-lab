@@ -109,13 +109,13 @@ function GridPreview({ data, puzzleType, showSolution }: { data: Record<string, 
 
       {/* Word bank for word-fill */}
       {puzzleType === "word-fill" && wordBank.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-2 overflow-hidden">
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Word Bank</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto">
             {wordBank.map((word, i) => (
               <span
                 key={i}
-                className="px-2.5 py-1 text-[11px] font-mono rounded bg-muted text-foreground/70"
+                className="px-2 py-0.5 text-[11px] font-mono rounded bg-muted text-foreground/70 break-all"
               >
                 {word}
               </span>
@@ -248,13 +248,13 @@ function WordSearchPreview({ data, showSolution }: { data: Record<string, unknow
 
       {/* Word bank */}
       {words.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-2 overflow-hidden">
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Words to Find</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto">
             {[...words].sort().map((word, i) => (
               <span
                 key={i}
-                className={`px-2.5 py-1 text-[11px] font-mono rounded ${
+                className={`px-2 py-0.5 text-[11px] font-mono rounded break-all ${
                   showSolution ? "bg-primary/10 text-primary line-through" : "bg-muted text-foreground/70"
                 }`}
               >

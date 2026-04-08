@@ -622,31 +622,28 @@ const CraftPuzzle = () => {
           setView(v);
         }} draftCount={draftCount} />
 
+        {/* Limit indicator — compact, non-intrusive */}
         {!isPremium && view === "create" && (
-          <div className="flex items-center justify-between text-[11px] -mt-1 mb-1 px-0.5">
-            <span className={cn(
-              "font-medium",
-              limitStatus.atLimit ? "text-destructive" : "text-muted-foreground/60"
-            )}>
-              {limitStatus.atLimit ? (
-                "Monthly limit reached"
-              ) : limitStatus.used === 0 ? (
-                `${limitStatus.limit} free puzzles available this month`
-              ) : (
-                <>
-                  <span className="text-foreground/70">
-                    {limitStatus.used} puzzle{limitStatus.used !== 1 ? "s" : ""} created
-                  </span>
-                  <span className="text-muted-foreground/40 mx-1">·</span>
-                  <span>{limitStatus.remaining} remaining</span>
-                </>
-              )}
-            </span>
+          <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground/50 -mt-1 mb-0">
+            <span>{limitStatus.remaining}/{limitStatus.limit} free</span>
+            <span>·</span>
             <button
               onClick={() => setUpgradeOpen(true)}
-              className="text-primary text-[11px] font-medium hover:underline"
+              className="text-primary/70 hover:text-primary font-medium hover:underline transition-colors"
             >
-              {limitStatus.atLimit ? "Upgrade to continue →" : "Unlimited with Plus →"}
+              Unlimited with Plus
+            </button>
+          </div>
+        )}
+        {!isPremium && view === "create" && limitStatus.atLimit && (
+          <div className="flex items-center justify-center gap-2 text-[11px] text-destructive font-medium -mt-0.5 mb-1">
+            <span>Monthly limit reached</span>
+            <span>·</span>
+            <button
+              onClick={() => setUpgradeOpen(true)}
+              className="underline"
+            >
+              Upgrade to continue
             </button>
           </div>
         )}
