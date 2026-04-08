@@ -44,6 +44,7 @@ import {
 import Layout from "@/components/layout/Layout";
 
 import { WeeklyPackSection } from "@/components/puzzles/WeeklyPackSection";
+import { StreakShieldBanner } from "@/components/ios/StreakShieldBanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -282,6 +283,11 @@ const Index = () => {
                   </Button>
                 </div>
               ) : null}
+
+              <StreakShieldBanner
+                streakLength={dailyStreak.current}
+                hasPlayedToday={!!dailyCompletion}
+              />
 
               <h1 className="font-display text-4xl font-bold leading-tight text-foreground sm:text-5xl lg:text-[3.1rem]">
                 {isReturning ? (
