@@ -683,7 +683,7 @@ function ShareCardPreviews() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {SHARE_CARD_SAMPLES.map((sample) => (
             <div key={sample.label} className="space-y-2">
-              <ShareCardCanvas render={(c) => renderSolvePreview(c, sample)} />
+              <ShareCardCanvas render={(c) => renderSolvePreview(c, sample)} label={`${sample.label} — ${sample.puzzleType} · ${sample.difficulty}`} />
               <p className="text-xs font-medium text-foreground">{sample.label}</p>
               <p className="text-[10px] text-muted-foreground">{sample.puzzleType} · {sample.difficulty} · {Math.floor(sample.time/60)}:{(sample.time%60).toString().padStart(2,"0")}</p>
             </div>
@@ -701,7 +701,7 @@ function ShareCardPreviews() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {MILESTONE_CARD_SAMPLES.map((m) => (
             <div key={m.label} className="space-y-2">
-              <ShareCardCanvas render={(c) => renderMilestonePreview(c, m, 7)} />
+              <ShareCardCanvas render={(c) => renderMilestonePreview(c, m, 7)} label={`${m.label} — ${m.rarity ?? "common"} rarity`} />
               <p className="text-xs font-medium text-foreground">{m.label}</p>
               <p className="text-[10px] text-muted-foreground capitalize">{m.rarity ?? "common"} rarity</p>
             </div>
