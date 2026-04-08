@@ -211,6 +211,11 @@ const DailyPuzzle = () => {
           </div>
         </div>
 
+        <StreakShieldBanner
+          streakLength={streak.current}
+          hasPlayedToday={!!completion}
+        />
+
         {/* ── Two-column layout on desktop ── */}
         <div className={cn(
           "grid gap-8",
