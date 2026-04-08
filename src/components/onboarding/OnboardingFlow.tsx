@@ -84,8 +84,8 @@ const CraftPreview = () => (
           fill={((r+c)%5===0) ? "#1a1a1a" : "currentColor"} opacity={((r+c)%5===0) ? 1 : 0.1}
           stroke="currentColor" strokeWidth="0.3" strokeOpacity="0.2"/>
       )))}
-      <rect x="98" y="73" width="26" height="6" rx="3" fill="hsl(142 60% 40% / 0.15)" stroke="hsl(142 60% 40%)" strokeWidth="0.75"/>
-      <text x="111" y="77.2" fontSize="4.1" fontWeight="700" fill="hsl(142 60% 40%)" textAnchor="middle">Solved in 2:14!</text>
+      <rect x="97" y="73" width="28" height="6" rx="3" fill="hsl(142 60% 40% / 0.15)" stroke="hsl(142 60% 40%)" strokeWidth="0.75"/>
+      <text x="111" y="77.2" fontSize="3.6" fontWeight="700" fill="hsl(142 60% 40%)" textAnchor="middle">Solved in 2:14!</text>
     </g>
   </svg>
 );
