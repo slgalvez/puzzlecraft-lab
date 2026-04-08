@@ -1,5 +1,6 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { buildCraftShareText, buildSolveResultShareText } from "@/lib/craftShare";
+import { MILESTONE_ICON_EMOJI } from "@/lib/milestones";
 import Layout from "@/components/layout/Layout";
 import CompletionPanel from "@/components/puzzles/CompletionPanel";
 import MilestoneModal, { type MilestoneToShow } from "@/components/puzzles/MilestoneModal";
@@ -478,6 +479,214 @@ function DailyConfettiPreview() {
   );
 }
 
+// ── Share Card Live Previews ──────────────────────────────────────────────
+
+const SHARE_CARD_SAMPLES = [
+  { label: "Daily Solve", puzzleType: "crossword" as const, difficulty: "medium" as const, time: 272, isNewBest: false, streakDays: 7, isDaily: true },
+  { label: "New Personal Best", puzzleType: "sudoku" as const, difficulty: "hard" as const, time: 485, isNewBest: true, streakDays: 14, isDaily: false },
+  { label: "Quick Solve (no streak)", puzzleType: "word-search" as const, difficulty: "easy" as const, time: 61, isNewBest: false, streakDays: 0, isDaily: false },
+];
+
+const MILESTONE_CARD_SAMPLES: { label: string; description: string; icon: string; rarity?: "common" | "rare" | "legendary" }[] = [
+  { label: "50 Puzzles Solved", description: "Consistency is the secret. Keep that streak burning.", icon: "flame", rarity: "common" },
+  { label: "7-Day Streak", description: "A full week of puzzles. You're unstoppable.", icon: "zap", rarity: "rare" },
+  { label: "Expert Rank", description: "Top-tier solver. You've mastered the craft.", icon: "crown", rarity: "legendary" },
+];
+
+const CARD_PREVIEW_W = 1080;
+const CARD_PREVIEW_H = 1080;
+const CP_BG_TOP = "#141210";
+const CP_BG_BOT = "#0c0b09";
+const CP_ORANGE = "#F97316";
+const CP_TEXT = "#f5f0e8";
+const CP_SEC = "#a89a88";
+const CP_DIM = "#6b5f52";
+const CP_FONT = "-apple-system, 'SF Pro Display', 'Inter', system-ui, sans-serif";
+const CP_MONO = "'SF Mono', 'Fira Code', 'JetBrains Mono', monospace";
+
+function cpRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r); ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
+}
+
+function renderSolvePreview(canvas: HTMLCanvasElement, sample: typeof SHARE_CARD_SAMPLES[0]) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  const W = CARD_PREVIEW_W, H = CARD_PREVIEW_H;
+  canvas.width = W; canvas.height = H;
+
+  const typeNames: Record<string, string> = { crossword: "Crossword", sudoku: "Sudoku", "word-search": "Word Search", cryptogram: "Cryptogram", "word-fill": "Word Fill-In", kakuro: "Kakuro", nonogram: "Nonogram", "number-fill": "Number Fill-In" };
+  const diffLabels: Record<string, string> = { easy: "Easy", medium: "Medium", hard: "Hard", extreme: "Extreme", insane: "Insane" };
+  const typeName = typeNames[sample.puzzleType] ?? sample.puzzleType;
+  const diffLabel = diffLabels[sample.difficulty] ?? sample.difficulty;
+  const mins = Math.floor(sample.time / 60);
+  const secs = sample.time % 60;
+  const timeStr = `${mins}:${secs.toString().padStart(2, "0")}`;
+
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, CP_BG_TOP); bg.addColorStop(1, CP_BG_BOT);
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+  const glow = ctx.createRadialGradient(W/2, H*0.42, 0, W/2, H*0.42, 420);
+  glow.addColorStop(0, "rgba(249,115,22,0.06)"); glow.addColorStop(1, "transparent");
+  ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+
+  const tg = ctx.createLinearGradient(W*0.2, 0, W*0.8, 0);
+  tg.addColorStop(0, "transparent"); tg.addColorStop(0.5, CP_ORANGE); tg.addColorStop(1, "transparent");
+  ctx.fillStyle = tg; ctx.fillRect(0, 0, W, 3);
+
+  ctx.textAlign = "center";
+  ctx.font = `600 24px ${CP_FONT}`; ctx.fillStyle = CP_DIM;
+  ctx.fillText("PUZZLECRAFT", W/2, 80);
+
+  const pill = sample.isDaily ? `DAILY  ·  ${typeName.toUpperCase()}  ·  ${diffLabel.toUpperCase()}` : `${typeName.toUpperCase()}  ·  ${diffLabel.toUpperCase()}`;
+  ctx.font = `600 18px ${CP_FONT}`;
+  const pw = ctx.measureText(pill).width + 48;
+  ctx.fillStyle = "rgba(249,115,22,0.12)";
+  cpRoundedRect(ctx, (W-pw)/2, 110, pw, 40, 20); ctx.fill();
+  ctx.fillStyle = CP_ORANGE; ctx.fillText(pill, W/2, 136);
+
+  if (sample.isNewBest) { ctx.font = `700 20px ${CP_FONT}`; ctx.fillStyle = "#ffb347"; ctx.fillText("🏆  NEW PERSONAL BEST", W/2, 210); }
+
+  const heroY = sample.isNewBest ? 400 : 380;
+  ctx.font = `700 180px ${CP_MONO}`; ctx.fillStyle = CP_TEXT; ctx.fillText(timeStr, W/2, heroY);
+  ctx.font = `500 22px ${CP_FONT}`; ctx.fillStyle = CP_DIM; ctx.fillText("SOLVE TIME", W/2, heroY + 50);
+
+  if (sample.streakDays > 0) {
+    const sy = heroY + 100;
+    ctx.fillStyle = "rgba(249,115,22,0.12)";
+    cpRoundedRect(ctx, (W-260)/2, sy, 260, 80, 16); ctx.fill();
+    ctx.font = `700 36px ${CP_FONT}`; ctx.fillStyle = CP_ORANGE; ctx.fillText(`🔥 ${sample.streakDays}`, W/2, sy+38);
+    ctx.font = `500 16px ${CP_FONT}`; ctx.fillStyle = CP_SEC; ctx.fillText("DAY STREAK", W/2, sy+64);
+  }
+
+  const dg = ctx.createLinearGradient(W*0.25, 0, W*0.75, 0);
+  dg.addColorStop(0, "transparent"); dg.addColorStop(0.5, "rgba(249,115,22,0.15)"); dg.addColorStop(1, "transparent");
+  ctx.fillStyle = dg; ctx.fillRect(W*0.15, H-160, W*0.7, 1);
+
+  ctx.font = `500 22px ${CP_FONT}`; ctx.fillStyle = CP_SEC; ctx.fillText("Can you beat this?", W/2, H-100);
+  ctx.font = `400 18px ${CP_FONT}`; ctx.fillStyle = CP_DIM; ctx.fillText("puzzlecrft.com", W/2, H-65);
+
+  const bg2 = ctx.createLinearGradient(W*0.2, 0, W*0.8, 0);
+  bg2.addColorStop(0, "transparent"); bg2.addColorStop(0.5, "rgba(249,115,22,0.4)"); bg2.addColorStop(1, "transparent");
+  ctx.fillStyle = bg2; ctx.fillRect(0, H-3, W, 3);
+}
+
+function renderMilestonePreview(canvas: HTMLCanvasElement, m: typeof MILESTONE_CARD_SAMPLES[0], streakDays: number) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  const W = CARD_PREVIEW_W, H = CARD_PREVIEW_H;
+  canvas.width = W; canvas.height = H;
+
+  const accent = m.rarity === "legendary" ? "#c084fc" : m.rarity === "rare" ? "#fb923c" : CP_ORANGE;
+  const emoji = MILESTONE_ICON_EMOJI[m.icon as keyof typeof MILESTONE_ICON_EMOJI] ?? "🏆";
+  const rarityText = m.rarity === "legendary" ? "LEGENDARY" : m.rarity === "rare" ? "RARE" : "ACHIEVEMENT";
+
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, CP_BG_TOP); bg.addColorStop(1, CP_BG_BOT);
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+  const glow = ctx.createRadialGradient(W/2, H*0.38, 0, W/2, H*0.38, 380);
+  glow.addColorStop(0, accent + "0D"); glow.addColorStop(1, "transparent");
+  ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+
+  const tg = ctx.createLinearGradient(W*0.2, 0, W*0.8, 0);
+  tg.addColorStop(0, "transparent"); tg.addColorStop(0.5, accent); tg.addColorStop(1, "transparent");
+  ctx.fillStyle = tg; ctx.fillRect(0, 0, W, 3);
+
+  ctx.textAlign = "center";
+  ctx.font = `600 24px ${CP_FONT}`; ctx.fillStyle = CP_DIM; ctx.fillText("PUZZLECRAFT", W/2, 80);
+
+  ctx.font = `700 18px ${CP_FONT}`;
+  const pw = ctx.measureText(rarityText).width + 48;
+  ctx.fillStyle = accent + "1A";
+  cpRoundedRect(ctx, (W-pw)/2, 110, pw, 38, 19); ctx.fill();
+  ctx.fillStyle = accent; ctx.fillText(rarityText, W/2, 135);
+
+  ctx.font = "180px serif"; ctx.fillStyle = CP_TEXT; ctx.fillText(emoji, W/2, 370);
+  ctx.font = `700 64px ${CP_FONT}`; ctx.fillStyle = CP_TEXT; ctx.fillText(m.label, W/2, 490);
+  ctx.font = `400 26px ${CP_FONT}`; ctx.fillStyle = CP_SEC; ctx.fillText(m.description, W/2, 550);
+
+  if (streakDays > 0) {
+    ctx.fillStyle = "rgba(249,115,22,0.12)";
+    cpRoundedRect(ctx, (W-240)/2, 700, 240, 76, 16); ctx.fill();
+    ctx.font = `700 34px ${CP_FONT}`; ctx.fillStyle = CP_ORANGE; ctx.fillText(`🔥 ${streakDays}`, W/2, 736);
+    ctx.font = `500 16px ${CP_FONT}`; ctx.fillStyle = CP_SEC; ctx.fillText("DAY STREAK", W/2, 762);
+  }
+
+  const dg = ctx.createLinearGradient(W*0.25, 0, W*0.75, 0);
+  dg.addColorStop(0, "transparent"); dg.addColorStop(0.5, accent + "30"); dg.addColorStop(1, "transparent");
+  ctx.fillStyle = dg; ctx.fillRect(W*0.15, H-140, W*0.7, 1);
+
+  ctx.font = `400 20px ${CP_FONT}`; ctx.fillStyle = CP_DIM; ctx.fillText("puzzlecrft.com", W/2, H-60);
+
+  const bg2 = ctx.createLinearGradient(W*0.2, 0, W*0.8, 0);
+  bg2.addColorStop(0, "transparent"); bg2.addColorStop(0.5, accent + "66"); bg2.addColorStop(1, "transparent");
+  ctx.fillStyle = bg2; ctx.fillRect(0, H-3, W, 3);
+}
+
+function ShareCardCanvas({ render }: { render: (canvas: HTMLCanvasElement) => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    if (canvasRef.current) render(canvasRef.current);
+  }, [render]);
+  return (
+    <canvas
+      ref={canvasRef}
+      className="w-full max-w-[280px] rounded-xl border border-border/20 shadow-lg"
+      style={{ aspectRatio: "1/1" }}
+    />
+  );
+}
+
+function ShareCardPreviews() {
+  return (
+    <div className="space-y-8">
+      <section className="space-y-3 rounded-xl border border-border/30 p-4">
+        <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Clock size={14} /> Solve Share Cards
+        </h2>
+        <p className="text-xs text-muted-foreground">
+          Generated as 1080×1080 PNGs — shared via iOS share sheet or downloaded.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {SHARE_CARD_SAMPLES.map((sample) => (
+            <div key={sample.label} className="space-y-2">
+              <ShareCardCanvas render={(c) => renderSolvePreview(c, sample)} />
+              <p className="text-xs font-medium text-foreground">{sample.label}</p>
+              <p className="text-[10px] text-muted-foreground">{sample.puzzleType} · {sample.difficulty} · {Math.floor(sample.time/60)}:{(sample.time%60).toString().padStart(2,"0")}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3 rounded-xl border border-border/30 p-4">
+        <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Trophy size={14} /> Milestone Share Cards
+        </h2>
+        <p className="text-xs text-muted-foreground">
+          Achievement cards with rarity-based accent colors — common (orange), rare (amber), legendary (purple).
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {MILESTONE_CARD_SAMPLES.map((m) => (
+            <div key={m.label} className="space-y-2">
+              <ShareCardCanvas render={(c) => renderMilestonePreview(c, m, 7)} />
+              <p className="text-xs font-medium text-foreground">{m.label}</p>
+              <p className="text-[10px] text-muted-foreground capitalize">{m.rarity ?? "common"} rarity</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <ShareMessagePreviews />
+    </div>
+  );
+}
+
 export default function AdminPreview() {
   // ── Core previews state ──
   const [showCompletion, setShowCompletion] = useState(false);
@@ -536,6 +745,7 @@ export default function AdminPreview() {
             <TabsTrigger value="notifications" className="text-xs flex-1 min-w-0">Notifications</TabsTrigger>
             <TabsTrigger value="craft" className="text-xs flex-1 min-w-0">Craft</TabsTrigger>
             <TabsTrigger value="patterns" className="text-xs flex-1 min-w-0">Patterns</TabsTrigger>
+            <TabsTrigger value="sharecards" className="text-xs flex-1 min-w-0">Share Cards</TabsTrigger>
           </TabsList>
 
           {/* ══════════════════════════════════════════════════════════════ */}
@@ -1298,6 +1508,13 @@ export default function AdminPreview() {
           {/* ══════════════════════════════════════════════════════════════ */}
           <TabsContent value="patterns" className="space-y-6 mt-4">
             <NonogramPreview />
+          </TabsContent>
+
+          {/* ══════════════════════════════════════════════════════════════ */}
+          {/* TAB: SHARE CARDS                                               */}
+          {/* ══════════════════════════════════════════════════════════════ */}
+          <TabsContent value="sharecards" className="space-y-6 mt-4">
+            <ShareCardPreviews />
           </TabsContent>
         </Tabs>
       </div>
