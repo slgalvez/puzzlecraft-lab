@@ -1,5 +1,6 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { buildCraftShareText, buildSolveResultShareText } from "@/lib/craftShare";
+import { MILESTONE_ICON_EMOJI } from "@/lib/milestones";
 import Layout from "@/components/layout/Layout";
 import CompletionPanel from "@/components/puzzles/CompletionPanel";
 import MilestoneModal, { type MilestoneToShow } from "@/components/puzzles/MilestoneModal";
@@ -536,6 +537,7 @@ export default function AdminPreview() {
             <TabsTrigger value="notifications" className="text-xs flex-1 min-w-0">Notifications</TabsTrigger>
             <TabsTrigger value="craft" className="text-xs flex-1 min-w-0">Craft</TabsTrigger>
             <TabsTrigger value="patterns" className="text-xs flex-1 min-w-0">Patterns</TabsTrigger>
+            <TabsTrigger value="sharecards" className="text-xs flex-1 min-w-0">Share Cards</TabsTrigger>
           </TabsList>
 
           {/* ══════════════════════════════════════════════════════════════ */}
