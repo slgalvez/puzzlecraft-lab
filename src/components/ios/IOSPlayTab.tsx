@@ -1,8 +1,37 @@
+/**
+ * IOSPlayTab.tsx  ← FULL REPLACEMENT
+ * src/components/ios/IOSPlayTab.tsx
+ *
+ * STRUCTURAL REDESIGN — not a style tweak.
+ *
+ * NEW HIERARCHY:
+ *   1. Header (minimal — title + streak pill)
+ *   2. Resume card (conditional, compact)
+ *   3. Daily Challenge HERO (dominant, clear CTA)
+ *   4. Surprise Me (secondary — smaller, no giant shadow)
+ *   5. Weekly Pack (premium, clean)
+ *   6. Favourites grid (2 cards) OR beginner picks (new users)
+ *   7. All puzzles (clean 2-col grid)
+ *   8. Stats link (single row, not a full card)
+ *   9. Customize (utility, dashed border)
+ *
+ * REMOVED FROM MAIN SCROLL:
+ *   - DailyLeaderboard       (adds noise, not a play action)
+ *   - StreakShieldBanner      (useful but clutters the flow)
+ *   - FriendActivityFeed      (lowest priority content)
+ *   - Rating/tier card        (moved to stats link row)
+ *   - Stats bar (3 numbers)   (collapsed to single "Full stats →" link)
+ *
+ * All removed components are preserved in code — just not rendered here.
+ * They can be surfaced in a dedicated Stats tab.
+ */
+
 import { useState, useMemo, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { InsightsBanner } from "@/components/ios/InsightsBanner";
-import { Dices, SlidersHorizontal, Flame, Trophy, Zap, ChevronRight, Clock, Play } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  Dices, SlidersHorizontal, Flame, Trophy,
+  ChevronRight, Clock, Play, CheckCircle2, ArrowRight,
+} from "lucide-react";
 import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
 import IOSCustomizeSheet from "./IOSCustomizeSheet";
@@ -16,21 +45,28 @@ import { computePlayerRating, getSkillTier, getTierColor } from "@/lib/solveScor
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
 import { setBackDestination } from "@/hooks/useBackDestination";
-import { StreakShieldBanner } from "@/components/ios/StreakShieldBanner";
-import { FriendActivityFeed } from "@/components/ios/FriendActivityFeed";
-import { DailyLeaderboard } from "@/components/ios/DailyLeaderboard";
 import { WeeklyPackCard } from "@/components/ios/WeeklyPackCard";
+
+// ── Constants ─────────────────────────────────────────────────────────────
 
 const categories = Object.entries(CATEGORY_INFO) as [PuzzleCategory, (typeof CATEGORY_INFO)[PuzzleCategory]][];
 const ALL_PUZZLE_TYPES = categories.map(([type]) => type);
-
-/** Puzzle types shown first to new users — most approachable */
 const BEGINNER_FEATURED: PuzzleCategory[] = ["crossword", "word-search", "cryptogram"];
 
-/** Type labels for display */
 const TYPE_LABELS: Record<PuzzleCategory, string> = Object.fromEntries(
   categories.map(([type, info]) => [type, info.name])
 ) as Record<PuzzleCategory, string>;
+
+const TYPE_SUBTITLES: Record<PuzzleCategory, string> = {
+  crossword:    "Clue-based word grid",
+  "word-fill":  "Place words into the pattern",
+  "number-fill":"Fit numbers into the grid",
+  sudoku:       "Logic-based number grid",
+  "word-search":"Find hidden words",
+  kakuro:       "Number crossword with sums",
+  nonogram:     "Reveal a picture with clues",
+  cryptogram:   "Decode the secret message",
+};
 
 const DAILY_TAGLINES = [
   "Can you solve it without hints?",
@@ -42,26 +78,14 @@ const DAILY_TAGLINES = [
   "Ready for a challenge?",
 ];
 
-const TYPE_SUBTITLES: Record<PuzzleCategory, string> = {
-  crossword: "Classic clue-based word grid",
-  "word-fill": "Place words into the pattern",
-  "number-fill": "Fit numbers into the grid",
-  sudoku: "Fill the 9×9 grid with logic",
-  "word-search": "Find hidden words",
-  kakuro: "Number crossword with sums",
-  nonogram: "Reveal a picture with clues",
-  cryptogram: "Decode the secret message",
-};
-
 function getDailyTagline(dateStr: string): string {
   let hash = 0;
-  for (let i = 0; i < dateStr.length; i++) {
-    hash = (hash * 31 + dateStr.charCodeAt(i)) | 0;
-  }
+  for (let i = 0; i < dateStr.length; i++) hash = (hash * 31 + dateStr.charCodeAt(i)) | 0;
   return DAILY_TAGLINES[Math.abs(hash) % DAILY_TAGLINES.length];
 }
 
-// Find any in-progress puzzle saved in localStorage
+// ── Helpers ───────────────────────────────────────────────────────────────
+
 function findInProgressPuzzle(): { key: string; type: PuzzleCategory; elapsed: number } | null {
   try {
     const prefix = "puzzlecraft-progress-";
@@ -78,24 +102,15 @@ function findInProgressPuzzle(): { key: string; type: PuzzleCategory; elapsed: n
       if (!CATEGORY_INFO[typePart]) continue;
       return { key: puzzleKey, type: typePart, elapsed: data.elapsed };
     }
-  } catch {
-    // ignore
-  }
+  } catch {}
   return null;
 }
 
-function getBestForType(type: PuzzleCategory, stats: ReturnType<typeof getProgressStats>): number | null {
-  return stats.byCategory[type]?.bestTime ?? null;
-}
-
 function getBestTimeForType(type: PuzzleCategory): number | null {
-  try {
-    const stats = getProgressStats();
-    return stats.byCategory[type]?.bestTime ?? null;
-  } catch { return null; }
+  try { return getProgressStats().byCategory[type]?.bestTime ?? null; }
+  catch { return null; }
 }
 
-/** Returns puzzle types sorted by how many times this user has played them */
 function getRankedTypes(allTypes: PuzzleCategory[]): {
   ranked: PuzzleCategory[];
   topTwo: PuzzleCategory[];
@@ -103,16 +118,10 @@ function getRankedTypes(allTypes: PuzzleCategory[]): {
 } {
   try {
     const records = getSolveRecords();
-    if (records.length < 5) {
-      return { ranked: allTypes, topTwo: [], isReturningUser: false };
-    }
+    if (records.length < 5) return { ranked: allTypes, topTwo: [], isReturningUser: false };
     const counts: Record<string, number> = {};
-    for (const r of records) {
-      counts[r.puzzleType] = (counts[r.puzzleType] ?? 0) + 1;
-    }
-    const sorted = [...allTypes].sort(
-      (a, b) => (counts[b] ?? 0) - (counts[a] ?? 0)
-    );
+    for (const r of records) counts[r.puzzleType] = (counts[r.puzzleType] ?? 0) + 1;
+    const sorted = [...allTypes].sort((a, b) => (counts[b] ?? 0) - (counts[a] ?? 0));
     const topTwo = sorted.filter((t) => (counts[t] ?? 0) > 0).slice(0, 2);
     return { ranked: sorted, topTwo, isReturningUser: true };
   } catch {
@@ -120,41 +129,37 @@ function getRankedTypes(allTypes: PuzzleCategory[]): {
   }
 }
 
+// ── Component ─────────────────────────────────────────────────────────────
+
 const IOSPlayTab = () => {
   const navigate = useNavigate();
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [pickerType, setPickerType] = useState<PuzzleCategory | null>(null);
   const [now, setNow] = useState(Date.now());
 
-  // Refresh countdown every second
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  const challenge = useMemo(() => getTodaysChallenge(), []);
+  const challenge       = useMemo(() => getTodaysChallenge(), []);
   const dailyCompletion = useMemo(() => getDailyCompletion(challenge.dateStr), [challenge.dateStr]);
-  const streak = useMemo(() => getDailyStreak(), []);
-  const tagline = useMemo(() => getDailyTagline(challenge.dateStr), [challenge.dateStr]);
-  const stats = useMemo(() => getProgressStats(), []);
-  const inProgress = useMemo(() => findInProgressPuzzle(), []);
+  const streak          = useMemo(() => getDailyStreak(), []);
+  const tagline         = useMemo(() => getDailyTagline(challenge.dateStr), [challenge.dateStr]);
+  const stats           = useMemo(() => getProgressStats(), []);
+  const inProgress      = useMemo(() => findInProgressPuzzle(), []);
 
-  // Ranked types for personalized grid
   const { ranked: rankedTypes, topTwo, isReturningUser } = useMemo(
-    () => getRankedTypes(ALL_PUZZLE_TYPES),
-    []
+    () => getRankedTypes(ALL_PUZZLE_TYPES), []
   );
 
-  // Rating / tier — only show after 5+ solves (matches Stats.tsx threshold)
   const ratingInfo = useMemo(() => {
     const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
     if (recs.length < 5) return null;
     const rating = computePlayerRating(recs);
-    const tier = getSkillTier(rating);
-    return { rating, tier };
+    return { rating, tier: getSkillTier(rating) };
   }, []);
 
-  // Daily countdown to midnight
   const countdownStr = useMemo(() => {
     const midnight = new Date();
     midnight.setHours(24, 0, 0, 0);
@@ -166,6 +171,9 @@ const IOSPlayTab = () => {
     if (m > 0) return `${m}m ${s}s`;
     return `${s}s`;
   }, [now]);
+
+  const streakAtRisk  = streak.current > 0 && !dailyCompletion;
+  const hasPlayedToday = !!dailyCompletion;
 
   const handleSurprise = () => {
     hapticTap();
@@ -182,306 +190,275 @@ const IOSPlayTab = () => {
     if (!inProgress) return;
     hapticTap();
     setBackDestination("/", "Play");
-    const key = inProgress.key;
-    if (key.startsWith("daily-")) {
-      navigate("/daily");
-    } else {
-      navigate(`/quick-play/${inProgress.type}`);
-    }
+    if (inProgress.key.startsWith("daily-")) navigate("/daily");
+    else navigate(`/quick-play/${inProgress.type}`);
   };
 
-  const streakAtRisk = streak.current > 0 && !dailyCompletion;
-  const hasPlayedToday = !!dailyCompletion;
-
   return (
-    <div className="space-y-4 px-5 pt-4">
-      {/* Header row */}
+    <div className="space-y-5 px-5 pt-4 pb-8">
+
+      {/* ── 1. HEADER ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <h1 className="font-display text-lg font-bold text-foreground">Puzzlecraft</h1>
-        {/* Streak pill — matches primary/10 pattern used throughout codebase */}
         {streak.current > 0 && (
-          <div
-            className={cn(
-              "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold",
-              streakAtRisk ? "bg-destructive/10 text-destructive animate-pulse" : "bg-primary/10 text-primary",
-            )}
-          >
+          <div className={cn(
+            "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold",
+            streakAtRisk
+              ? "bg-destructive/10 text-destructive animate-pulse"
+              : "bg-primary/10 text-primary"
+          )}>
             <Flame size={12} />
             {streak.current} day{streak.current !== 1 ? "s" : ""}
-            {streakAtRisk && " · play today!"}
+            {streakAtRisk && " · play!"}
           </div>
         )}
       </div>
 
-      {/* Resume card — only shown when there's a recent in-progress puzzle */}
+      {/* ── 2. RESUME (conditional, compact) ──────────────────────────── */}
       {inProgress && (
         <button
           onClick={handleResume}
-          className="w-full flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3.5 transition-all active:scale-[0.97] active:bg-primary/10"
+          className="w-full flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 transition-all active:scale-[0.97]"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-              <Play size={16} className="translate-x-0.5" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+              <Play size={14} className="text-primary translate-x-0.5" />
             </div>
             <div className="text-left min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">Resume</p>
-              <p className="text-sm font-bold text-foreground truncate mt-0.5">
+              <p className="text-sm font-bold text-foreground truncate">
                 {CATEGORY_INFO[inProgress.type]?.name}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock size={11} />
-              {formatTime(inProgress.elapsed)}
-            </span>
-            <ChevronRight size={15} className="text-muted-foreground" />
+          <div className="flex items-center gap-1.5 shrink-0 text-xs text-muted-foreground">
+            <Clock size={11} />
+            {formatTime(inProgress.elapsed)}
+            <ChevronRight size={13} />
           </div>
         </button>
       )}
 
-      {/* Surprise Me — primary CTA, matches original shadow pattern */}
-      <Button
-        onClick={handleSurprise}
-        size="lg"
-        className="w-full text-base font-semibold gap-2 h-12 rounded-xl shadow-[0_0_16px_hsl(var(--primary)/0.35)] active:scale-95 transition-transform duration-150"
-      >
-        <Dices size={18} className="animate-pulse" />
-        Surprise Me
-      </Button>
-
-      {/* Daily Challenge — elevated card, matches original border pattern */}
+      {/* ── 3. DAILY CHALLENGE HERO ────────────────────────────────────── */}
+      {/*
+        This is the DOMINANT element. Larger padding, stronger border,
+        more visual weight than everything else on the screen.
+        Clear CTA, minimal text clutter.
+      */}
       <Link
         to="/daily"
         onClick={() => hapticTap()}
         className={cn(
-          "w-full rounded-xl border px-4 py-4 text-left transition-all active:scale-[0.97] block",
-          dailyCompletion ? "border-border bg-card" : "border-primary/20 bg-primary/5 active:bg-primary/10",
+          "w-full block rounded-2xl overflow-hidden transition-all active:scale-[0.98]",
+          dailyCompletion
+            ? "border border-border bg-card"
+            : "border-2 border-primary/30 bg-primary/5"
         )}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">Daily Challenge</p>
-              {/* Countdown — only when not yet completed */}
-              {!dailyCompletion && (
-                <span className="text-[10px] text-muted-foreground/60 tabular-nums">{countdownStr} left</span>
-              )}
-            </div>
-            <p className="text-sm font-bold text-foreground truncate">{CATEGORY_INFO[challenge.category]?.name}</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5 italic">
-              {dailyCompletion ? `Solved in ${formatTime(dailyCompletion.time)} ✓` : tagline}
+        {/* Accent stripe — only when not completed */}
+        {!dailyCompletion && (
+          <div className="h-1 bg-primary w-full" />
+        )}
+
+        <div className="px-5 py-4">
+          {/* Label row */}
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+              Daily Challenge
             </p>
+            {!dailyCompletion && (
+              <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+                {countdownStr} left
+              </span>
+            )}
           </div>
 
-          {/* Streak stats — matches Index.tsx pattern */}
-          <div className="flex gap-4 shrink-0 items-start">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-0.5 mb-0.5">
-                <Flame size={10} className="text-primary" />
-              </div>
-              <p className="font-mono text-lg font-extrabold text-foreground leading-none">{streak.current}</p>
-              <p className="text-[9px] text-muted-foreground/60 mt-0.5">streak</p>
+          {/* Puzzle type — large, dominant */}
+          <p className="text-xl font-bold text-foreground mb-0.5">
+            {CATEGORY_INFO[challenge.category]?.name}
+          </p>
+          <p className="text-xs text-muted-foreground capitalize mb-4">
+            {challenge.difficulty}
+            {dailyCompletion && (
+              <span className="ml-2 text-primary font-medium">
+                · Solved in {formatTime(dailyCompletion.time)} ✓
+              </span>
+            )}
+            {!dailyCompletion && (
+              <span className="ml-2 italic opacity-70">{tagline}</span>
+            )}
+          </p>
+
+          {/* CTA or solved state */}
+          {dailyCompletion ? (
+            <div className="flex items-center gap-2 text-sm text-primary font-medium">
+              <CheckCircle2 size={15} />
+              View your result →
             </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-0.5 mb-0.5">
-                <Trophy size={10} className="text-primary" />
+          ) : (
+            <div className="flex items-center justify-between">
+              {/* Streak mini stats */}
+              <div className="flex items-center gap-4">
+                {streak.current > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <Flame size={12} className="text-primary" />
+                    <span className="font-mono font-bold text-foreground text-sm">
+                      {streak.current}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">streak</span>
+                  </div>
+                )}
+                {streak.longest > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <Trophy size={12} className="text-primary" />
+                    <span className="font-mono font-bold text-foreground text-sm">
+                      {streak.longest}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">best</span>
+                  </div>
+                )}
               </div>
-              <p className="font-mono text-lg font-extrabold text-foreground leading-none">{streak.longest}</p>
-              <p className="text-[9px] text-muted-foreground/60 mt-0.5">best</p>
+              {/* Play button */}
+              <div className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2">
+                <span className="text-sm font-bold text-primary-foreground">Play Now</span>
+                <ArrowRight size={14} className="text-primary-foreground" />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </Link>
 
-      {/* Daily Leaderboard — top solvers today */}
-      <DailyLeaderboard hasCompletedToday={hasPlayedToday} />
+      {/* ── 4. SURPRISE ME (secondary — calm, not dominant) ────────────── */}
+      {/*
+        Previously: giant orange button with pulsing icon + shadow.
+        Now: quiet outline button. Secondary action, not competing with Daily.
+      */}
+      <button
+        onClick={handleSurprise}
+        className="w-full flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all active:scale-[0.97] active:bg-secondary/50"
+      >
+        <Dices size={15} className="text-muted-foreground" />
+        Surprise Me
+        <span className="text-[10px] text-muted-foreground/50 ml-1">random puzzle</span>
+      </button>
 
-      {/* Personal insights */}
-      <InsightsBanner />
-
-      {/* Weekly Pack */}
+      {/* ── 5. WEEKLY PACK ─────────────────────────────────────────────── */}
       <WeeklyPackCard />
 
-      {/* Streak Shield status */}
-      <StreakShieldBanner
-        streakLength={streak.current}
-        hasPlayedToday={hasPlayedToday}
-      />
+      {/* ── 6. FAVOURITES or BEGINNER PICKS ───────────────────────────── */}
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2.5">
+          {isReturningUser ? "Your favourites" : "Start here"}
+        </p>
 
-      {/* Friend activity feed */}
-      <FriendActivityFeed />
-
-
-      {ratingInfo && (
-        <button
-          onClick={() => {
-            hapticTap();
-            navigate("/stats");
-          }}
-          className="w-full flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 transition-all active:scale-[0.97] active:bg-secondary/50"
-        >
-          <div className="flex items-center gap-2.5">
-            <Zap size={14} className="text-primary shrink-0" />
-            <div className="text-left">
-              <p className={cn("text-sm font-semibold leading-tight", getTierColor(ratingInfo.tier as any))}>
-                {ratingInfo.tier}
-              </p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">{ratingInfo.rating} rating · play to climb</p>
-            </div>
-          </div>
-          <ChevronRight size={14} className="text-muted-foreground shrink-0" />
-        </button>
-      )}
-
-      {/* ── Puzzle type section ── */}
-      <div className="space-y-3">
-
-        {/* Returning users: top 2 "Your favorites" cards */}
-        {isReturningUser && topTwo.length > 0 && (
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-0.5">
-              Your favorites
-            </p>
-            <div className="flex gap-3">
-              {topTwo.map((type) => {
-                const best = getBestTimeForType(type);
-                return (
-                  <button
-                    key={type}
-                    onClick={() => handleQuickPlay(type)}
-                    className={cn(
-                      "flex-1 flex flex-col items-start gap-1.5 rounded-2xl border bg-card p-4",
-                      "transition-all duration-150 active:scale-[0.97] active:bg-secondary/50",
-                      "hover:border-primary/40 hover:shadow-sm"
-                    )}
-                  >
-                    <PuzzleIcon type={type} size={28} />
-                    <div>
-                      <p className="text-sm font-semibold text-foreground leading-tight">
-                        {TYPE_LABELS[type]}
-                      </p>
-                      {best ? (
-                        <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
-                          Best: {formatTime(best)}
-                        </p>
-                      ) : (
-                        <p className="text-[10px] text-muted-foreground/50 mt-0.5">Play again →</p>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* New users: 3 featured beginner types */}
-        {!isReturningUser && (
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-0.5">
-              Start here
-            </p>
-            <div className="flex gap-2">
-              {BEGINNER_FEATURED.map((type) => (
-                <button
-                  key={type}
-                  onClick={() => handleQuickPlay(type)}
-                  className={cn(
-                    "flex-1 flex flex-col items-center gap-2 rounded-2xl border bg-card py-4 px-2",
-                    "transition-all duration-150 active:scale-[0.97]",
-                    "hover:border-primary/40"
-                  )}
-                >
-                  <PuzzleIcon type={type} size={24} />
-                  <p className="text-[11px] font-medium text-foreground text-center leading-tight">
-                    {TYPE_LABELS[type]}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Full grid — all types */}
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-0.5">
-            {isReturningUser ? "All puzzles" : "All types"}
-          </p>
-          <div className="grid grid-cols-2 gap-2.5">
-            {rankedTypes.map((type) => {
+        {isReturningUser && topTwo.length > 0 ? (
+          /* Returning: top 2 most-played, with personal best */
+          <div className="flex gap-3">
+            {topTwo.map((type) => {
               const best = getBestTimeForType(type);
               return (
                 <button
                   key={type}
                   onClick={() => handleQuickPlay(type)}
-                  className={cn(
-                    "flex items-center gap-3 rounded-2xl border bg-card p-3.5",
-                    "transition-all duration-150 active:scale-[0.97] active:bg-secondary/50",
-                    "text-left"
-                  )}
+                  className="flex-1 flex flex-col items-start gap-2 rounded-2xl border bg-card p-4 transition-all active:scale-[0.97] active:bg-secondary/50"
                 >
-                  <PuzzleIcon type={type} size={22} />
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-medium text-foreground truncate">
+                  <PuzzleIcon type={type} size={26} />
+                  <div>
+                    <p className="text-sm font-semibold text-foreground leading-tight">
                       {TYPE_LABELS[type]}
                     </p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
-                      {best
-                        ? <span className="font-mono">Best: {formatTime(best)}</span>
-                        : TYPE_SUBTITLES[type]
-                      }
-                    </p>
+                    {best ? (
+                      <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
+                        Best: {formatTime(best)}
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground/50 mt-0.5">Play →</p>
+                    )}
                   </div>
                 </button>
               );
             })}
           </div>
+        ) : (
+          /* New user: 3 beginner-friendly types */
+          <div className="flex gap-2">
+            {BEGINNER_FEATURED.map((type) => (
+              <button
+                key={type}
+                onClick={() => handleQuickPlay(type)}
+                className="flex-1 flex flex-col items-center gap-2 rounded-2xl border bg-card py-4 px-2 transition-all active:scale-[0.97]"
+              >
+                <PuzzleIcon type={type} size={22} />
+                <p className="text-[11px] font-medium text-foreground text-center leading-tight">
+                  {TYPE_LABELS[type]}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── 7. ALL PUZZLES ─────────────────────────────────────────────── */}
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2.5">
+          All puzzles
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {rankedTypes.map((type) => {
+            const best = getBestTimeForType(type);
+            return (
+              <button
+                key={type}
+                onClick={() => handleQuickPlay(type)}
+                className="flex items-center gap-3 rounded-xl border bg-card p-3.5 text-left transition-all active:scale-[0.97] active:bg-secondary/40"
+              >
+                <PuzzleIcon type={type} size={20} className="shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[13px] font-medium text-foreground truncate">
+                    {TYPE_LABELS[type]}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                    {best
+                      ? <span className="font-mono">Best: {formatTime(best)}</span>
+                      : TYPE_SUBTITLES[type]
+                    }
+                  </p>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Quick stats bar — only shown once user has solved puzzles, matches Index.tsx pattern */}
+      {/* ── 8. STATS LINK (single row — not a full card) ──────────────── */}
+      {/*
+        Previously: full card with 3 stat numbers + "Full stats →" link.
+        Now: one slim row. Stats are on the Stats tab — they don't need
+        to live here too.
+      */}
       {stats.totalSolved > 0 && (
         <button
-          onClick={() => {
-            hapticTap();
-            navigate("/stats");
-          }}
-          className="w-full flex items-center justify-between rounded-xl border bg-card px-4 py-3 transition-all active:scale-[0.97]"
+          onClick={() => { hapticTap(); navigate("/stats"); }}
+          className="w-full flex items-center justify-between py-2 px-1 text-sm text-muted-foreground transition-colors active:text-foreground"
         >
-          <div className="flex gap-5">
-            <div className="text-center">
-              <p className="font-mono text-lg font-extrabold text-foreground leading-none">{stats.totalSolved}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">solved</p>
-            </div>
-            {stats.bestTime !== null && (
-              <div className="text-center">
-                <p className="font-mono text-lg font-extrabold text-foreground leading-none">
-                  {formatTime(stats.bestTime)}
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">best</p>
-              </div>
+          <span className="flex items-center gap-1.5">
+            {stats.totalSolved} puzzle{stats.totalSolved !== 1 ? "s" : ""} solved
+            {ratingInfo && (
+              <span className={cn("text-xs font-semibold", getTierColor(ratingInfo.tier as any))}>
+                · {ratingInfo.tier}
+              </span>
             )}
-            <div className="text-center">
-              <p className="font-mono text-lg font-extrabold text-foreground leading-none">
-                {stats.totalSolved > 0 ? formatTime(stats.averageTime) : "—"}
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">avg</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 text-xs font-medium text-primary">
-            Full stats <ChevronRight size={14} />
-          </div>
+          </span>
+          <span className="flex items-center gap-1 text-xs font-medium text-primary">
+            Stats <ChevronRight size={13} />
+          </span>
         </button>
       )}
 
-      {/* Customize button — matches original exactly */}
+      {/* ── 9. CUSTOMIZE ───────────────────────────────────────────────── */}
       <button
-        onClick={() => {
-          hapticTap();
-          setCustomizeOpen(true);
-        }}
-        className="w-full flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground py-2.5 rounded-xl border border-dashed transition-all duration-150 active:scale-[0.97] active:bg-secondary/50"
+        onClick={() => { hapticTap(); setCustomizeOpen(true); }}
+        className="w-full flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground py-2.5 rounded-xl border border-dashed transition-all active:scale-[0.97] active:bg-secondary/50"
       >
         <SlidersHorizontal size={14} />
         Customize
