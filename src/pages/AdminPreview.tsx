@@ -1301,6 +1301,13 @@ export default function AdminPreview() {
           <TabsContent value="patterns" className="space-y-6 mt-4">
             <NonogramPreview />
           </TabsContent>
+
+          {/* ══════════════════════════════════════════════════════════════ */}
+          {/* TAB: SHARE CARDS                                               */}
+          {/* ══════════════════════════════════════════════════════════════ */}
+          <TabsContent value="sharecards" className="space-y-6 mt-4">
+            <ShareCardPreviews />
+          </TabsContent>
         </Tabs>
       </div>
 
