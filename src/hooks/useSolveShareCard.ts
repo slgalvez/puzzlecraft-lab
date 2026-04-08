@@ -1,12 +1,11 @@
 /**
- * useSolveShareCard.ts  ← CREATE NEW FILE
+ * useSolveShareCard.ts
  * src/hooks/useSolveShareCard.ts
  *
- * Generates a 1080×540 PNG share card when a puzzle is solved.
+ * Generates a premium 1080×1080 PNG share card when a puzzle is solved.
+ * Center-weighted layout optimized for iMessage preview cropping.
  * Shares via Web Share API (→ iOS share sheet via Capacitor).
  * Falls back to text-only share if canvas/share API unavailable.
- *
- * Used inside CompletionPanel — replaces the text-only share.
  */
 
 import { useCallback, useState } from "react";
@@ -16,18 +15,26 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { hapticSuccess } from "@/lib/haptic";
 
-// ── Card dimensions ────────────────────────────────────────────────────────
+// ── Card dimensions (square for best social/iMessage preview) ──────────
 const W = 1080;
-const H = 540;
+const H = 1080;
 
-// Puzzlecraft orange (matches --primary: 32 80% 50%)
-const ORANGE = "#E07A10";
-const ORANGE_DIM = "#7a4208";
-const BG = "#0f0e0d";
-const TEXT_PRIMARY = "#f5efe8";
-const TEXT_MUTED = "#8a7a6a";
+// ── Premium palette ────────────────────────────────────────────────────
+const ORANGE       = "#F97316";
+const ORANGE_SOFT  = "rgba(249, 115, 22, 0.12)";
+const ORANGE_GLOW  = "rgba(249, 115, 22, 0.06)";
+const BG_TOP       = "#141210";
+const BG_BOTTOM    = "#0c0b09";
+const TEXT_PRIMARY  = "#f5f0e8";
+const TEXT_SECONDARY = "#a89a88";
+const TEXT_DIM      = "#6b5f52";
+const DIVIDER       = "rgba(249, 115, 22, 0.15)";
 
-// ── Canvas renderer ────────────────────────────────────────────────────────
+// ── Fonts ──────────────────────────────────────────────────────────────
+const FONT_SANS = "-apple-system, 'SF Pro Display', 'Inter', system-ui, sans-serif";
+const FONT_MONO = "'SF Mono', 'Fira Code', 'JetBrains Mono', monospace";
+
+// ── Canvas renderer ────────────────────────────────────────────────────
 
 interface CardData {
   puzzleType?: PuzzleCategory;
@@ -39,9 +46,26 @@ interface CardData {
   shareUrl?: string;
 }
 
+function drawRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number, r: number
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
 async function renderCard(data: CardData): Promise<Blob | null> {
   const canvas = document.createElement("canvas");
-  canvas.width  = W;
+  canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
@@ -52,85 +76,116 @@ async function renderCard(data: CardData): Promise<Blob | null> {
   const diffLabel = DIFFICULTY_LABELS[difficulty];
   const timeStr = formatTime(time);
 
-  // ── Background ──
-  ctx.fillStyle = BG;
+  // ── Gradient background ──
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  bgGrad.addColorStop(0, BG_TOP);
+  bgGrad.addColorStop(1, BG_BOTTOM);
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
 
-  // ── Top accent bar ──
+  // ── Subtle center radial glow ──
+  const glow = ctx.createRadialGradient(W / 2, H * 0.42, 0, W / 2, H * 0.42, 420);
+  glow.addColorStop(0, ORANGE_GLOW);
+  glow.addColorStop(1, "transparent");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+
+  // ── Top accent line ──
+  const lineGrad = ctx.createLinearGradient(W * 0.2, 0, W * 0.8, 0);
+  lineGrad.addColorStop(0, "transparent");
+  lineGrad.addColorStop(0.5, ORANGE);
+  lineGrad.addColorStop(1, "transparent");
+  ctx.fillStyle = lineGrad;
+  ctx.fillRect(0, 0, W, 3);
+
+  // ── Brand mark (top center) ──
+  ctx.textAlign = "center";
+  ctx.font = `600 24px ${FONT_SANS}`;
+  ctx.fillStyle = TEXT_DIM;
+  ctx.fillText("PUZZLECRAFT", W / 2, 80);
+
+  // ── Category pill ──
+  const pillText = isDaily
+    ? `DAILY  ·  ${typeName.toUpperCase()}  ·  ${diffLabel.toUpperCase()}`
+    : `${typeName.toUpperCase()}  ·  ${diffLabel.toUpperCase()}`;
+
+  ctx.font = `600 22px ${FONT_SANS}`;
+  const pillW = ctx.measureText(pillText).width + 48;
+  const pillX = (W - pillW) / 2;
+  const pillY = 110;
+
+  ctx.fillStyle = ORANGE_SOFT;
+  drawRoundedRect(ctx, pillX, pillY, pillW, 40, 20);
+  ctx.fill();
+
   ctx.fillStyle = ORANGE;
-  ctx.fillRect(0, 0, W, 5);
+  ctx.font = `600 18px ${FONT_SANS}`;
+  ctx.fillText(pillText, W / 2, pillY + 26);
 
-  // ── Subtle grid pattern ──
-  ctx.strokeStyle = "rgba(255,255,255,0.03)";
-  ctx.lineWidth = 1;
-  for (let x = 0; x < W; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-  for (let y = 0; y < H; y += 60) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
-
-  // ── Brand ──
-  ctx.font = "bold 28px -apple-system, 'SF Pro Display', 'DM Sans', sans-serif";
-  ctx.fillStyle = ORANGE;
-  ctx.letterSpacing = "0.15em";
-  ctx.fillText("PUZZLECRAFT", 60, 68);
-  ctx.letterSpacing = "0em";
-
-  // ── Puzzle type + difficulty badge ──
-  const badgeText = `${typeName.toUpperCase()} · ${diffLabel.toUpperCase()}${isDaily ? " · DAILY" : ""}`;
-  ctx.font = "500 22px -apple-system, 'SF Pro Display', 'DM Sans', sans-serif";
-  ctx.fillStyle = TEXT_MUTED;
-  ctx.fillText(badgeText, 60, 110);
-
-  // ── New best banner ──
+  // ── New best badge ──
   if (isNewBest) {
-    ctx.fillStyle = "rgba(255, 175, 50, 0.12)";
-    ctx.beginPath();
-    ctx.roundRect(60, 135, 320, 48, 8);
-    ctx.fill();
-    ctx.font = "bold 22px -apple-system, 'SF Pro Display', 'DM Sans', sans-serif";
-    ctx.fillStyle = "#ffaa33";
-    ctx.fillText("🏆  NEW PERSONAL BEST", 80, 165);
+    ctx.font = `700 20px ${FONT_SANS}`;
+    ctx.fillStyle = "#ffb347";
+    ctx.fillText("🏆  NEW PERSONAL BEST", W / 2, 210);
   }
 
-  // ── Big time ──
-  const timeY = isNewBest ? 295 : 270;
-  ctx.font = `bold 120px 'SF Mono', 'Fira Code', monospace`;
+  // ── Hero time (center-weighted) ──
+  const heroY = isNewBest ? 400 : 380;
+  ctx.font = `700 180px ${FONT_MONO}`;
   ctx.fillStyle = TEXT_PRIMARY;
-  ctx.fillText(timeStr, 60, timeY);
+  ctx.fillText(timeStr, W / 2, heroY);
 
-  // ── "Time" label ──
-  ctx.font = "500 22px -apple-system, 'SF Pro Display', 'DM Sans', sans-serif";
-  ctx.fillStyle = TEXT_MUTED;
-  ctx.fillText("TIME", 60, timeY + 36);
+  // ── "SOLVE TIME" label ──
+  ctx.font = `500 22px ${FONT_SANS}`;
+  ctx.fillStyle = TEXT_DIM;
+  ctx.fillText("SOLVE TIME", W / 2, heroY + 50);
 
-  // ── Streak ──
+  // ── Streak card (if applicable) ──
   if (streakDays > 0) {
-    const sx = W - 280;
-    const sy = timeY - 80;
+    const streakY = heroY + 100;
+    const streakW = 260;
+    const streakH = 80;
+    const streakX = (W - streakW) / 2;
 
-    ctx.fillStyle = "rgba(224, 122, 16, 0.15)";
-    ctx.beginPath();
-    ctx.roundRect(sx, sy, 220, 110, 12);
+    ctx.fillStyle = ORANGE_SOFT;
+    drawRoundedRect(ctx, streakX, streakY, streakW, streakH, 16);
     ctx.fill();
 
-    ctx.font = `bold 64px -apple-system, 'SF Pro Display', 'DM Sans', sans-serif`;
+    ctx.font = `700 36px ${FONT_SANS}`;
     ctx.fillStyle = ORANGE;
-    ctx.textAlign = "center";
-    ctx.fillText(String(streakDays), sx + 110, sy + 72);
+    ctx.fillText(`🔥 ${streakDays}`, W / 2, streakY + 38);
 
-    ctx.font = "500 18px -apple-system, 'SF Pro Display', 'DM Sans', sans-serif";
-    ctx.fillStyle = TEXT_MUTED;
-    ctx.fillText("DAY STREAK 🔥", sx + 110, sy + 100);
-    ctx.textAlign = "left";
+    ctx.font = `500 16px ${FONT_SANS}`;
+    ctx.fillStyle = TEXT_SECONDARY;
+    ctx.fillText("DAY STREAK", W / 2, streakY + 64);
   }
 
-  // ── CTA line ──
-  ctx.font = "500 20px -apple-system, 'SF Pro Display', 'DM Sans', sans-serif";
-  ctx.fillStyle = TEXT_MUTED;
-  const cta = shareUrl ? `Can you beat this? ${shareUrl}` : "Can you beat this? puzzlecraft.com";
-  ctx.fillText(cta, 60, H - 40);
+  // ── Divider ──
+  const divY = H - 160;
+  const divGrad = ctx.createLinearGradient(W * 0.25, 0, W * 0.75, 0);
+  divGrad.addColorStop(0, "transparent");
+  divGrad.addColorStop(0.5, DIVIDER);
+  divGrad.addColorStop(1, "transparent");
+  ctx.fillStyle = divGrad;
+  ctx.fillRect(W * 0.15, divY, W * 0.7, 1);
 
-  // ── Bottom accent bar ──
-  ctx.fillStyle = ORANGE_DIM;
-  ctx.fillRect(0, H - 5, W, 5);
+  // ── CTA ──
+  ctx.font = `500 22px ${FONT_SANS}`;
+  ctx.fillStyle = TEXT_SECONDARY;
+  ctx.fillText("Can you beat this?", W / 2, H - 100);
+
+  ctx.font = `400 18px ${FONT_SANS}`;
+  ctx.fillStyle = TEXT_DIM;
+  const urlText = shareUrl || "puzzlecrft.com";
+  ctx.fillText(urlText, W / 2, H - 65);
+
+  // ── Bottom accent ──
+  const bottomGrad = ctx.createLinearGradient(W * 0.2, 0, W * 0.8, 0);
+  bottomGrad.addColorStop(0, "transparent");
+  bottomGrad.addColorStop(0.5, "rgba(249,115,22,0.4)");
+  bottomGrad.addColorStop(1, "transparent");
+  ctx.fillStyle = bottomGrad;
+  ctx.fillRect(0, H - 3, W, 3);
 
   return new Promise((resolve) => {
     canvas.toBlob((blob) => resolve(blob), "image/png");
