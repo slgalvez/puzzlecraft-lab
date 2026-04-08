@@ -629,17 +629,44 @@ function renderMilestonePreview(canvas: HTMLCanvasElement, m: typeof MILESTONE_C
   ctx.fillStyle = bg2; ctx.fillRect(0, H-3, W, 3);
 }
 
-function ShareCardCanvas({ render }: { render: (canvas: HTMLCanvasElement) => void }) {
+function ShareCardCanvas({ render, label }: { render: (canvas: HTMLCanvasElement) => void; label?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [enlarged, setEnlarged] = useState(false);
   useEffect(() => {
     if (canvasRef.current) render(canvasRef.current);
   }, [render]);
   return (
-    <canvas
-      ref={canvasRef}
-      className="w-full max-w-[280px] rounded-xl border border-border/20 shadow-lg"
-      style={{ aspectRatio: "1/1" }}
-    />
+    <>
+      <canvas
+        ref={canvasRef}
+        onClick={() => setEnlarged(true)}
+        className="w-full max-w-[280px] rounded-xl border border-border/20 shadow-lg cursor-zoom-in hover:shadow-xl transition-shadow"
+        style={{ aspectRatio: "1/1" }}
+      />
+      {enlarged && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm cursor-zoom-out"
+          onClick={() => setEnlarged(false)}
+        >
+          <div className="relative max-w-[min(90vw,540px)] max-h-[90vh] animate-in zoom-in-90 duration-200">
+            <canvas
+              ref={(el) => { if (el) render(el); }}
+              className="w-full rounded-2xl shadow-2xl"
+              style={{ aspectRatio: "1/1" }}
+            />
+            {label && (
+              <p className="text-center text-sm text-white/70 mt-3">{label}</p>
+            )}
+            <button
+              onClick={(e) => { e.stopPropagation(); setEnlarged(false); }}
+              className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-background border border-border flex items-center justify-center shadow-lg hover:bg-muted transition-colors"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -656,7 +683,7 @@ function ShareCardPreviews() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {SHARE_CARD_SAMPLES.map((sample) => (
             <div key={sample.label} className="space-y-2">
-              <ShareCardCanvas render={(c) => renderSolvePreview(c, sample)} />
+              <ShareCardCanvas render={(c) => renderSolvePreview(c, sample)} label={`${sample.label} — ${sample.puzzleType} · ${sample.difficulty}`} />
               <p className="text-xs font-medium text-foreground">{sample.label}</p>
               <p className="text-[10px] text-muted-foreground">{sample.puzzleType} · {sample.difficulty} · {Math.floor(sample.time/60)}:{(sample.time%60).toString().padStart(2,"0")}</p>
             </div>
@@ -674,7 +701,7 @@ function ShareCardPreviews() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {MILESTONE_CARD_SAMPLES.map((m) => (
             <div key={m.label} className="space-y-2">
-              <ShareCardCanvas render={(c) => renderMilestonePreview(c, m, 7)} />
+              <ShareCardCanvas render={(c) => renderMilestonePreview(c, m, 7)} label={`${m.label} — ${m.rarity ?? "common"} rarity`} />
               <p className="text-xs font-medium text-foreground">{m.label}</p>
               <p className="text-[10px] text-muted-foreground capitalize">{m.rarity ?? "common"} rarity</p>
             </div>
