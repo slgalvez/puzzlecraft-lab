@@ -10,7 +10,7 @@
  *   3. Daily Challenge HERO (dominant, clear CTA)
  *   4. Surprise Me (secondary — smaller, no giant shadow)
  *   5. Weekly Pack (premium, clean)
- *   6. Favourites grid (2 cards) OR beginner picks (new users)
+ *   6. Favorites grid (2 cards) OR beginner picks (new users)
  *   7. All puzzles (clean 2-col grid)
  *   8. Stats link (single row, not a full card)
  *   9. Customize (utility, dashed border)
@@ -345,10 +345,10 @@ const IOSPlayTab = () => {
       {/* ── 5. WEEKLY PACK ─────────────────────────────────────────────── */}
       <WeeklyPackCard />
 
-      {/* ── 6. FAVOURITES or BEGINNER PICKS ───────────────────────────── */}
+      {/* ── 6. FAVORITES or BEGINNER PICKS ────────────────────────────── */}
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2.5">
-          {isReturningUser ? "Your favourites" : "Start here"}
+          {isReturningUser ? "Your favorites" : "Start here"}
         </p>
 
         {isReturningUser && topTwo.length > 0 ? (
