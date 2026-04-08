@@ -57,6 +57,8 @@ export default function AccountPage() {
   const [editingName,  setEditingName] = useState(false);
   const [newName,      setNewName]     = useState("");
   const [nameSaving,   setNameSaving]  = useState(false);
+  const [notifyEmail,  setNotifyEmail] = useState("");
+  const [notifySubmitted, setNotifySubmitted] = useState(false);
 
   const stats      = useMemo(() => getProgressStats(), []);
   const streak     = useMemo(() => getDailyStreak(), []);
