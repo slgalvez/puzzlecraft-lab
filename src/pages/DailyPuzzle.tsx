@@ -10,6 +10,7 @@ import {
   getDailyStreak,
 } from "@/lib/dailyChallenge";
 import { Calendar, Flame, ArrowLeft } from "lucide-react";
+import { StreakShieldBanner } from "@/components/ios/StreakShieldBanner";
 import { cn } from "@/lib/utils";
 import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
 

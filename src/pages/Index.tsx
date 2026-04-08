@@ -44,6 +44,7 @@ import {
 import Layout from "@/components/layout/Layout";
 
 import { WeeklyPackSection } from "@/components/puzzles/WeeklyPackSection";
+import { StreakShieldBanner } from "@/components/ios/StreakShieldBanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
