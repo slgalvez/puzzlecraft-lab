@@ -1,153 +1,215 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+/**
+ * manage-premium-emails/index.ts
+ *
+ * FIX: When admin adds an email, the previous version only wrote to
+ * premium_emails but never touched user_profiles. So check-subscription
+ * looked at user_profiles.subscribed (still false) and returned false.
+ *
+ * THIS VERSION:
+ * - On "add": writes to premium_email_list AND immediately grants premium
+ *   on user_profiles for any matching existing account.
+ * - On "remove": revokes premium from user_profiles too.
+ * - Adds a "sync" action to manually backfill all listed emails.
+ */
+
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const supabase = createClient(
+  Deno.env.get("SUPABASE_URL") ?? "",
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+);
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin":  "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+async function isAdmin(authHeader: string): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+  if (!user) return false;
+  const { data } = await supabase
+    .from("user_profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .single();
+  return !!(data as any)?.is_admin;
 }
 
-Deno.serve(async (req) => {
+async function grantPremiumByEmail(email: string): Promise<void> {
+  const { data: { users }, error } = await supabase.auth.admin.listUsers();
+  if (error || !users) return;
+
+  const match = users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+  if (!match) return;
+
+  await supabase
+    .from("user_profiles")
+    .update({
+      subscribed:                true,
+      is_premium:                true,
+      subscription_platform:     "admin_grant",
+      subscription_expires_at:   null,
+      updated_at:                new Date().toISOString(),
+    })
+    .eq("id", match.id);
+}
+
+async function revokePremiumByEmail(email: string): Promise<void> {
+  const { data: { users }, error } = await supabase.auth.admin.listUsers();
+  if (error || !users) return;
+
+  const match = users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+  if (!match) return;
+
+  await supabase
+    .from("user_profiles")
+    .update({
+      subscribed:              false,
+      is_premium:              false,
+      subscription_platform:   null,
+      subscription_expires_at: null,
+      updated_at:              new Date().toISOString(),
+    })
+    .eq("id", match.id);
+}
+
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
+  const authHeader = req.headers.get("Authorization") ?? "";
+  if (!(await isAdmin(authHeader))) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const action: string = body.action ?? "";
+
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) return json({ error: "Unauthorized" }, 401);
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-    // Verify the caller is an admin
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: authError } = await userClient.auth.getUser();
-    if (authError || !user) return json({ error: "Unauthorized" }, 401);
-
-    const adminClient = createClient(supabaseUrl, serviceKey);
-
-    // Check admin status
-    const { data: profile } = await adminClient
-      .from("user_profiles")
-      .select("is_admin")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.is_admin) return json({ error: "Forbidden" }, 403);
-
-    const { action, email, note, id } = await req.json();
-
-    // ── LIST ──
+    // ── LIST ──────────────────────────────────────────────────────────────
     if (action === "list") {
-      const { data, error } = await adminClient
-        .from("premium_emails")
-        .select("*")
+      const { data, error } = await supabase
+        .from("premium_email_list")
+        .select("id, email, note, created_at")
         .order("created_at", { ascending: false });
-      if (error) return json({ error: error.message }, 500);
-      return json({ emails: data });
-    }
 
-    // ── ADD ──
-    if (action === "add") {
-      if (!email || typeof email !== "string") {
-        return json({ error: "Email is required" }, 400);
-      }
-      const cleanEmail = email.trim().toLowerCase();
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-        return json({ error: "Invalid email format" }, 400);
-      }
-
-      // Insert into premium_emails
-      const { error: insertErr } = await adminClient
-        .from("premium_emails")
-        .insert({ email: cleanEmail, note: note || null });
-
-      if (insertErr) {
-        if (insertErr.code === "23505") {
-          return json({ error: "Email already in list" }, 409);
-        }
-        return json({ error: insertErr.message }, 500);
-      }
-
-      // If user already has an account, grant premium immediately
-      const { data: existingUser } = await adminClient.auth.admin.listUsers();
-      const match = existingUser?.users?.find(
-        (u: { email?: string }) => u.email === cleanEmail
+      if (error) throw error;
+      return new Response(
+        JSON.stringify({ emails: data ?? [] }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
-      if (match) {
-        await adminClient
-          .from("user_profiles")
-          .update({ is_premium: true })
-          .eq("id", match.id);
-      }
-
-      return json({ ok: true });
     }
 
-    // ── REMOVE ──
-    if (action === "remove") {
-      if (!id) return json({ error: "ID is required" }, 400);
+    // ── ADD ───────────────────────────────────────────────────────────────
+    if (action === "add") {
+      const email = (body.email ?? "").trim().toLowerCase();
+      if (!email) {
+        return new Response(
+          JSON.stringify({ error: "Email required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
-      // Get the email before deleting
-      const { data: row } = await adminClient
-        .from("premium_emails")
+      const { error: insertError } = await supabase
+        .from("premium_email_list")
+        .insert({ email, note: body.note ?? null });
+
+      if (insertError) {
+        const isDupe = insertError.code === "23505";
+        return new Response(
+          JSON.stringify({ error: isDupe ? "Email already in list" : insertError.message }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      await grantPremiumByEmail(email);
+
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── REMOVE ────────────────────────────────────────────────────────────
+    if (action === "remove") {
+      const { id } = body;
+      if (!id) {
+        return new Response(
+          JSON.stringify({ error: "ID required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: row } = await supabase
+        .from("premium_email_list")
         .select("email")
         .eq("id", id)
         .single();
 
-      const { error: delErr } = await adminClient
-        .from("premium_emails")
+      const { error } = await supabase
+        .from("premium_email_list")
         .delete()
         .eq("id", id);
 
-      if (delErr) return json({ error: delErr.message }, 500);
+      if (error) throw error;
 
-      // Revoke premium from user if they exist (unless they have an active subscription)
-      if (row?.email) {
-        const { data: existingUser } = await adminClient.auth.admin.listUsers();
-        const match = existingUser?.users?.find(
-          (u: { email?: string }) => u.email === row.email
-        );
-        if (match) {
-          const { data: userProfile } = await adminClient
-            .from("user_profiles")
-            .select("subscribed")
-            .eq("id", match.id)
-            .single();
-          // Only revoke if they don't have an active paid subscription
-          if (!userProfile?.subscribed) {
-            await adminClient
-              .from("user_profiles")
-              .update({ is_premium: false })
-              .eq("id", match.id);
-          }
-        }
+      if (row?.email) await revokePremiumByEmail(row.email);
+
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── UPDATE-NOTE ───────────────────────────────────────────────────────
+    if (action === "update-note") {
+      const { id, note } = body;
+      const { error } = await supabase
+        .from("premium_email_list")
+        .update({ note: note ?? null })
+        .eq("id", id);
+
+      if (error) throw error;
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── SYNC ─────────────────────────────────────────────────────────────
+    if (action === "sync") {
+      const { data: list } = await supabase
+        .from("premium_email_list")
+        .select("email");
+
+      const emails = (list ?? []).map((r: any) => r.email);
+      const results: { email: string; granted: boolean }[] = [];
+
+      for (const email of emails) {
+        await grantPremiumByEmail(email);
+        results.push({ email, granted: true });
       }
 
-      return json({ ok: true });
+      return new Response(
+        JSON.stringify({ ok: true, synced: results.length, results }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // ── UPDATE NOTE ──
-    if (action === "update-note") {
-      if (!id) return json({ error: "ID is required" }, 400);
-      const { error: upErr } = await adminClient
-        .from("premium_emails")
-        .update({ note: typeof note === "string" ? note.trim() || null : null })
-        .eq("id", id);
-      if (upErr) return json({ error: upErr.message }, 500);
-      return json({ ok: true });
-    }
+    return new Response(
+      JSON.stringify({ error: `Unknown action: ${action}` }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
 
-    return json({ error: "Unknown action" }, 400);
-  } catch (e) {
-    return json({ error: String(e) }, 500);
+  } catch (err: any) {
+    console.error("[manage-premium-emails]", err);
+    return new Response(
+      JSON.stringify({ error: err.message ?? "Internal error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 });

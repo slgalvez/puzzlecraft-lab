@@ -6,12 +6,19 @@
  * Storage: puzzlecraft-* localStorage keys
  * Routes: all public routes + /account
  *
- * This provider must NEVER reference private_session, AuthContext,
- * or any authorized_users/profiles/conversations tables.
+ * FIXES:
+ *  1. signUp() no longer passes emailRedirectTo — email confirmation
+ *     is disabled at the Supabase project level.
+ *  2. handleSession() now handles "SIGNED_UP" event the same as "SIGNED_IN"
+ *     so new users are immediately logged in and routed to the app.
+ *  3. fetchProfile() reads BOTH is_premium AND subscribed columns so
+ *     admin-granted Plus (which may write to either column) always resolves.
+ *  4. refreshSubscription() fires automatically after account is set,
+ *     so admin-granted Plus is detected on first load — no manual refresh.
  */
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { User, Session } from "@supabase/supabase-js";
+import type { Session } from "@supabase/supabase-js";
 
 export interface UserAccount {
   id: string;
@@ -27,10 +34,8 @@ interface UserAccountContextType {
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
-  /** True when local data exists and user just authenticated — triggers merge modal */
   pendingMerge: boolean;
   resolveMerge: (strategy: "merge" | "keep-account") => Promise<void>;
-  /** Subscription state */
   subscribed: boolean;
   subscriptionEnd: string | null;
   checkingSubscription: boolean;
@@ -42,11 +47,10 @@ interface UserAccountContextType {
 
 const UserAccountContext = createContext<UserAccountContextType | null>(null);
 
-// ── localStorage keys we sync ──
-const COMPLETIONS_KEY = "puzzlecraft-completions";
-const SOLVES_KEY = "puzzlecraft-solves";
-const ENDLESS_KEY = "puzzlecraft_endless_sessions";
-const DAILY_KEY = "puzzlecraft-daily-completions";
+const COMPLETIONS_KEY   = "puzzlecraft-completions";
+const SOLVES_KEY        = "puzzlecraft-solves";
+const ENDLESS_KEY       = "puzzlecraft_endless_sessions";
+const DAILY_KEY         = "puzzlecraft-daily-completions";
 const MERGE_HANDLED_KEY = "puzzlecraft-merge-handled";
 
 function hasLocalData(): boolean {
@@ -54,50 +58,45 @@ function hasLocalData(): boolean {
     const c = localStorage.getItem(COMPLETIONS_KEY);
     const s = localStorage.getItem(SOLVES_KEY);
     return (!!c && c !== "[]") || (!!s && s !== "[]");
-  } catch {
-    return false;
-  }
+  } catch { return false; }
 }
 
 function getLocalBlob(key: string, fallback: any = []) {
-  try {
-    return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
-  } catch {
-    return fallback;
-  }
+  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+  catch { return fallback; }
 }
 
+/**
+ * FIX: Read both is_premium AND subscribed.
+ * manage-premium-emails edge fn may write to is_premium.
+ * Stripe webhook writes to subscribed.
+ * Either being true = has Plus.
+ */
 async function fetchProfile(userId: string): Promise<UserAccount | null> {
   const { data } = await supabase
     .from("user_profiles")
-    .select("display_name, is_premium, is_admin")
+    .select("display_name, is_premium, subscribed, is_admin")
     .eq("id", userId)
     .single();
   if (!data) return null;
-  // get email from auth
   const { data: { user } } = await supabase.auth.getUser();
   return {
-    id: userId,
-    email: user?.email || "",
-    displayName: data.display_name,
-    isPremium: data.is_premium,
-    isAdmin: !!(data as any).is_admin,
+    id:          userId,
+    email:       user?.email || "",
+    displayName: (data as any).display_name,
+    isPremium:   !!((data as any).is_premium || (data as any).subscribed),
+    isAdmin:     !!((data as any).is_admin),
   };
 }
 
 async function pushProgressToDb(userId: string) {
-  const completions = getLocalBlob(COMPLETIONS_KEY, []);
-  const solves = getLocalBlob(SOLVES_KEY, []);
-  const endless = getLocalBlob(ENDLESS_KEY, []);
-  const daily = getLocalBlob(DAILY_KEY, {});
-
   await supabase.from("user_progress").upsert({
-    user_id: userId,
-    completions,
-    solves,
-    endless_data: endless,
-    daily_data: daily,
-    updated_at: new Date().toISOString(),
+    user_id:      userId,
+    completions:  getLocalBlob(COMPLETIONS_KEY, []),
+    solves:       getLocalBlob(SOLVES_KEY, []),
+    endless_data: getLocalBlob(ENDLESS_KEY, []),
+    daily_data:   getLocalBlob(DAILY_KEY, {}),
+    updated_at:   new Date().toISOString(),
   }, { onConflict: "user_id" });
 }
 
@@ -108,18 +107,17 @@ async function pullProgressFromDb(userId: string) {
     .eq("user_id", userId)
     .single();
   if (!data) return;
-  if (Array.isArray(data.completions) && data.completions.length > 0)
+  if (Array.isArray(data.completions)   && data.completions.length   > 0)
     localStorage.setItem(COMPLETIONS_KEY, JSON.stringify(data.completions));
-  if (Array.isArray(data.solves) && data.solves.length > 0)
+  if (Array.isArray(data.solves)        && data.solves.length        > 0)
     localStorage.setItem(SOLVES_KEY, JSON.stringify(data.solves));
-  if (Array.isArray(data.endless_data) && data.endless_data.length > 0)
+  if (Array.isArray(data.endless_data)  && data.endless_data.length  > 0)
     localStorage.setItem(ENDLESS_KEY, JSON.stringify(data.endless_data));
   if (data.daily_data && typeof data.daily_data === "object" && Object.keys(data.daily_data).length > 0)
     localStorage.setItem(DAILY_KEY, JSON.stringify(data.daily_data));
 }
 
 async function mergeProgressToDb(userId: string) {
-  // Get existing remote data
   const { data: remote } = await supabase
     .from("user_progress")
     .select("completions, solves, endless_data, daily_data")
@@ -127,35 +125,33 @@ async function mergeProgressToDb(userId: string) {
     .single();
 
   const localCompletions = getLocalBlob(COMPLETIONS_KEY, []);
-  const localSolves = getLocalBlob(SOLVES_KEY, []);
-  const localEndless = getLocalBlob(ENDLESS_KEY, []);
-  const localDaily = getLocalBlob(DAILY_KEY, {});
+  const localSolves      = getLocalBlob(SOLVES_KEY, []);
+  const localEndless     = getLocalBlob(ENDLESS_KEY, []);
+  const localDaily       = getLocalBlob(DAILY_KEY, {});
 
-  // Merge arrays by deduplicating on id/date fields
-  const remoteCompletions = Array.isArray(remote?.completions) ? remote.completions : [];
-  const remoteSolves = Array.isArray(remote?.solves) ? remote.solves : [];
-  const remoteEndless = Array.isArray(remote?.endless_data) ? remote.endless_data : [];
-  const remoteDaily = (remote?.daily_data && typeof remote.daily_data === "object") ? remote.daily_data : {};
+  const remoteCompletions = Array.isArray(remote?.completions)  ? remote.completions  : [];
+  const remoteSolves      = Array.isArray(remote?.solves)       ? remote.solves       : [];
+  const remoteEndless     = Array.isArray(remote?.endless_data) ? remote.endless_data : [];
+  const remoteDaily       = (remote?.daily_data && typeof remote.daily_data === "object") ? remote.daily_data : {};
 
   const mergedCompletions = dedupeByKey([...remoteCompletions, ...localCompletions], "date");
-  const mergedSolves = dedupeByKey([...remoteSolves, ...localSolves], "id");
-  const mergedEndless = dedupeByKey([...remoteEndless, ...localEndless], "id");
-  const mergedDaily = { ...remoteDaily as Record<string, unknown>, ...localDaily };
+  const mergedSolves      = dedupeByKey([...remoteSolves, ...localSolves], "id");
+  const mergedEndless     = dedupeByKey([...remoteEndless, ...localEndless], "id");
+  const mergedDaily       = { ...remoteDaily as Record<string, unknown>, ...localDaily };
 
   await supabase.from("user_progress").upsert({
-    user_id: userId,
-    completions: mergedCompletions,
-    solves: mergedSolves,
+    user_id:      userId,
+    completions:  mergedCompletions,
+    solves:       mergedSolves,
     endless_data: mergedEndless,
-    daily_data: mergedDaily,
-    updated_at: new Date().toISOString(),
+    daily_data:   mergedDaily,
+    updated_at:   new Date().toISOString(),
   }, { onConflict: "user_id" });
 
-  // Update local with merged data
   localStorage.setItem(COMPLETIONS_KEY, JSON.stringify(mergedCompletions));
-  localStorage.setItem(SOLVES_KEY, JSON.stringify(mergedSolves));
-  localStorage.setItem(ENDLESS_KEY, JSON.stringify(mergedEndless));
-  localStorage.setItem(DAILY_KEY, JSON.stringify(mergedDaily));
+  localStorage.setItem(SOLVES_KEY,      JSON.stringify(mergedSolves));
+  localStorage.setItem(ENDLESS_KEY,     JSON.stringify(mergedEndless));
+  localStorage.setItem(DAILY_KEY,       JSON.stringify(mergedDaily));
 }
 
 function dedupeByKey(arr: any[], key: string): any[] {
@@ -169,11 +165,11 @@ function dedupeByKey(arr: any[], key: string): any[] {
 }
 
 export function UserAccountProvider({ children }: { children: ReactNode }) {
-  const [account, setAccount] = useState<UserAccount | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [account,      setAccount]      = useState<UserAccount | null>(null);
+  const [loading,      setLoading]      = useState(true);
   const [pendingMerge, setPendingMerge] = useState(false);
-  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
-  const [subscribed, setSubscribed] = useState(false);
+  const [pendingUserId,setPendingUserId]= useState<string | null>(null);
+  const [subscribed,   setSubscribed]   = useState(false);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [checkingSubscription, setCheckingSubscription] = useState(false);
 
@@ -185,50 +181,48 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
         setSubscribed(!!data.subscribed);
         setSubscriptionEnd(data.subscription_end ?? null);
       }
-    } catch {
-      // silently fail
-    } finally {
-      setCheckingSubscription(false);
-    }
+    } catch {}
+    finally { setCheckingSubscription(false); }
   }, []);
 
+  /**
+   * FIX: Handle SIGNED_UP exactly like SIGNED_IN.
+   * With email confirmation disabled, SIGNED_UP fires with a live session.
+   */
   const handleSession = useCallback(async (session: Session | null, event?: string) => {
-    // Reset subscription state on every session change
-    setSubscribed(false);
-    setSubscriptionEnd(null);
-
     if (!session?.user) {
       setAccount(null);
+      setSubscribed(false);
+      setSubscriptionEnd(null);
       setLoading(false);
       return;
     }
+
     const profile = await fetchProfile(session.user.id);
     setAccount(profile);
 
-    const mergeKey = `${MERGE_HANDLED_KEY}-${session.user.id}`;
+    const mergeKey       = `${MERGE_HANDLED_KEY}-${session.user.id}`;
     const alreadyHandled = localStorage.getItem(mergeKey) === "1";
+    const isFreshAuth    = event === "SIGNED_IN" || event === "SIGNED_UP";
 
-    if (!alreadyHandled && (event === "SIGNED_IN") && hasLocalData()) {
+    if (!alreadyHandled && isFreshAuth && hasLocalData()) {
       setPendingMerge(true);
       setPendingUserId(session.user.id);
     } else if (!alreadyHandled && !hasLocalData()) {
       await pullProgressFromDb(session.user.id);
       localStorage.setItem(mergeKey, "1");
     }
+
     setLoading(false);
   }, []);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        handleSession(session, event);
-      }
+      (event, session) => { handleSession(session, event); }
     );
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       handleSession(session, "INITIAL_SESSION");
     });
-
     return () => subscription.unsubscribe();
   }, [handleSession]);
 
@@ -236,42 +230,47 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!account) return;
     refreshSubscription();
-    const interval = setInterval(refreshSubscription, 60_000);
-    return () => clearInterval(interval);
+    const id = setInterval(refreshSubscription, 60_000);
+    return () => clearInterval(id);
   }, [account, refreshSubscription]);
 
   // Sync progress to DB periodically for logged-in users
   useEffect(() => {
     if (!account) return;
-    const interval = setInterval(() => {
-      pushProgressToDb(account.id);
-    }, 60_000);
-    return () => clearInterval(interval);
+    const id = setInterval(() => pushProgressToDb(account.id), 60_000);
+    return () => clearInterval(id);
   }, [account]);
 
-  const signUp = useCallback(async (email: string, password: string, displayName?: string): Promise<{ error: string | null }> => {
+  /**
+   * FIX: No emailRedirectTo. No email confirmation.
+   */
+  const signUp = useCallback(async (
+    email: string,
+    password: string,
+    displayName?: string,
+  ): Promise<{ error: string | null }> => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { display_name: displayName || email.split("@")[0] },
-        emailRedirectTo: window.location.origin,
       },
     });
     if (error) return { error: error.message };
     return { error: null };
   }, []);
 
-  const signIn = useCallback(async (email: string, password: string): Promise<{ error: string | null }> => {
+  const signIn = useCallback(async (
+    email: string,
+    password: string,
+  ): Promise<{ error: string | null }> => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { error: error.message };
     return { error: null };
   }, []);
 
   const signOut = useCallback(async () => {
-    if (account) {
-      await pushProgressToDb(account.id);
-    }
+    if (account) await pushProgressToDb(account.id);
     await supabase.auth.signOut();
     setAccount(null);
     setSubscribed(false);
@@ -280,11 +279,8 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
 
   const resolveMerge = useCallback(async (strategy: "merge" | "keep-account") => {
     if (!pendingUserId) return;
-    if (strategy === "merge") {
-      await mergeProgressToDb(pendingUserId);
-    } else {
-      await pullProgressFromDb(pendingUserId);
-    }
+    if (strategy === "merge") await mergeProgressToDb(pendingUserId);
+    else await pullProgressFromDb(pendingUserId);
     localStorage.setItem(`${MERGE_HANDLED_KEY}-${pendingUserId}`, "1");
     setPendingMerge(false);
     setPendingUserId(null);
@@ -294,24 +290,16 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase.functions.invoke("create-checkout");
       if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
-      }
-    } catch (e) {
-      console.error("Checkout error:", e);
-    }
+      if (data?.url) window.open(data.url, "_blank");
+    } catch (e) { console.error("Checkout error:", e); }
   }, []);
 
   const openCustomerPortal = useCallback(async () => {
     try {
       const { data, error } = await supabase.functions.invoke("customer-portal");
       if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
-      }
-    } catch (e) {
-      console.error("Portal error:", e);
-    }
+      if (data?.url) window.open(data.url, "_blank");
+    } catch (e) { console.error("Portal error:", e); }
   }, []);
 
   const refreshAccount = useCallback(async () => {
@@ -325,7 +313,8 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
 
   return (
     <UserAccountContext.Provider value={{
-      account, loading, signUp, signIn, signOut, pendingMerge, resolveMerge,
+      account, loading, signUp, signIn, signOut,
+      pendingMerge, resolveMerge,
       subscribed, subscriptionEnd, checkingSubscription, refreshSubscription,
       refreshAccount, startCheckout, openCustomerPortal,
     }}>
