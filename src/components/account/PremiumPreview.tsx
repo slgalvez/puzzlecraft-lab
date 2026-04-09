@@ -1,7 +1,35 @@
+/**
+ * PremiumPreview.tsx  ← FULL REPLACEMENT
+ * src/components/account/PremiumPreview.tsx
+ *
+ * CHANGES FROM PREVIOUS VERSION:
+ *
+ * The previous version had convincing fake data:
+ *   - Rating "742" with "+18" delta
+ *   - "#24" leaderboard rank
+ *   - Accuracy "94%" / "97%"
+ *   - Personal bests "2:14" / "3:08" / "1:42"
+ *   - Named leaderboard entries: "PuzzleMaster", "GridNinja", "WordSmith"
+ *
+ * These looked REAL through blur-[7px] opacity-60. Users who briefly saw
+ * the non-premium view (loading flash, entitlement race) treated these as
+ * their own data.
+ *
+ * FIX: Replaced all fake-but-realistic values with clearly abstract visuals:
+ *   - Rating shows "—" not a number
+ *   - Bars/progress indicators instead of precise percentages
+ *   - Personal bests show placeholder dashes, not specific times
+ *   - Leaderboard shows abstract rows, no real-looking names or ratings
+ *   - Added explicit "Preview" badge so intent is unmistakable
+ *   - Blur increased to blur-[12px] so values genuinely cannot be read
+ *
+ * These cards remain blurred as marketing teasers. They show SHAPE, not DATA.
+ */
+
 import { Shield, Target, Trophy, TrendingUp, BarChart3 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
-/** Fake data cards shown blurred to tease Puzzlecraft+ features */
+// ── Abstract preview cards (SHAPE only — no fake personal stats) ──────────
 
 function RatingCard() {
   return (
@@ -9,19 +37,15 @@ function RatingCard() {
       <div className="flex items-center gap-2 mb-2">
         <TrendingUp size={14} className="text-primary" />
         <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Your Rank</span>
-        <span className="font-mono font-bold text-xs text-primary">#24</span>
       </div>
-      <p className="text-sm font-semibold text-emerald-500">Skilled</p>
-      <div className="flex items-baseline gap-1.5 mt-1">
-        <span className="font-mono text-2xl font-bold text-foreground">742</span>
-        <span className="text-[10px] text-muted-foreground">Rating</span>
-        <span className="text-[10px] font-semibold text-emerald-500 inline-flex items-center gap-0.5">
-          <TrendingUp size={8} />+18
-        </span>
-      </div>
+      {/* Abstract colored blocks instead of fake numbers */}
+      <div className="h-8 w-16 rounded bg-emerald-500/20 mb-2" />
+      <div className="h-5 w-24 rounded bg-muted/60 mb-3" />
       <div className="mt-2.5 max-w-40">
-        <Progress value={62} className="h-1.5" />
-        <p className="mt-1 text-[9px] text-muted-foreground">208 points to Advanced</p>
+        <div className="h-1.5 w-full rounded-full bg-primary/20 overflow-hidden">
+          <div className="h-full w-3/5 rounded-full bg-primary/40" />
+        </div>
+        <div className="mt-1 h-3 w-28 rounded bg-muted/40" />
       </div>
     </div>
   );
@@ -36,12 +60,12 @@ function AccuracyCard() {
       </div>
       <div className="grid grid-cols-2 gap-3 text-center">
         <div>
-          <p className="font-mono text-lg font-bold text-foreground">94%</p>
-          <p className="text-[9px] text-muted-foreground">Overall</p>
+          <div className="h-7 w-12 rounded bg-muted/60 mx-auto mb-1" />
+          <div className="h-2.5 w-10 rounded bg-muted/40 mx-auto" />
         </div>
         <div>
-          <p className="font-mono text-lg font-bold text-foreground">97%</p>
-          <p className="text-[9px] text-muted-foreground">Last 10</p>
+          <div className="h-7 w-12 rounded bg-muted/60 mx-auto mb-1" />
+          <div className="h-2.5 w-10 rounded bg-muted/40 mx-auto" />
         </div>
       </div>
     </div>
@@ -55,15 +79,12 @@ function PersonalBestsCard() {
         <Trophy size={14} className="text-primary" />
         <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Personal Bests</span>
       </div>
-      <div className="space-y-1.5">
-        {[
-          { label: "Crossword", time: "2:14" },
-          { label: "Sudoku", time: "3:08" },
-          { label: "Word Search", time: "1:42" },
-        ].map((r) => (
-          <div key={r.label} className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">{r.label}</span>
-            <span className="font-mono font-semibold text-foreground">{r.time}</span>
+      {/* Abstract rows — no fake times */}
+      <div className="space-y-2">
+        {[80, 60, 72].map((w, i) => (
+          <div key={i} className="flex items-center justify-between gap-2">
+            <div className={`h-2.5 rounded bg-muted/50`} style={{ width: `${w}%` }} />
+            <div className="h-2.5 w-10 rounded bg-primary/20 shrink-0" />
           </div>
         ))}
       </div>
@@ -78,15 +99,13 @@ function LeaderboardMiniCard() {
         <Shield size={14} className="text-primary" />
         <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Leaderboard</span>
       </div>
-      <div className="space-y-1">
-        {[
-          { rank: 1, name: "PuzzleMaster", rating: 1350 },
-          { rank: 2, name: "GridNinja", rating: 1180 },
-          { rank: 3, name: "WordSmith", rating: 1020 },
-        ].map((e) => (
-          <div key={e.rank} className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">#{e.rank} {e.name}</span>
-            <span className="font-mono font-semibold text-foreground">{e.rating}</span>
+      {/* Abstract rows — no fake names or ratings */}
+      <div className="space-y-2">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-2">
+            <div className="h-2.5 w-4 rounded bg-muted/60 shrink-0" />
+            <div className="h-2.5 flex-1 rounded bg-muted/40" />
+            <div className="h-2.5 w-8 rounded bg-primary/20 shrink-0" />
           </div>
         ))}
       </div>
@@ -101,11 +120,11 @@ function MilestonesCard() {
         <BarChart3 size={14} className="text-primary" />
         <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Insights</span>
       </div>
-      <div className="space-y-1.5">
-        {["Accuracy trend", "Speed analysis", "Strengths"].map((m) => (
-          <div key={m} className="flex items-center gap-2 text-xs text-muted-foreground">
-            <div className="w-3 h-3 rounded-full bg-primary/30" />
-            {m}
+      <div className="space-y-2">
+        {[85, 60, 45].map((w, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-primary/30 shrink-0" />
+            <div className="h-2.5 rounded bg-muted/40" style={{ width: `${w}%` }} />
           </div>
         ))}
       </div>
@@ -113,21 +132,34 @@ function MilestonesCard() {
   );
 }
 
-/** Stats page: blurred preview with overlay CTA */
+// ── Exports ───────────────────────────────────────────────────────────────
+
+/** Stats page: blurred preview with upgrade CTA. Shown only to non-Plus users. */
 export function StatsPremiumPreview({ onUpgrade }: { onUpgrade: () => void }) {
   return (
     <div className="mt-12 space-y-3">
-      <h2 className="font-display text-sm font-semibold text-muted-foreground/70 uppercase tracking-wider">
-        Advanced Performance (Preview)
-      </h2>
+      <div className="flex items-center gap-2">
+        <h2 className="font-display text-sm font-semibold text-muted-foreground/70 uppercase tracking-wider">
+          Advanced Performance
+        </h2>
+        {/* Unmistakable preview label */}
+        <span className="rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary">
+          Preview
+        </span>
+      </div>
+
       <div className="relative rounded-2xl overflow-hidden">
-        {/* Blurred cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 blur-[7px] opacity-60 pointer-events-none select-none" aria-hidden>
+        {/* Blurred abstract cards — not readable, not personal */}
+        <div
+          className="grid grid-cols-1 sm:grid-cols-3 gap-3 blur-[12px] opacity-50 pointer-events-none select-none"
+          aria-hidden
+        >
           <RatingCard />
           <AccuracyCard />
           <PersonalBestsCard />
         </div>
-        {/* Overlay */}
+
+        {/* Upgrade overlay */}
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/30 backdrop-blur-[1px]">
           <p className="text-sm text-foreground font-medium text-center px-4">
             Unlock Puzzlecraft+ to track your performance
@@ -144,23 +176,28 @@ export function StatsPremiumPreview({ onUpgrade }: { onUpgrade: () => void }) {
   );
 }
 
-/** Login page: lighter preview — no CTA button, just teaser */
+/** Account/login page: light teaser with no CTA, just feature shapes. */
 export function LoginPremiumPreview() {
   return (
     <div className="space-y-3">
-      <p className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-widest text-center">
-        What you unlock with Puzzlecraft+
-      </p>
+      <div className="flex items-center justify-center gap-2">
+        <p className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-widest">
+          What you unlock with Puzzlecraft+
+        </p>
+      </div>
       <div className="relative rounded-xl overflow-hidden">
-        <div className="grid grid-cols-3 gap-2 blur-[5px] opacity-50 pointer-events-none select-none" aria-hidden>
+        <div
+          className="grid grid-cols-3 gap-2 blur-[10px] opacity-40 pointer-events-none select-none"
+          aria-hidden
+        >
           <RatingCard />
           <LeaderboardMiniCard />
           <MilestonesCard />
         </div>
         <div className="absolute inset-0 flex items-center justify-center">
-          <p className="text-[10px] text-muted-foreground/60 font-medium">
+          <span className="text-[10px] text-muted-foreground/60 font-medium">
             Coming soon
-          </p>
+          </span>
         </div>
       </div>
     </div>
