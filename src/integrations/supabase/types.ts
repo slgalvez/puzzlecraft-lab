@@ -419,6 +419,51 @@ export type Database = {
         }
         Relationships: []
       }
+      friend_requests: {
+        Row: {
+          created_at: string
+          id: string
+          receiver_id: string
+          sender_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          receiver_id: string
+          sender_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          receiver_id?: string
+          sender_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      friendships: {
+        Row: {
+          created_at: string
+          user_id_a: string
+          user_id_b: string
+        }
+        Insert: {
+          created_at?: string
+          user_id_a: string
+          user_id_b: string
+        }
+        Update: {
+          created_at?: string
+          user_id_a?: string
+          user_id_b?: string
+        }
+        Relationships: []
+      }
       ip_blocklist: {
         Row: {
           blocked_at: string
@@ -803,6 +848,8 @@ export type Database = {
         Row: {
           created_at: string
           display_name: string | null
+          friend_code: string | null
+          friend_code_visible: boolean | null
           id: string
           is_admin: boolean
           is_premium: boolean
@@ -818,6 +865,8 @@ export type Database = {
         Insert: {
           created_at?: string
           display_name?: string | null
+          friend_code?: string | null
+          friend_code_visible?: boolean | null
           id: string
           is_admin?: boolean
           is_premium?: boolean
@@ -833,6 +882,8 @@ export type Database = {
         Update: {
           created_at?: string
           display_name?: string | null
+          friend_code?: string | null
+          friend_code_visible?: boolean | null
           id?: string
           is_admin?: boolean
           is_premium?: boolean
@@ -882,6 +933,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_friend_code: { Args: never; Returns: string }
       upsert_leaderboard_entry: {
         Args: {
           p_display_name: string
