@@ -41,11 +41,12 @@ export function saveEndlessSession(session: Omit<EndlessSessionRecord, "id" | "d
   return record;
 }
 
-export function getEndlessSessions(): EndlessSessionRecord[] {
+export function getEndlessSessions(includeDemo = false): EndlessSessionRecord[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    return JSON.parse(raw) as EndlessSessionRecord[];
+    const all = JSON.parse(raw) as EndlessSessionRecord[];
+    return includeDemo ? all : all.filter((r: any) => !r.__demo);
   } catch {
     return [];
   }

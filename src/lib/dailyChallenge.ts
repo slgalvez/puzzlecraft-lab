@@ -78,9 +78,15 @@ export interface DailyCompletion {
   difficulty: Difficulty;
 }
 
-function getCompletions(): Record<string, DailyCompletion> {
+function getCompletions(includeDemo = false): Record<string, DailyCompletion> {
   try {
-    return JSON.parse(localStorage.getItem(DAILY_COMPLETIONS_KEY) || "{}");
+    const all = JSON.parse(localStorage.getItem(DAILY_COMPLETIONS_KEY) || "{}");
+    if (includeDemo) return all;
+    const filtered: Record<string, DailyCompletion> = {};
+    for (const [k, v] of Object.entries(all)) {
+      if (!(v as any).__demo) filtered[k] = v as DailyCompletion;
+    }
+    return filtered;
   } catch {
     return {};
   }
