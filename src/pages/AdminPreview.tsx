@@ -1278,16 +1278,29 @@ function WeeklyPacksPreview() {
                   {/* Expanded detail */}
                   {isExpanded && (
                     <div className="border-t px-4 pb-4 pt-3 space-y-3">
-                      {/* Puzzles */}
-                      <div className="space-y-1.5">
-                        {puzzles.map((p, i) => (
-                          <div key={i} className="flex items-center gap-2 rounded-lg bg-secondary/40 px-3 py-2">
-                            <span className="text-sm">{TYPE_EMOJI[p.type] ?? "🧩"}</span>
-                            <span className="text-sm font-medium text-foreground flex-1">{p.title || "Untitled"}</span>
-                            <span className="text-[10px] text-muted-foreground capitalize">{p.type}</span>
-                            <span className="text-[10px] text-muted-foreground capitalize">· {p.difficulty}</span>
-                          </div>
-                        ))}
+                      {/* Puzzles with mini previews */}
+                      <div className="space-y-3">
+                        {puzzles.map((p, i) => {
+                          const pSeed = `db-${pack.id}-${i}`;
+                          const numSeed = hashStringSeed(pSeed);
+                          return (
+                            <div key={i} className="flex items-start gap-3 rounded-lg bg-secondary/40 px-3 py-3">
+                              <MiniPuzzlePreview type={p.type} seed={pSeed} difficulty={p.difficulty} />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-foreground">{p.title || "Untitled"}</p>
+                                <p className="text-[10px] text-muted-foreground capitalize">{p.type} · {p.difficulty}</p>
+                              </div>
+                              <a
+                                href={`/quick-play/${p.type}?seed=${numSeed}&d=${p.difficulty}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary px-2.5 py-1.5 text-[11px] font-medium transition-colors"
+                              >
+                                <Play size={10} /> Play
+                              </a>
+                            </div>
+                          );
+                        })}
                         {puzzles.length === 0 && (
                           <p className="text-xs text-muted-foreground italic">No puzzles defined</p>
                         )}
