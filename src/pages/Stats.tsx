@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { SocialTab } from "@/components/social/SocialTab";
 import { Link, useNavigate } from "react-router-dom";
 import { EmptyStats } from "@/components/ui/EmptyState";
 import Layout from "@/components/layout/Layout";
@@ -200,6 +202,32 @@ const Stats = () => {
     <Layout>
       <div className="container py-6 md:py-10">
 
+        {/* Page heading */}
+        <div className="mb-5">
+          <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
+            {headingLabel}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Your solving stats, streaks, and best times.
+            {activeFilterLabel && (
+              <span className="ml-2 font-medium text-primary">Showing: {activeFilterLabel}</span>
+            )}
+          </p>
+        </div>
+
+        {/* Personal / Social tab switcher */}
+        <Tabs defaultValue="personal" className="w-full">
+          <TabsList className="w-full mb-6 rounded-xl bg-secondary/60 p-1 h-10">
+            <TabsTrigger value="personal" className="flex-1 rounded-lg text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              Personal
+            </TabsTrigger>
+            <TabsTrigger value="social" className="flex-1 rounded-lg text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              Social
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="personal" className="mt-0">
+
         {/* Streak at-risk banner */}
         {streakAtRisk && (
           <div className="mb-5 flex items-center gap-3 rounded-xl border border-destructive/25 bg-destructive/5 px-4 py-3">
@@ -217,19 +245,6 @@ const Stats = () => {
             </Button>
           </div>
         )}
-
-        {/* Page heading */}
-        <div className="mb-6">
-          <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
-            {headingLabel}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Your solving stats, streaks, and best times.
-            {activeFilterLabel && (
-              <span className="ml-2 font-medium text-primary">Showing: {activeFilterLabel}</span>
-            )}
-          </p>
-        </div>
 
         {/* Two-column desktop layout */}
         <div className="grid lg:grid-cols-[1fr_340px] gap-8 items-start">
@@ -548,6 +563,13 @@ const Stats = () => {
           {/* ── end RIGHT COLUMN ── */}
 
         </div>
+          </TabsContent>
+
+          <TabsContent value="social" className="mt-0">
+            <SocialTab />
+          </TabsContent>
+
+        </Tabs>
       </div>
 
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
