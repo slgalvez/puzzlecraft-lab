@@ -1,20 +1,23 @@
 /**
- * Leaderboard sync — pushes the user's current Player Rating
- * to the leaderboard_entries table via a security-definer RPC
- * so users cannot self-inflate ratings.
+ * leaderboardSync.ts
+ * src/lib/leaderboardSync.ts
+ *
+ * Pushes user's Player Rating to leaderboard_entries via security-definer RPC.
+ * Uses shared LEADERBOARD_THRESHOLD and getPlayerRatingInfo() from solveScoring.
  */
+
 import { supabase } from "@/integrations/supabase/client";
 import { getSolveRecords } from "./solveTracker";
-import { computePlayerRating, getSkillTier } from "./solveScoring";
-
-const MIN_SOLVES = 10;
+import { getPlayerRatingInfo, LEADERBOARD_THRESHOLD } from "./solveScoring";
 
 export async function syncLeaderboardRating(userId: string, displayName: string | null) {
   const records = getSolveRecords().filter((r) => r.solveTime >= 10);
-  if (records.length < MIN_SOLVES) return;
 
-  const rating = computePlayerRating(records);
-  const tier = getSkillTier(rating);
+  // Don't push provisional users — LEADERBOARD_THRESHOLD is 10
+  if (records.length < LEADERBOARD_THRESHOLD) return;
+
+  const info = getPlayerRatingInfo(records);
+  if (info.hasNoData) return;
 
   // Fetch current entry to capture previous rating
   const { data: existing } = await supabase
@@ -25,13 +28,12 @@ export async function syncLeaderboardRating(userId: string, displayName: string 
 
   const previousRating = existing ? existing.rating : 0;
 
-  // Use security-definer RPC to prevent client-side rating manipulation
   await supabase.rpc("upsert_leaderboard_entry" as any, {
-    p_user_id: userId,
-    p_display_name: displayName || "Anonymous",
-    p_rating: rating,
+    p_user_id:        userId,
+    p_display_name:   displayName || "Anonymous",
+    p_rating:         info.rating,
     p_previous_rating: previousRating,
-    p_skill_tier: tier,
-    p_solve_count: records.length,
+    p_skill_tier:     info.tier,
+    p_solve_count:    info.solveCount,
   });
 }
