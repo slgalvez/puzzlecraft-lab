@@ -839,6 +839,9 @@ function generateFuturePacks(weeksAhead: number): FuturePackInfo[] {
       const titles = PUZZLE_TITLES_MAP[t.theme] ?? ["Puzzle 1", "Puzzle 2", "Puzzle 3", "Puzzle 4", "Puzzle 5"];
       const types = ["crossword", "word-search", "sudoku", "cryptogram", "word-fill"];
 
+      const defaultDiffs = ["easy", "medium", "medium", "hard", "hard"];
+      const defaultSeeds = types.map((_, i) => `pack-${year}-${week}-${i}`);
+
       packs.push({
         id: packId,
         weekNumber: week,
@@ -848,6 +851,8 @@ function generateFuturePacks(weeksAhead: number): FuturePackInfo[] {
         description: t.description,
         puzzleTitles: titles,
         puzzleTypes: types,
+        puzzleDifficulties: defaultDiffs,
+        puzzleSeeds: defaultSeeds,
         releaseDate,
         isOverride: false,
         isCurrent: offset === 0,
