@@ -1206,14 +1206,15 @@ function WeeklyPacksPreview() {
                         className="text-[10px] leading-none text-muted-foreground hover:text-foreground disabled:opacity-20 p-0.5"
                         title="Move up"
                       >▲</button>
+                    {/* Remove button */}
+                    {formPuzzles.length > 1 && (
                       <button
                         type="button"
-                        disabled={i === formPuzzles.length - 1}
-                        onClick={() => setFormPuzzles(prev => { const n = [...prev]; [n[i], n[i+1]] = [n[i+1], n[i]]; return n; })}
-                        className="text-[10px] leading-none text-muted-foreground hover:text-foreground disabled:opacity-20 p-0.5"
-                        title="Move down"
-                      >▼</button>
-                    </div>
+                        onClick={() => setFormPuzzles(prev => prev.filter((_, j) => j !== i))}
+                        className="text-xs text-destructive/60 hover:text-destructive shrink-0 p-0.5"
+                        title="Remove puzzle"
+                      >✕</button>
+                    )}
                     <input
                       type="text"
                       value={p.title}
@@ -1238,6 +1239,15 @@ function WeeklyPacksPreview() {
                   </div>
                 ))}
               </div>
+              {formPuzzles.length < 10 && (
+                <button
+                  type="button"
+                  onClick={() => setFormPuzzles(prev => [...prev, { title: "", type: "crossword", difficulty: "easy" }])}
+                  className="mt-2 text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1"
+                >
+                  <span className="text-sm leading-none">+</span> Add puzzle
+                </button>
+              )}
             </div>
 
             <div className="flex gap-2 justify-end">
