@@ -878,6 +878,89 @@ const TYPE_EMOJI: Record<string, string> = {
   "word-fill": "✏️",
 };
 
+// ── Mini Puzzle Preview ─────────────────────────────────────────────────────
+function MiniPuzzlePreview({ type, seed, difficulty }: { type: string; seed: string; difficulty: string }) {
+  const numSeed = hashStringSeed(seed);
+  const diff = (difficulty || "medium") as Difficulty;
+
+  return useMemo(() => {
+    try {
+      switch (type) {
+        case "crossword": {
+          const gen = generateCrossword(numSeed, diff);
+          const blacks = new Set(gen.blackCells.map(([r, c]) => `${r}-${c}`));
+          const cellSize = Math.max(3, Math.min(6, Math.floor(96 / gen.gridSize)));
+          return (
+            <div className="inline-grid border border-border/40 rounded overflow-hidden" style={{ gridTemplateColumns: `repeat(${gen.gridSize}, ${cellSize}px)` }}>
+              {Array.from({ length: gen.gridSize * gen.gridSize }, (_, idx) => {
+                const r = Math.floor(idx / gen.gridSize);
+                const c = idx % gen.gridSize;
+                const isBlack = blacks.has(`${r}-${c}`);
+                return <div key={idx} style={{ width: cellSize, height: cellSize }} className={isBlack ? "bg-foreground" : "bg-background"} />;
+              })}
+            </div>
+          );
+        }
+        case "sudoku": {
+          const gen = generateSudoku(numSeed, diff);
+          return (
+            <div className="inline-grid border border-border/40 rounded overflow-hidden" style={{ gridTemplateColumns: "repeat(9, 8px)" }}>
+              {gen.grid.flat().map((v, i) => (
+                <div key={i} className={cn("w-2 h-2 text-center", v ? "bg-muted" : "bg-background")}
+                  style={{ borderRight: (i % 9) % 3 === 2 && (i % 9) !== 8 ? "1px solid hsl(var(--border))" : undefined,
+                           borderBottom: Math.floor(i / 9) % 3 === 2 && Math.floor(i / 9) !== 8 ? "1px solid hsl(var(--border))" : undefined }} />
+              ))}
+            </div>
+          );
+        }
+        case "word-search": {
+          const words = WORD_CLUES.slice(0, 10).map(w => w.word);
+          const gen = generateWordSearch(numSeed, diff, words);
+          const cellSize = Math.max(3, Math.min(5, Math.floor(80 / gen.size)));
+          return (
+            <div className="inline-grid border border-border/40 rounded overflow-hidden" style={{ gridTemplateColumns: `repeat(${gen.size}, ${cellSize}px)` }}>
+              {gen.grid.flat().map((ch, i) => (
+                <div key={i} style={{ width: cellSize, height: cellSize, fontSize: Math.max(4, cellSize - 1) }}
+                  className="bg-background text-foreground/30 flex items-center justify-center leading-none font-mono">
+                  {ch}
+                </div>
+              ))}
+            </div>
+          );
+        }
+        case "cryptogram": {
+          const gen = generateCryptogram(numSeed, diff);
+          const preview = gen.encoded.slice(0, 40);
+          return (
+            <div className="font-mono text-[8px] leading-tight text-muted-foreground bg-background border border-border/40 rounded px-2 py-1.5 max-w-[120px] overflow-hidden">
+              {preview}…
+            </div>
+          );
+        }
+        case "word-fill": {
+          const gen = generateWordFillIn(numSeed, diff);
+          const blacks = new Set(gen.blackCells.map(([r, c]) => `${r}-${c}`));
+          const cellSize = Math.max(3, Math.min(6, Math.floor(96 / gen.gridSize)));
+          return (
+            <div className="inline-grid border border-border/40 rounded overflow-hidden" style={{ gridTemplateColumns: `repeat(${gen.gridSize}, ${cellSize}px)` }}>
+              {Array.from({ length: gen.gridSize * gen.gridSize }, (_, idx) => {
+                const r = Math.floor(idx / gen.gridSize);
+                const c = idx % gen.gridSize;
+                const isBlack = blacks.has(`${r}-${c}`);
+                return <div key={idx} style={{ width: cellSize, height: cellSize }} className={isBlack ? "bg-foreground" : "bg-background"} />;
+              })}
+            </div>
+          );
+        }
+        default:
+          return <div className="w-16 h-16 bg-secondary/30 rounded flex items-center justify-center text-2xl">🧩</div>;
+      }
+    } catch {
+      return <div className="w-16 h-16 bg-destructive/10 rounded flex items-center justify-center text-[10px] text-destructive">Error</div>;
+    }
+  }, [type, numSeed, diff]);
+}
+
 function WeeklyPacksPreview() {
   const futurePacks = useMemo(() => generateFuturePacks(52), []);
   const overridesPacks = useMemo(() => {
