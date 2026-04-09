@@ -12,6 +12,7 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { usePuzzleSession } from "@/hooks/usePuzzleSession";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useNeedsKeyboardProxy } from "@/hooks/use-tablet";
 import { haptic } from "@/lib/haptic";
 import { loadProgress, clearProgress } from "@/lib/puzzleProgress";
 import { useAutoSave } from "@/hooks/useAutoSave";
