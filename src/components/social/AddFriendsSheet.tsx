@@ -4,13 +4,13 @@
 import { useState } from "react";
 import { Copy, Search, UserPlus, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useFriends, useFriendSearch } from "@/hooks/useFriends";
+import { useFriends } from "@/hooks/useFriends";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 export function AddFriendsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { myFriendCode, sendRequest, isSending } = useFriends();
-  const { query, results, searching, searchError, search, lookupByCode, clear } = useFriendSearch();
+  const {
+    myFriendCode, sendRequest, search, searchResults, searchLoading, searchError, clearSearch
+  } = useFriends();
   const [input, setInput] = useState("");
   const [copied, setCopied] = useState(false);
   const [sentIds, setSentIds] = useState<Set<string>>(new Set());
@@ -23,29 +23,23 @@ export function AddFriendsSheet({ open, onClose }: { open: boolean; onClose: () 
   };
 
   const handleSearch = () => {
-    const trimmed = input.trim();
-    if (trimmed.startsWith("PC-") && trimmed.length >= 9) {
-      lookupByCode(trimmed);
-    } else {
-      search(trimmed);
-    }
+    search(input.trim());
   };
 
   const handleSend = async (userId: string) => {
     try {
-      await sendRequest(userId);
+      await sendRequest.mutateAsync(userId);
       setSentIds(prev => new Set(prev).add(userId));
     } catch {}
   };
 
   return (
-    <Sheet open={open} onOpenChange={(v) => { if (!v) { onClose(); clear(); setInput(""); setSentIds(new Set()); } }}>
+    <Sheet open={open} onOpenChange={(v) => { if (!v) { onClose(); clearSearch(); setInput(""); setSentIds(new Set()); } }}>
       <SheetContent side="bottom" className="rounded-t-2xl pb-8 max-h-[85vh] overflow-y-auto">
         <SheetHeader className="pb-4">
           <SheetTitle className="text-lg font-bold">Add Friends</SheetTitle>
         </SheetHeader>
 
-        {/* Your friend code */}
         {myFriendCode && (
           <div className="rounded-xl border bg-card p-4 mb-5">
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Your Friend Code</p>
@@ -59,7 +53,6 @@ export function AddFriendsSheet({ open, onClose }: { open: boolean; onClose: () 
           </div>
         )}
 
-        {/* Search */}
         <div className="flex gap-2 mb-4">
           <div className="flex-1 relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -72,25 +65,21 @@ export function AddFriendsSheet({ open, onClose }: { open: boolean; onClose: () 
               className="w-full rounded-lg border bg-background pl-9 pr-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
-          <Button onClick={handleSearch} disabled={!input.trim() || searching} size="sm" className="shrink-0">
-            {searching ? <Loader2 size={14} className="animate-spin" /> : "Search"}
+          <Button onClick={handleSearch} disabled={!input.trim() || searchLoading} size="sm" className="shrink-0">
+            {searchLoading ? <Loader2 size={14} className="animate-spin" /> : "Search"}
           </Button>
         </div>
 
-        {/* Error */}
-        {searchError && (
-          <p className="text-sm text-destructive mb-3">{searchError}</p>
-        )}
+        {searchError && <p className="text-sm text-destructive mb-3">{searchError}</p>}
 
-        {/* Results */}
-        {results.length > 0 && (
+        {searchResults.length > 0 && (
           <div className="rounded-xl border bg-card divide-y divide-border/40">
-            {results.map((user) => {
+            {searchResults.map((user) => {
               const wasSent = sentIds.has(user.id);
               return (
                 <div key={user.id} className="flex items-center gap-3 px-4 py-3">
                   <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 font-bold text-primary text-sm">
-                    {user.avatarInitial}
+                    {user.displayName.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">{user.displayName}</p>
@@ -107,7 +96,7 @@ export function AddFriendsSheet({ open, onClose }: { open: boolean; onClose: () 
                       variant="outline"
                       size="sm"
                       onClick={() => handleSend(user.id)}
-                      disabled={isSending}
+                      disabled={sendRequest.isPending}
                       className="gap-1 shrink-0"
                     >
                       <UserPlus size={12} /> Add
@@ -119,9 +108,8 @@ export function AddFriendsSheet({ open, onClose }: { open: boolean; onClose: () 
           </div>
         )}
 
-        {/* No results */}
-        {!searching && results.length === 0 && query && !searchError && (
-          <p className="text-sm text-muted-foreground text-center py-6">No users found for "{query}"</p>
+        {!searchLoading && searchResults.length === 0 && input.trim().length >= 2 && !searchError && (
+          <p className="text-sm text-muted-foreground text-center py-6">No users found</p>
         )}
       </SheetContent>
     </Sheet>
