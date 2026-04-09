@@ -157,8 +157,8 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
   // ── ALWAYS read real user data. No demo flag. No isAdmin condition. ──
   // getSolveRecords(false) explicitly excludes any __demo records.
   // This is the single source of truth for Plus stats.
-  const records = useMemo(() => getSolveRecords(false), []);
-  const summary = useMemo(() => getSolveSummary(false), []);
+  const records = useMemo(() => getSolveRecords(), []);
+  const summary = useMemo(() => getSolveSummary(), []);
 
   // ── Empty / insufficient data states ──────────────────────────────────
   if (records.length < MIN_SOLVES_FOR_RATING) {
@@ -370,7 +370,7 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
               <p className="text-[10px] text-muted-foreground mt-0.5">Avg mistakes</p>
             </div>
             <div className="text-center">
-              <p className="font-mono text-2xl font-bold text-foreground">{noHintPercent ?? noHintRate}%</p>
+              <p className="font-mono text-2xl font-bold text-foreground">{noHintRate}%</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">No-hint</p>
             </div>
             <div className="text-center">
