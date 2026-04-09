@@ -19,6 +19,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
+import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 
 export interface UserAccount {
   id: string;
@@ -211,6 +212,15 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
     } else if (!alreadyHandled && !hasLocalData()) {
       await pullProgressFromDb(session.user.id);
       localStorage.setItem(mergeKey, "1");
+    }
+
+    // Sync leaderboard for users who already have qualifying history.
+    // No-op if solveCount < LEADERBOARD_THRESHOLD.
+    if (session?.user) {
+      const displayName = profile?.displayName ?? null;
+      setTimeout(() => {
+        syncLeaderboardRating(session.user.id, displayName);
+      }, 2000);
     }
 
     setLoading(false);
