@@ -715,8 +715,259 @@ function ShareCardPreviews() {
     </div>
   );
 }
+// ── Weekly Packs Preview ──────────────────────────────────────────────────────
 
-export default function AdminPreview() {
+const PACK_THEMES_ROTATION = [
+  { theme: "Around the World",    emoji: "🌍", description: "Geography, languages, and landmarks from every continent" },
+  { theme: "Silver Screen",       emoji: "🎬", description: "Classic cinema, directors, and unforgettable movie moments" },
+  { theme: "The Natural World",   emoji: "🌿", description: "Animals, ecosystems, and the wonders of nature" },
+  { theme: "Into the Kitchen",    emoji: "🍳", description: "Ingredients, techniques, and cuisines from around the globe" },
+  { theme: "Great Minds",         emoji: "🧠", description: "Scientists, inventors, and the ideas that changed everything" },
+  { theme: "Game On",             emoji: "🎮", description: "Video games, board games, and the culture of play" },
+  { theme: "Music to My Ears",    emoji: "🎵", description: "Genres, legends, and the language of music" },
+  { theme: "By the Book",         emoji: "📚", description: "Literature, authors, and stories that endure" },
+  { theme: "Sports Legends",      emoji: "🏆", description: "Athletes, records, and the greatest moments in sport" },
+  { theme: "Into Space",          emoji: "🚀", description: "Planets, missions, and the infinite universe" },
+  { theme: "Ancient History",     emoji: "🏛️", description: "Civilizations, empires, and the echoes of the past" },
+  { theme: "Pop Culture Remix",   emoji: "✨", description: "Trends, moments, and the things everyone's talking about" },
+];
+
+const PUZZLE_TITLES_MAP: Record<string, string[]> = {
+  "Around the World":   ["Capital Cities", "Famous Landmarks", "World Cuisines", "Languages of Earth", "Mountain Ranges"],
+  "Silver Screen":      ["Best Picture Winners", "Iconic Directors", "Legendary Actors", "Film Genres", "Classic Quotes"],
+  "The Natural World":  ["Endangered Species", "Ocean Deep", "The Rainforest", "Bird Life", "Geology"],
+  "Into the Kitchen":   ["Classic French Techniques", "Spices of the World", "Knife Skills", "Baking Science", "Street Food"],
+  "Great Minds":        ["Nobel Laureates", "Famous Inventions", "Scientific Theory", "Math Pioneers", "Space Explorers"],
+  "Game On":            ["Console Generations", "Classic Board Games", "Esports Champions", "Game Mechanics", "Pixel Art Icons"],
+  "Music to My Ears":   ["Genre Origins", "Record Breakers", "Legendary Bands", "Music Theory", "Concert Moments"],
+  "By the Book":        ["Booker Prize Winners", "Classic Authors", "Literary Devices", "Famous Characters", "Opening Lines"],
+  "Sports Legends":     ["Olympic Records", "World Cup Moments", "Tennis Greats", "Boxing Champions", "Racing Icons"],
+  "Into Space":         ["Solar System", "Space Missions", "Astronomers", "Black Holes", "The Cosmos"],
+  "Ancient History":    ["Roman Empire", "Ancient Egypt", "Greek Mythology", "The Silk Road", "Lost Civilizations"],
+  "Pop Culture Remix":  ["Viral Moments", "Iconic Fashion", "Internet Culture", "Award Shows", "Decade Defining"],
+};
+
+function getISOWeekAdmin(date: Date): { week: number; year: number } {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return {
+    week: Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7),
+    year: d.getUTCFullYear(),
+  };
+}
+
+function getSundayOfWeekAdmin(week: number, year: number): Date {
+  const jan1 = new Date(year, 0, 1);
+  const daysToFirstSunday = (7 - jan1.getDay()) % 7;
+  const firstSunday = new Date(year, 0, 1 + daysToFirstSunday);
+  return new Date(firstSunday.getTime() + (week - 1) * 7 * 86400000);
+}
+
+interface FuturePackInfo {
+  id: string;
+  weekNumber: number;
+  year: number;
+  theme: string;
+  emoji: string;
+  description: string;
+  puzzleTitles: string[];
+  puzzleTypes: string[];
+  releaseDate: Date;
+  isOverride: boolean;
+  overrideFrom?: string;
+  overrideTo?: string;
+  isCurrent: boolean;
+}
+
+function generateFuturePacks(weeksAhead: number): FuturePackInfo[] {
+  const now = new Date();
+  const packs: FuturePackInfo[] = [];
+
+  for (let offset = 0; offset < weeksAhead; offset++) {
+    const targetDate = new Date(now.getTime() + offset * 7 * 86400000);
+    const { week, year } = getISOWeekAdmin(targetDate);
+    const releaseDate = getSundayOfWeekAdmin(week, year);
+    const packId = `pack-${year}-${week}`;
+
+    // Check if already added (same week)
+    if (packs.some(p => p.id === packId || p.id === `override-${packId}`)) continue;
+
+    // Check for override
+    const dateStr = releaseDate.toISOString().slice(0, 10);
+    const override = SCHEDULED_OVERRIDES.find(o => dateStr >= o.from && dateStr <= o.to);
+
+    if (override) {
+      // Check if this override is already added
+      const overrideId = `override-${override.from}`;
+      if (packs.some(p => p.id === overrideId)) continue;
+
+      packs.push({
+        id: overrideId,
+        weekNumber: week,
+        year,
+        theme: override.theme,
+        emoji: override.emoji,
+        description: override.description,
+        puzzleTitles: override.puzzles.map(p => p.title),
+        puzzleTypes: override.puzzles.map(p => p.type),
+        releaseDate,
+        isOverride: true,
+        overrideFrom: override.from,
+        overrideTo: override.to,
+        isCurrent: offset === 0,
+      });
+    } else {
+      const themeIndex = (week + year * 52) % PACK_THEMES_ROTATION.length;
+      const t = PACK_THEMES_ROTATION[themeIndex];
+      const titles = PUZZLE_TITLES_MAP[t.theme] ?? ["Puzzle 1", "Puzzle 2", "Puzzle 3", "Puzzle 4", "Puzzle 5"];
+      const types = ["crossword", "word-search", "sudoku", "cryptogram", "word-fill"];
+
+      packs.push({
+        id: packId,
+        weekNumber: week,
+        year,
+        theme: t.theme,
+        emoji: t.emoji,
+        description: t.description,
+        puzzleTitles: titles,
+        puzzleTypes: types,
+        releaseDate,
+        isOverride: false,
+        isCurrent: offset === 0,
+      });
+    }
+  }
+
+  return packs;
+}
+
+const TYPE_EMOJI: Record<string, string> = {
+  crossword: "📝",
+  "word-search": "🔍",
+  sudoku: "🔢",
+  cryptogram: "🔐",
+  "word-fill": "✏️",
+};
+
+function WeeklyPacksPreview() {
+  const futurePacks = useMemo(() => generateFuturePacks(52), []);
+  const overridesPacks = useMemo(() => {
+    // Show ALL scheduled overrides sorted by date, including past
+    return [...SCHEDULED_OVERRIDES]
+      .sort((a, b) => a.from.localeCompare(b.from))
+      .map((o) => ({
+        ...o,
+        isPast: new Date(o.to) < new Date(),
+      }));
+  }, []);
+
+  return (
+    <div className="space-y-8">
+      {/* Scheduled Overrides (Special Packs) */}
+      <section>
+        <h2 className="text-lg font-bold text-foreground mb-1">Special Packs (Overrides)</h2>
+        <p className="text-xs text-muted-foreground mb-4">
+          {SCHEDULED_OVERRIDES.length} scheduled special packs. These override the auto-rotation when active.
+        </p>
+        <div className="grid gap-3">
+          {overridesPacks.map((o) => (
+            <div
+              key={o.from}
+              className={cn(
+                "rounded-xl border p-4 space-y-2",
+                o.isPast ? "opacity-50 bg-muted/30" : "bg-card"
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{o.emoji}</span>
+                  <div>
+                    <p className="font-bold text-foreground">{o.theme}</p>
+                    <p className="text-xs text-muted-foreground">{o.description}</p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-xs font-mono text-muted-foreground">{o.from}</p>
+                  <p className="text-xs font-mono text-muted-foreground">→ {o.to}</p>
+                  {o.isPast && <span className="text-[10px] text-muted-foreground italic">past</span>}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {o.puzzles.map((p, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1 rounded-lg bg-secondary/60 px-2 py-1 text-[11px] text-foreground"
+                  >
+                    {TYPE_EMOJI[p.type] ?? "🧩"} {p.title}
+                    <span className="text-muted-foreground/60 capitalize">· {p.difficulty}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Future Auto-Rotation + Override Timeline */}
+      <section>
+        <h2 className="text-lg font-bold text-foreground mb-1">52-Week Schedule</h2>
+        <p className="text-xs text-muted-foreground mb-4">
+          Next 52 weeks of packs. Override packs are highlighted.
+        </p>
+        <div className="grid gap-2">
+          {futurePacks.map((pack) => (
+            <div
+              key={pack.id}
+              className={cn(
+                "rounded-xl border p-3 flex items-start gap-3",
+                pack.isCurrent && "ring-2 ring-primary",
+                pack.isOverride ? "bg-primary/5 border-primary/20" : "bg-card"
+              )}
+            >
+              <span className="text-xl shrink-0 mt-0.5">{pack.emoji}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-semibold text-foreground text-sm">{pack.theme}</p>
+                  {pack.isCurrent && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-primary text-primary-foreground px-1.5 py-0.5 rounded">Now</span>
+                  )}
+                  {pack.isOverride && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-accent text-accent-foreground px-1.5 py-0.5 rounded">Special</span>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{pack.description}</p>
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {pack.puzzleTitles.map((title, i) => (
+                    <span key={i} className="text-[10px] bg-secondary/50 rounded px-1.5 py-0.5 text-muted-foreground">
+                      {TYPE_EMOJI[pack.puzzleTypes[i]] ?? "🧩"} {title}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-[11px] font-mono text-muted-foreground">
+                  W{pack.weekNumber} '{String(pack.year).slice(2)}
+                </p>
+                <p className="text-[10px] text-muted-foreground/60">
+                  {pack.releaseDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                </p>
+                {pack.isOverride && pack.overrideFrom && (
+                  <p className="text-[9px] text-primary/60 mt-0.5">
+                    {pack.overrideFrom} → {pack.overrideTo}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+
   // ── Core previews state ──
   const [showCompletion, setShowCompletion] = useState(false);
   const [showMilestone, setShowMilestone] = useState(false);
