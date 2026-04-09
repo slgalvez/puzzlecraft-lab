@@ -563,6 +563,13 @@ const Stats = () => {
           {/* ── end RIGHT COLUMN ── */}
 
         </div>
+          </TabsContent>
+
+          <TabsContent value="social" className="mt-0">
+            <SocialTab />
+          </TabsContent>
+
+        </Tabs>
       </div>
 
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
