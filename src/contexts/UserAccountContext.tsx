@@ -214,6 +214,15 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(mergeKey, "1");
     }
 
+    // Sync leaderboard for users who already have qualifying history.
+    // No-op if solveCount < LEADERBOARD_THRESHOLD.
+    if (session?.user) {
+      const displayName = profile?.displayName ?? null;
+      setTimeout(() => {
+        syncLeaderboardRating(session.user.id, displayName);
+      }, 2000);
+    }
+
     setLoading(false);
   }, []);
 
