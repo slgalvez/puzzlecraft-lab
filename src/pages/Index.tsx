@@ -60,7 +60,7 @@ import IOSPlayTab from "@/components/ios/IOSPlayTab";
 import { setPrivateAccessGrant } from "@/lib/privateAccessGrant";
 import { cn } from "@/lib/utils";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
-import { PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
+import { PUZZLECRAFT_PLUS_LAUNCHED, usePremiumAccess } from "@/lib/premiumAccess";
 import { MONTHLY_PRICE } from "@/lib/pricing";
 
 // ── Seeded mock leaderboard (fallback until real data exists) ─────────────────
@@ -656,7 +656,7 @@ const Index = () => {
       {/* ═══════════════════════════════════════════════════════
           SECTION 4 — PUZZLECRAFT+
       ═══════════════════════════════════════════════════════ */}
-      {PUZZLECRAFT_PLUS_LAUNCHED && (
+      {PUZZLECRAFT_PLUS_LAUNCHED && !isPremium && (
         <section className="border-b bg-surface-warm">
           <div className="container py-14">
             <div className="max-w-2xl mx-auto text-center">
