@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SocialTab } from "@/components/social/SocialTab";
+import { useFriends } from "@/hooks/useFriends";
 import { Link, useNavigate } from "react-router-dom";
 import { EmptyStats } from "@/components/ui/EmptyState";
 import Layout from "@/components/layout/Layout";
@@ -60,6 +61,7 @@ const DIFF_COLORS: Record<string, string> = {
 const Stats = () => {
   const navigate = useNavigate();
   const native   = isNativeApp();
+  const { receivedCount } = useFriends();
   const [dataVersion, setDataVersion] = useState(0);
 
   const stats          = useMemo(() => getProgressStats(),                [dataVersion]);
@@ -221,8 +223,13 @@ const Stats = () => {
             <TabsTrigger value="personal" className="flex-1 rounded-lg text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
               Personal
             </TabsTrigger>
-            <TabsTrigger value="social" className="flex-1 rounded-lg text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <TabsTrigger value="social" className="flex-1 rounded-lg text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm relative">
               Social
+              {receivedCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center px-1">
+                  {receivedCount}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
 
