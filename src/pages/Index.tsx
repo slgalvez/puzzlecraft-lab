@@ -174,6 +174,7 @@ const Index = () => {
   const [hasUpdate,  setHasUpdate]  = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isPremium } = usePremiumAccess();
   const countdown = useMidnightCountdown();
 
   const challenge      = useMemo(() => getTodaysChallenge(), []);
