@@ -35,7 +35,9 @@ import {
   getTierColor,
   getTierProgress,
   trueMistakes,
+  getPlayerRatingInfo,
 } from "@/lib/solveScoring";
+import { ProvisionalRatingCard } from "@/components/puzzles/ProvisionalRatingCard";
 import { getBestInsight } from "@/lib/solveInsights";
 import {
   getAllMilestones,
@@ -160,9 +162,24 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
   const records = useMemo(() => getSolveRecords(), []);
   const summary = useMemo(() => getSolveSummary(), []);
 
+  const ratingInfo = useMemo(() => getPlayerRatingInfo(records), [records]);
+
   // ── Empty / insufficient data states ──────────────────────────────────
-  if (records.length < MIN_SOLVES_FOR_RATING) {
-    return <InsightsEmptyState solveCount={records.length} />;
+  if (records.length === 0) {
+    return (
+      <div className="space-y-4">
+        {/* ProvisionalRatingCard renders the no-data empty state */}
+        <ProvisionalRatingCard info={ratingInfo} />
+        {/* Show milestones scaffold even with 0 solves so the page isn't blank */}
+        <div className="rounded-xl border bg-card p-5 opacity-50">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Award size={15} className="text-primary" />
+            Milestones
+          </h3>
+          <p className="text-xs text-muted-foreground">Solve puzzles to earn milestones.</p>
+        </div>
+      </div>
+    );
   }
 
   // ── From here: records.length >= 5, summary guaranteed non-null ──────
@@ -272,44 +289,31 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
           </span>
         </div>
 
-        {/* ── HERO ── */}
-        <div className="rounded-2xl border bg-card p-6 sm:p-8">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-            <div className="text-center sm:text-left">
-              <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
-                <Zap size={18} className="text-primary" />
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Player Rating</span>
-              </div>
-              <p className="font-mono text-5xl font-bold text-foreground leading-none">
-                {playerRating}
-                <TrendBadge trend={scoreTrend} label="Rating trend vs. recent solves" />
-              </p>
-              <p className={cn("mt-2 text-sm font-semibold", tierColor)}>{skillTier}</p>
-              <div className="mt-3 max-w-48">
-                <Progress value={tierProgress} className="h-2" />
-                <p className="mt-1 text-[10px] text-muted-foreground">Progress to next rank</p>
-              </div>
-            </div>
+        {/* ── HERO SECTION — ProvisionalRatingCard handles all solve-count states ── */}
+        <ProvisionalRatingCard info={ratingInfo} />
 
-            <div className="flex-1 space-y-4">
-              <p className="text-sm text-muted-foreground italic leading-relaxed">
-                "{insight}"
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg border bg-secondary/30 p-3 text-center">
-                  <ShieldCheck size={14} className="mx-auto text-primary mb-1" />
-                  <p className="font-mono text-lg font-bold text-foreground">{noHintRate}%</p>
-                  <p className="text-[10px] text-muted-foreground">No-Hint Rate</p>
-                </div>
-                <div className="rounded-lg border bg-secondary/30 p-3 text-center">
-                  <Target size={14} className="mx-auto text-primary mb-1" />
-                  <p className="font-mono text-lg font-bold text-foreground">{records.length}</p>
-                  <p className="text-[10px] text-muted-foreground">Total Solves</p>
-                </div>
+        {/* ── Keep insight + accuracy mini-cards below if we have enough data ── */}
+        {!ratingInfo.hasNoData && (
+          <div className="rounded-xl border bg-card p-5">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border bg-secondary/30 p-3 text-center">
+                <ShieldCheck size={14} className="mx-auto text-primary mb-1" />
+                <p className="font-mono text-lg font-bold text-foreground">
+                  {Math.round((records.filter(r => r.hintsUsed === 0 && !r.assisted).length / records.length) * 100)}%
+                </p>
+                <p className="text-[10px] text-muted-foreground">No-Hint Rate</p>
+              </div>
+              <div className="rounded-lg border bg-secondary/30 p-3 text-center">
+                <Target size={14} className="mx-auto text-primary mb-1" />
+                <p className="font-mono text-lg font-bold text-foreground">{records.length}</p>
+                <p className="text-[10px] text-muted-foreground">Total Solves</p>
               </div>
             </div>
+            {insight && (
+              <p className="mt-4 text-sm text-muted-foreground italic leading-relaxed">"{insight}"</p>
+            )}
           </div>
-        </div>
+        )}
 
         {/* ── MILESTONES ── */}
         {(achievedCount > 0 || records.length >= 5) && (

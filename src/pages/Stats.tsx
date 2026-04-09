@@ -29,7 +29,8 @@ import { usePremiumAccess } from "@/lib/premiumAccess";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 import { checkMilestones } from "@/lib/milestones";
 import { getSolveRecords } from "@/lib/solveTracker";
-import { computePlayerRating, getSkillTier, getTierColor, getTierProgress } from "@/lib/solveScoring";
+import { computePlayerRating, getSkillTier, getTierColor, getTierProgress, getPlayerRatingInfo } from "@/lib/solveScoring";
+import { ProvisionalRatingCard } from "@/components/puzzles/ProvisionalRatingCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -73,20 +74,22 @@ const Stats = () => {
   const { account } = useUserAccount();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
-  // Local rating
-  const localRating = useMemo(() => {
-    if (!premiumAccess) return null;
+  // Unified rating info — handles provisional, confirmed, and no-data states
+  const ratingInfo = useMemo(() => {
     const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
-    if (recs.length < 10) return null;
-    const rating = computePlayerRating(recs);
-    const tier   = getSkillTier(rating);
-    let bestRating = rating;
-    for (let i = 1; i <= Math.max(0, recs.length - 10); i++) {
-      const r = computePlayerRating(recs.slice(i));
-      if (r > bestRating) bestRating = r;
-    }
-    return { rating, tier, solveCount: recs.length, bestRating };
-  }, [dataVersion, premiumAccess]);
+    return getPlayerRatingInfo(recs);
+  }, [dataVersion]);
+
+  // Keep localRating for components that still reference it (backwards compat)
+  const localRating = useMemo(() => {
+    if (!premiumAccess || ratingInfo.hasNoData) return null;
+    return {
+      rating:     ratingInfo.rating,
+      tier:       ratingInfo.tier,
+      solveCount: ratingInfo.solveCount,
+      bestRating: ratingInfo.rating,
+    };
+  }, [premiumAccess, ratingInfo]);
 
   const { data: myLeaderboardEntry } = useQuery({
     queryKey: ["my-leaderboard-entry", account?.id, dataVersion],
@@ -259,90 +262,13 @@ const Stats = () => {
           {/* ── LEFT COLUMN ── */}
           <div className="space-y-6 min-w-0">
 
-            {/* Rating hero (premium) */}
-            {showGeneral && premiumAccess && localRating && (
-              <div className={cn(
-                "rounded-2xl border bg-card p-5",
-                nearRank ? "border-primary/30" : "border-primary/20"
-              )}>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Zap size={14} className="text-primary" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Your Rank</span>
-                      {myLeaderboardEntry && (
-                        <span className="font-mono font-bold text-sm text-primary">#{myLeaderboardEntry.rank}</span>
-                      )}
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button type="button" className="text-muted-foreground/40 hover:text-muted-foreground transition-colors p-1 -m-1 min-w-[28px] min-h-[28px] flex items-center justify-center">
-                              <Info size={12} />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-52 text-xs leading-relaxed">
-                            <p className="font-medium mb-1">Rating is based on:</p>
-                            <ul className="space-y-0.5 text-muted-foreground">
-                              <li>• Puzzle difficulty</li>
-                              <li>• Solve speed</li>
-                              <li>• Accuracy</li>
-                              <li>• Hint usage</li>
-                            </ul>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-
-                    <p className={cn("text-base font-semibold", getTierColor(localRating.tier as any))}>
-                      {localRating.tier}
-                    </p>
-
-                    <div className="flex items-baseline gap-2 mt-0.5">
-                      <p className="font-mono text-4xl font-bold text-foreground leading-none">{localRating.rating}</p>
-                      <span className="text-xs text-muted-foreground">rating</span>
-                      {myLeaderboardEntry && myLeaderboardEntry.previous_rating > 0 && (() => {
-                        const diff = myLeaderboardEntry.rating - myLeaderboardEntry.previous_rating;
-                        if (diff === 0) return null;
-                        return (
-                          <span className={cn("text-xs font-semibold inline-flex items-center gap-0.5",
-                            diff > 0 ? "text-emerald-500" : "text-destructive")}>
-                            {diff > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                            {diff > 0 ? "+" : ""}{diff}
-                          </span>
-                        );
-                      })()}
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Based on your recent {localRating.solveCount} solves</p>
-                    {localRating.bestRating > localRating.rating && (
-                      <p className="text-[10px] text-muted-foreground/60 mt-0.5">Peak: {localRating.bestRating}</p>
-                    )}
-
-                    {nextTierInfo && (
-                      <div className="mt-4 max-w-xs">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[10px] text-muted-foreground">
-                            {nearRank
-                              ? <span className="text-primary font-semibold">Only {pointsToNext} pts to {nextTierInfo.name}!</span>
-                              : <>{pointsToNext} pts to {nextTierInfo.name}</>}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground/60 font-mono">
-                            {localRating.rating}/{nextTierInfo.threshold}
-                          </span>
-                        </div>
-                        <Progress value={tierProgressValue} className={cn("h-2", nearRank && "h-2.5")} />
-                        {nearRank && (
-                          <p className="text-[10px] text-primary mt-1 font-medium">
-                            Play a puzzle now to break through →
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <Button asChild variant="outline" size="sm" className="shrink-0 self-start">
-                    <Link to="/leaderboard"><Shield size={13} className="mr-1" /> Leaderboard</Link>
-                  </Button>
-                </div>
+            {/* Rating hero (premium) — ProvisionalRatingCard handles all states */}
+            {showGeneral && premiumAccess && (
+              <div className="mt-6">
+                <ProvisionalRatingCard
+                  info={ratingInfo}
+                  leaderboardRank={myLeaderboardEntry?.rank ?? null}
+                />
               </div>
             )}
 

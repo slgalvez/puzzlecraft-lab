@@ -41,7 +41,8 @@ import { formatTime } from "@/hooks/usePuzzleTimer";
 import { hapticTap } from "@/lib/haptic";
 import { getProgressStats } from "@/lib/progressTracker";
 import { getSolveRecords } from "@/lib/solveTracker";
-import { computePlayerRating, getSkillTier, getTierColor } from "@/lib/solveScoring";
+import { computePlayerRating, getSkillTier, getTierColor, getPlayerRatingInfo } from "@/lib/solveScoring";
+import { ProvisionalRatingCard } from "@/components/puzzles/ProvisionalRatingCard";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
 import { setBackDestination } from "@/hooks/useBackDestination";
@@ -155,9 +156,7 @@ const IOSPlayTab = () => {
 
   const ratingInfo = useMemo(() => {
     const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
-    if (recs.length < 5) return null;
-    const rating = computePlayerRating(recs);
-    return { rating, tier: getSkillTier(rating) };
+    return getPlayerRatingInfo(recs);
   }, []);
 
   const countdownStr = useMemo(() => {
@@ -436,24 +435,11 @@ const IOSPlayTab = () => {
         Now: one slim row. Stats are on the Stats tab — they don't need
         to live here too.
       */}
-      {stats.totalSolved > 0 && (
-        <button
-          onClick={() => { hapticTap(); navigate("/stats"); }}
-          className="w-full flex items-center justify-between py-2 px-1 text-sm text-muted-foreground transition-colors active:text-foreground"
-        >
-          <span className="flex items-center gap-1.5">
-            {stats.totalSolved} puzzle{stats.totalSolved !== 1 ? "s" : ""} solved
-            {ratingInfo && (
-              <span className={cn("text-xs font-semibold", getTierColor(ratingInfo.tier as any))}>
-                · {ratingInfo.tier}
-              </span>
-            )}
-          </span>
-          <span className="flex items-center gap-1 text-xs font-medium text-primary">
-            Stats <ChevronRight size={13} />
-          </span>
-        </button>
-      )}
+      <ProvisionalRatingCard
+        info={ratingInfo}
+        compact
+        onClick={() => { hapticTap(); navigate("/stats"); }}
+      />
 
       {/* ── 9. CUSTOMIZE ───────────────────────────────────────────────── */}
       <button
