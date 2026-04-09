@@ -1387,50 +1387,97 @@ function WeeklyPacksPreview() {
           Next 52 weeks of packs. Override packs are highlighted.
         </p>
         <div className="grid gap-2">
-          {futurePacks.map((pack) => (
-            <div
-              key={pack.id}
-              className={cn(
-                "rounded-xl border p-3 flex items-start gap-3",
-                pack.isCurrent && "ring-2 ring-primary",
-                pack.isOverride ? "bg-primary/5 border-primary/20" : "bg-card"
-              )}
-            >
-              <span className="text-xl shrink-0 mt-0.5">{pack.emoji}</span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-semibold text-foreground text-sm">{pack.theme}</p>
-                  {pack.isCurrent && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-primary text-primary-foreground px-1.5 py-0.5 rounded">Now</span>
-                  )}
-                  {pack.isOverride && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-accent text-accent-foreground px-1.5 py-0.5 rounded">Special</span>
-                  )}
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5">{pack.description}</p>
-                <div className="flex flex-wrap gap-1 mt-1.5">
-                  {pack.puzzleTitles.map((title, i) => (
-                    <span key={i} className="text-[10px] bg-secondary/50 rounded px-1.5 py-0.5 text-muted-foreground">
-                      {TYPE_EMOJI[pack.puzzleTypes[i]] ?? "🧩"} {title}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-[11px] font-mono text-muted-foreground">
-                  W{pack.weekNumber} '{String(pack.year).slice(2)}
-                </p>
-                <p className="text-[10px] text-muted-foreground/60">
-                  {pack.releaseDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                </p>
-                {pack.isOverride && pack.overrideFrom && (
-                  <p className="text-[9px] text-primary/60 mt-0.5">
-                    {pack.overrideFrom} → {pack.overrideTo}
-                  </p>
+          {futurePacks.map((pack) => {
+            const isScheduleExpanded = expandedScheduleId === pack.id;
+            return (
+              <div
+                key={pack.id}
+                className={cn(
+                  "rounded-xl border overflow-hidden transition-all",
+                  pack.isCurrent && "ring-2 ring-primary",
+                  pack.isOverride ? "bg-primary/5 border-primary/20" : "bg-card"
+                )}
+              >
+                {/* Clickable header */}
+                <button
+                  onClick={() => setExpandedScheduleId(isScheduleExpanded ? null : pack.id)}
+                  className="w-full p-3 flex items-start gap-3 text-left"
+                >
+                  <span className="text-xl shrink-0 mt-0.5">{pack.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-foreground text-sm">{pack.theme}</p>
+                      {pack.isCurrent && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-primary text-primary-foreground px-1.5 py-0.5 rounded">Now</span>
+                      )}
+                      {pack.isOverride && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-accent text-accent-foreground px-1.5 py-0.5 rounded">Special</span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{pack.description}</p>
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {pack.puzzleTitles.map((title, i) => (
+                        <span key={i} className="text-[10px] bg-secondary/50 rounded px-1.5 py-0.5 text-muted-foreground">
+                          {TYPE_EMOJI[pack.puzzleTypes[i]] ?? "🧩"} {title}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0 flex items-center gap-2">
+                    <div>
+                      <p className="text-[11px] font-mono text-muted-foreground">
+                        W{pack.weekNumber} '{String(pack.year).slice(2)}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground/60">
+                        {pack.releaseDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </p>
+                      {pack.isOverride && pack.overrideFrom && (
+                        <p className="text-[9px] text-primary/60 mt-0.5">
+                          {pack.overrideFrom} → {pack.overrideTo}
+                        </p>
+                      )}
+                    </div>
+                    <ChevronRight
+                      size={14}
+                      className={cn(
+                        "text-muted-foreground/60 transition-transform",
+                        isScheduleExpanded && "rotate-90"
+                      )}
+                    />
+                  </div>
+                </button>
+
+                {/* Expanded puzzle previews */}
+                {isScheduleExpanded && (
+                  <div className="border-t px-4 pb-4 pt-3 space-y-3">
+                    {pack.puzzleTitles.map((title, i) => {
+                      const pSeed = pack.puzzleSeeds[i];
+                      const numSeed = hashStringSeed(pSeed);
+                      const pType = pack.puzzleTypes[i];
+                      const pDiff = pack.puzzleDifficulties[i];
+                      return (
+                        <div key={i} className="flex items-start gap-3 rounded-lg bg-secondary/40 px-3 py-3">
+                          <MiniPuzzlePreview type={pType} seed={pSeed} difficulty={pDiff} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground">{title}</p>
+                            <p className="text-[10px] text-muted-foreground capitalize">{pType} · {pDiff}</p>
+                          </div>
+                          <a
+                            href={`/quick-play/${pType}?seed=${numSeed}&d=${pDiff}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary px-2.5 py-1.5 text-[11px] font-medium transition-colors"
+                          >
+                            <Play size={10} /> Play
+                          </a>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
     </div>
