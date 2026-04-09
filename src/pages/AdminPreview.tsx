@@ -23,6 +23,8 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Clock, Users, Bell, Smartphone, Eye, Shield, Sparkles, X } from "lucide-react";
 import { generateNonogram } from "@/lib/generators/nonogram";
+import { SCHEDULED_OVERRIDES, type PackOverride } from "@/lib/packOverrides";
+import { type WeeklyPack, type PackPuzzle } from "@/lib/weeklyPacks";
 
 // ── Icon map ───────────────────────────────────────────────────────────────
 
@@ -773,6 +775,7 @@ export default function AdminPreview() {
             <TabsTrigger value="craft" className="text-xs flex-1 min-w-0">Craft</TabsTrigger>
             <TabsTrigger value="patterns" className="text-xs flex-1 min-w-0">Patterns</TabsTrigger>
             <TabsTrigger value="sharecards" className="text-xs flex-1 min-w-0">Share Cards</TabsTrigger>
+            <TabsTrigger value="weeklypacks" className="text-xs flex-1 min-w-0">Weekly Packs</TabsTrigger>
           </TabsList>
 
           {/* ══════════════════════════════════════════════════════════════ */}
@@ -1542,6 +1545,13 @@ export default function AdminPreview() {
           {/* ══════════════════════════════════════════════════════════════ */}
           <TabsContent value="sharecards" className="space-y-6 mt-4">
             <ShareCardPreviews />
+          </TabsContent>
+
+          {/* ══════════════════════════════════════════════════════════════ */}
+          {/* TAB: WEEKLY PACKS                                             */}
+          {/* ══════════════════════════════════════════════════════════════ */}
+          <TabsContent value="weeklypacks" className="space-y-6 mt-4">
+            <WeeklyPacksPreview />
           </TabsContent>
         </Tabs>
       </div>
