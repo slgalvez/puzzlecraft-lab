@@ -61,6 +61,7 @@ const DIFF_COLORS: Record<string, string> = {
 const Stats = () => {
   const navigate = useNavigate();
   const native   = isNativeApp();
+  const { receivedCount } = useFriends();
   const [dataVersion, setDataVersion] = useState(0);
 
   const stats          = useMemo(() => getProgressStats(),                [dataVersion]);
