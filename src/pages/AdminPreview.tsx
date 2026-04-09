@@ -973,6 +973,7 @@ function WeeklyPacksPreview() {
   const [dbPacks, setDbPacks] = useState<any[]>([]);
   const [loadingDb, setLoadingDb] = useState(true);
   const [expandedPackId, setExpandedPackId] = useState<string | null>(null);
+  const [expandedScheduleId, setExpandedScheduleId] = useState<string | null>(null);
 
   // ── Create form state ──
   const [showForm, setShowForm] = useState(false);
