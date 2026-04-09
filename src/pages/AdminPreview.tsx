@@ -1172,11 +1172,48 @@ function WeeklyPacksPreview() {
 
             {/* Puzzles */}
             <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-2">Puzzles (up to 5)</label>
-              <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground block mb-2">Puzzles (up to 5) — drag to reorder</label>
+              <div className="space-y-1">
                 {formPuzzles.map((p, i) => (
-                  <div key={i} className="flex items-center gap-2 rounded-lg bg-background border p-2">
+                  <div
+                    key={i}
+                    draggable
+                    onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(i)); (e.currentTarget as HTMLElement).style.opacity = "0.5"; }}
+                    onDragEnd={(e) => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
+                    onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const from = parseInt(e.dataTransfer.getData("text/plain"), 10);
+                      if (isNaN(from) || from === i) return;
+                      setFormPuzzles(prev => {
+                        const next = [...prev];
+                        const [moved] = next.splice(from, 1);
+                        next.splice(i, 0, moved);
+                        return next;
+                      });
+                    }}
+                    className="flex items-center gap-2 rounded-lg bg-background border p-2 cursor-grab active:cursor-grabbing transition-opacity"
+                  >
+                    {/* Drag handle */}
+                    <span className="text-muted-foreground/50 shrink-0 select-none" title="Drag to reorder">⠿</span>
                     <span className="text-xs text-muted-foreground w-4 shrink-0">{i + 1}.</span>
+                    {/* Move buttons */}
+                    <div className="flex flex-col shrink-0 -my-1">
+                      <button
+                        type="button"
+                        disabled={i === 0}
+                        onClick={() => setFormPuzzles(prev => { const n = [...prev]; [n[i-1], n[i]] = [n[i], n[i-1]]; return n; })}
+                        className="text-[10px] leading-none text-muted-foreground hover:text-foreground disabled:opacity-20 p-0.5"
+                        title="Move up"
+                      >▲</button>
+                      <button
+                        type="button"
+                        disabled={i === formPuzzles.length - 1}
+                        onClick={() => setFormPuzzles(prev => { const n = [...prev]; [n[i], n[i+1]] = [n[i+1], n[i]]; return n; })}
+                        className="text-[10px] leading-none text-muted-foreground hover:text-foreground disabled:opacity-20 p-0.5"
+                        title="Move down"
+                      >▼</button>
+                    </div>
                     <input
                       type="text"
                       value={p.title}
