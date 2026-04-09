@@ -197,7 +197,7 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
     : "Keep solving to set more personal records.";
 
   const avgInsight = avgByType.length > 0
-    ? `Your consistency is ${timeTrend === "down" ? "improving" : timeTrend === "up" ? "worth watching" : "holding steady"} over recent solves.`
+    ? `Your consistency is ${timeTrend.direction === "down" ? "improving" : timeTrend.direction === "up" ? "worth watching" : "holding steady"} over recent solves.`
     : "Play more to track your average performance.";
 
   const recent20 = records.slice(0, 20);
