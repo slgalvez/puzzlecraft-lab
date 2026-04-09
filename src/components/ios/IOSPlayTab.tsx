@@ -435,24 +435,11 @@ const IOSPlayTab = () => {
         Now: one slim row. Stats are on the Stats tab — they don't need
         to live here too.
       */}
-      {stats.totalSolved > 0 && (
-        <button
-          onClick={() => { hapticTap(); navigate("/stats"); }}
-          className="w-full flex items-center justify-between py-2 px-1 text-sm text-muted-foreground transition-colors active:text-foreground"
-        >
-          <span className="flex items-center gap-1.5">
-            {stats.totalSolved} puzzle{stats.totalSolved !== 1 ? "s" : ""} solved
-            {ratingInfo && (
-              <span className={cn("text-xs font-semibold", getTierColor(ratingInfo.tier as any))}>
-                · {ratingInfo.tier}
-              </span>
-            )}
-          </span>
-          <span className="flex items-center gap-1 text-xs font-medium text-primary">
-            Stats <ChevronRight size={13} />
-          </span>
-        </button>
-      )}
+      <ProvisionalRatingCard
+        info={ratingInfo}
+        compact
+        onClick={() => { hapticTap(); navigate("/stats"); }}
+      />
 
       {/* ── 9. CUSTOMIZE ───────────────────────────────────────────────── */}
       <button
