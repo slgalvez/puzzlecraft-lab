@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { getPackPuzzleWordBank } from "@/lib/weeklyPacks";
 import { goBackOrFallback } from "@/lib/navigation";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -48,6 +49,13 @@ const QuickPlay = () => {
   const mode: PlayMode = (searchParams.get("mode") as PlayMode) || "default";
   const initialDifficulty = (searchParams.get("d") as Difficulty) || "medium";
   const initialSeed = searchParams.get("seed");
+  const packId = searchParams.get("pack");
+  const packPuzzleId = searchParams.get("packPuzzle");
+
+  const packWordData = useMemo(() => {
+    if (!packId || !packPuzzleId) return null;
+    return getPackPuzzleWordBank(packId, packPuzzleId);
+  }, [packId, packPuzzleId]);
 
   // Set origin context
   useEffect(() => {
