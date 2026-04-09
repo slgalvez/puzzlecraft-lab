@@ -256,10 +256,10 @@ const QuickPlay = () => {
     const key = `${seed}-${effectiveDifficulty}-${puzzleKey}`;
     switch (activeType) {
       case "sudoku": return <SudokuGrid key={key} seed={seed} difficulty={effectiveDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
-      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={effectiveDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
+      case "word-search": return <WordSearchGrid key={key} seed={seed} difficulty={effectiveDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} words={packWordData?.wordBank} />;
       case "kakuro": return <KakuroGrid key={key} seed={seed} difficulty={effectiveDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
       case "nonogram": return <NonogramGrid key={key} seed={seed} difficulty={effectiveDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
-      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={effectiveDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />;
+      case "cryptogram": return <CryptogramPuzzle key={key} seed={seed} difficulty={effectiveDifficulty} onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} forcedQuote={packWordData?.quote} />;
       case "crossword":
         return generatedPuzzle ? (
           <CrosswordGrid key={key} puzzle={generatedPuzzle as CrosswordPuzzle} showControls onNewPuzzle={handleNewPuzzle} onSolve={onSolveHandler} isEndless={isEndless} />
