@@ -162,9 +162,24 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
   const records = useMemo(() => getSolveRecords(), []);
   const summary = useMemo(() => getSolveSummary(), []);
 
+  const ratingInfo = useMemo(() => getPlayerRatingInfo(records), [records]);
+
   // ── Empty / insufficient data states ──────────────────────────────────
-  if (records.length < MIN_SOLVES_FOR_RATING) {
-    return <InsightsEmptyState solveCount={records.length} />;
+  if (records.length === 0) {
+    return (
+      <div className="space-y-4">
+        {/* ProvisionalRatingCard renders the no-data empty state */}
+        <ProvisionalRatingCard info={ratingInfo} />
+        {/* Show milestones scaffold even with 0 solves so the page isn't blank */}
+        <div className="rounded-xl border bg-card p-5 opacity-50">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Award size={15} className="text-primary" />
+            Milestones
+          </h3>
+          <p className="text-xs text-muted-foreground">Solve puzzles to earn milestones.</p>
+        </div>
+      </div>
+    );
   }
 
   // ── From here: records.length >= 5, summary guaranteed non-null ──────

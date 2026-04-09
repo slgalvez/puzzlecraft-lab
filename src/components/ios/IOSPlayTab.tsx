@@ -156,9 +156,7 @@ const IOSPlayTab = () => {
 
   const ratingInfo = useMemo(() => {
     const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
-    if (recs.length < 5) return null;
-    const rating = computePlayerRating(recs);
-    return { rating, tier: getSkillTier(rating) };
+    return getPlayerRatingInfo(recs);
   }, []);
 
   const countdownStr = useMemo(() => {
