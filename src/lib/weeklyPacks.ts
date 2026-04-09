@@ -129,7 +129,7 @@ export async function fetchDbCustomPacks(): Promise<DbCustomPack[]> {
       .select("*")
       .eq("is_active", true)
       .order("from_date", { ascending: true });
-    _dbPackCache = (data ?? []) as DbCustomPack[];
+    _dbPackCache = (data ?? []) as unknown as DbCustomPack[];
     _dbPackFetchedAt = Date.now();
   } catch {
     _dbPackCache = _dbPackCache ?? [];
