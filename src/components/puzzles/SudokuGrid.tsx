@@ -36,6 +36,7 @@ interface SudokuState {
 const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode, showHints = true, showReveal = true, maxHints }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const needsKeyboard = useNeedsKeyboardProxy();
   const puzzle = useMemo(() => generateSudoku(seed, difficulty), [seed, difficulty]);
   const timerKey = `sudoku-${seed}-${difficulty}`;
   const session = usePuzzleSession({ puzzleType: "sudoku", difficulty, progressUnit: "cells" });

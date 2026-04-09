@@ -39,6 +39,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   useKeyboardAvoidance();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const needsKeyboard = useNeedsKeyboardProxy();
   const timerKey = `crossword-${puzzle.id}`;
   const session = usePuzzleSession({ puzzleType: "crossword", difficulty: puzzle.difficulty as any, progressUnit: "words" });
 
