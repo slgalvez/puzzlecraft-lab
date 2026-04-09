@@ -103,7 +103,46 @@ function overrideSeed(overrideFrom: string, index: number): string {
   return `override-${overrideFrom}-${index}`;
 }
 
-// ── Main function ─────────────────────────────────────────────────────────────
+// ── DB custom pack cache ──────────────────────────────────────────────────────
+
+interface DbCustomPack {
+  id: string;
+  theme: string;
+  emoji: string;
+  description: string;
+  from_date: string;
+  to_date: string;
+  puzzles: { title: string; type: PackPuzzle["type"]; difficulty: PackPuzzle["difficulty"] }[];
+  is_active: boolean;
+}
+
+let _dbPackCache: DbCustomPack[] | null = null;
+let _dbPackFetchedAt = 0;
+const DB_CACHE_TTL = 5 * 60 * 1000; // 5 min
+
+export async function fetchDbCustomPacks(): Promise<DbCustomPack[]> {
+  if (_dbPackCache && Date.now() - _dbPackFetchedAt < DB_CACHE_TTL) return _dbPackCache;
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data } = await supabase
+      .from("custom_weekly_packs")
+      .select("*")
+      .eq("is_active", true)
+      .order("from_date", { ascending: true });
+    _dbPackCache = (data ?? []) as DbCustomPack[];
+    _dbPackFetchedAt = Date.now();
+  } catch {
+    _dbPackCache = _dbPackCache ?? [];
+  }
+  return _dbPackCache;
+}
+
+function getDbOverride(date: Date, dbPacks: DbCustomPack[]): DbCustomPack | null {
+  const dateStr = date.toISOString().slice(0, 10);
+  return dbPacks.find(p => p.is_active && dateStr >= p.from_date && dateStr <= p.to_date) ?? null;
+}
+
+// ── Main function (sync — uses code overrides + cached DB packs) ──────────────
 
 export function getCurrentWeeklyPack(
   account: { subscribed?: boolean; isAdmin?: boolean } | null
@@ -114,8 +153,11 @@ export function getCurrentWeeklyPack(
   const releaseDate   = getSundayOfWeek(week, year);
   const plusEarlyDate = getPreviousFriday(releaseDate);
 
-  // ── Check for a manual override first ──────────────────────────────────────
-  const override = getActiveOverride(now);
+  // ── Check for DB custom pack first (if cache is warm) ──────────────────────
+  const dbOverride = _dbPackCache ? getDbOverride(now, _dbPackCache) : null;
+
+  // ── Then check for code override ───────────────────────────────────────────
+  const override = dbOverride ? null : getActiveOverride(now);
 
   let theme: string;
   let emoji: string;
@@ -124,8 +166,22 @@ export function getCurrentWeeklyPack(
   let isSpecialPack = false;
   let packId: string;
 
-  if (override) {
-    // Use the override pack
+  if (dbOverride) {
+    isSpecialPack = true;
+    theme       = dbOverride.theme;
+    emoji       = dbOverride.emoji;
+    description = dbOverride.description;
+    packId      = `db-${dbOverride.id}`;
+
+    puzzles = (dbOverride.puzzles ?? []).map((p, i) => ({
+      id:         `${packId}-${i}`,
+      type:       p.type,
+      difficulty: p.difficulty,
+      seed:       `db-${dbOverride.id}-${i}`,
+      title:      p.title,
+    }));
+  } else if (override) {
+    // Use the code override pack
     isSpecialPack = true;
     theme       = override.theme;
     emoji       = override.emoji;
