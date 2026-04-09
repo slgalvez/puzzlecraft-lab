@@ -183,7 +183,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
         if (!isBlack(r, c)) {
           setActiveCell([r, c]);
           setDirection("across");
-          if (!isMobile) containerRef.current?.focus();
+          if (!needsKeyboard) containerRef.current?.focus();
           return;
         }
   }, [puzzle.id]);
@@ -278,7 +278,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
 
   const handleCellClick = (r: number, c: number) => {
     if (isBlack(r, c)) return;
-    if (isMobile) haptic();
+    if (needsKeyboard) haptic();
     if (activeCell && activeCell[0] === r && activeCell[1] === c) {
       const hasAcross = cellHasDirection(r, c, "across");
       const hasDown = cellHasDirection(r, c, "down");
@@ -297,7 +297,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
         setDirection("down");
       }
     }
-    if (isMobile) {
+    if (needsKeyboard) {
       mobileInputRef.current?.focus();
     } else {
       containerRef.current?.focus();
@@ -322,7 +322,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
     resetCount.current++;
     timer.reset();
     clearProgress(timerKey);
-    if (!isMobile) containerRef.current?.focus();
+    if (!needsKeyboard) containerRef.current?.focus();
   };
 
   const handleCheck = () => {
@@ -455,7 +455,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
           progressTotal={session.progressTotal}
           progressUnit={session.progressUnit}
         />
-        {!isMobile && (
+        {!needsKeyboard && (
           <p className="mb-2 text-xs text-muted-foreground">
             Arrow keys to move • Type to fill • Delete to clear • Tap same cell to toggle direction
           </p>
@@ -478,7 +478,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
         {!isNumbers && (
           <MobileLetterInput
             ref={mobileInputRef}
-            active={isMobile && !!activeCell && !timer.isSolved && !isRevealed}
+            active={needsKeyboard && !!activeCell && !timer.isSolved && !isRevealed}
             onLetter={enterChar}
             onDelete={deleteChar}
           />
@@ -523,7 +523,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
         </div>
         {isNumbers && (
           <MobileNumberPad
-            visible={isMobile && !!activeCell && !timer.isSolved && !isRevealed}
+            visible={needsKeyboard && !!activeCell && !timer.isSolved && !isRevealed}
             onNumber={(n) => enterChar(n.toString())}
             onDelete={deleteChar}
           />
