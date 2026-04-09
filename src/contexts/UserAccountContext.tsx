@@ -19,6 +19,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
+import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 
 export interface UserAccount {
   id: string;
