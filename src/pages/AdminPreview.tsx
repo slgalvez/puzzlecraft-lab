@@ -21,10 +21,17 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Clock, Users, Bell, Smartphone, Eye, Shield, Sparkles, X, ChevronRight } from "lucide-react";
+import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Clock, Users, Bell, Smartphone, Eye, Shield, Sparkles, X, ChevronRight, Play } from "lucide-react";
 import { generateNonogram } from "@/lib/generators/nonogram";
 import { SCHEDULED_OVERRIDES, type PackOverride } from "@/lib/packOverrides";
 import { type WeeklyPack, type PackPuzzle } from "@/lib/weeklyPacks";
+import { generateCrossword } from "@/lib/generators/crosswordGen";
+import { generateSudoku } from "@/lib/generators/sudoku";
+import { generateWordSearch } from "@/lib/generators/wordSearch";
+import { generateCryptogram } from "@/lib/generators/cryptogram";
+import { generateWordFillIn } from "@/lib/generators/fillGen";
+import { WORD_CLUES } from "@/lib/wordList";
+import type { Difficulty } from "@/lib/puzzleTypes";
 
 // ── Icon map ───────────────────────────────────────────────────────────────
 
