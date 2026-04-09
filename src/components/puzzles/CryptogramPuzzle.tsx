@@ -8,6 +8,7 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { usePuzzleSession } from "@/hooks/usePuzzleSession";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useNeedsKeyboardProxy } from "@/hooks/use-tablet";
 import { loadProgress, clearProgress } from "@/lib/puzzleProgress";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import type { Difficulty } from "@/lib/puzzleTypes";
@@ -34,6 +35,7 @@ interface CryptogramState {
 const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode, showHints = true, showReveal = true, maxHints }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const needsKeyboard = useNeedsKeyboardProxy();
   useKeyboardAvoidance();
   const puzzle = useMemo(() => generateCryptogram(seed, difficulty), [seed, difficulty]);
   const { encoded, decoded, reverseCipher, hints } = puzzle;
@@ -118,10 +120,10 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
     const el = inputRefs.current.get(idx);
     if (!el) return;
     el.focus();
-    if (isMobile) {
+    if (needsKeyboard) {
       setTimeout(() => {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 320);
+      }, 200);
     }
   };
 
@@ -240,12 +242,12 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
         progressTotal={session.progressTotal}
         progressUnit={session.progressUnit}
       />
-      {!isMobile && (
+      {!needsKeyboard && (
         <p className="mb-3 text-xs text-muted-foreground">
           Type letters to guess • Arrow keys to move • All matching letters update together
         </p>
       )}
-      {isMobile && (
+      {needsKeyboard && (
         <p className="mb-3 text-xs text-muted-foreground">
           Tap a letter to focus • Type to guess • Matching letters update together
         </p>

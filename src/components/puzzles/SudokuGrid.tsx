@@ -9,6 +9,7 @@ import { usePuzzleTimer } from "@/hooks/usePuzzleTimer";
 import { usePuzzleSession } from "@/hooks/usePuzzleSession";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useNeedsKeyboardProxy } from "@/hooks/use-tablet";
 import { haptic } from "@/lib/haptic";
 import { loadProgress, clearProgress } from "@/lib/puzzleProgress";
 import { useAutoSave } from "@/hooks/useAutoSave";
@@ -35,6 +36,7 @@ interface SudokuState {
 const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode, showHints = true, showReveal = true, maxHints }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const needsKeyboard = useNeedsKeyboardProxy();
   const puzzle = useMemo(() => generateSudoku(seed, difficulty), [seed, difficulty]);
   const timerKey = `sudoku-${seed}-${difficulty}`;
   const session = usePuzzleSession({ puzzleType: "sudoku", difficulty, progressUnit: "cells" });
@@ -249,7 +251,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
         progressTotal={session.progressTotal}
         progressUnit={session.progressUnit}
       />
-      {!isMobile && (
+      {!needsKeyboard && (
         <p className="mb-2 text-xs text-muted-foreground">
           Arrow keys to move • 1–9 to enter • Delete to clear
         </p>
@@ -286,8 +288,8 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
                 )}
                 onClick={() => {
                   setActiveCell([r, c]);
-                  if (isMobile) haptic();
-                  if (!isMobile) containerRef.current?.focus();
+                  if (needsKeyboard) haptic();
+                  if (!needsKeyboard) containerRef.current?.focus();
                 }}
               >
                 <span className={cn(
@@ -303,7 +305,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
       </div>
       </div>
       <MobileNumberPad
-        visible={isMobile && !!activeCell && !timer.isSolved && !isRevealed}
+        visible={needsKeyboard && !!activeCell && !timer.isSolved && !isRevealed}
         onNumber={enterNumber}
         onDelete={deleteCell}
       />
