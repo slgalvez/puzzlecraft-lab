@@ -1206,6 +1206,14 @@ function WeeklyPacksPreview() {
                         className="text-[10px] leading-none text-muted-foreground hover:text-foreground disabled:opacity-20 p-0.5"
                         title="Move up"
                       >▲</button>
+                      <button
+                        type="button"
+                        disabled={i === formPuzzles.length - 1}
+                        onClick={() => setFormPuzzles(prev => { const n = [...prev]; [n[i], n[i+1]] = [n[i+1], n[i]]; return n; })}
+                        className="text-[10px] leading-none text-muted-foreground hover:text-foreground disabled:opacity-20 p-0.5"
+                        title="Move down"
+                      >▼</button>
+                    </div>
                     {/* Remove button */}
                     {formPuzzles.length > 1 && (
                       <button
