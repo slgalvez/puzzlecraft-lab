@@ -968,6 +968,7 @@ function WeeklyPacksPreview() {
 }
 
 
+export default function AdminPreview() {
   // ── Core previews state ──
   const [showCompletion, setShowCompletion] = useState(false);
   const [showMilestone, setShowMilestone] = useState(false);
