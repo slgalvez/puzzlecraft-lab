@@ -774,11 +774,22 @@ interface FuturePackInfo {
   description: string;
   puzzleTitles: string[];
   puzzleTypes: string[];
+  puzzleDifficulties: string[];
+  puzzleSeeds: string[];
   releaseDate: Date;
   isOverride: boolean;
   overrideFrom?: string;
   overrideTo?: string;
   isCurrent: boolean;
+}
+
+/** Convert a string seed to a numeric seed for generators */
+function hashStringSeed(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h) || 1;
 }
 
 function generateFuturePacks(weeksAhead: number): FuturePackInfo[] {
