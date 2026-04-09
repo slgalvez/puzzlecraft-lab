@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { SocialTab } from "@/components/social/SocialTab";
 import { Link, useNavigate } from "react-router-dom";
 import { EmptyStats } from "@/components/ui/EmptyState";
 import Layout from "@/components/layout/Layout";
