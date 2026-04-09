@@ -573,7 +573,7 @@ const Stats = () => {
           </TabsContent>
 
           <TabsContent value="social" className="mt-0">
-            <SocialTab />
+            <SocialTab myRating={null} />
           </TabsContent>
 
         </Tabs>

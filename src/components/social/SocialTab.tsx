@@ -259,7 +259,7 @@ function PendingRequestsPanel({ requests }: { requests: PendingRequest[] }) {
 // ── Friends daily leaderboard ─────────────────────────────────────────────
 
 function FriendsDailyLeaderboard() {
-  const { dailyLeaderboard, dailyLoading } = useFriendActivity();
+  const { dailyLeaderboard, loading: dailyLoading } = useFriendActivity();
 
   if (dailyLoading) return null;
   if (dailyLeaderboard.length === 0) return (
