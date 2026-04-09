@@ -131,24 +131,26 @@ export function recordSolve(input: RecordSolveInput): SolveRecord {
   return record;
 }
 
-/** Retrieve all solve records (newest first). */
-export function getSolveRecords(): SolveRecord[] {
-  return getRecords();
+/** Retrieve all solve records (newest first). Excludes demo data by default. */
+export function getSolveRecords(includeDemo = false): SolveRecord[] {
+  const records = getRecords();
+  return includeDemo ? records : records.filter((r: any) => !r.__demo);
 }
 
 /** Get solve records filtered by category. */
 export function getSolvesByType(puzzleType: PuzzleCategory): SolveRecord[] {
-  return getRecords().filter((r) => r.puzzleType === puzzleType);
+  return getRecords().filter((r: any) => r.puzzleType === puzzleType && !r.__demo);
 }
 
 /** Get solve records for a specific date (YYYY-MM-DD). */
 export function getSolvesByDate(dateStr: string): SolveRecord[] {
-  return getRecords().filter((r) => r.completedAt.startsWith(dateStr));
+  return getRecords().filter((r: any) => r.completedAt.startsWith(dateStr) && !r.__demo);
 }
 
 /** Summary statistics derived from solve records. */
-export function getSolveSummary() {
-  const records = getRecords();
+export function getSolveSummary(includeDemo = false) {
+  const all = getRecords();
+  const records = includeDemo ? all : all.filter((r: any) => !r.__demo);
   if (records.length === 0) return null;
 
   const completed = records.filter((r) => !r.assisted);

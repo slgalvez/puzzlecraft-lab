@@ -24,9 +24,10 @@ export interface ProgressStats {
 
 const COMPLETIONS_KEY = "puzzlecraft-completions";
 
-function getCompletions(): CompletionRecord[] {
+function getCompletions(includeDemo = false): CompletionRecord[] {
   try {
-    return JSON.parse(localStorage.getItem(COMPLETIONS_KEY) || "[]");
+    const all = JSON.parse(localStorage.getItem(COMPLETIONS_KEY) || "[]");
+    return includeDemo ? all : all.filter((r: any) => !r.__demo);
   } catch {
     return [];
   }
