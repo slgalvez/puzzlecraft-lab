@@ -33,23 +33,27 @@ const ALL_CATEGORIES: PuzzleCategory[] = [
 ];
 
 // ── Trend helpers ──
-function computeTrend(records: SolveRecord[], getValue: (r: SolveRecord) => number): "up" | "down" | "flat" {
-  if (records.length < 6) return "flat";
+function computeTrend(records: SolveRecord[], getValue: (r: SolveRecord) => number): { direction: "up" | "down" | "flat"; pct: number } {
+  if (records.length < 6) return { direction: "flat", pct: 0 };
   const half = Math.floor(records.length / 2);
   const recent = records.slice(0, half);
   const older = records.slice(half);
   const recentAvg = recent.reduce((s, r) => s + getValue(r), 0) / recent.length;
   const olderAvg = older.reduce((s, r) => s + getValue(r), 0) / older.length;
   const diff = recentAvg - olderAvg;
+  const pct = olderAvg !== 0 ? Math.round(Math.abs(diff / olderAvg) * 100) : 0;
   const threshold = olderAvg * 0.05;
-  if (Math.abs(diff) < threshold) return "flat";
-  return diff > 0 ? "up" : "down";
+  if (Math.abs(diff) < threshold) return { direction: "flat", pct };
+  return { direction: diff > 0 ? "up" : "down", pct };
 }
 
-function TrendBadge({ trend, invertColor, label }: { trend: "up" | "down" | "flat"; invertColor?: boolean; label?: string }) {
-  if (trend === "flat") return null;
-  const isGood = invertColor ? trend === "down" : trend === "up";
-  const tooltipText = label || (isGood ? "Above your recent average" : "Below your recent average");
+function TrendBadge({ trend, invertColor, label }: { trend: { direction: "up" | "down" | "flat"; pct: number }; invertColor?: boolean; label?: string }) {
+  if (trend.direction === "flat") return null;
+  const isGood = invertColor ? trend.direction === "down" : trend.direction === "up";
+  const pctStr = trend.pct > 0 ? `${trend.pct}%` : "";
+  const tooltipText = label
+    ? `${label}${pctStr ? ` (${pctStr} ${trend.direction === "up" ? "increase" : "decrease"})` : ""}`
+    : (isGood ? `${pctStr} improvement vs. earlier solves` : `${pctStr} decline vs. earlier solves`);
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -57,7 +61,8 @@ function TrendBadge({ trend, invertColor, label }: { trend: "up" | "down" | "fla
           "inline-flex items-center gap-0.5 text-[10px] font-medium ml-1 p-1 -m-1 min-w-[28px] min-h-[28px] justify-center touch-manipulation",
           isGood ? "text-primary" : "text-destructive"
         )}>
-          {trend === "up" ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+          {trend.direction === "up" ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+          {pctStr && <span>{pctStr}</span>}
         </button>
       </TooltipTrigger>
       <TooltipContent side="top" className="text-xs">{tooltipText}</TooltipContent>
@@ -192,7 +197,7 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
     : "Keep solving to set more personal records.";
 
   const avgInsight = avgByType.length > 0
-    ? `Your consistency is ${timeTrend === "down" ? "improving" : timeTrend === "up" ? "worth watching" : "holding steady"} over recent solves.`
+    ? `Your consistency is ${timeTrend.direction === "down" ? "improving" : timeTrend.direction === "up" ? "worth watching" : "holding steady"} over recent solves.`
     : "Play more to track your average performance.";
 
   const recent20 = records.slice(0, 20);
