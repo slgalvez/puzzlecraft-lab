@@ -26,18 +26,20 @@ interface Props {
   showHints?: boolean;
   showReveal?: boolean;
   maxHints?: number | null;
+  /** When set, overrides the random quote selection. Used by themed weekly packs. */
+  forcedQuote?: string;
 }
 
 interface CryptogramState {
   guesses: Record<string, string>;
 }
 
-const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode, showHints = true, showReveal = true, maxHints }: Props) => {
+const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode, showHints = true, showReveal = true, maxHints, forcedQuote }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const needsKeyboard = useNeedsKeyboardProxy();
   useKeyboardAvoidance();
-  const puzzle = useMemo(() => generateCryptogram(seed, difficulty), [seed, difficulty]);
+  const puzzle = useMemo(() => generateCryptogram(seed, difficulty, forcedQuote), [seed, difficulty, forcedQuote]);
   const { encoded, decoded, reverseCipher, hints } = puzzle;
   const timerKey = `cryptogram-${seed}-${difficulty}`;
   const session = usePuzzleSession({ puzzleType: "cryptogram", difficulty, progressUnit: "letters" });

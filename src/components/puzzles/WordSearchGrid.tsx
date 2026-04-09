@@ -26,6 +26,8 @@ interface Props {
   showHints?: boolean;
   showReveal?: boolean;
   maxHints?: number | null;
+  /** Custom word list — overrides the default WORDS for themed packs */
+  words?: string[];
 }
 
 interface WordSearchState {
@@ -33,10 +35,10 @@ interface WordSearchState {
   foundCells: string[];
 }
 
-const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode, showHints = true, showReveal = true, maxHints }: Props) => {
+const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndless, dailyCode, showHints = true, showReveal = true, maxHints, words }: Props) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const puzzle = useMemo(() => generateWordSearch(seed, difficulty, WORDS), [seed, difficulty]);
+  const puzzle = useMemo(() => generateWordSearch(seed, difficulty, words ?? WORDS), [seed, difficulty, words]);
   const timerKey = `word-search-${seed}-${difficulty}`;
   const session = usePuzzleSession({ puzzleType: "word-search", difficulty, progressUnit: "words" });
 
