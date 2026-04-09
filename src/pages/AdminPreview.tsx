@@ -21,10 +21,17 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Clock, Users, Bell, Smartphone, Eye, Shield, Sparkles, X, ChevronRight } from "lucide-react";
+import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Clock, Users, Bell, Smartphone, Eye, Shield, Sparkles, X, ChevronRight, Play } from "lucide-react";
 import { generateNonogram } from "@/lib/generators/nonogram";
 import { SCHEDULED_OVERRIDES, type PackOverride } from "@/lib/packOverrides";
 import { type WeeklyPack, type PackPuzzle } from "@/lib/weeklyPacks";
+import { generateCrossword } from "@/lib/generators/crosswordGen";
+import { generateSudoku } from "@/lib/generators/sudoku";
+import { generateWordSearch } from "@/lib/generators/wordSearch";
+import { generateCryptogram } from "@/lib/generators/cryptogram";
+import { generateWordFillIn } from "@/lib/generators/fillGen";
+import { WORD_CLUES } from "@/lib/wordList";
+import type { Difficulty } from "@/lib/puzzleTypes";
 
 // ── Icon map ───────────────────────────────────────────────────────────────
 
@@ -774,11 +781,22 @@ interface FuturePackInfo {
   description: string;
   puzzleTitles: string[];
   puzzleTypes: string[];
+  puzzleDifficulties: string[];
+  puzzleSeeds: string[];
   releaseDate: Date;
   isOverride: boolean;
   overrideFrom?: string;
   overrideTo?: string;
   isCurrent: boolean;
+}
+
+/** Convert a string seed to a numeric seed for generators */
+function hashStringSeed(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h) || 1;
 }
 
 function generateFuturePacks(weeksAhead: number): FuturePackInfo[] {
@@ -803,6 +821,8 @@ function generateFuturePacks(weeksAhead: number): FuturePackInfo[] {
       const overrideId = `override-${override.from}`;
       if (packs.some(p => p.id === overrideId)) continue;
 
+      const overrideDiffs = override.puzzles.map(p => p.difficulty);
+      const overrideSeeds = override.puzzles.map((p, i) => `override-${override.from}-${i}`);
       packs.push({
         id: overrideId,
         weekNumber: week,
@@ -812,6 +832,8 @@ function generateFuturePacks(weeksAhead: number): FuturePackInfo[] {
         description: override.description,
         puzzleTitles: override.puzzles.map(p => p.title),
         puzzleTypes: override.puzzles.map(p => p.type),
+        puzzleDifficulties: overrideDiffs,
+        puzzleSeeds: overrideSeeds,
         releaseDate,
         isOverride: true,
         overrideFrom: override.from,
@@ -824,6 +846,9 @@ function generateFuturePacks(weeksAhead: number): FuturePackInfo[] {
       const titles = PUZZLE_TITLES_MAP[t.theme] ?? ["Puzzle 1", "Puzzle 2", "Puzzle 3", "Puzzle 4", "Puzzle 5"];
       const types = ["crossword", "word-search", "sudoku", "cryptogram", "word-fill"];
 
+      const defaultDiffs = ["easy", "medium", "medium", "hard", "hard"];
+      const defaultSeeds = types.map((_, i) => `pack-${year}-${week}-${i}`);
+
       packs.push({
         id: packId,
         weekNumber: week,
@@ -833,6 +858,8 @@ function generateFuturePacks(weeksAhead: number): FuturePackInfo[] {
         description: t.description,
         puzzleTitles: titles,
         puzzleTypes: types,
+        puzzleDifficulties: defaultDiffs,
+        puzzleSeeds: defaultSeeds,
         releaseDate,
         isOverride: false,
         isCurrent: offset === 0,
@@ -851,6 +878,89 @@ const TYPE_EMOJI: Record<string, string> = {
   "word-fill": "✏️",
 };
 
+// ── Mini Puzzle Preview ─────────────────────────────────────────────────────
+function MiniPuzzlePreview({ type, seed, difficulty }: { type: string; seed: string; difficulty: string }) {
+  const numSeed = hashStringSeed(seed);
+  const diff = (difficulty || "medium") as Difficulty;
+
+  return useMemo(() => {
+    try {
+      switch (type) {
+        case "crossword": {
+          const gen = generateCrossword(numSeed, diff);
+          const blacks = new Set(gen.blackCells.map(([r, c]) => `${r}-${c}`));
+          const cellSize = Math.max(3, Math.min(6, Math.floor(96 / gen.gridSize)));
+          return (
+            <div className="inline-grid border border-border/40 rounded overflow-hidden" style={{ gridTemplateColumns: `repeat(${gen.gridSize}, ${cellSize}px)` }}>
+              {Array.from({ length: gen.gridSize * gen.gridSize }, (_, idx) => {
+                const r = Math.floor(idx / gen.gridSize);
+                const c = idx % gen.gridSize;
+                const isBlack = blacks.has(`${r}-${c}`);
+                return <div key={idx} style={{ width: cellSize, height: cellSize }} className={isBlack ? "bg-foreground" : "bg-background"} />;
+              })}
+            </div>
+          );
+        }
+        case "sudoku": {
+          const gen = generateSudoku(numSeed, diff);
+          return (
+            <div className="inline-grid border border-border/40 rounded overflow-hidden" style={{ gridTemplateColumns: "repeat(9, 8px)" }}>
+              {gen.grid.flat().map((v, i) => (
+                <div key={i} className={cn("w-2 h-2 text-center", v ? "bg-muted" : "bg-background")}
+                  style={{ borderRight: (i % 9) % 3 === 2 && (i % 9) !== 8 ? "1px solid hsl(var(--border))" : undefined,
+                           borderBottom: Math.floor(i / 9) % 3 === 2 && Math.floor(i / 9) !== 8 ? "1px solid hsl(var(--border))" : undefined }} />
+              ))}
+            </div>
+          );
+        }
+        case "word-search": {
+          const words = WORD_CLUES.slice(0, 10).map(w => w[0]);
+          const gen = generateWordSearch(numSeed, diff, words);
+          const cellSize = Math.max(3, Math.min(5, Math.floor(80 / gen.size)));
+          return (
+            <div className="inline-grid border border-border/40 rounded overflow-hidden" style={{ gridTemplateColumns: `repeat(${gen.size}, ${cellSize}px)` }}>
+              {gen.grid.flat().map((ch, i) => (
+                <div key={i} style={{ width: cellSize, height: cellSize, fontSize: Math.max(4, cellSize - 1) }}
+                  className="bg-background text-foreground/30 flex items-center justify-center leading-none font-mono">
+                  {ch}
+                </div>
+              ))}
+            </div>
+          );
+        }
+        case "cryptogram": {
+          const gen = generateCryptogram(numSeed, diff);
+          const preview = gen.encoded.slice(0, 40);
+          return (
+            <div className="font-mono text-[8px] leading-tight text-muted-foreground bg-background border border-border/40 rounded px-2 py-1.5 max-w-[120px] overflow-hidden">
+              {preview}…
+            </div>
+          );
+        }
+        case "word-fill": {
+          const gen = generateWordFillIn(numSeed, diff);
+          const blacks = new Set(gen.blackCells.map(([r, c]) => `${r}-${c}`));
+          const cellSize = Math.max(3, Math.min(6, Math.floor(96 / gen.gridSize)));
+          return (
+            <div className="inline-grid border border-border/40 rounded overflow-hidden" style={{ gridTemplateColumns: `repeat(${gen.gridSize}, ${cellSize}px)` }}>
+              {Array.from({ length: gen.gridSize * gen.gridSize }, (_, idx) => {
+                const r = Math.floor(idx / gen.gridSize);
+                const c = idx % gen.gridSize;
+                const isBlack = blacks.has(`${r}-${c}`);
+                return <div key={idx} style={{ width: cellSize, height: cellSize }} className={isBlack ? "bg-foreground" : "bg-background"} />;
+              })}
+            </div>
+          );
+        }
+        default:
+          return <div className="w-16 h-16 bg-secondary/30 rounded flex items-center justify-center text-2xl">🧩</div>;
+      }
+    } catch {
+      return <div className="w-16 h-16 bg-destructive/10 rounded flex items-center justify-center text-[10px] text-destructive">Error</div>;
+    }
+  }, [type, numSeed, diff]);
+}
+
 function WeeklyPacksPreview() {
   const futurePacks = useMemo(() => generateFuturePacks(52), []);
   const overridesPacks = useMemo(() => {
@@ -863,6 +973,7 @@ function WeeklyPacksPreview() {
   const [dbPacks, setDbPacks] = useState<any[]>([]);
   const [loadingDb, setLoadingDb] = useState(true);
   const [expandedPackId, setExpandedPackId] = useState<string | null>(null);
+  const [expandedScheduleId, setExpandedScheduleId] = useState<string | null>(null);
 
   // ── Create form state ──
   const [showForm, setShowForm] = useState(false);
@@ -1168,16 +1279,29 @@ function WeeklyPacksPreview() {
                   {/* Expanded detail */}
                   {isExpanded && (
                     <div className="border-t px-4 pb-4 pt-3 space-y-3">
-                      {/* Puzzles */}
-                      <div className="space-y-1.5">
-                        {puzzles.map((p, i) => (
-                          <div key={i} className="flex items-center gap-2 rounded-lg bg-secondary/40 px-3 py-2">
-                            <span className="text-sm">{TYPE_EMOJI[p.type] ?? "🧩"}</span>
-                            <span className="text-sm font-medium text-foreground flex-1">{p.title || "Untitled"}</span>
-                            <span className="text-[10px] text-muted-foreground capitalize">{p.type}</span>
-                            <span className="text-[10px] text-muted-foreground capitalize">· {p.difficulty}</span>
-                          </div>
-                        ))}
+                      {/* Puzzles with mini previews */}
+                      <div className="space-y-3">
+                        {puzzles.map((p, i) => {
+                          const pSeed = `db-${pack.id}-${i}`;
+                          const numSeed = hashStringSeed(pSeed);
+                          return (
+                            <div key={i} className="flex items-start gap-3 rounded-lg bg-secondary/40 px-3 py-3">
+                              <MiniPuzzlePreview type={p.type} seed={pSeed} difficulty={p.difficulty} />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-foreground">{p.title || "Untitled"}</p>
+                                <p className="text-[10px] text-muted-foreground capitalize">{p.type} · {p.difficulty}</p>
+                              </div>
+                              <a
+                                href={`/quick-play/${p.type}?seed=${numSeed}&d=${p.difficulty}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary px-2.5 py-1.5 text-[11px] font-medium transition-colors"
+                              >
+                                <Play size={10} /> Play
+                              </a>
+                            </div>
+                          );
+                        })}
                         {puzzles.length === 0 && (
                           <p className="text-xs text-muted-foreground italic">No puzzles defined</p>
                         )}
@@ -1263,50 +1387,97 @@ function WeeklyPacksPreview() {
           Next 52 weeks of packs. Override packs are highlighted.
         </p>
         <div className="grid gap-2">
-          {futurePacks.map((pack) => (
-            <div
-              key={pack.id}
-              className={cn(
-                "rounded-xl border p-3 flex items-start gap-3",
-                pack.isCurrent && "ring-2 ring-primary",
-                pack.isOverride ? "bg-primary/5 border-primary/20" : "bg-card"
-              )}
-            >
-              <span className="text-xl shrink-0 mt-0.5">{pack.emoji}</span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-semibold text-foreground text-sm">{pack.theme}</p>
-                  {pack.isCurrent && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-primary text-primary-foreground px-1.5 py-0.5 rounded">Now</span>
-                  )}
-                  {pack.isOverride && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-accent text-accent-foreground px-1.5 py-0.5 rounded">Special</span>
-                  )}
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5">{pack.description}</p>
-                <div className="flex flex-wrap gap-1 mt-1.5">
-                  {pack.puzzleTitles.map((title, i) => (
-                    <span key={i} className="text-[10px] bg-secondary/50 rounded px-1.5 py-0.5 text-muted-foreground">
-                      {TYPE_EMOJI[pack.puzzleTypes[i]] ?? "🧩"} {title}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-[11px] font-mono text-muted-foreground">
-                  W{pack.weekNumber} '{String(pack.year).slice(2)}
-                </p>
-                <p className="text-[10px] text-muted-foreground/60">
-                  {pack.releaseDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                </p>
-                {pack.isOverride && pack.overrideFrom && (
-                  <p className="text-[9px] text-primary/60 mt-0.5">
-                    {pack.overrideFrom} → {pack.overrideTo}
-                  </p>
+          {futurePacks.map((pack) => {
+            const isScheduleExpanded = expandedScheduleId === pack.id;
+            return (
+              <div
+                key={pack.id}
+                className={cn(
+                  "rounded-xl border overflow-hidden transition-all",
+                  pack.isCurrent && "ring-2 ring-primary",
+                  pack.isOverride ? "bg-primary/5 border-primary/20" : "bg-card"
+                )}
+              >
+                {/* Clickable header */}
+                <button
+                  onClick={() => setExpandedScheduleId(isScheduleExpanded ? null : pack.id)}
+                  className="w-full p-3 flex items-start gap-3 text-left"
+                >
+                  <span className="text-xl shrink-0 mt-0.5">{pack.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-foreground text-sm">{pack.theme}</p>
+                      {pack.isCurrent && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-primary text-primary-foreground px-1.5 py-0.5 rounded">Now</span>
+                      )}
+                      {pack.isOverride && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-accent text-accent-foreground px-1.5 py-0.5 rounded">Special</span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{pack.description}</p>
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {pack.puzzleTitles.map((title, i) => (
+                        <span key={i} className="text-[10px] bg-secondary/50 rounded px-1.5 py-0.5 text-muted-foreground">
+                          {TYPE_EMOJI[pack.puzzleTypes[i]] ?? "🧩"} {title}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0 flex items-center gap-2">
+                    <div>
+                      <p className="text-[11px] font-mono text-muted-foreground">
+                        W{pack.weekNumber} '{String(pack.year).slice(2)}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground/60">
+                        {pack.releaseDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </p>
+                      {pack.isOverride && pack.overrideFrom && (
+                        <p className="text-[9px] text-primary/60 mt-0.5">
+                          {pack.overrideFrom} → {pack.overrideTo}
+                        </p>
+                      )}
+                    </div>
+                    <ChevronRight
+                      size={14}
+                      className={cn(
+                        "text-muted-foreground/60 transition-transform",
+                        isScheduleExpanded && "rotate-90"
+                      )}
+                    />
+                  </div>
+                </button>
+
+                {/* Expanded puzzle previews */}
+                {isScheduleExpanded && (
+                  <div className="border-t px-4 pb-4 pt-3 space-y-3">
+                    {pack.puzzleTitles.map((title, i) => {
+                      const pSeed = pack.puzzleSeeds[i];
+                      const numSeed = hashStringSeed(pSeed);
+                      const pType = pack.puzzleTypes[i];
+                      const pDiff = pack.puzzleDifficulties[i];
+                      return (
+                        <div key={i} className="flex items-start gap-3 rounded-lg bg-secondary/40 px-3 py-3">
+                          <MiniPuzzlePreview type={pType} seed={pSeed} difficulty={pDiff} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground">{title}</p>
+                            <p className="text-[10px] text-muted-foreground capitalize">{pType} · {pDiff}</p>
+                          </div>
+                          <a
+                            href={`/quick-play/${pType}?seed=${numSeed}&d=${pDiff}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary px-2.5 py-1.5 text-[11px] font-medium transition-colors"
+                          >
+                            <Play size={10} /> Play
+                          </a>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
     </div>
