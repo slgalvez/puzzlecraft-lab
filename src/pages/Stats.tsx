@@ -29,7 +29,8 @@ import { usePremiumAccess } from "@/lib/premiumAccess";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 import { checkMilestones } from "@/lib/milestones";
 import { getSolveRecords } from "@/lib/solveTracker";
-import { computePlayerRating, getSkillTier, getTierColor, getTierProgress } from "@/lib/solveScoring";
+import { computePlayerRating, getSkillTier, getTierColor, getTierProgress, getPlayerRatingInfo } from "@/lib/solveScoring";
+import { ProvisionalRatingCard } from "@/components/puzzles/ProvisionalRatingCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -73,20 +74,22 @@ const Stats = () => {
   const { account } = useUserAccount();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
-  // Local rating
-  const localRating = useMemo(() => {
-    if (!premiumAccess) return null;
+  // Unified rating info — handles provisional, confirmed, and no-data states
+  const ratingInfo = useMemo(() => {
     const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
-    if (recs.length < 10) return null;
-    const rating = computePlayerRating(recs);
-    const tier   = getSkillTier(rating);
-    let bestRating = rating;
-    for (let i = 1; i <= Math.max(0, recs.length - 10); i++) {
-      const r = computePlayerRating(recs.slice(i));
-      if (r > bestRating) bestRating = r;
-    }
-    return { rating, tier, solveCount: recs.length, bestRating };
-  }, [dataVersion, premiumAccess]);
+    return getPlayerRatingInfo(recs);
+  }, [dataVersion]);
+
+  // Keep localRating for components that still reference it (backwards compat)
+  const localRating = useMemo(() => {
+    if (!premiumAccess || ratingInfo.hasNoData) return null;
+    return {
+      rating:     ratingInfo.rating,
+      tier:       ratingInfo.tier,
+      solveCount: ratingInfo.solveCount,
+      bestRating: ratingInfo.rating,
+    };
+  }, [premiumAccess, ratingInfo]);
 
   const { data: myLeaderboardEntry } = useQuery({
     queryKey: ["my-leaderboard-entry", account?.id, dataVersion],
