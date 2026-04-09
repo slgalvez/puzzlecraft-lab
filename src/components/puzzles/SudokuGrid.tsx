@@ -251,7 +251,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
         progressTotal={session.progressTotal}
         progressUnit={session.progressUnit}
       />
-      {!isMobile && (
+      {!needsKeyboard && (
         <p className="mb-2 text-xs text-muted-foreground">
           Arrow keys to move • 1–9 to enter • Delete to clear
         </p>
@@ -288,8 +288,8 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
                 )}
                 onClick={() => {
                   setActiveCell([r, c]);
-                  if (isMobile) haptic();
-                  if (!isMobile) containerRef.current?.focus();
+                  if (needsKeyboard) haptic();
+                  if (!needsKeyboard) containerRef.current?.focus();
                 }}
               >
                 <span className={cn(
@@ -305,7 +305,7 @@ const SudokuGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isEndle
       </div>
       </div>
       <MobileNumberPad
-        visible={isMobile && !!activeCell && !timer.isSolved && !isRevealed}
+        visible={needsKeyboard && !!activeCell && !timer.isSolved && !isRevealed}
         onNumber={enterNumber}
         onDelete={deleteCell}
       />
