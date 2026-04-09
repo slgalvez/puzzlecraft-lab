@@ -814,6 +814,8 @@ function generateFuturePacks(weeksAhead: number): FuturePackInfo[] {
       const overrideId = `override-${override.from}`;
       if (packs.some(p => p.id === overrideId)) continue;
 
+      const overrideDiffs = override.puzzles.map(p => p.difficulty);
+      const overrideSeeds = override.puzzles.map((p, i) => `override-${override.from}-${i}`);
       packs.push({
         id: overrideId,
         weekNumber: week,
@@ -823,6 +825,8 @@ function generateFuturePacks(weeksAhead: number): FuturePackInfo[] {
         description: override.description,
         puzzleTitles: override.puzzles.map(p => p.title),
         puzzleTypes: override.puzzles.map(p => p.type),
+        puzzleDifficulties: overrideDiffs,
+        puzzleSeeds: overrideSeeds,
         releaseDate,
         isOverride: true,
         overrideFrom: override.from,
