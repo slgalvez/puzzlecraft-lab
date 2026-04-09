@@ -141,7 +141,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
       for (let c = 0; c < gridSize; c++)
         if (!isBlack(r, c)) {
           setActiveCell([r, c]);
-          if (!isMobile) containerRef.current?.focus();
+          if (!needsKeyboard) containerRef.current?.focus();
           return;
         }
   }, [puzzle.id]);
@@ -292,13 +292,13 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
 
   const handleCellClick = (r: number, c: number) => {
     if (isBlack(r, c)) return;
-    if (isMobile) haptic();
+    if (needsKeyboard) haptic();
     if (activeCell && activeCell[0] === r && activeCell[1] === c) {
       setDirection((d) => (d === "across" ? "down" : "across"));
     } else {
       setActiveCell([r, c]);
     }
-    if (isMobile) {
+    if (needsKeyboard) {
       mobileInputRef.current?.focus();
     } else {
       containerRef.current?.focus();
@@ -313,7 +313,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
     resetCount.current++;
     timer.reset();
     clearProgress(timerKey);
-    if (!isMobile) containerRef.current?.focus();
+    if (!needsKeyboard) containerRef.current?.focus();
   };
 
   const handleCheck = () => {
@@ -407,7 +407,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
           progressUnit={session.progressUnit}
         />
 
-        {isMobile && activeCell && !timer.isSolved && !isRevealed && (
+        {needsKeyboard && activeCell && !timer.isSolved && !isRevealed && (
           <div className="flex items-center gap-2 mb-2">
             <button
               type="button"
@@ -432,7 +432,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
           </div>
         )}
 
-        {isMobile && activeClue && !timer.isSolved && !isRevealed && (
+        {needsKeyboard && activeClue && !timer.isSolved && !isRevealed && (
           <div className="mb-2 rounded-lg border bg-card/95 px-3 py-2 text-sm leading-snug">
             <span className="font-semibold text-primary mr-1.5">
               {activeClue.number}{activeClue.direction === "across" ? "A" : "D"}
@@ -441,7 +441,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
           </div>
         )}
 
-        {!isMobile && (
+        {!needsKeyboard && (
           <p className="mb-2 text-xs text-muted-foreground">
             Arrow keys to move • Tab for next word • Click cell to toggle direction
           </p>
@@ -449,7 +449,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
 
         <MobileLetterInput
           ref={mobileInputRef}
-          active={isMobile && !!activeCell && !timer.isSolved && !isRevealed}
+          active={needsKeyboard && !!activeCell && !timer.isSolved && !isRevealed}
           onLetter={enterLetter}
           onDelete={deleteLetter}
         />
