@@ -120,10 +120,10 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
     const el = inputRefs.current.get(idx);
     if (!el) return;
     el.focus();
-    if (isMobile) {
+    if (needsKeyboard) {
       setTimeout(() => {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 320);
+      }, 200);
     }
   };
 
@@ -242,12 +242,12 @@ const CryptogramPuzzle = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, i
         progressTotal={session.progressTotal}
         progressUnit={session.progressUnit}
       />
-      {!isMobile && (
+      {!needsKeyboard && (
         <p className="mb-3 text-xs text-muted-foreground">
           Type letters to guess • Arrow keys to move • All matching letters update together
         </p>
       )}
-      {isMobile && (
+      {needsKeyboard && (
         <p className="mb-3 text-xs text-muted-foreground">
           Tap a letter to focus • Type to guess • Matching letters update together
         </p>
