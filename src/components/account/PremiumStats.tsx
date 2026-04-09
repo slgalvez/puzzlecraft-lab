@@ -35,7 +35,9 @@ import {
   getTierColor,
   getTierProgress,
   trueMistakes,
+  getPlayerRatingInfo,
 } from "@/lib/solveScoring";
+import { ProvisionalRatingCard } from "@/components/puzzles/ProvisionalRatingCard";
 import { getBestInsight } from "@/lib/solveInsights";
 import {
   getAllMilestones,
