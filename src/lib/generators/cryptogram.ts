@@ -14,17 +14,23 @@ const HINT_COUNTS: Record<Difficulty, number> = {
   easy: 6, medium: 3, hard: 1, extreme: 0, insane: 0,
 };
 
-export function generateCryptogram(seed: number, difficulty: Difficulty): CryptogramPuzzle {
+export function generateCryptogram(seed: number, difficulty: Difficulty, forcedQuote?: string): CryptogramPuzzle {
   const rng = new SeededRandom(seed);
 
-  // Pick quote based on difficulty (longer quotes for harder levels)
-  const sorted = [...QUOTES].sort((a, b) => a.length - b.length);
-  const rangeStart: Record<Difficulty, number> = { easy: 0, medium: 0.15, hard: 0.35, extreme: 0.6, insane: 0.8 };
-  const rangeEnd: Record<Difficulty, number> = { easy: 0.3, medium: 0.5, hard: 0.7, extreme: 0.9, insane: 1 };
-  const lo = Math.floor(sorted.length * rangeStart[difficulty]);
-  const hi = Math.min(Math.floor(sorted.length * rangeEnd[difficulty]), sorted.length - 1);
-  const idx = rng.nextInt(lo, hi);
-  const decoded = sorted[idx];
+  let decoded: string;
+
+  if (forcedQuote && forcedQuote.length > 10) {
+    decoded = forcedQuote.toUpperCase();
+  } else {
+    // Pick quote based on difficulty (longer quotes for harder levels)
+    const sorted = [...QUOTES].sort((a, b) => a.length - b.length);
+    const rangeStart: Record<Difficulty, number> = { easy: 0, medium: 0.15, hard: 0.35, extreme: 0.6, insane: 0.8 };
+    const rangeEnd: Record<Difficulty, number> = { easy: 0.3, medium: 0.5, hard: 0.7, extreme: 0.9, insane: 1 };
+    const lo = Math.floor(sorted.length * rangeStart[difficulty]);
+    const hi = Math.min(Math.floor(sorted.length * rangeEnd[difficulty]), sorted.length - 1);
+    const idx = rng.nextInt(lo, hi);
+    decoded = sorted[idx];
+  }
 
   // Create substitution cipher
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
