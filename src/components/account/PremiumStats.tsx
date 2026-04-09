@@ -90,7 +90,6 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
   const demoActive = useMemo(() => hasDemoData(), [refreshKey]);
   const records = useMemo(() => getSolveRecords(isAdmin && demoActive), [refreshKey, isAdmin, demoActive]);
   const summary = useMemo(() => getSolveSummary(isAdmin && demoActive), [refreshKey, isAdmin, demoActive]);
-  const demoActive = useMemo(() => hasDemoData(), [refreshKey]);
   const demoLeaderboardActive = useMemo(() => hasDemoLeaderboard(), [refreshKey]);
   const [historyExpanded, setHistoryExpanded] = useState(false);
 
