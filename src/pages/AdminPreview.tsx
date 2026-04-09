@@ -914,7 +914,7 @@ function MiniPuzzlePreview({ type, seed, difficulty }: { type: string; seed: str
           );
         }
         case "word-search": {
-          const words = WORD_CLUES.slice(0, 10).map(w => w.word);
+          const words = WORD_CLUES.slice(0, 10).map(w => w[0]);
           const gen = generateWordSearch(numSeed, diff, words);
           const cellSize = Math.max(3, Math.min(5, Math.floor(80 / gen.size)));
           return (
