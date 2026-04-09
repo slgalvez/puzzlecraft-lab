@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Clock, Users, Bell, Smartphone, Eye, Shield, Sparkles, X } from "lucide-react";
+import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Clock, Users, Bell, Smartphone, Eye, Shield, Sparkles, X, ChevronRight } from "lucide-react";
 import { generateNonogram } from "@/lib/generators/nonogram";
 import { SCHEDULED_OVERRIDES, type PackOverride } from "@/lib/packOverrides";
 import { type WeeklyPack, type PackPuzzle } from "@/lib/weeklyPacks";
@@ -854,22 +854,371 @@ const TYPE_EMOJI: Record<string, string> = {
 function WeeklyPacksPreview() {
   const futurePacks = useMemo(() => generateFuturePacks(52), []);
   const overridesPacks = useMemo(() => {
-    // Show ALL scheduled overrides sorted by date, including past
     return [...SCHEDULED_OVERRIDES]
       .sort((a, b) => a.from.localeCompare(b.from))
-      .map((o) => ({
-        ...o,
-        isPast: new Date(o.to) < new Date(),
-      }));
+      .map((o) => ({ ...o, isPast: new Date(o.to) < new Date() }));
   }, []);
+
+  // ── DB custom packs ──
+  const [dbPacks, setDbPacks] = useState<any[]>([]);
+  const [loadingDb, setLoadingDb] = useState(true);
+  const [expandedPackId, setExpandedPackId] = useState<string | null>(null);
+
+  // ── Create form state ──
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formTheme, setFormTheme] = useState("");
+  const [formEmoji, setFormEmoji] = useState("🧩");
+  const [formDesc, setFormDesc] = useState("");
+  const [formFrom, setFormFrom] = useState("");
+  const [formTo, setFormTo] = useState("");
+  const [formPuzzles, setFormPuzzles] = useState<{ title: string; type: string; difficulty: string }[]>([
+    { title: "", type: "crossword", difficulty: "easy" },
+    { title: "", type: "word-search", difficulty: "easy" },
+    { title: "", type: "sudoku", difficulty: "medium" },
+    { title: "", type: "cryptogram", difficulty: "medium" },
+    { title: "", type: "word-fill", difficulty: "hard" },
+  ]);
+  const [saving, setSaving] = useState(false);
+
+  const fetchDbPacks = useCallback(async () => {
+    setLoadingDb(true);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data } = await supabase
+        .from("custom_weekly_packs")
+        .select("*")
+        .order("from_date", { ascending: true });
+      setDbPacks(data ?? []);
+    } catch {}
+    setLoadingDb(false);
+  }, []);
+
+  useEffect(() => { fetchDbPacks(); }, [fetchDbPacks]);
+
+  const resetForm = () => {
+    setFormTheme(""); setFormEmoji("🧩"); setFormDesc(""); setFormFrom(""); setFormTo("");
+    setFormPuzzles([
+      { title: "", type: "crossword", difficulty: "easy" },
+      { title: "", type: "word-search", difficulty: "easy" },
+      { title: "", type: "sudoku", difficulty: "medium" },
+      { title: "", type: "cryptogram", difficulty: "medium" },
+      { title: "", type: "word-fill", difficulty: "hard" },
+    ]);
+    setEditingId(null);
+  };
+
+  const handleEdit = (pack: any) => {
+    setEditingId(pack.id);
+    setFormTheme(pack.theme);
+    setFormEmoji(pack.emoji);
+    setFormDesc(pack.description);
+    setFormFrom(pack.from_date);
+    setFormTo(pack.to_date);
+    const puzzles = (pack.puzzles ?? []) as { title: string; type: string; difficulty: string }[];
+    while (puzzles.length < 5) puzzles.push({ title: "", type: "crossword", difficulty: "easy" });
+    setFormPuzzles(puzzles.slice(0, 5));
+    setShowForm(true);
+  };
+
+  const handleSave = async () => {
+    if (!formTheme || !formFrom || !formTo) return;
+    setSaving(true);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const payload = {
+        theme: formTheme,
+        emoji: formEmoji,
+        description: formDesc,
+        from_date: formFrom,
+        to_date: formTo,
+        puzzles: formPuzzles.filter(p => p.title.trim()),
+      };
+      if (editingId) {
+        await supabase.from("custom_weekly_packs").update(payload).eq("id", editingId);
+      } else {
+        await supabase.from("custom_weekly_packs").insert(payload);
+      }
+      setShowForm(false);
+      resetForm();
+      await fetchDbPacks();
+    } catch {}
+    setSaving(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    const { supabase } = await import("@/integrations/supabase/client");
+    await supabase.from("custom_weekly_packs").delete().eq("id", id);
+    await fetchDbPacks();
+  };
+
+  const handleToggleActive = async (id: string, current: boolean) => {
+    const { supabase } = await import("@/integrations/supabase/client");
+    await supabase.from("custom_weekly_packs").update({ is_active: !current }).eq("id", id);
+    await fetchDbPacks();
+  };
+
+  const updatePuzzle = (index: number, field: string, value: string) => {
+    setFormPuzzles(prev => prev.map((p, i) => i === index ? { ...p, [field]: value } : p));
+  };
+
+  const PUZZLE_TYPES = ["crossword", "word-search", "sudoku", "cryptogram", "word-fill"];
+  const DIFFICULTIES = ["easy", "medium", "hard"];
+  const EMOJI_OPTIONS = ["🧩", "🌍", "🎬", "🌿", "🍳", "🧠", "🎮", "🎵", "📚", "🏆", "🚀", "🏛️", "✨", "🎃", "🦃", "🎄", "🎉", "❤️", "☘️", "⛳", "🥇", "🏈", "🎆", "🌸", "🌊", "🎭", "🎪", "🏖️", "🎯", "🔥"];
 
   return (
     <div className="space-y-8">
-      {/* Scheduled Overrides (Special Packs) */}
+
+      {/* ── DB Custom Packs ────────────────────────────────────────────── */}
       <section>
-        <h2 className="text-lg font-bold text-foreground mb-1">Special Packs (Overrides)</h2>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-lg font-bold text-foreground">Custom Packs (Database)</h2>
+            <p className="text-xs text-muted-foreground">
+              {dbPacks.length} pack{dbPacks.length !== 1 ? "s" : ""} saved. These override auto-rotation when active.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => { resetForm(); setShowForm(true); }}
+            className="gap-1.5"
+          >
+            <span className="text-lg leading-none">+</span> New Pack
+          </Button>
+        </div>
+
+        {/* Create / Edit Form */}
+        {showForm && (
+          <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4 space-y-4 mb-4">
+            <h3 className="font-bold text-foreground text-sm">
+              {editingId ? "Edit Pack" : "Create New Pack"}
+            </h3>
+
+            <div className="grid grid-cols-2 gap-3">
+              {/* Theme */}
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Theme / Title</label>
+                <input
+                  type="text"
+                  value={formTheme}
+                  onChange={(e) => setFormTheme(e.target.value)}
+                  placeholder="e.g. Summer Vibes"
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50"
+                />
+              </div>
+
+              {/* Emoji picker */}
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Emoji</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {EMOJI_OPTIONS.map((e) => (
+                    <button
+                      key={e}
+                      onClick={() => setFormEmoji(e)}
+                      className={cn(
+                        "w-8 h-8 rounded-lg text-lg flex items-center justify-center transition-all",
+                        formEmoji === e ? "ring-2 ring-primary bg-primary/10 scale-110" : "hover:bg-secondary/50"
+                      )}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="col-span-2">
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Description</label>
+                <input
+                  type="text"
+                  value={formDesc}
+                  onChange={(e) => setFormDesc(e.target.value)}
+                  placeholder="Short tagline for the pack card"
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50"
+                />
+              </div>
+
+              {/* Date range */}
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Start Date</label>
+                <input
+                  type="date"
+                  value={formFrom}
+                  onChange={(e) => setFormFrom(e.target.value)}
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">End Date</label>
+                <input
+                  type="date"
+                  value={formTo}
+                  onChange={(e) => setFormTo(e.target.value)}
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground"
+                />
+              </div>
+            </div>
+
+            {/* Puzzles */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground block mb-2">Puzzles (up to 5)</label>
+              <div className="space-y-2">
+                {formPuzzles.map((p, i) => (
+                  <div key={i} className="flex items-center gap-2 rounded-lg bg-background border p-2">
+                    <span className="text-xs text-muted-foreground w-4 shrink-0">{i + 1}.</span>
+                    <input
+                      type="text"
+                      value={p.title}
+                      onChange={(e) => updatePuzzle(i, "title", e.target.value)}
+                      placeholder="Puzzle title"
+                      className="flex-1 min-w-0 rounded border-0 bg-transparent px-1 py-1 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
+                    />
+                    <select
+                      value={p.type}
+                      onChange={(e) => updatePuzzle(i, "type", e.target.value)}
+                      className="rounded border bg-background px-1.5 py-1 text-xs text-foreground"
+                    >
+                      {PUZZLE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    <select
+                      value={p.difficulty}
+                      onChange={(e) => updatePuzzle(i, "difficulty", e.target.value)}
+                      className="rounded border bg-background px-1.5 py-1 text-xs text-foreground"
+                    >
+                      {DIFFICULTIES.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={() => { setShowForm(false); resetForm(); }}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleSave} disabled={saving || !formTheme || !formFrom || !formTo}>
+                {saving ? "Saving..." : editingId ? "Update Pack" : "Create Pack"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* DB Pack list */}
+        {loadingDb ? (
+          <p className="text-xs text-muted-foreground py-4">Loading custom packs...</p>
+        ) : dbPacks.length === 0 ? (
+          <div className="rounded-xl border border-dashed p-6 text-center">
+            <p className="text-sm text-muted-foreground">No custom packs yet. Click "New Pack" to create one.</p>
+          </div>
+        ) : (
+          <div className="grid gap-3">
+            {dbPacks.map((pack) => {
+              const isPast = new Date(pack.to_date) < new Date();
+              const isExpanded = expandedPackId === pack.id;
+              const puzzles = (pack.puzzles ?? []) as { title: string; type: string; difficulty: string }[];
+
+              return (
+                <div
+                  key={pack.id}
+                  className={cn(
+                    "rounded-xl border overflow-hidden transition-all",
+                    !pack.is_active ? "opacity-40" : isPast ? "opacity-60 bg-muted/30" : "bg-card"
+                  )}
+                >
+                  {/* Header — clickable to expand */}
+                  <button
+                    onClick={() => setExpandedPackId(isExpanded ? null : pack.id)}
+                    className="w-full flex items-center justify-between p-4 text-left"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="text-2xl">{pack.emoji}</span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-bold text-foreground truncate">{pack.theme}</p>
+                          {!pack.is_active && (
+                            <span className="text-[9px] font-bold uppercase bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">Disabled</span>
+                          )}
+                          {isPast && pack.is_active && (
+                            <span className="text-[9px] font-bold uppercase bg-muted text-muted-foreground px-1.5 py-0.5 rounded">Past</span>
+                          )}
+                          {!isPast && pack.is_active && (
+                            <span className="text-[9px] font-bold uppercase bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                              {new Date(pack.from_date) <= new Date() ? "Active" : "Scheduled"}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">{pack.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="text-right">
+                        <p className="text-xs font-mono text-muted-foreground">{pack.from_date}</p>
+                        <p className="text-xs font-mono text-muted-foreground">→ {pack.to_date}</p>
+                      </div>
+                      <ChevronRight
+                        size={14}
+                        className={cn(
+                          "text-muted-foreground/60 transition-transform",
+                          isExpanded && "rotate-90"
+                        )}
+                      />
+                    </div>
+                  </button>
+
+                  {/* Expanded detail */}
+                  {isExpanded && (
+                    <div className="border-t px-4 pb-4 pt-3 space-y-3">
+                      {/* Puzzles */}
+                      <div className="space-y-1.5">
+                        {puzzles.map((p, i) => (
+                          <div key={i} className="flex items-center gap-2 rounded-lg bg-secondary/40 px-3 py-2">
+                            <span className="text-sm">{TYPE_EMOJI[p.type] ?? "🧩"}</span>
+                            <span className="text-sm font-medium text-foreground flex-1">{p.title || "Untitled"}</span>
+                            <span className="text-[10px] text-muted-foreground capitalize">{p.type}</span>
+                            <span className="text-[10px] text-muted-foreground capitalize">· {p.difficulty}</span>
+                          </div>
+                        ))}
+                        {puzzles.length === 0 && (
+                          <p className="text-xs text-muted-foreground italic">No puzzles defined</p>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2 justify-end pt-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleToggleActive(pack.id, pack.is_active)}
+                          className="text-xs"
+                        >
+                          {pack.is_active ? "Disable" : "Enable"}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleEdit(pack)} className="text-xs">
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => { if (confirm("Delete this pack?")) handleDelete(pack.id); }}
+                          className="text-xs text-destructive hover:text-destructive"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* ── Code-Defined Overrides ─────────────────────────────────────── */}
+      <section>
+        <h2 className="text-lg font-bold text-foreground mb-1">Code-Defined Special Packs</h2>
         <p className="text-xs text-muted-foreground mb-4">
-          {SCHEDULED_OVERRIDES.length} scheduled special packs. These override the auto-rotation when active.
+          {SCHEDULED_OVERRIDES.length} packs defined in code. These require redeployment to change.
         </p>
         <div className="grid gap-3">
           {overridesPacks.map((o) => (
@@ -896,10 +1245,7 @@ function WeeklyPacksPreview() {
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {o.puzzles.map((p, i) => (
-                  <span
-                    key={i}
-                    className="inline-flex items-center gap-1 rounded-lg bg-secondary/60 px-2 py-1 text-[11px] text-foreground"
-                  >
+                  <span key={i} className="inline-flex items-center gap-1 rounded-lg bg-secondary/60 px-2 py-1 text-[11px] text-foreground">
                     {TYPE_EMOJI[p.type] ?? "🧩"} {p.title}
                     <span className="text-muted-foreground/60 capitalize">· {p.difficulty}</span>
                   </span>
@@ -910,7 +1256,7 @@ function WeeklyPacksPreview() {
         </div>
       </section>
 
-      {/* Future Auto-Rotation + Override Timeline */}
+      {/* ── 52-Week Schedule ───────────────────────────────────────────── */}
       <section>
         <h2 className="text-lg font-bold text-foreground mb-1">52-Week Schedule</h2>
         <p className="text-xs text-muted-foreground mb-4">

@@ -323,6 +323,45 @@ export type Database = {
           },
         ]
       }
+      custom_weekly_packs: {
+        Row: {
+          created_at: string
+          description: string
+          emoji: string
+          from_date: string
+          id: string
+          is_active: boolean
+          puzzles: Json
+          theme: string
+          to_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          emoji?: string
+          from_date: string
+          id?: string
+          is_active?: boolean
+          puzzles?: Json
+          theme: string
+          to_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          emoji?: string
+          from_date?: string
+          id?: string
+          is_active?: boolean
+          puzzles?: Json
+          theme?: string
+          to_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       daily_scores: {
         Row: {
           created_at: string | null

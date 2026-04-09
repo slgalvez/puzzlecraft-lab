@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Crown, Lock, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hapticTap } from "@/lib/haptic";
-import { getCurrentWeeklyPack, getPackCompletionCount } from "@/lib/weeklyPacks";
+import { getCurrentWeeklyPack, getPackCompletionCount, fetchDbCustomPacks } from "@/lib/weeklyPacks";
 import { usePremiumAccess } from "@/lib/premiumAccess";
 import UpgradeModal from "@/components/account/UpgradeModal";
 
@@ -11,8 +11,14 @@ export function WeeklyPackCard() {
   const navigate = useNavigate();
   const { isPremium } = usePremiumAccess();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [ready, setReady] = useState(false);
 
-  const pack = useMemo(() => getCurrentWeeklyPack(null), []);
+  // Warm DB cache then compute pack
+  useEffect(() => {
+    fetchDbCustomPacks().then(() => setReady(true));
+  }, []);
+
+  const pack = useMemo(() => getCurrentWeeklyPack(null), [ready]);
   const completed = getPackCompletionCount(pack.id);
   const progressPct = (completed / pack.puzzles.length) * 100;
 
