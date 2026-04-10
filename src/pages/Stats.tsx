@@ -310,7 +310,7 @@ const Stats = () => {
         )}
 
         {/* Two-column desktop layout */}
-        <div className={cn("grid gap-8 items-start", !native && "lg:grid-cols-[1fr_340px]")}>
+        <div className="grid lg:grid-cols-[1fr_340px] gap-8 items-start">
 
           {/* ── LEFT COLUMN ── */}
           <div className="space-y-6 min-w-0">
@@ -444,8 +444,7 @@ const Stats = () => {
           </div>
           {/* ── end LEFT COLUMN ── */}
 
-          {/* ── RIGHT COLUMN (web only) ── */}
-          {!native && (
+          {/* ── RIGHT COLUMN ── */}
           <div className="space-y-5 lg:sticky lg:top-24">
 
             {/* By puzzle type */}
@@ -555,7 +554,6 @@ const Stats = () => {
             )}
 
           </div>
-          )}
           {/* ── end RIGHT COLUMN ── */}
 
         </div>
