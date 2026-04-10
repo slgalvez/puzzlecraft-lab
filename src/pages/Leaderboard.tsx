@@ -1,14 +1,24 @@
+/**
+ * Leaderboard.tsx — LAUNCH-READY REPLACEMENT
+ * src/pages/Leaderboard.tsx
+ *
+ * FIX: Removed demo/fake player data that was injected when <10 real entries exist.
+ *      Demo data was showing fake names ("PuzzleMaster99", "GridNinja", etc.) to
+ *      real users who had not yet appeared on the leaderboard. This is a launch blocker.
+ *      Replaced with a proper empty state and a motivational CTA.
+ */
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/layout/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserAccount } from "@/contexts/UserAccountContext";
 import { cn } from "@/lib/utils";
-import { Trophy, Medal, Shield, TrendingUp, TrendingDown, Zap, Info } from "lucide-react";
+import { Trophy, Medal, Shield, TrendingUp, TrendingDown, Zap, ArrowRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Link } from "react-router-dom";
 import { getSolveRecords } from "@/lib/solveTracker";
 import { computePlayerRating, getSkillTier, getTierColor, getTierProgress } from "@/lib/solveScoring";
 import { hasPremiumAccess } from "@/lib/premiumAccess";
@@ -24,26 +34,26 @@ interface LeaderboardEntry {
 }
 
 const TIER_COLORS: Record<string, string> = {
-  Expert: "text-amber-500",
+  Expert:   "text-amber-500",
   Advanced: "text-orange-500",
-  Skilled: "text-emerald-500",
-  Casual: "text-sky-500",
+  Skilled:  "text-emerald-500",
+  Casual:   "text-sky-500",
   Beginner: "text-muted-foreground",
 };
 
 const TIER_BG: Record<string, string> = {
-  Expert: "bg-amber-500/10",
+  Expert:   "bg-amber-500/10",
   Advanced: "bg-orange-500/10",
-  Skilled: "bg-emerald-500/10",
-  Casual: "bg-sky-500/10",
+  Skilled:  "bg-emerald-500/10",
+  Casual:   "bg-sky-500/10",
   Beginner: "bg-muted/50",
 };
 
 const TIER_THRESHOLDS: { tier: string; min: number }[] = [
-  { tier: "Expert", min: 1200 },
+  { tier: "Expert",   min: 1200 },
   { tier: "Advanced", min: 950 },
-  { tier: "Skilled", min: 700 },
-  { tier: "Casual", min: 400 },
+  { tier: "Skilled",  min: 700 },
+  { tier: "Casual",   min: 400 },
   { tier: "Beginner", min: 0 },
 ];
 
@@ -105,42 +115,20 @@ export default function Leaderboard() {
     staleTime: 30_000,
   });
 
-  // Demo entries to fill leaderboard when real data is sparse
-  const demoEntries = useMemo((): LeaderboardEntry[] => {
-    const names = [
-      "PuzzleMaster99", "GridNinja", "WordSmithX", "SudokuSage", "CrossKing",
-      "BrainBolt", "TileRunner", "ClueHunter", "LogicLion", "NumberWiz",
-    ];
-    const ratings = [1350, 1180, 1050, 980, 920, 870, 810, 750, 680, 620];
-    return names.map((name, i) => {
-      const rating = ratings[i];
-      const diff = (i % 2 === 0 ? 1 : -1) * (5 + (i * 7) % 35);
-      const tier = rating >= 1200 ? "Expert" : rating >= 950 ? "Advanced" : rating >= 700 ? "Skilled" : rating >= 400 ? "Casual" : "Beginner";
-      return {
-        user_id: `demo-${i}`,
-        display_name: name,
-        rating,
-        previous_rating: rating - diff,
-        skill_tier: tier,
-        solve_count: 15 + i * 8,
-        updated_at: new Date().toISOString(),
-      };
-    });
-  }, []);
-
+  // ── Real entries only — NO demo data ──
   const ranked = useMemo(() => {
     const real = entries ?? [];
-    const merged = real.length >= 10 ? real : [...real, ...demoEntries.filter(d => !real.some(r => r.display_name === d.display_name))];
-    merged.sort((a, b) => b.rating - a.rating);
-    return merged.slice(0, 25).map((e, i) => ({ ...e, rank: i + 1 }));
-  }, [entries, demoEntries]);
+    return real
+      .sort((a, b) => b.rating - a.rating)
+      .slice(0, 25)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+  }, [entries]);
 
   const myEntry = useMemo(
     () => (account ? ranked.find((e) => e.user_id === account.id) : null),
     [ranked, account]
   );
 
-  // Local rating data for Your Rank card
   const localRating = useMemo(() => {
     const records = getSolveRecords().filter((r) => r.solveTime >= 10);
     if (records.length < 10) return null;
@@ -152,9 +140,7 @@ export default function Leaderboard() {
   const nextTier = localRating ? getNextTier(localRating.tier) : null;
   const tierProgress = localRating ? getTierProgress(localRating.rating) : 0;
   const ratingChange = myEntry ? myEntry.rating - myEntry.previous_rating : 0;
-
   const myRankOutside = myEntry && myEntry.rank > 25;
-  const displayEntries = ranked.slice(0, 25);
 
   return (
     <Layout>
@@ -164,10 +150,10 @@ export default function Leaderboard() {
           <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Leaderboard</h1>
         </div>
         <p className="text-muted-foreground mb-6">
-          Top players ranked by Player Rating. Minimum 10 completed solves to qualify.
+          Top players ranked by Player Rating. Solve at least 10 puzzles while signed in to qualify.
         </p>
 
-        {/* Your Rank Card — premium users */}
+        {/* Your Rank Card — premium users with enough solves */}
         {premiumAccess && localRating && (
           <div className="mb-6 rounded-2xl border-2 border-primary/20 bg-card p-5 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -176,9 +162,7 @@ export default function Leaderboard() {
                   <Zap size={16} className="text-primary" />
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your Rank</span>
                   {myEntry && (
-                    <span className="font-mono font-bold text-sm text-primary">
-                      #{myEntry.rank}
-                    </span>
+                    <span className="font-mono font-bold text-sm text-primary">#{myEntry.rank}</span>
                   )}
                 </div>
                 <p className={cn("text-lg font-semibold", getTierColor(localRating.tier as any))}>
@@ -210,6 +194,24 @@ export default function Leaderboard() {
           </div>
         )}
 
+        {/* Not enough solves yet — motivational nudge */}
+        {premiumAccess && localRating === null && (
+          <div className="mb-6 rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-5">
+            <div className="flex items-center gap-3">
+              <Zap size={18} className="text-primary shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">Keep solving to earn your rank</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  You need at least 10 completed puzzles to appear on the leaderboard.
+                  {getSolveRecords().filter(r => r.solveTime >= 10).length > 0 && (
+                    <> You have {getSolveRecords().filter(r => r.solveTime >= 10).length} so far.</>
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Time filter */}
         <div className="flex items-center gap-2 mb-6">
           <Button
@@ -228,7 +230,7 @@ export default function Leaderboard() {
           </Button>
         </div>
 
-        {/* Loading state */}
+        {/* Loading */}
         {isLoading && (
           <div className="space-y-3">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -237,99 +239,118 @@ export default function Leaderboard() {
           </div>
         )}
 
-        {/* Empty state */}
+        {/* Empty state — NO demo data */}
         {!isLoading && ranked.length === 0 && (
-          <div className="rounded-xl border bg-card p-8 text-center">
-            <Trophy className="mx-auto h-8 w-8 text-muted-foreground mb-3" />
+          <div className="rounded-xl border bg-card p-8 text-center space-y-3">
+            <Trophy className="mx-auto h-10 w-10 text-muted-foreground/30" />
+            <p className="font-display text-base font-semibold text-foreground">
+              {timeFilter === "week" ? "No active players this week" : "Be the first on the board"}
+            </p>
             <p className="text-sm text-muted-foreground">
               {timeFilter === "week"
-                ? "No active players this week. Switch to All Time to see the full leaderboard."
-                : "No players on the leaderboard yet. Solve at least 10 puzzles while signed in to appear here."}
+                ? "Switch to All Time to see the full leaderboard, or come back after playing some puzzles."
+                : "Solve at least 10 puzzles while signed in to earn your spot."}
             </p>
+            <Button asChild size="sm" variant="outline" className="mt-2">
+              <Link to="/daily">
+                Play Today's Challenge <ArrowRight size={14} className="ml-1.5" />
+              </Link>
+            </Button>
           </div>
         )}
 
-        {/* Leaderboard list */}
-        {!isLoading && displayEntries.length > 0 && (
+        {/* Real leaderboard */}
+        {!isLoading && ranked.length > 0 && (
           <TooltipProvider>
-          <div className="rounded-xl border bg-card overflow-hidden">
-            <div className="grid grid-cols-[40px_1fr_80px_60px] items-center px-4 py-2 border-b bg-secondary/50">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">#</span>
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Player</span>
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right">Rating</span>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right cursor-default">+/−</span>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">Rating change (recent)</TooltipContent>
-              </Tooltip>
-            </div>
-            {displayEntries.map((entry) => {
-              const isMe = account?.id === entry.user_id;
-              return (
-                <div
-                  key={entry.user_id}
-                  className={cn(
-                    "grid grid-cols-[40px_1fr_80px_60px] items-center px-4 py-3 border-b last:border-0 transition-colors",
-                    isMe && "bg-primary/5 border-l-2 border-l-primary"
-                  )}
-                >
-                  <div className="flex items-center justify-center">
-                    <RankBadge rank={entry.rank} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className={cn("text-sm font-medium text-foreground truncate", isMe && "font-semibold")}>
-                      {entry.display_name}
-                      {isMe && <span className="text-[10px] text-muted-foreground ml-1.5">• YOU</span>}
-                    </p>
-                    <span className={cn(
-                      "inline-block rounded-full px-1.5 py-0 text-[9px] font-medium",
-                      TIER_BG[entry.skill_tier],
-                      TIER_COLORS[entry.skill_tier] ?? "text-muted-foreground"
-                    )}>
-                      {entry.skill_tier}
-                    </span>
-                  </div>
-                  <p className="font-mono text-sm font-bold text-foreground text-right">{entry.rating}</p>
-                  <div className="text-right">
-                    <RatingChange current={entry.rating} previous={entry.previous_rating} />
-                  </div>
-                </div>
-              );
-            })}
+            <div className="rounded-xl border bg-card overflow-hidden">
+              <div className="grid grid-cols-[40px_1fr_80px_60px] items-center px-4 py-2 border-b bg-secondary/50">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">#</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Player</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right">Rating</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right cursor-default">+/−</span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">Rating change (recent)</TooltipContent>
+                </Tooltip>
+              </div>
 
-            {/* Show current user outside top 25 */}
-            {myRankOutside && myEntry && (
-              <>
-                <div className="px-4 py-1 text-center text-[10px] text-muted-foreground border-t">
-                  ···
-                </div>
-                <div className="grid grid-cols-[40px_1fr_80px_60px] items-center px-4 py-3 border-t bg-primary/5 border-l-2 border-l-primary">
-                  <div className="flex items-center justify-center">
-                    <span className="text-xs font-bold font-mono text-muted-foreground">#{myEntry.rank}</span>
+              {ranked.map((entry) => {
+                const isMe = account?.id === entry.user_id;
+                return (
+                  <div
+                    key={entry.user_id}
+                    className={cn(
+                      "grid grid-cols-[40px_1fr_80px_60px] items-center px-4 py-3 border-b last:border-0 transition-colors",
+                      isMe && "bg-primary/5 border-l-2 border-l-primary"
+                    )}
+                  >
+                    <div className="flex items-center justify-center">
+                      <RankBadge rank={entry.rank} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className={cn("text-sm font-medium text-foreground truncate", isMe && "font-semibold")}>
+                        {entry.display_name}
+                        {isMe && <span className="text-[10px] text-muted-foreground ml-1.5">• YOU</span>}
+                      </p>
+                      <span className={cn(
+                        "inline-block rounded-full px-1.5 py-0 text-[9px] font-medium",
+                        TIER_BG[entry.skill_tier],
+                        TIER_COLORS[entry.skill_tier] ?? "text-muted-foreground"
+                      )}>
+                        {entry.skill_tier}
+                      </span>
+                    </div>
+                    <p className="font-mono text-sm font-bold text-foreground text-right">{entry.rating}</p>
+                    <div className="text-right">
+                      <RatingChange current={entry.rating} previous={entry.previous_rating} />
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">
-                      {myEntry.display_name}
-                      <span className="text-[10px] text-muted-foreground ml-1.5">• YOU</span>
-                    </p>
-                    <span className={cn(
-                      "inline-block rounded-full px-1.5 py-0 text-[9px] font-medium",
-                      TIER_BG[myEntry.skill_tier],
-                      TIER_COLORS[myEntry.skill_tier] ?? "text-muted-foreground"
-                    )}>
-                      {myEntry.skill_tier}
-                    </span>
+                );
+              })}
+
+              {/* Current user outside top 25 */}
+              {myRankOutside && myEntry && (
+                <>
+                  <div className="px-4 py-1 text-center text-[10px] text-muted-foreground border-t">···</div>
+                  <div className="grid grid-cols-[40px_1fr_80px_60px] items-center px-4 py-3 border-t bg-primary/5 border-l-2 border-l-primary">
+                    <div className="flex items-center justify-center">
+                      <span className="text-xs font-bold font-mono text-muted-foreground">#{myEntry.rank}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">
+                        {myEntry.display_name}
+                        <span className="text-[10px] text-muted-foreground ml-1.5">• YOU</span>
+                      </p>
+                      <span className={cn(
+                        "inline-block rounded-full px-1.5 py-0 text-[9px] font-medium",
+                        TIER_BG[myEntry.skill_tier],
+                        TIER_COLORS[myEntry.skill_tier] ?? "text-muted-foreground"
+                      )}>
+                        {myEntry.skill_tier}
+                      </span>
+                    </div>
+                    <p className="font-mono text-sm font-bold text-foreground text-right">{myEntry.rating}</p>
+                    <div className="text-right">
+                      <RatingChange current={myEntry.rating} previous={myEntry.previous_rating} />
+                    </div>
                   </div>
-                  <p className="font-mono text-sm font-bold text-foreground text-right">{myEntry.rating}</p>
-                  <div className="text-right">
-                    <RatingChange current={myEntry.rating} previous={myEntry.previous_rating} />
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+                </>
+              )}
+            </div>
           </TooltipProvider>
+        )}
+
+        {/* Sign-in prompt for unauthenticated users */}
+        {!account && !isLoading && (
+          <div className="mt-6 rounded-xl border border-dashed bg-card p-5 text-center space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Sign in and solve 10+ puzzles to appear on the leaderboard.
+            </p>
+            <Button asChild size="sm" variant="outline">
+              <Link to="/account">Sign in <ArrowRight size={14} className="ml-1.5" /></Link>
+            </Button>
+          </div>
         )}
       </div>
     </Layout>

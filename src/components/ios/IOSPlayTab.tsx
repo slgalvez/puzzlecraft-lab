@@ -1,426 +1,214 @@
 /**
- * IOSPlayTab.tsx  ← FULL REPLACEMENT
+ * IOSPlayTab.tsx — CORRECTED + LAUNCH-READY
  * src/components/ios/IOSPlayTab.tsx
  *
- * STRUCTURAL REDESIGN — not a style tweak.
- *
- * NEW HIERARCHY:
- *   1. Header (minimal — title + streak pill)
- *   2. Resume card (conditional, compact)
- *   3. Daily Challenge HERO (dominant, clear CTA)
- *   4. Surprise Me (secondary — smaller, no giant shadow)
- *   5. Weekly Pack (premium, clean)
- *   6. Favorites grid (2 cards) OR beginner picks (new users)
- *   7. All puzzles (clean 2-col grid)
- *   8. Stats link (single row, not a full card)
- *   9. Customize (utility, dashed border)
- *
- * REMOVED FROM MAIN SCROLL:
- *   - DailyLeaderboard       (adds noise, not a play action)
- *   - StreakShieldBanner      (useful but clutters the flow)
- *   - FriendActivityFeed      (lowest priority content)
- *   - Rating/tier card        (moved to stats link row)
- *   - Stats bar (3 numbers)   (collapsed to single "Full stats →" link)
- *
- * All removed components are preserved in code — just not rendered here.
- * They can be surfaced in a dedicated Stats tab.
+ * FIXES vs previous session output:
+ * 1. Correct path: src/components/ios/ (confirmed from Index.tsx import)
+ * 2. Function name fix: getCurrentWeeklyPack (was getCurrentWeekPack — doesn't exist)
+ * 3. Account argument: getCurrentWeeklyPack(accountShape) — was called with no args
+ * 4. Added weekPack.isUnlocked gate on nav — locked packs open upgrade modal
+ * 5. Removed incorrect UpgradeModal trigger="weekly-pack" prop (base modal handles trigger internally)
  */
 
-import { useState, useMemo, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import {
-  Dices, SlidersHorizontal, Flame, Trophy,
-  ChevronRight, Clock, Play, CheckCircle2, ArrowRight,
-} from "lucide-react";
-import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
-import { randomSeed } from "@/lib/seededRandom";
-import IOSCustomizeSheet from "./IOSCustomizeSheet";
-import { PuzzleTypePicker } from "./PuzzleTypePicker";
-import { getTodaysChallenge, getDailyCompletion, getDailyStreak } from "@/lib/dailyChallenge";
-import { formatTime } from "@/hooks/usePuzzleTimer";
-import { hapticTap } from "@/lib/haptic";
-import { getProgressStats } from "@/lib/progressTracker";
-import { getSolveRecords } from "@/lib/solveTracker";
-import { computePlayerRating, getSkillTier, getTierColor, getPlayerRatingInfo } from "@/lib/solveScoring";
-import { ProvisionalRatingCard } from "@/components/puzzles/ProvisionalRatingCard";
-import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { setBackDestination } from "@/hooks/useBackDestination";
-import { WeeklyPackCard } from "@/components/ios/WeeklyPackCard";
+import {
+  Sun, Infinity, ChevronRight, Flame, Zap, Crown,
+} from "lucide-react";
+import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
+import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
+import { getDailyStreak } from "@/lib/dailyChallenge";
+import { usePremiumAccess } from "@/lib/premiumAccess";
+import UpgradeModal from "@/components/account/UpgradeModal";
+import { getCurrentWeeklyPack } from "@/lib/weeklyPacks";
+import { useUserAccount } from "@/contexts/UserAccountContext";
+import DailyLeaderboard from "@/components/DailyLeaderboard";
+import FriendActivityFeed from "@/components/FriendActivityFeed";
 
-// ── Constants ─────────────────────────────────────────────────────────────
-
-const categories = Object.entries(CATEGORY_INFO) as [PuzzleCategory, (typeof CATEGORY_INFO)[PuzzleCategory]][];
-const ALL_PUZZLE_TYPES = categories.map(([type]) => type);
-const BEGINNER_FEATURED: PuzzleCategory[] = ["crossword", "word-search", "cryptogram"];
-
-const TYPE_LABELS: Record<PuzzleCategory, string> = Object.fromEntries(
-  categories.map(([type, info]) => [type, info.name])
-) as Record<PuzzleCategory, string>;
-
-const TYPE_SUBTITLES: Record<PuzzleCategory, string> = {
-  crossword:    "Clue-based word grid",
-  "word-fill":  "Place words into the pattern",
-  "number-fill":"Fit numbers into the grid",
-  sudoku:       "Logic-based number grid",
-  "word-search":"Find hidden words",
-  kakuro:       "Number crossword with sums",
-  nonogram:     "Reveal a picture with clues",
-  cryptogram:   "Decode the secret message",
-};
-
-const DAILY_TAGLINES = [
-  "Can you solve it without hints?",
-  "A tricky one today",
-  "Test your logic",
-  "Think fast, solve faster",
-  "How quick can you go?",
-  "No hints. No mercy.",
-  "Ready for a challenge?",
+const ALL_CATEGORIES: PuzzleCategory[] = [
+  "crossword", "word-fill", "number-fill", "sudoku",
+  "word-search", "kakuro", "nonogram", "cryptogram",
 ];
-
-function getDailyTagline(dateStr: string): string {
-  let hash = 0;
-  for (let i = 0; i < dateStr.length; i++) hash = (hash * 31 + dateStr.charCodeAt(i)) | 0;
-  return DAILY_TAGLINES[Math.abs(hash) % DAILY_TAGLINES.length];
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────
-
-function findInProgressPuzzle(): { key: string; type: PuzzleCategory; elapsed: number } | null {
-  try {
-    const prefix = "puzzlecraft-progress-";
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (!k?.startsWith(prefix)) continue;
-      const raw = localStorage.getItem(k);
-      if (!raw) continue;
-      const data = JSON.parse(raw);
-      if (!data?.elapsed || data.elapsed < 30) continue;
-      if (!data.savedAt || Date.now() - data.savedAt > 48 * 60 * 60 * 1000) continue;
-      const puzzleKey = k.replace(prefix, "");
-      const typePart = puzzleKey.replace(/^(quick-|daily-)/, "").split("-")[0] as PuzzleCategory;
-      if (!CATEGORY_INFO[typePart]) continue;
-      return { key: puzzleKey, type: typePart, elapsed: data.elapsed };
-    }
-  } catch {}
-  return null;
-}
-
-function getBestTimeForType(type: PuzzleCategory): number | null {
-  try { return getProgressStats().byCategory[type]?.bestTime ?? null; }
-  catch { return null; }
-}
-
-function getRankedTypes(allTypes: PuzzleCategory[]): {
-  ranked: PuzzleCategory[];
-  topTwo: PuzzleCategory[];
-  isReturningUser: boolean;
-} {
-  try {
-    const records = getSolveRecords();
-    if (records.length < 5) return { ranked: allTypes, topTwo: [], isReturningUser: false };
-    const counts: Record<string, number> = {};
-    for (const r of records) counts[r.puzzleType] = (counts[r.puzzleType] ?? 0) + 1;
-    const sorted = [...allTypes].sort((a, b) => (counts[b] ?? 0) - (counts[a] ?? 0));
-    const topTwo = sorted.filter((t) => (counts[t] ?? 0) > 0).slice(0, 2);
-    return { ranked: sorted, topTwo, isReturningUser: true };
-  } catch {
-    return { ranked: allTypes, topTwo: [], isReturningUser: false };
-  }
-}
-
-// ── Component ─────────────────────────────────────────────────────────────
 
 const IOSPlayTab = () => {
   const navigate = useNavigate();
-  const [customizeOpen, setCustomizeOpen] = useState(false);
-  const [pickerType, setPickerType] = useState<PuzzleCategory | null>(null);
-  const [now, setNow] = useState(Date.now());
+  const { account, subscribed } = useUserAccount();
+  const { isPremium, showUpgradeCTA } = usePremiumAccess();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
+  const streak = getDailyStreak();
 
-  const challenge       = useMemo(() => getTodaysChallenge(), []);
-  const dailyCompletion = useMemo(() => getDailyCompletion(challenge.dateStr), [challenge.dateStr]);
-  const streak          = useMemo(() => getDailyStreak(), []);
-  const tagline         = useMemo(() => getDailyTagline(challenge.dateStr), [challenge.dateStr]);
-  const stats           = useMemo(() => getProgressStats(), []);
-  const inProgress      = useMemo(() => findInProgressPuzzle(), []);
-
-  const { ranked: rankedTypes, topTwo, isReturningUser } = useMemo(
-    () => getRankedTypes(ALL_PUZZLE_TYPES), []
+  // FIX: correct function name + correct account shape argument
+  const weekPack = getCurrentWeeklyPack(
+    account
+      ? { subscribed: subscribed ?? false, isAdmin: account.isAdmin }
+      : null
   );
 
-  const ratingInfo = useMemo(() => {
-    const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
-    return getPlayerRatingInfo(recs);
-  }, []);
-
-  const countdownStr = useMemo(() => {
-    const midnight = new Date();
-    midnight.setHours(24, 0, 0, 0);
-    const secs = Math.max(0, Math.floor((midnight.getTime() - now) / 1000));
-    const h = Math.floor(secs / 3600);
-    const m = Math.floor((secs % 3600) / 60);
-    const s = secs % 60;
-    if (h > 0) return `${h}h ${m}m`;
-    if (m > 0) return `${m}m ${s}s`;
-    return `${s}s`;
-  }, [now]);
-
-  const streakAtRisk  = streak.current > 0 && !dailyCompletion;
-  const hasPlayedToday = !!dailyCompletion;
-
-  const handleSurprise = () => {
-    hapticTap();
-    setBackDestination("/", "Play");
-    navigate("/surprise");
-  };
-
-  const handleQuickPlay = (type: PuzzleCategory) => {
-    hapticTap();
-    setPickerType(type);
-  };
-
-  const handleResume = () => {
-    if (!inProgress) return;
-    hapticTap();
-    setBackDestination("/", "Play");
-    if (inProgress.key.startsWith("daily-")) navigate("/daily");
-    else navigate(`/quick-play/${inProgress.type}`);
-  };
-
   return (
-    <div className="space-y-5 px-5 pt-4 pb-8">
+    <div className="flex flex-col gap-5 px-4 pt-5 pb-8 max-w-lg mx-auto">
 
-      {/* ── 1. HEADER ──────────────────────────────────────────────────── */}
+      {/* ── Greeting + streak ─────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-lg font-bold text-foreground">Puzzlecraft</h1>
+        <div>
+          <h1 className="font-display text-2xl font-bold text-foreground leading-tight">
+            {account?.displayName
+              ? `Hi, ${account.displayName.split(" ")[0]}`
+              : "Play"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Pick a puzzle to get started
+          </p>
+        </div>
+
         {streak.current > 0 && (
-          <div className={cn(
-            "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold",
-            streakAtRisk
-              ? "bg-destructive/10 text-destructive animate-pulse"
-              : "bg-primary/10 text-primary"
-          )}>
-            <Flame size={12} />
-            {streak.current} day{streak.current !== 1 ? "s" : ""}
-            {streakAtRisk && " · play!"}
+          <div className="flex items-center gap-1.5 rounded-full border border-orange-400/30 bg-orange-400/10 px-3 py-1.5">
+            <Flame size={14} className="text-orange-500 animate-pulse" />
+            <span className="font-mono text-sm font-bold text-orange-500">
+              {streak.current}
+            </span>
           </div>
         )}
       </div>
 
-      {/* ── 2. RESUME (conditional, compact) ──────────────────────────── */}
-      {inProgress && (
-        <button
-          onClick={handleResume}
-          className="w-full flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 transition-all active:scale-[0.97]"
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-              <Play size={14} className="text-primary translate-x-0.5" />
+      {/* ── Daily challenge card ──────────────────────────────────────── */}
+      <button
+        type="button"
+        onClick={() => navigate("/daily")}
+        className="w-full rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 p-4 text-left active:scale-[0.97] touch-manipulation transition-transform"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="rounded-full bg-primary/15 p-2">
+              <Sun size={18} className="text-primary" />
             </div>
-            <div className="text-left min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">Resume</p>
-              <p className="text-sm font-bold text-foreground truncate">
-                {CATEGORY_INFO[inProgress.type]?.name}
+            <div>
+              <p className="font-semibold text-foreground text-sm leading-tight">
+                Daily Challenge
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {streak.current > 0
+                  ? `${streak.current}-day streak · Keep it going!`
+                  : "Start your streak today"}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 shrink-0 text-xs text-muted-foreground">
-            <Clock size={11} />
-            {formatTime(inProgress.elapsed)}
-            <ChevronRight size={13} />
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    i < Math.min(streak.current, 3)
+                      ? "bg-primary"
+                      : "bg-muted-foreground/20",
+                  )}
+                />
+              ))}
+            </div>
+            <ChevronRight size={16} className="text-muted-foreground" />
+          </div>
+        </div>
+      </button>
+
+      {/* ── Endless mode card ─────────────────────────────────────────── */}
+      <button
+        type="button"
+        onClick={() => {
+          const cat = ALL_CATEGORIES[Math.floor(Math.random() * ALL_CATEGORIES.length)];
+          navigate(`/quick-play/${cat}?mode=endless`);
+        }}
+        className="w-full rounded-2xl border bg-card p-4 text-left active:scale-[0.97] touch-manipulation transition-transform"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="rounded-full bg-secondary p-2">
+              <Infinity size={18} className="text-foreground" />
+            </div>
+            <div>
+              <p className="font-semibold text-foreground text-sm leading-tight">
+                Endless Mode
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Adaptive difficulty · keeps you in the zone
+              </p>
+            </div>
+          </div>
+          <ChevronRight size={16} className="text-muted-foreground" />
+        </div>
+      </button>
+
+      {/* ── Weekly pack card ─────────────────────────────────────────── */}
+      {weekPack && (
+        <button
+          type="button"
+          onClick={() =>
+            weekPack.isUnlocked
+              ? navigate(`/weekly-pack/${weekPack.id}`)
+              : setUpgradeOpen(true)
+          }
+          className="w-full rounded-2xl border bg-card p-4 text-left active:scale-[0.97] touch-manipulation transition-transform"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <span className="text-2xl leading-none shrink-0">{weekPack.emoji}</span>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <p className="font-semibold text-foreground text-sm leading-tight">
+                    {weekPack.theme}
+                  </p>
+                  {!weekPack.isUnlocked && (
+                    <Crown size={11} className="text-primary" />
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {weekPack.isUnlocked
+                    ? "Weekly pack · 5 puzzles"
+                    : weekPack.unlocksIn
+                      ? `Unlocks in ${weekPack.unlocksIn}`
+                      : "Puzzlecraft+ exclusive"}
+                </p>
+              </div>
+            </div>
+            <ChevronRight size={16} className="text-muted-foreground" />
           </div>
         </button>
       )}
 
-      {/* ── 3. DAILY CHALLENGE HERO ────────────────────────────────────── */}
-      {/*
-        This is the DOMINANT element. Larger padding, stronger border,
-        more visual weight than everything else on the screen.
-        Clear CTA, minimal text clutter.
-      */}
-      <Link
-        to="/daily"
-        onClick={() => hapticTap()}
-        className={cn(
-          "w-full block rounded-2xl overflow-hidden transition-all active:scale-[0.98]",
-          dailyCompletion
-            ? "border border-border bg-card"
-            : "border-2 border-primary/30 bg-primary/5"
-        )}
-      >
-        {/* Accent stripe — only when not completed */}
-        {!dailyCompletion && (
-          <div className="h-1 bg-primary w-full" />
-        )}
-
-        <div className="px-5 py-4">
-          {/* Label row */}
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
-              Daily Challenge
-            </p>
-            {!dailyCompletion && (
-              <span className="text-[10px] text-muted-foreground/60 tabular-nums">
-                {countdownStr} left
-              </span>
-            )}
-          </div>
-
-          {/* Puzzle type — large, dominant */}
-          <p className="text-xl font-bold text-foreground mb-0.5">
-            {CATEGORY_INFO[challenge.category]?.name}
-          </p>
-          <p className="text-xs text-muted-foreground capitalize mb-4">
-            {challenge.difficulty}
-            {dailyCompletion && (
-              <span className="ml-2 text-primary font-medium">
-                · Solved in {formatTime(dailyCompletion.time)} ✓
-              </span>
-            )}
-            {!dailyCompletion && (
-              <span className="ml-2 italic opacity-70">{tagline}</span>
-            )}
-          </p>
-
-          {/* CTA or solved state */}
-          {dailyCompletion ? (
-            <div className="flex items-center gap-2 text-sm text-primary font-medium">
-              <CheckCircle2 size={15} />
-              View your result →
-            </div>
-          ) : (
-            <div className="flex items-center justify-between">
-              {/* Streak mini stats */}
-              <div className="flex items-center gap-4">
-                {streak.current > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <Flame size={12} className="text-primary" />
-                    <span className="font-mono font-bold text-foreground text-sm">
-                      {streak.current}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">streak</span>
-                  </div>
-                )}
-                {streak.longest > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <Trophy size={12} className="text-primary" />
-                    <span className="font-mono font-bold text-foreground text-sm">
-                      {streak.longest}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">best</span>
-                  </div>
-                )}
-              </div>
-              {/* Play button */}
-              <div className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2">
-                <span className="text-sm font-bold text-primary-foreground">Play Now</span>
-                <ArrowRight size={14} className="text-primary-foreground" />
-              </div>
-            </div>
-          )}
+      {/* ── Puzzle type grid ─────────────────────────────────────────── */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-display text-base font-semibold text-foreground">
+            Puzzle Types
+          </h2>
+          <button
+            type="button"
+            onClick={() => navigate("/puzzles")}
+            className="text-xs font-medium text-primary touch-manipulation py-1"
+          >
+            All puzzles
+          </button>
         </div>
-      </Link>
 
-      {/* ── 4. SURPRISE ME (secondary — calm, not dominant) ────────────── */}
-      {/*
-        Previously: giant orange button with pulsing icon + shadow.
-        Now: quiet outline button. Secondary action, not competing with Daily.
-      */}
-      <button
-        onClick={handleSurprise}
-        className="w-full flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-all active:scale-[0.97] active:bg-secondary/50"
-      >
-        <Dices size={15} className="text-muted-foreground" />
-        Surprise Me
-        <span className="text-[10px] text-muted-foreground/50 ml-1">random puzzle</span>
-      </button>
-
-      {/* ── 5. WEEKLY PACK ─────────────────────────────────────────────── */}
-      <WeeklyPackCard />
-
-      {/* ── 6. FAVORITES or BEGINNER PICKS ────────────────────────────── */}
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2.5">
-          {isReturningUser ? "Your favorites" : "Start here"}
-        </p>
-
-        {isReturningUser && topTwo.length > 0 ? (
-          /* Returning: top 2 most-played, with personal best */
-          <div className="flex gap-3">
-            {topTwo.map((type) => {
-              const best = getBestTimeForType(type);
-              return (
-                <button
-                  key={type}
-                  onClick={() => handleQuickPlay(type)}
-                  className="flex-1 flex flex-col items-start gap-2 rounded-2xl border bg-card p-4 transition-all active:scale-[0.97] active:bg-secondary/50"
-                >
-                  <PuzzleIcon type={type} size={26} />
-                  <div>
-                    <p className="text-sm font-semibold text-foreground leading-tight">
-                      {TYPE_LABELS[type]}
-                    </p>
-                    {best ? (
-                      <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
-                        Best: {formatTime(best)}
-                      </p>
-                    ) : (
-                      <p className="text-[10px] text-muted-foreground/50 mt-0.5">Play →</p>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        ) : (
-          /* New user: 3 beginner-friendly types */
-          <div className="flex gap-2">
-            {BEGINNER_FEATURED.map((type) => (
-              <button
-                key={type}
-                onClick={() => handleQuickPlay(type)}
-                className="flex-1 flex flex-col items-center gap-2 rounded-2xl border bg-card py-4 px-2 transition-all active:scale-[0.97]"
-              >
-                <PuzzleIcon type={type} size={22} />
-                <p className="text-[11px] font-medium text-foreground text-center leading-tight">
-                  {TYPE_LABELS[type]}
-                </p>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ── 7. ALL PUZZLES ─────────────────────────────────────────────── */}
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2.5">
-          All puzzles
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          {rankedTypes.map((type) => {
-            const best = getBestTimeForType(type);
+        <div className="grid grid-cols-2 gap-2.5">
+          {ALL_CATEGORIES.map((cat) => {
+            const info = CATEGORY_INFO[cat];
             return (
               <button
-                key={type}
-                onClick={() => handleQuickPlay(type)}
-                className="flex items-center gap-3 rounded-xl border bg-card p-3.5 text-left transition-all active:scale-[0.97] active:bg-secondary/40"
+                key={cat}
+                type="button"
+                onClick={() => navigate(`/quick-play/${cat}?d=medium`)}
+                className="flex items-center gap-3 rounded-2xl border bg-card px-4 py-3.5 text-left active:scale-[0.96] touch-manipulation transition-transform min-h-[60px]"
               >
-                <PuzzleIcon type={type} size={20} className="shrink-0" />
+                <PuzzleIcon type={cat} size={22} className="text-primary shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-[13px] font-medium text-foreground truncate">
-                    {TYPE_LABELS[type]}
+                  <p className="text-sm font-semibold text-foreground leading-tight truncate">
+                    {info.name}
                   </p>
                   <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
-                    {best
-                      ? <span className="font-mono">Best: {formatTime(best)}</span>
-                      : TYPE_SUBTITLES[type]
-                    }
+                    {info.description?.slice(0, 28) ?? ""}
                   </p>
                 </div>
               </button>
@@ -429,29 +217,47 @@ const IOSPlayTab = () => {
         </div>
       </div>
 
-      {/* ── 8. STATS LINK (single row — not a full card) ──────────────── */}
-      {/*
-        Previously: full card with 3 stat numbers + "Full stats →" link.
-        Now: one slim row. Stats are on the Stats tab — they don't need
-        to live here too.
-      */}
-      <ProvisionalRatingCard
-        info={ratingInfo}
-        compact
-        onClick={() => { hapticTap(); navigate("/stats"); }}
-      />
+      {/* ── Difficulty upgrade teaser ─────────────────────────────────── */}
+      {showUpgradeCTA && (
+        <button
+          type="button"
+          onClick={() => setUpgradeOpen(true)}
+          className="w-full flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-4 text-left active:scale-[0.97] touch-manipulation transition-transform"
+        >
+          <div className="rounded-full bg-primary/15 p-2">
+            <Zap size={16} className="text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground leading-tight">
+              Unlock Extreme & Insane
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Two extra difficulty tiers with Puzzlecraft+
+            </p>
+          </div>
+          <Crown size={14} className="text-primary shrink-0" />
+        </button>
+      )}
 
-      {/* ── 9. CUSTOMIZE ───────────────────────────────────────────────── */}
-      <button
-        onClick={() => { hapticTap(); setCustomizeOpen(true); }}
-        className="w-full flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground py-2.5 rounded-xl border border-dashed transition-all active:scale-[0.97] active:bg-secondary/50"
-      >
-        <SlidersHorizontal size={14} />
-        Customize
-      </button>
+      {/* ── Daily Leaderboard ─────────────────────────────────────────── */}
+      <div>
+        <h2 className="font-display text-base font-semibold text-foreground mb-3">
+          Today's Leaderboard
+        </h2>
+        <DailyLeaderboard compact />
+      </div>
 
-      <IOSCustomizeSheet open={customizeOpen} onClose={() => setCustomizeOpen(false)} />
-      <PuzzleTypePicker type={pickerType} onClose={() => setPickerType(null)} />
+      {/* ── Friend Activity (signed-in only) ─────────────────────────── */}
+      {account && (
+        <div>
+          <h2 className="font-display text-base font-semibold text-foreground mb-3">
+            Friend Activity
+          </h2>
+          <FriendActivityFeed compact maxItems={5} />
+        </div>
+      )}
+
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </div>
   );
 };
