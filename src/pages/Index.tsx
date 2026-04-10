@@ -53,7 +53,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getTodaysChallenge, getDailyCompletion, getDailyStreak } from "@/lib/dailyChallenge";
 import { getProgressStats } from "@/lib/progressTracker";
 import { getSolveRecords } from "@/lib/solveTracker";
-import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, DIFFICULTY_LABELS, DIFFICULTY_SELECTED, type PuzzleCategory, type Difficulty } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { isNativeApp } from "@/lib/appMode";
 import IOSPlayTab from "@/components/ios/IOSPlayTab";
