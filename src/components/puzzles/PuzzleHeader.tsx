@@ -22,7 +22,7 @@ import {
   getDifficultyLabel,
   type SessionDifficulty,
 } from "@/hooks/usePuzzleSession";
-import type { PuzzleCategory } from "@/lib/puzzleTypes"; // adjust to your path
+import { DIFFICULTY_SELECTED, type PuzzleCategory, type Difficulty } from "@/lib/puzzleTypes";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -107,7 +107,7 @@ export const PuzzleHeader = ({
 
   const typeLabel = getPuzzleTypeLabel(puzzleType);
   const diffLabel = getDifficultyLabel(difficulty);
-  const badgeText = diffLabel ? `${typeLabel} · ${diffLabel}` : typeLabel;
+  const diffColor = difficulty ? DIFFICULTY_SELECTED[difficulty as Difficulty] ?? "" : "";
 
   const progressFraction =
     progressTotal > 0 ? Math.min(1, progressCurrent / progressTotal) : 0;
@@ -144,11 +144,21 @@ export const PuzzleHeader = ({
           <span>{backLabel}</span>
         </button>
 
-        {/* Center: badge + optional title */}
+        {/* Center: type label + difficulty pill */}
         <div className="flex flex-col items-center gap-0.5 flex-1">
-          <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-primary">
-            {badgeText}
-          </span>
+          <div className="inline-flex items-center gap-1.5">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              {typeLabel}
+            </span>
+            {diffLabel && (
+              <span className={cn(
+                "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest border",
+                diffColor || "bg-secondary text-secondary-foreground border-border"
+              )}>
+                {diffLabel}
+              </span>
+            )}
+          </div>
           {title && (
             <span className="text-[12px] font-medium text-foreground leading-tight">
               {title}

@@ -277,8 +277,13 @@ const IOSPlayTab = () => {
           <p className="text-xl font-bold text-foreground mb-0.5">
             {CATEGORY_INFO[challenge.category]?.name}
           </p>
-          <p className="text-xs text-muted-foreground capitalize mb-4">
-            {challenge.difficulty}
+          <p className="text-xs text-muted-foreground mb-4">
+            <span className={cn(
+              "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border capitalize",
+              DIFFICULTY_SELECTED[challenge.difficulty as Difficulty] || "text-muted-foreground"
+            )}>
+              {challenge.difficulty}
+            </span>
             {dailyCompletion && (
               <span className="ml-2 text-primary font-medium">
                 · Solved in {formatTime(dailyCompletion.time)} ✓
