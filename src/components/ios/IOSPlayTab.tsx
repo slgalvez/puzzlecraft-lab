@@ -195,7 +195,7 @@ const IOSPlayTab = () => {
   };
 
   return (
-    <div className="space-y-5 px-5 pt-4 pb-8">
+    <div className="space-y-5 px-5 pt-4 pb-24">
 
       {/* ── 1. HEADER ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
@@ -439,7 +439,7 @@ const IOSPlayTab = () => {
       {stats.totalSolved > 0 && (
         <button
           onClick={() => { hapticTap(); navigate("/stats"); }}
-          className="w-full flex items-center justify-between py-2 px-1 text-sm text-muted-foreground transition-colors active:text-foreground"
+          className="w-full flex items-center justify-between py-3 px-2 text-sm text-muted-foreground transition-colors active:text-foreground"
         >
           <span className="flex items-center gap-1.5">
             {stats.totalSolved} puzzle{stats.totalSolved !== 1 ? "s" : ""} solved
