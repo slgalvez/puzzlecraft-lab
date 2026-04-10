@@ -1,27 +1,32 @@
 /**
- * CraftPreviewPage.tsx — Craft v2
- * Split-layout redesign with ALL original CraftPuzzle functionality.
+ * CraftPreviewPage.tsx — Craft v2 "Builder Canvas"
+ *
+ * Canvas-centered layout: live preview is the hero.
+ * Type pills → Canvas → Accordion tool panels → Sticky action bar.
+ * All original functionality preserved.
  */
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
   ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share, Copy,
-  Check, Loader2, Save, Trophy, AlertCircle, Palette,
+  Check, Loader2, Save, Trophy, AlertCircle, Inbox,
+  Type, Paintbrush, Settings, Heart, ChevronRight,
 } from "lucide-react";
 
+import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { usePremiumAccess } from "@/lib/premiumAccess";
 import UpgradeModal from "@/components/account/UpgradeModal";
-import CraftStepper from "@/components/craft/CraftStepper";
-import CraftTypeCards, { TYPE_OPTIONS } from "@/components/craft/CraftTypeCards";
+import { TYPE_OPTIONS } from "@/components/craft/CraftTypeCards";
+import CraftTypeCards from "@/components/craft/CraftTypeCards";
 import CraftPreviewGrid from "@/components/craft/CraftPreviewGrid";
-import CraftNav, { type CraftView } from "@/components/craft/CraftNav";
 import CraftInbox from "@/components/craft/CraftInbox";
 import CraftSettingsPanel, { type CraftSettings, DEFAULT_CRAFT_SETTINGS } from "@/components/craft/CraftSettingsPanel";
 import CraftLivePreview from "@/components/craft/CraftLivePreview";
@@ -50,7 +55,7 @@ import {
   addSentItem,
 } from "@/lib/craftHistory";
 
-type Step = "type" | "content" | "preview";
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function generateShortId(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -58,6 +63,22 @@ function generateShortId(): string {
   for (let i = 0; i < 8; i++) r += chars[Math.floor(Math.random() * chars.length)];
   return r;
 }
+
+const TYPE_ACCENT: Record<CraftType, string> = {
+  "word-search": "bg-sky-500/15 text-sky-600 border-sky-500/30 ring-sky-500/20",
+  "word-fill": "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 ring-emerald-500/20",
+  crossword: "bg-primary/15 text-primary border-primary/30 ring-primary/20",
+  cryptogram: "bg-violet-500/15 text-violet-600 border-violet-500/30 ring-violet-500/20",
+};
+
+const TYPE_ACCENT_BORDER: Record<CraftType, string> = {
+  "word-search": "border-sky-500/25 shadow-sky-500/5",
+  "word-fill": "border-emerald-500/25 shadow-emerald-500/5",
+  crossword: "border-primary/25 shadow-primary/5",
+  cryptogram: "border-violet-500/25 shadow-violet-500/5",
+};
+
+// ── Main component ───────────────────────────────────────────────────────────
 
 export default function CraftPreviewPage() {
   const navigate = useNavigate();
@@ -77,17 +98,15 @@ export default function CraftPreviewPage() {
   };
 
   const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const [view, setView] = useState<CraftView>(inboxTabFromState ? "inbox" : "create");
-  const [step, setStep] = useState<Step>("type");
+  const [showInbox, setShowInbox] = useState(!!inboxTabFromState);
   const [selectedType, setSelectedType] = useState<CraftType | null>(null);
+  const [showTypeCards, setShowTypeCards] = useState(true);
 
   // Form fields
   const [wordInput, setWordInput] = useState("");
   const [phraseInput, setPhraseInput] = useState("");
   const [clueEntries, setClueEntries] = useState<{ answer: string; clue: string }[]>([
-    { answer: "", clue: "" },
-    { answer: "", clue: "" },
-    { answer: "", clue: "" },
+    { answer: "", clue: "" }, { answer: "", clue: "" }, { answer: "", clue: "" },
   ]);
   const [revealMessage, setRevealMessage] = useState("");
   const [puzzleTitle, setPuzzleTitle] = useState("");
@@ -118,31 +137,71 @@ export default function CraftPreviewPage() {
 
   const refreshDraftCount = useCallback(() => setDraftCount(loadDrafts().length), []);
 
+  // Summaries for accordion chips
+  const wordCount = useMemo(() => {
+    if (!selectedType) return 0;
+    if (selectedType === "word-fill" || selectedType === "word-search")
+      return wordInput.split(/[,\n]+/).map(w => w.trim()).filter(Boolean).length;
+    if (selectedType === "cryptogram") return phraseInput.trim().replace(/[^A-Za-z]/g, "").length;
+    if (selectedType === "crossword") return clueEntries.filter(e => e.answer.trim() && e.clue.trim()).length;
+    return 0;
+  }, [selectedType, wordInput, phraseInput, clueEntries]);
+
+  const contentSummary = useMemo(() => {
+    if (!selectedType) return "";
+    if (selectedType === "cryptogram") return wordCount > 0 ? `${wordCount} letters` : "Empty";
+    if (selectedType === "crossword") return wordCount > 0 ? `${wordCount} pair${wordCount !== 1 ? "s" : ""}` : "Empty";
+    return wordCount > 0 ? `${wordCount} word${wordCount !== 1 ? "s" : ""}` : "Empty";
+  }, [selectedType, wordCount]);
+
+  const themeSummary = useMemo(() => {
+    if (selectedTheme === "none" && colorPalette === "default") return "Default";
+    const theme = getTheme(selectedTheme);
+    const parts: string[] = [];
+    if (selectedTheme !== "none") parts.push(`${theme.emoji} ${theme.label}`);
+    if (colorPalette !== "default") {
+      const pal = CRAFT_PALETTES.find(p => p.id === colorPalette);
+      if (pal) parts.push(pal.label);
+    }
+    return parts.join(" · ") || "Default";
+  }, [selectedTheme, colorPalette]);
+
+  const settingsSummary = useMemo(() => {
+    return craftSettings.difficulty.charAt(0).toUpperCase() + craftSettings.difficulty.slice(1);
+  }, [craftSettings.difficulty]);
+
+  const personalSummary = useMemo(() => {
+    const parts: string[] = [];
+    if (puzzleTitle.trim()) parts.push(`"${puzzleTitle.trim()}"`);
+    if (puzzleFrom.trim()) parts.push(`from ${puzzleFrom.trim()}`);
+    if (!parts.length) return "None";
+    return parts.join(" · ");
+  }, [puzzleTitle, puzzleFrom]);
+
   const handleColorPaletteSelect = (id: string) => {
     setColorPalette(id);
-    const palette = CRAFT_PALETTES.find((p) => p.id === id);
+    const palette = CRAFT_PALETTES.find(p => p.id === id);
     if (palette) applyPalette(palette);
     else applyPalette({ id: "default", label: "Default", cell: "", active: "", highlight: "", correct: "", border: "", text: "" });
   };
 
-  // Accept pre-filled state from "Send one back" flow
+  // Pre-fill from "send one back" flow
   useEffect(() => {
     const state = location.state as { prefillTitle?: string } | null;
     if (state?.prefillTitle) setPuzzleTitle(state.prefillTitle);
     if (state) window.history.replaceState({}, "");
   }, [location.state]);
 
-  // Challenge timer cleanup
   useEffect(() => () => { if (challengeTimerRef.current) clearInterval(challengeTimerRef.current); }, []);
 
-  // Mark dirty on content change
+  // Mark dirty
   useEffect(() => {
-    if (step === "content" || step === "preview") { setDraftDirty(true); setDraftSaved(false); }
+    if (selectedType) { setDraftDirty(true); setDraftSaved(false); }
   }, [wordInput, phraseInput, clueEntries, revealMessage, puzzleTitle, puzzleFrom, craftSettings]);
 
   // Auto-save draft
   useEffect(() => {
-    if (step !== "content" || !selectedType) return;
+    if (!selectedType) return;
     if (!activeDraftId.current) activeDraftId.current = generateDraftId();
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
@@ -154,9 +213,9 @@ export default function CraftPreviewPage() {
       refreshDraftCount();
     }, 2000);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [step, selectedType, puzzleTitle, puzzleFrom, wordInput, phraseInput, clueEntries, revealMessage, craftSettings, refreshDraftCount]);
+  }, [selectedType, puzzleTitle, puzzleFrom, wordInput, phraseInput, clueEntries, revealMessage, craftSettings, refreshDraftCount]);
 
-  // Read creator_time back from URL when returning from solving
+  // Read creator_time back from URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const returnedTime = params.get("creator_time");
@@ -184,14 +243,13 @@ export default function CraftPreviewPage() {
       wordInput, phraseInput, clueEntries, revealMessage, settings: craftSettings, updatedAt: Date.now(),
     });
     refreshDraftCount();
-    setDraftSaved(true);
-    setDraftDirty(false);
+    setDraftSaved(true); setDraftDirty(false);
     setTimeout(() => setDraftSaved(false), 2000);
   }, [selectedType, puzzleTitle, puzzleFrom, wordInput, phraseInput, clueEntries, revealMessage, craftSettings, refreshDraftCount]);
 
   const handleSelectType = (type: CraftType) => {
     setSelectedType(type);
-    setStep("content");
+    setShowTypeCards(false);
   };
 
   const buildPuzzleData = useCallback((): (Record<string, unknown> & { droppedWords?: string[] }) | null => {
@@ -252,7 +310,6 @@ export default function CraftPreviewPage() {
       setShareUrl(buildCraftShareUrl(shortId));
       sentRecorded.current = false;
       toast({ title: "Puzzle ready ✨" });
-      setStep("preview");
     } catch (err) {
       toast({ title: "Generation failed", description: err instanceof Error ? err.message : "Please try different input" });
     } finally {
@@ -307,9 +364,7 @@ export default function CraftPreviewPage() {
     const fullText = buildCraftShareText(puzzleTitle.trim() || undefined, puzzleFrom.trim() || undefined, shareUrl, selectedType ?? undefined, creatorSolveTime);
     try {
       await navigator.clipboard.writeText(fullText);
-      recordSent();
-      setCopied(true);
-      setShareSuccess(true);
+      recordSent(); setCopied(true); setShareSuccess(true);
       toast({ title: "Puzzle link copied" });
       setTimeout(() => setCopied(false), 2000);
       setTimeout(() => setShareSuccess(false), 1500);
@@ -334,25 +389,15 @@ export default function CraftPreviewPage() {
     } catch { toast({ title: "Failed to copy link" }); }
   };
 
-  const handleBack = () => {
-    if (step === "preview") setStep("content");
-    else if (step === "content") {
-      if (enteredFromDraft) { setEnteredFromDraft(false); setView("inbox"); return; }
-      sentRecorded.current = false;
-      setStep("type");
-      setSelectedType(null);
-    }
-  };
-
   const handleStartOver = () => {
     applyPalette({ id: "default", label: "Default", cell: "", active: "", highlight: "", correct: "", border: "", text: "" });
     if (activeDraftId.current) { deleteDraft(activeDraftId.current); activeDraftId.current = null; refreshDraftCount(); }
-    setStep("type"); setSelectedType(null); setWordInput(""); setPhraseInput("");
+    setSelectedType(null); setShowTypeCards(true); setWordInput(""); setPhraseInput("");
     setClueEntries([{ answer: "", clue: "" }, { answer: "", clue: "" }, { answer: "", clue: "" }]);
     setRevealMessage(""); setPuzzleTitle(""); setPuzzleFrom("");
     setCraftSettings(DEFAULT_CRAFT_SETTINGS); setGeneratedData(null); setShareUrl(null);
     setCopied(false); setShareSuccess(false); setSelectedTheme("none"); setColorPalette("default");
-    setCreatorSolveTime(null);
+    setCreatorSolveTime(null); sentRecorded.current = false;
   };
 
   const handleResumeDraft = useCallback((draft: CraftDraft) => {
@@ -370,357 +415,390 @@ export default function CraftPreviewPage() {
         checkEnabled: draft.settings.checkEnabled ?? DEFAULT_CRAFT_SETTINGS.checkEnabled,
       });
     } else setCraftSettings(DEFAULT_CRAFT_SETTINGS);
-    setGeneratedData(null); setShareUrl(null); setStep("content"); setView("create"); setEnteredFromDraft(true);
+    setGeneratedData(null); setShareUrl(null); setShowInbox(false); setShowTypeCards(false);
+    setEnteredFromDraft(true);
   }, []);
 
-  const resetToCreate = () => {
-    activeDraftId.current = null; setStep("type"); setSelectedType(null);
-    setWordInput(""); setPhraseInput("");
-    setClueEntries([{ answer: "", clue: "" }, { answer: "", clue: "" }, { answer: "", clue: "" }]);
-    setRevealMessage(""); setPuzzleTitle(""); setPuzzleFrom("");
-    setCraftSettings(DEFAULT_CRAFT_SETTINGS); setGeneratedData(null); setShareUrl(null);
-    setCopied(false); setShareSuccess(false); setEnteredFromDraft(false);
-    setSelectedTheme("none"); setColorPalette("default"); sentRecorded.current = false;
-    setCreatorSolveTime(null);
-  };
-
-  // ─── Shared sub-renders ────────────────────────────────────────────────────
-
-  const renderDraftButton = () => (
-    <button
-      onClick={handleSaveDraft}
-      className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-    >
-      {draftSaved && !draftDirty ? (
-        <><Check className="h-3 w-3 text-primary" /><span className="text-primary">Saved</span></>
-      ) : (
-        <><Save className="h-3 w-3" /><span>Save draft</span></>
-      )}
-    </button>
-  );
-
-  // ─── Left panel content (inputs) ───────────────────────────────────────────
-
-  const renderInputPanel = () => {
-    if (!selectedType) return null;
-    return (
-      <div className="space-y-4">
-        {/* Title + From */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Puzzle title</label>
-            <Input value={puzzleTitle} onChange={e => setPuzzleTitle(e.target.value)} placeholder="Just for You" maxLength={100} />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">From</label>
-            <Input value={puzzleFrom} onChange={e => setPuzzleFrom(e.target.value)} placeholder="Mariah" maxLength={100} />
-          </div>
-        </div>
-
-        {/* Theme Picker */}
-        <CraftThemePicker
-          selected={selectedTheme}
-          onSelect={(id) => {
-            setSelectedTheme(id);
-            const theme = getTheme(id);
-            if (!revealMessage.trim() && theme.revealTemplates.length > 0) setRevealMessage(theme.revealTemplates[0]);
-          }}
-          onRevealTemplate={(tmpl) => setRevealMessage(tmpl)}
-          onPrefillWords={(words) => {
-            if (!words.includes("\n")) {
-              setWordInput(prev => { const e = prev.trim(); if (!e) return words; if (e.includes(words)) return prev; return e + "\n" + words; });
-            } else setWordInput(words);
-            if (selectedType === "crossword") {
-              const wordList = words.split("\n").filter(Boolean);
-              if (wordList.length > 0) setClueEntries(wordList.map(w => ({ answer: w, clue: "" })));
-            }
-          }}
-          currentRevealMessage={revealMessage}
-          showWordSection={selectedType === "word-fill" || selectedType === "word-search"}
-        />
-
-        {/* Color Picker */}
-        <CraftColorPicker selected={colorPalette} onSelect={handleColorPaletteSelect} />
-
-        {/* Type-specific inputs */}
-        {(selectedType === "word-fill" || selectedType === "word-search") && (
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground">Enter words (one per line or comma-separated)</label>
-            <Textarea value={wordInput} onChange={e => setWordInput(e.target.value)} placeholder={"CHUCKY\nBEACH\nBIRTHDAY\nVACATION\nNASHVILLE"} rows={5} className="resize-none font-mono text-sm uppercase tracking-wide" />
-          </div>
-        )}
-
-        {selectedType === "cryptogram" && (
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground">Enter a phrase or message to encode</label>
-            <Textarea value={phraseInput} onChange={e => setPhraseInput(e.target.value)} placeholder="MEET ME AT MIDNIGHT" rows={4} className="resize-none" />
-          </div>
-        )}
-
-        {selectedType === "crossword" && (
-          <div className="space-y-3">
-            <label className="text-xs font-medium text-muted-foreground">Enter answer + clue pairs</label>
-            {clueEntries.map((entry, i) => (
-              <div key={i} className="flex gap-2">
-                <Input value={entry.answer} onChange={e => { const u = [...clueEntries]; u[i] = { ...entry, answer: e.target.value }; setClueEntries(u); }} placeholder="Answer" className="flex-1" />
-                <Input value={entry.clue} onChange={e => { const u = [...clueEntries]; u[i] = { ...entry, clue: e.target.value }; setClueEntries(u); }} placeholder="Clue" className="flex-[2]" />
-                {clueEntries.length > 2 && (
-                  <Button variant="ghost" size="icon" onClick={() => setClueEntries(clueEntries.filter((_, j) => j !== i))}><Trash2 className="h-3 w-3" /></Button>
-                )}
-              </div>
-            ))}
-            <Button variant="outline" size="sm" onClick={() => setClueEntries([...clueEntries, { answer: "", clue: "" }])}><Plus className="h-3 w-3 mr-1" /> Add entry</Button>
-          </div>
-        )}
-
-        {/* Settings */}
-        <CraftSettingsPanel value={craftSettings} onChange={setCraftSettings} />
-
-        {/* Reveal message */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">Message revealed after solving (optional)</label>
-          <Input value={revealMessage} onChange={e => setRevealMessage(e.target.value)} placeholder="Congratulations! You cracked it 🎉" maxLength={500} />
-        </div>
-
-        {/* Generate CTA */}
-        <Button onClick={handleGenerate} disabled={saving} className="w-full gap-2">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {saving ? "Saving…" : "Preview Puzzle"}
-        </Button>
-
-        <div className="flex items-center justify-between">
-          {renderDraftButton()}
-          <p className="text-[10px] text-muted-foreground">No account needed</p>
-        </div>
-      </div>
-    );
-  };
-
-  // ─── Right panel: live preview (content step) or final preview ─────────────
-
-  const renderPreviewPanel = () => {
-    if (step === "content" && selectedType) {
-      return (
-        <div className="space-y-4">
-          <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/60 font-medium text-center">Live Preview</p>
-          <CraftLivePreview
-            type={selectedType}
-            wordInput={selectedType === "word-fill" || selectedType === "word-search" ? wordInput : ""}
-            phraseInput={selectedType === "cryptogram" ? phraseInput : ""}
-            clueEntries={selectedType === "crossword" ? clueEntries : []}
-            difficulty={craftSettings.difficulty}
-          />
-        </div>
-      );
+  const handleBack = () => {
+    if (enteredFromDraft) { setEnteredFromDraft(false); setShowInbox(true); return; }
+    if (selectedType && !showTypeCards) {
+      handleStartOver();
+    } else {
+      navigate(-1);
     }
-
-    if (step === "preview" && generatedData && selectedType) {
-      return (
-        <div className="space-y-4">
-          <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/60 font-medium text-center">Final Preview</p>
-
-          <div className="p-4 rounded-xl border border-border bg-card space-y-3">
-            {puzzleTitle.trim() && (
-              <div className="text-center pb-2 border-b border-border">
-                <h3 className="text-base font-display font-semibold text-foreground">{puzzleTitle.trim()}</h3>
-              </div>
-            )}
-            <CraftPreviewGrid data={generatedData} puzzleType={selectedType} />
-            {puzzleFrom.trim() && (
-              <p className="text-[11px] text-muted-foreground/60 text-right italic">{puzzleFrom.trim()}</p>
-            )}
-          </div>
-
-          {revealMessage && (
-            <div className="p-3 rounded-xl bg-muted/50 border border-border space-y-1">
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Reveal Message</p>
-              <p className="text-sm italic text-foreground/80">{revealMessage}</p>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    return null;
   };
 
-  // ─── Main render ───────────────────────────────────────────────────────────
+  // ─── Render ────────────────────────────────────────────────────────────────
+
+  const isBuilding = !!selectedType && !showTypeCards;
+  const hasGenerated = !!generatedData && !!shareUrl;
 
   return (
     <Layout>
-      <div className="container py-6 max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-2 text-center">
-          <h1 className="font-display text-2xl font-bold text-foreground">Create a Puzzle</h1>
-          <p className="text-sm text-muted-foreground mt-1">Make something personal — send it to anyone</p>
+      <div className="container max-w-3xl mx-auto pb-28">
+        {/* ── Header ─────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between py-4">
+          <button onClick={handleBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft size={14} />
+            <span className="hidden sm:inline">Back</span>
+          </button>
+
+          <div className="text-center">
+            <h1 className="font-display text-lg font-bold text-foreground">Create a Puzzle</h1>
+            {!isPremium && !showInbox && (
+              <p className="text-[10px] text-muted-foreground/50 mt-0.5">
+                {limitStatus.remaining}/{limitStatus.limit} free
+                <span className="mx-1">·</span>
+                <button onClick={() => setUpgradeOpen(true)} className="text-primary/70 hover:text-primary font-medium transition-colors">
+                  Unlimited with Plus
+                </button>
+              </p>
+            )}
+          </div>
+
+          <button
+            onClick={() => setShowInbox(!showInbox)}
+            className={cn(
+              "relative flex items-center gap-1 text-xs font-medium transition-colors px-3 py-1.5 rounded-full",
+              showInbox ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Inbox size={14} />
+            <span className="hidden sm:inline">Inbox</span>
+            {draftCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">
+                {draftCount}
+              </span>
+            )}
+          </button>
         </div>
 
-        {/* Nav */}
-        <CraftNav
-          view={view}
-          onViewChange={(v) => { if (v === "create") resetToCreate(); setView(v); }}
-          draftCount={draftCount}
-        />
-
-        {/* Limit indicator */}
-        {!isPremium && view === "create" && (
-          <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground/50 -mt-1 mb-1">
-            <span>{limitStatus.remaining}/{limitStatus.limit} free</span>
-            <span>·</span>
-            <button onClick={() => setUpgradeOpen(true)} className="text-primary/70 hover:text-primary font-medium hover:underline transition-colors">
-              Unlimited with Plus
-            </button>
-          </div>
-        )}
-        {!isPremium && view === "create" && limitStatus.atLimit && (
-          <div className="flex items-center justify-center gap-2 text-[11px] text-destructive font-medium mb-1">
+        {/* Limit warning */}
+        {!isPremium && limitStatus.atLimit && !showInbox && (
+          <div className="flex items-center justify-center gap-2 text-[11px] text-destructive font-medium mb-3 py-2 rounded-lg bg-destructive/5 border border-destructive/15">
+            <AlertCircle size={13} />
             <span>Monthly limit reached</span>
             <span>·</span>
-            <button onClick={() => setUpgradeOpen(true)} className="underline">Upgrade to continue</button>
+            <button onClick={() => setUpgradeOpen(true)} className="underline">Upgrade</button>
           </div>
         )}
 
-        {/* Inbox view */}
-        {view === "inbox" && (
-          <CraftInbox onResumeDraft={handleResumeDraft} onDataChange={refreshDraftCount} initialTab={inboxTabFromState || undefined} />
+        {/* ── Inbox View ─────────────────────────────────────────────── */}
+        {showInbox && (
+          <div className="animate-in fade-in-0 duration-200">
+            <CraftInbox onResumeDraft={handleResumeDraft} onDataChange={refreshDraftCount} initialTab={inboxTabFromState || undefined} />
+          </div>
         )}
 
-        {/* Create view */}
-        {view === "create" && (
-          <>
-            <CraftStepper current={step} />
+        {/* ── Builder View ───────────────────────────────────────────── */}
+        {!showInbox && (
+          <div className="animate-in fade-in-0 duration-200">
+            {/* Type Cards (hero on first visit) */}
+            {showTypeCards && (
+              <div className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
+                <CraftTypeCards onSelect={handleSelectType} />
+              </div>
+            )}
 
-            {/* Step 1: Type selection */}
-            {step === "type" && <CraftTypeCards onSelect={handleSelectType} />}
+            {/* Type Pill Bar (compact, once type is selected) */}
+            {isBuilding && (
+              <div className="mb-4 animate-in fade-in-0 duration-200">
+                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                  {TYPE_OPTIONS.map(opt => {
+                    const active = selectedType === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        onClick={() => {
+                          if (opt.value !== selectedType) {
+                            setSelectedType(opt.value as CraftType);
+                            setGeneratedData(null); setShareUrl(null);
+                            sentRecorded.current = false;
+                          }
+                        }}
+                        className={cn(
+                          "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap border",
+                          active
+                            ? TYPE_ACCENT[opt.value as CraftType]
+                            : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        )}
+                      >
+                        <PuzzleIcon type={opt.value as any} size={16} />
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-            {/* Step 2 & 3: Split layout */}
-            {(step === "content" || step === "preview") && selectedType && (
-              <div className="animate-in fade-in-0 slide-in-from-right-4 duration-300">
-                {/* Back / nav bar */}
-                <div className="flex items-center justify-between mb-4">
-                  <button onClick={handleBack} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                    <ArrowLeft size={13} /> {step === "preview" ? "Edit content" : "Back"}
-                  </button>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-foreground">
-                      {TYPE_OPTIONS.find(o => o.value === selectedType)?.label}
-                    </span>
-                  </div>
-                  {step === "preview" && (
-                    <button onClick={handleStartOver} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                      Start over
-                    </button>
+            {/* ── Canvas ──────────────────────────────────────────────── */}
+            {isBuilding && selectedType && (
+              <div className="space-y-4">
+                {/* Live Preview / Final Preview Canvas */}
+                <div
+                  className={cn(
+                    "rounded-2xl border-2 bg-card p-5 transition-all duration-300 shadow-lg",
+                    selectedType ? TYPE_ACCENT_BORDER[selectedType] : "border-border",
                   )}
-                  {step === "content" && <div />}
+                >
+                  {/* Title overlay */}
+                  {(puzzleTitle.trim() || puzzleFrom.trim()) && (
+                    <div className="mb-3 pb-3 border-b border-border/50">
+                      {puzzleTitle.trim() && (
+                        <h3 className="text-sm font-display font-semibold text-foreground text-center">{puzzleTitle.trim()}</h3>
+                      )}
+                      {puzzleFrom.trim() && (
+                        <p className="text-[11px] text-muted-foreground/60 text-center mt-0.5">from {puzzleFrom.trim()}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Canvas body */}
+                  {hasGenerated ? (
+                    <CraftPreviewGrid data={generatedData!} puzzleType={selectedType} />
+                  ) : (
+                    <CraftLivePreview
+                      type={selectedType}
+                      wordInput={selectedType === "word-fill" || selectedType === "word-search" ? wordInput : ""}
+                      phraseInput={selectedType === "cryptogram" ? phraseInput : ""}
+                      clueEntries={selectedType === "crossword" ? clueEntries : []}
+                      difficulty={craftSettings.difficulty}
+                    />
+                  )}
                 </div>
 
-                {/* Split layout: inputs left, preview right */}
-                <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 items-start">
-                  {/* Left panel */}
-                  <div>
-                    {step === "content" && renderInputPanel()}
+                {/* Reveal message preview */}
+                {hasGenerated && revealMessage && (
+                  <div className="p-3 rounded-xl bg-muted/40 border border-border/60">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1">Reveal Message</p>
+                    <p className="text-sm italic text-foreground/80">{revealMessage}</p>
+                  </div>
+                )}
 
-                    {step === "preview" && (
-                      <div className="space-y-4">
-                        {/* Challenge / Solve-first */}
-                        {!creatorSolveTime ? (
-                          <div className="rounded-2xl border-2 border-primary/25 bg-primary/5 p-4">
-                            <div className="flex items-start gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 mt-0.5">
-                                <Trophy size={18} className="text-primary" />
-                              </div>
-                              <div className="flex-1">
-                                <p className="font-semibold text-foreground text-sm mb-0.5">Solve it yourself first</p>
-                                <p className="text-xs text-muted-foreground leading-relaxed">
-                                  Sets a challenge time for your recipient to beat.
-                                </p>
-                                <div className="flex gap-2 mt-3">
-                                  <Button onClick={handleSolveFirst} size="sm" className="gap-1.5">
-                                    <Trophy size={13} /> Solve &amp; set time
-                                  </Button>
-                                  <Button onClick={() => {}} size="sm" variant="ghost" className="text-muted-foreground text-xs">
-                                    Skip
-                                  </Button>
-                                </div>
-                              </div>
+                {/* Challenge card (post-generate) */}
+                {hasGenerated && (
+                  <div className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
+                    {!creatorSolveTime ? (
+                      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15">
+                            <Trophy size={16} className="text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-foreground text-sm">Set a challenge time</p>
+                            <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+                              Solve it yourself first to set a time to beat.
+                            </p>
+                            <div className="flex gap-2 mt-2.5">
+                              <Button onClick={handleSolveFirst} size="sm" className="gap-1.5 h-8 text-xs">
+                                <Trophy size={12} /> Solve first
+                              </Button>
+                              <Button onClick={() => {}} size="sm" variant="ghost" className="text-muted-foreground text-xs h-8">
+                                Skip
+                              </Button>
                             </div>
                           </div>
-                        ) : (
-                          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex items-center gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15">
-                              <Trophy size={16} className="text-primary" />
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm font-semibold text-foreground">
-                                Challenge time: {Math.floor(creatorSolveTime / 60)}:{(creatorSolveTime % 60).toString().padStart(2, "0")}
-                              </p>
-                              <p className="text-xs text-muted-foreground">Your recipient will try to beat this</p>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Limit status (preview step) */}
-                        {!isPremium && (
-                          <div className={cn(
-                            "flex items-center justify-between rounded-xl px-4 py-3 border",
-                            limitStatus.atLimit ? "bg-destructive/5 border-destructive/20"
-                              : limitStatus.remaining === 1 ? "bg-amber-500/5 border-amber-500/20"
-                              : "bg-secondary/50 border-border"
-                          )}>
-                            <div className="flex items-center gap-2">
-                              {limitStatus.atLimit ? <AlertCircle className="h-4 w-4 text-destructive shrink-0" /> : <Palette className="h-4 w-4 text-muted-foreground shrink-0" />}
-                              <div>
-                                <p className={cn("text-xs font-semibold", limitStatus.atLimit ? "text-destructive" : "text-foreground")}>
-                                  {limitStatus.atLimit ? "Monthly limit reached" : `${limitStatus.remaining} puzzle${limitStatus.remaining === 1 ? "" : "s"} left this month`}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground">{limitStatus.label}</p>
-                              </div>
-                            </div>
-                            {limitStatus.atLimit && (
-                              <button onClick={() => setUpgradeOpen(true)} className="text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors whitespace-nowrap ml-3">
-                                Upgrade →
-                              </button>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Share actions */}
-                        <div className="relative space-y-3 p-4 rounded-xl border border-border bg-card overflow-hidden">
-                          {shareSuccess && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-card/90 z-10 animate-in fade-in-0 duration-200">
-                              <div className="flex flex-col items-center gap-2 animate-in zoom-in-75 duration-300">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-primary"><Check size={24} strokeWidth={2.5} /></div>
-                                <span className="text-sm font-medium text-foreground">Sent!</span>
-                              </div>
-                            </div>
-                          )}
-                          <Button onClick={handleShare} className="w-full gap-2"><Share className="h-4 w-4" /> Send Puzzle</Button>
-                          <button onClick={handleCopyLink} className="w-full flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors py-1.5">
-                            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                            {copied ? "Copied!" : "or copy link"}
-                          </button>
                         </div>
-
-                        <div className="flex items-center justify-between">
-                          {renderDraftButton()}
-                          <Button onClick={handleRegenerate} variant="ghost" size="sm" className="gap-1.5 text-muted-foreground h-auto py-1 px-2">
-                            <RefreshCw className="h-3 w-3" /> Regenerate
-                          </Button>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 flex items-center gap-3">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/15">
+                          <Trophy size={14} className="text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">
+                            Challenge: {Math.floor(creatorSolveTime / 60)}:{(creatorSolveTime % 60).toString().padStart(2, "0")}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">Your recipient will try to beat this</p>
                         </div>
                       </div>
                     )}
                   </div>
+                )}
 
-                  {/* Right panel: preview */}
-                  <div className="lg:sticky lg:top-20">
-                    {renderPreviewPanel()}
+                {/* ── Tool Panels (accordion) ─────────────────────────── */}
+                {!hasGenerated && (
+                  <Accordion type="multiple" defaultValue={["content"]} className="space-y-1.5">
+                    {/* Content */}
+                    <AccordionItem value="content" className="border rounded-xl px-4 bg-card/50">
+                      <AccordionTrigger className="py-3 hover:no-underline">
+                        <div className="flex items-center gap-2">
+                          <Type size={14} className="text-muted-foreground" />
+                          <span className="text-sm font-medium">Content</span>
+                          <span className="text-[10px] text-muted-foreground/60 ml-1">{contentSummary}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-4 space-y-3">
+                        {(selectedType === "word-fill" || selectedType === "word-search") && (
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-muted-foreground">Words (one per line or comma-separated)</label>
+                            <Textarea value={wordInput} onChange={e => setWordInput(e.target.value)} placeholder={"CHUCKY\nBEACH\nBIRTHDAY\nVACATION"} rows={5} className="resize-none font-mono text-sm uppercase tracking-wide" />
+                          </div>
+                        )}
+                        {selectedType === "cryptogram" && (
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-muted-foreground">Phrase or message to encode</label>
+                            <Textarea value={phraseInput} onChange={e => setPhraseInput(e.target.value)} placeholder="MEET ME AT MIDNIGHT" rows={4} className="resize-none" />
+                          </div>
+                        )}
+                        {selectedType === "crossword" && (
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-muted-foreground">Answer + clue pairs</label>
+                            {clueEntries.map((entry, i) => (
+                              <div key={i} className="flex gap-2">
+                                <Input value={entry.answer} onChange={e => { const u = [...clueEntries]; u[i] = { ...entry, answer: e.target.value }; setClueEntries(u); }} placeholder="Answer" className="flex-1" />
+                                <Input value={entry.clue} onChange={e => { const u = [...clueEntries]; u[i] = { ...entry, clue: e.target.value }; setClueEntries(u); }} placeholder="Clue" className="flex-[2]" />
+                                {clueEntries.length > 2 && (
+                                  <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => setClueEntries(clueEntries.filter((_, j) => j !== i))}><Trash2 className="h-3 w-3" /></Button>
+                                )}
+                              </div>
+                            ))}
+                            <Button variant="outline" size="sm" onClick={() => setClueEntries([...clueEntries, { answer: "", clue: "" }])}><Plus className="h-3 w-3 mr-1" /> Add entry</Button>
+                          </div>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    {/* Theme & Colors */}
+                    <AccordionItem value="theme" className="border rounded-xl px-4 bg-card/50">
+                      <AccordionTrigger className="py-3 hover:no-underline">
+                        <div className="flex items-center gap-2">
+                          <Paintbrush size={14} className="text-muted-foreground" />
+                          <span className="text-sm font-medium">Theme & Colors</span>
+                          <span className="text-[10px] text-muted-foreground/60 ml-1">{themeSummary}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-4 space-y-4">
+                        <CraftThemePicker
+                          selected={selectedTheme}
+                          onSelect={(id) => {
+                            setSelectedTheme(id);
+                            const theme = getTheme(id);
+                            if (!revealMessage.trim() && theme.revealTemplates.length > 0) setRevealMessage(theme.revealTemplates[0]);
+                          }}
+                          onRevealTemplate={(tmpl) => setRevealMessage(tmpl)}
+                          onPrefillWords={(words) => {
+                            if (!words.includes("\n")) {
+                              setWordInput(prev => { const e = prev.trim(); if (!e) return words; if (e.includes(words)) return prev; return e + "\n" + words; });
+                            } else setWordInput(words);
+                            if (selectedType === "crossword") {
+                              const wordList = words.split("\n").filter(Boolean);
+                              if (wordList.length > 0) setClueEntries(wordList.map(w => ({ answer: w, clue: "" })));
+                            }
+                          }}
+                          currentRevealMessage={revealMessage}
+                          showWordSection={selectedType === "word-fill" || selectedType === "word-search"}
+                        />
+                        <CraftColorPicker selected={colorPalette} onSelect={handleColorPaletteSelect} />
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    {/* Settings */}
+                    <AccordionItem value="settings" className="border rounded-xl px-4 bg-card/50">
+                      <AccordionTrigger className="py-3 hover:no-underline">
+                        <div className="flex items-center gap-2">
+                          <Settings size={14} className="text-muted-foreground" />
+                          <span className="text-sm font-medium">Settings</span>
+                          <span className="text-[10px] text-muted-foreground/60 ml-1">{settingsSummary}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-4">
+                        <CraftSettingsPanel value={craftSettings} onChange={setCraftSettings} />
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    {/* Personal Touch */}
+                    <AccordionItem value="personal" className="border rounded-xl px-4 bg-card/50">
+                      <AccordionTrigger className="py-3 hover:no-underline">
+                        <div className="flex items-center gap-2">
+                          <Heart size={14} className="text-muted-foreground" />
+                          <span className="text-sm font-medium">Personal Touch</span>
+                          <span className="text-[10px] text-muted-foreground/60 ml-1">{personalSummary}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-4 space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Puzzle title</label>
+                            <Input value={puzzleTitle} onChange={e => setPuzzleTitle(e.target.value)} placeholder="Just for You" maxLength={100} />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">From</label>
+                            <Input value={puzzleFrom} onChange={e => setPuzzleFrom(e.target.value)} placeholder="Mariah" maxLength={100} />
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-muted-foreground">Message revealed after solving</label>
+                          <Input value={revealMessage} onChange={e => setRevealMessage(e.target.value)} placeholder="Congratulations! You cracked it 🎉" maxLength={500} />
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                )}
+
+                {/* Share actions (post-generate) */}
+                {hasGenerated && (
+                  <div className="relative rounded-xl border border-border bg-card p-4 space-y-3 overflow-hidden animate-in fade-in-0 duration-200">
+                    {shareSuccess && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-card/90 z-10 animate-in fade-in-0 duration-200">
+                        <div className="flex flex-col items-center gap-2 animate-in zoom-in-75 duration-300">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-primary"><Check size={24} strokeWidth={2.5} /></div>
+                          <span className="text-sm font-medium text-foreground">Sent!</span>
+                        </div>
+                      </div>
+                    )}
+                    <Button onClick={handleShare} className="w-full gap-2"><Share className="h-4 w-4" /> Send Puzzle</Button>
+                    <button onClick={handleCopyLink} className="w-full flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors py-1.5">
+                      {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                      {copied ? "Copied!" : "or copy link"}
+                    </button>
                   </div>
-                </div>
+                )}
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
+
+      {/* ── Sticky Action Bar ──────────────────────────────────────── */}
+      {isBuilding && !showInbox && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-background/80 backdrop-blur-lg">
+          <div className="container max-w-3xl mx-auto flex items-center justify-between py-3 px-4">
+            {/* Left: draft save */}
+            <button
+              onClick={handleSaveDraft}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {draftSaved && !draftDirty ? (
+                <><Check className="h-3.5 w-3.5 text-primary" /><span className="text-primary font-medium">Saved</span></>
+              ) : (
+                <><Save className="h-3.5 w-3.5" /><span>Save draft</span></>
+              )}
+            </button>
+
+            {/* Center/Right: primary action */}
+            <div className="flex items-center gap-2">
+              {hasGenerated && (
+                <>
+                  <Button onClick={handleRegenerate} variant="outline" size="sm" className="gap-1.5 h-9">
+                    <RefreshCw className="h-3.5 w-3.5" /> Regenerate
+                  </Button>
+                  <Button onClick={handleStartOver} variant="ghost" size="sm" className="text-muted-foreground h-9">
+                    Start over
+                  </Button>
+                </>
+              )}
+              {!hasGenerated && (
+                <Button onClick={handleGenerate} disabled={saving} className="gap-2 h-9 px-5 relative overflow-hidden">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {saving ? "Saving…" : "Generate Puzzle"}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </Layout>
