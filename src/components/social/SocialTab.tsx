@@ -10,7 +10,7 @@
  * Plus all request/friend management UI from v1.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -447,105 +447,109 @@ function ActivityFeed() {
 
 // ── Friends rating leaderboard ────────────────────────────────────────────
 
-function FriendsRatingLeaderboard({ friends }: { friends: FriendWithStats[] }) {
-  const ranked = [...friends]
-    .filter((f) => f.rating !== null)
-    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+const FriendsRatingLeaderboard = React.forwardRef<HTMLDivElement, { friends: FriendWithStats[] }>(
+  function FriendsRatingLeaderboard({ friends }, ref) {
+    const ranked = [...friends]
+      .filter((f) => f.rating !== null)
+      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
 
-  if (ranked.length === 0) return null;
+    if (ranked.length === 0) return null;
 
-  return (
-    <div>
-      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5">
-        Rating Leaderboard
-      </p>
-      <div className="rounded-xl border bg-card overflow-hidden">
-        {ranked.map((friend, i) => (
-          <div key={friend.id} className={cn(
-            "flex items-center gap-3 px-4 py-3",
-            i > 0 && "border-t border-border/40"
-          )}>
-            <span className="w-5 text-center text-sm shrink-0">
-              {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (
-                <span className="font-mono text-xs text-muted-foreground">{i + 1}</span>
-              )}
-            </span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{friend.displayName}</p>
-              {friend.skillTier && (
-                <p className={cn("text-[10px] font-semibold", getTierColor(friend.skillTier as any))}>
-                  {friend.skillTier}
-                </p>
-              )}
+    return (
+      <div ref={ref}>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5">
+          Rating Leaderboard
+        </p>
+        <div className="rounded-xl border bg-card overflow-hidden">
+          {ranked.map((friend, i) => (
+            <div key={friend.id} className={cn(
+              "flex items-center gap-3 px-4 py-3",
+              i > 0 && "border-t border-border/40"
+            )}>
+              <span className="w-5 text-center text-sm shrink-0">
+                {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (
+                  <span className="font-mono text-xs text-muted-foreground">{i + 1}</span>
+                )}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{friend.displayName}</p>
+                {friend.skillTier && (
+                  <p className={cn("text-[10px] font-semibold", getTierColor(friend.skillTier as any))}>
+                    {friend.skillTier}
+                  </p>
+                )}
+              </div>
+              <span className="font-mono text-sm font-bold text-foreground shrink-0">{friend.rating}</span>
             </div>
-            <span className="font-mono text-sm font-bold text-foreground shrink-0">{friend.rating}</span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
+);
 
 // ── Friend list ───────────────────────────────────────────────────────────
 
-function FriendsList({ friends }: { friends: FriendWithStats[] }) {
-  const { removeFriend } = useFriends();
-  const { toast } = useToast();
-  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
+const FriendsList = React.forwardRef<HTMLDivElement, { friends: FriendWithStats[] }>(
+  function FriendsList({ friends }, ref) {
+    const { removeFriend } = useFriends();
+    const { toast } = useToast();
+    const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
 
-  return (
-    <div>
-      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5">
-        Friends ({friends.length})
-      </p>
-      <div className="rounded-xl border bg-card overflow-hidden">
-        {friends.map((friend, i) => (
-          <div key={friend.id} className={cn(
-            "flex items-center gap-3 px-4 py-3 group",
-            i > 0 && "border-t border-border/40"
-          )}>
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
-              <span className="text-sm font-bold text-primary">{friend.displayName[0].toUpperCase()}</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{friend.displayName}</p>
-              <p className="text-[10px] text-muted-foreground/60">
-                {friend.skillTier ? (
-                  <span className={cn("font-semibold", getTierColor(friend.skillTier as any))}>
-                    {friend.skillTier}
-                  </span>
-                ) : "No rating yet"}
-                {friend.solveCount != null && (
-                  <span className="ml-1.5 text-muted-foreground/40">· {friend.solveCount} solves</span>
+    return (
+      <div ref={ref}>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5">
+          Friends ({friends.length})
+        </p>
+        <div className="rounded-xl border bg-card overflow-hidden">
+          {friends.map((friend, i) => (
+            <div key={friend.id} className={cn(
+              "flex items-center gap-3 px-4 py-3 group",
+              i > 0 && "border-t border-border/40"
+            )}>
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                <span className="text-sm font-bold text-primary">{friend.displayName[0].toUpperCase()}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{friend.displayName}</p>
+                <p className="text-[10px] text-muted-foreground/60">
+                  {friend.skillTier ? (
+                    <span className={cn("font-semibold", getTierColor(friend.skillTier as any))}>
+                      {friend.skillTier}
+                    </span>
+                  ) : "No rating yet"}
+                  {friend.solveCount != null && (
+                    <span className="ml-1.5 text-muted-foreground/40">· {friend.solveCount} solves</span>
+                  )}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  if (confirmRemove === friend.id) {
+                    removeFriend.mutateAsync(friend.id).then(() =>
+                      toast({ title: `${friend.displayName} removed` })
+                    );
+                    setConfirmRemove(null);
+                  } else {
+                    setConfirmRemove(friend.id);
+                  }
+                }}
+                className={cn(
+                  "flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg transition-colors shrink-0",
+                  confirmRemove === friend.id
+                    ? "text-destructive bg-destructive/10"
+                    : "text-muted-foreground/40 hover:text-muted-foreground opacity-0 group-hover:opacity-100"
                 )}
-              </p>
+              >
+                {confirmRemove === friend.id ? <><X size={11} /> Confirm</> : <UserMinus size={12} />}
+              </button>
             </div>
-            <button
-              onClick={() => {
-                if (confirmRemove === friend.id) {
-                  removeFriend.mutateAsync(friend.id).then(() =>
-                    toast({ title: `${friend.displayName} removed` })
-                  );
-                  setConfirmRemove(null);
-                } else {
-                  setConfirmRemove(friend.id);
-                }
-              }}
-              className={cn(
-                "flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg transition-colors shrink-0",
-                confirmRemove === friend.id
-                  ? "text-destructive bg-destructive/10"
-                  : "text-muted-foreground/40 hover:text-muted-foreground opacity-0 group-hover:opacity-100"
-              )}
-            >
-              {confirmRemove === friend.id ? <><X size={11} /> Confirm</> : <UserMinus size={12} />}
-            </button>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
+);
 
 // ── Main SocialTab ─────────────────────────────────────────────────────────
 
