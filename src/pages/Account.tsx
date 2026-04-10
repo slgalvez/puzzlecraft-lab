@@ -9,6 +9,7 @@ import {
   ArrowLeft, Mail, Lock, User, Sparkles, Pencil,
   Check, X, Flame, Trophy, Target, Shield,
   ChevronRight, Zap, Star, Crown, Bell,
+  BarChart3, LogOut,
 } from "lucide-react";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import { hasPremiumAccess, shouldShowUpgradeCTA, PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
@@ -262,10 +263,12 @@ export default function AccountPage() {
 
           {/* Actions */}
           <div className="rounded-2xl border border-border/50 overflow-hidden">
-            {[
+            {([
+              { icon: BarChart3, label: "Your Stats", onPress: () => navigate("/stats"), destructive: false },
+              { icon: Trophy, label: "Leaderboard", onPress: () => navigate("/leaderboard"), destructive: false },
               { icon: Shield, label: "Help & FAQ", onPress: () => navigate("/help"), destructive: false },
-              { icon: Shield, label: "Sign out",   onPress: () => { signOut(); navigate("/"); }, destructive: true },
-            ].map(({ icon: Icon, label, onPress, destructive }, i, arr) => (
+              { icon: LogOut, label: "Sign out", onPress: () => { signOut(); navigate("/"); }, destructive: true },
+            ] as const).map(({ icon: Icon, label, onPress, destructive }, i, arr) => (
               <button key={label} onClick={onPress} className={cn("w-full flex items-center justify-between px-4 py-3.5 transition-colors active:bg-muted/50", i < arr.length - 1 && "border-b border-border/40")}>
                 <div className="flex items-center gap-3">
                   <Icon size={16} className={destructive ? "text-destructive" : "text-muted-foreground"} />
@@ -277,6 +280,15 @@ export default function AccountPage() {
           </div>
 
           <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+
+          {/* App Store compliance — required by Apple guideline 5.1.1 */}
+          <div className="pt-2 pb-2 flex items-center justify-center gap-4">
+            <a href="https://puzzlecraftapp.com/privacy" target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">Privacy Policy</a>
+            <span className="text-muted-foreground/30 text-[11px]">·</span>
+            <a href="https://puzzlecraftapp.com/terms" target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">Terms of Service</a>
+            <span className="text-muted-foreground/30 text-[11px]">·</span>
+            <span className="text-[11px] text-muted-foreground/30">v1.0.0</span>
+          </div>
         </div>
       </Layout>
     );
@@ -509,6 +521,13 @@ export default function AccountPage() {
           </div>
         </div>
 
+      </div>
+
+      {/* App Store compliance footer (signed-out) */}
+      <div className="pt-1 flex items-center justify-center gap-4">
+        <a href="https://puzzlecraftapp.com/privacy" target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">Privacy Policy</a>
+        <span className="text-muted-foreground/30 text-[11px]">·</span>
+        <a href="https://puzzlecraftapp.com/terms" target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">Terms of Service</a>
       </div>
 
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />

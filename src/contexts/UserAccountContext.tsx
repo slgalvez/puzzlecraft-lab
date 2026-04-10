@@ -164,6 +164,10 @@ function dedupeByKey(arr: any[], key: string): any[] {
     return true;
   });
 }
+// The canonical web URL used for email confirmation redirects.
+// Must be the production web URL — NOT window.location.origin,
+// which returns "capacitor://localhost" inside the native iOS app.
+const WEB_ORIGIN = "https://puzzlecraft-lab.lovable.app";
 
 export function UserAccountProvider({ children }: { children: ReactNode }) {
   const [account,      setAccount]      = useState<UserAccount | null>(null);
@@ -264,6 +268,10 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
       password,
       options: {
         data: { display_name: displayName || email.split("@")[0] },
+        // FIX: use canonical web URL, not window.location.origin.
+        // Inside Capacitor, origin = "capacitor://localhost" which Supabase
+        // can't redirect back to from a confirmation email link.
+        emailRedirectTo: `${WEB_ORIGIN}/account`,
       },
     });
     if (error) return { error: error.message };

@@ -27,7 +27,7 @@ import { useUserAccount } from "@/contexts/UserAccountContext";
 import UpgradeModal from "@/components/premium/UpgradeModal";
 import { usePremiumAccess } from "@/lib/premiumAccess";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
-import { checkMilestones } from "@/lib/milestones";
+
 import { getSolveRecords } from "@/lib/solveTracker";
 import { computePlayerRating, getSkillTier, getTierColor, getTierProgress, getPlayerRatingInfo } from "@/lib/solveScoring";
 import { ProvisionalRatingCard } from "@/components/puzzles/ProvisionalRatingCard";
@@ -120,7 +120,9 @@ const Stats = () => {
 
   useEffect(() => {
     if (account) syncLeaderboardRating(account.id, account.displayName);
-    checkMilestones();
+    // NOTE: checkMilestones() intentionally removed here.
+    // MilestoneModalManager (mounted in App.tsx via PublicRoutes) fires after
+    // every solve. Calling it again on Stats navigation caused duplicate toasts.
   }, [account, dataVersion]);
 
   // Filters
