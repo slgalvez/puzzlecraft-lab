@@ -153,7 +153,7 @@ function InsightsEmptyState({ solveCount }: { solveCount: number }) {
 
 // ── Main component ────────────────────────────────────────────────────────
 
-export default function PremiumStats({ onDataChange }: { onDataChange?: () => void }) {
+export default function PremiumStats({ onDataChange, ratingInfoOverride }: { onDataChange?: () => void; ratingInfoOverride?: ReturnType<typeof getPlayerRatingInfo> }) {
   const [historyExpanded, setHistoryExpanded] = useState(false);
 
   // ── ALWAYS read real user data. No demo flag. No isAdmin condition. ──
@@ -162,10 +162,11 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
   const records = useMemo(() => getSolveRecords(), []);
   const summary = useMemo(() => getSolveSummary(), []);
 
-  const ratingInfo = useMemo(() => getPlayerRatingInfo(records), [records]);
+  const localRatingInfo = useMemo(() => getPlayerRatingInfo(records), [records]);
+  const ratingInfo = ratingInfoOverride ?? localRatingInfo;
 
   // ── Empty / insufficient data states ──────────────────────────────────
-  if (records.length === 0) {
+  if (records.length === 0 && ratingInfo.hasNoData) {
     return (
       <div className="space-y-4">
         {/* ProvisionalRatingCard renders the no-data empty state */}

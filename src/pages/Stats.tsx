@@ -405,7 +405,7 @@ const Stats = () => {
             )}
 
             {/* Premium stats section */}
-            {showGeneral && premiumAccess && <PremiumStats />}
+            {showGeneral && premiumAccess && <PremiumStats ratingInfoOverride={ratingInfo} />}
 
           </div>
           {/* ── end LEFT COLUMN ── */}
