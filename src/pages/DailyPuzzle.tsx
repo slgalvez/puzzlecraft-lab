@@ -20,7 +20,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, DIFFICULTY_LABELS, DIFFICULTY_SELECTED, type Difficulty } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import {
   getTodaysChallenge,
@@ -221,7 +221,10 @@ const DailyPuzzle = () => {
               <p className="mt-1 text-muted-foreground flex items-center gap-2">
                 Today's puzzle:{" "}
                 <span className="font-medium text-foreground">{info.name}</span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground capitalize">
+                <span className={cn(
+                  "text-xs px-2 py-0.5 rounded-full border capitalize",
+                  DIFFICULTY_SELECTED[challenge.difficulty as Difficulty] || "bg-secondary text-secondary-foreground border-border"
+                )}>
                   {challenge.difficulty}
                 </span>
               </p>

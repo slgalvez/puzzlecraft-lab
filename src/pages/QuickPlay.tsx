@@ -3,7 +3,7 @@ import { getPackPuzzleWordBank } from "@/lib/weeklyPacks";
 import { goBackOrFallback } from "@/lib/navigation";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory, isDifficultyDisabled, getEffectiveDifficulty } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, DIFFICULTY_LABELS, DIFFICULTY_SELECTED, type Difficulty, type PuzzleCategory, isDifficultyDisabled, getEffectiveDifficulty } from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
 import { cn } from "@/lib/utils";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
@@ -346,13 +346,22 @@ const QuickPlay = () => {
           )}
 
           {mode === "surprise" && (
-            <p className="text-xs text-muted-foreground capitalize">{DIFFICULTY_LABELS[effectiveDifficulty]}</p>
+            <span className={cn(
+              "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border capitalize",
+              DIFFICULTY_SELECTED[effectiveDifficulty] || "text-muted-foreground"
+            )}>
+              {DIFFICULTY_LABELS[effectiveDifficulty]}
+            </span>
           )}
 
           {mode === "endless" && (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-muted-foreground">
-                Difficulty: <span className="font-medium text-foreground capitalize">{DIFFICULTY_LABELS[effectiveDifficulty]}</span>
+              <span className="text-xs text-muted-foreground">Difficulty:</span>
+              <span className={cn(
+                "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border capitalize",
+                DIFFICULTY_SELECTED[effectiveDifficulty] || "text-muted-foreground"
+              )}>
+                {DIFFICULTY_LABELS[effectiveDifficulty]}
               </span>
               {lastDiffChange === "up" && <TrendingUp size={12} className="text-primary" />}
               {lastDiffChange === "down" && <TrendingDown size={12} className="text-destructive" />}

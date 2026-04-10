@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
+import { DIFFICULTY_SELECTED, type Difficulty } from "@/lib/puzzleTypes";
 
 export interface CraftSettings {
   difficulty: "easy" | "medium" | "hard";
@@ -68,7 +69,7 @@ export default function CraftSettingsPanel({ value, onChange }: Props) {
                   className={cn(
                     "px-3 py-1 rounded-full text-[11px] font-medium transition-colors",
                     value.difficulty === opt.value
-                      ? "bg-primary/10 text-primary"
+                      ? DIFFICULTY_SELECTED[opt.value as Difficulty] || "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
