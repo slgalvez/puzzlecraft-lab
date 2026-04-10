@@ -130,10 +130,30 @@ function useDailyBoard(dateStr: string) {
         ]);
         if (cancelled) return;
         if (count != null) setPlayerCount(count);
-        if (top && (top as any[]).length > 0) {
-          setRows((top as any[]).map((r: any) => ({ display_name: r.display_name ?? "Anonymous", solve_time: r.solve_time })));
+
+        const realRows: LeaderRow[] = ((top as any[]) ?? []).map((r: any) => ({
+          display_name: r.display_name ?? "Anonymous",
+          solve_time: r.solve_time,
+        }));
+
+        if (realRows.length >= 3) {
+          setRows(realRows);
+        } else {
+          const needed = 3 - realRows.length;
+          const realNames = new Set(realRows.map(r => r.display_name));
+          const mocks = getMockLeaderboard(dateStr, needed + 3)
+            .filter(m => !realNames.has(m.display_name))
+            .slice(0, needed)
+            .map(m => ({
+              ...m,
+              solve_time: Math.max(
+                m.solve_time,
+                (realRows[realRows.length - 1]?.solve_time ?? 0) + 5
+              ),
+            }));
+          setRows([...realRows, ...mocks]);
         }
-      } catch { /* keep mock */ }
+      } catch { /* keep mock fallback */ }
     })();
     return () => { cancelled = true; };
   }, [dateStr]);
