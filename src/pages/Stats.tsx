@@ -315,14 +315,122 @@ const Stats = () => {
           {/* ── LEFT COLUMN ── */}
           <div className="space-y-6 min-w-0">
 
-            {/* Rating hero (premium) — ProvisionalRatingCard handles all states */}
-            {showGeneral && premiumAccess && !ratingInfo.hasNoData && (
-              <div className="mt-6">
-                <ProvisionalRatingCard
-                  info={ratingInfo}
-                  leaderboardRank={myLeaderboardEntry?.rank ?? null}
-                  peakRating={peakRating}
-                />
+            {/* Rating hero (premium) — detailed inline card */}
+            {showGeneral && premiumAccess && localRating && (
+              <div className="rounded-2xl border border-primary/20 bg-card p-5 sm:p-6 mt-6">
+                {/* Top row: YOUR RANK + Leaderboard link */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Zap size={14} className="text-primary" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Your Rank
+                    </span>
+                    {myLeaderboardEntry?.rank && (
+                      <span className="font-mono font-bold text-sm text-primary">#{myLeaderboardEntry.rank}</span>
+                    )}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" className="text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                            <Info size={12} />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-52 text-xs leading-relaxed">
+                          <p className="font-semibold mb-1">Your rating is based on:</p>
+                          <ul className="list-disc pl-3.5 space-y-0.5">
+                            <li>Puzzle difficulty</li>
+                            <li>Solve speed</li>
+                            <li>Accuracy</li>
+                            <li>Hint usage</li>
+                          </ul>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <Link
+                    to="/leaderboard"
+                    className="flex items-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary/60 transition-colors"
+                  >
+                    <Trophy size={13} className="text-muted-foreground" />
+                    Leaderboard
+                  </Link>
+                </div>
+
+                {/* Tier name */}
+                <p className={cn("text-base font-semibold mb-1", getTierColor(localRating.tier as any))}>
+                  {localRating.tier}
+                </p>
+
+                {/* Large rating number + trending */}
+                <div className="flex items-baseline gap-2 mb-1">
+                  <p className="font-mono text-5xl font-bold text-foreground leading-none">
+                    {localRating.rating}
+                  </p>
+                  <span className="text-sm text-muted-foreground font-medium">rating</span>
+                  {myLeaderboardEntry && myLeaderboardEntry.previous_rating !== undefined && (
+                    (() => {
+                      const diff = localRating.rating - myLeaderboardEntry.previous_rating;
+                      if (diff === 0) return null;
+                      return diff > 0 ? (
+                        <span className="flex items-center gap-0.5 text-xs font-semibold text-emerald-500">
+                          <TrendingUp size={12} /> +{diff}
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-0.5 text-xs font-semibold text-destructive">
+                          <TrendingDown size={12} /> {diff}
+                        </span>
+                      );
+                    })()
+                  )}
+                </div>
+
+                {/* Supporting text */}
+                <p className="text-sm text-muted-foreground">
+                  Based on your recent {Math.min(localRating.solveCount, 25)} solves
+                </p>
+                {localRating.bestRating > localRating.rating && (
+                  <p className="text-xs text-muted-foreground/70 mt-0.5">
+                    Peak: {localRating.bestRating}
+                  </p>
+                )}
+
+                {/* Next rank progress */}
+                {nextTierInfo && pointsToNext !== null && (
+                  <div className="mt-4 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground font-medium">
+                        {pointsToNext} pts to {nextTierInfo.name}
+                      </span>
+                      <span className="text-muted-foreground/70 font-mono">
+                        {localRating.rating}/{nextTierInfo.threshold}
+                      </span>
+                    </div>
+                    <Progress value={tierProgressValue} className="h-1.5" />
+
+                    {/* Near-rank motivational CTA */}
+                    {nearRank && (
+                      <div className="mt-2 rounded-lg bg-primary/5 border border-primary/15 px-3 py-2">
+                        <p className="text-xs font-semibold text-primary">
+                          Only {pointsToNext} pts until {nextTierInfo.name}!
+                        </p>
+                        <Link
+                          to="/daily"
+                          className="mt-1 flex items-center gap-1 text-[11px] font-medium text-primary/80 hover:text-primary transition-colors"
+                        >
+                          Play a puzzle now to break through <ArrowRight size={11} />
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Expert — fully maxed */}
+                {!nextTierInfo && (
+                  <div className="mt-4 space-y-1.5">
+                    <Progress value={100} className="h-1.5" />
+                    <p className="text-[10px] text-muted-foreground">Expert — highest tier</p>
+                  </div>
+                )}
               </div>
             )}
 
