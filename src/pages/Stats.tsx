@@ -157,7 +157,7 @@ const Stats = () => {
       rating:     ratingInfo.rating,
       tier:       ratingInfo.tier,
       solveCount: ratingInfo.solveCount,
-      bestRating: ratingInfo.rating,
+      bestRating: peakRating ?? ratingInfo.rating,
     };
   }, [premiumAccess, ratingInfo]);
 
