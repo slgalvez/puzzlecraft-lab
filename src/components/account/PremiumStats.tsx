@@ -3,7 +3,7 @@
  * Hero → Milestones → Accuracy → Personal Bests → Average Performance → Solve History
  */
 import { useMemo, useState, useCallback } from "react";
-import { getSolveRecords, getSolveSummary, type SolveRecord } from "@/lib/solveTracker";
+import { getSolveRecords, getSolveSummary, getAllSolveRecordsIncludingDemo, getDemoSolveSummary, type SolveRecord } from "@/lib/solveTracker";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory, type Difficulty } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import {
@@ -88,8 +88,8 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
   const { account } = useUserAccount();
   const isAdmin = account?.isAdmin ?? false;
   const demoActive = useMemo(() => hasDemoData(), [refreshKey]);
-  const records = useMemo(() => getSolveRecords(), [refreshKey]);
-  const summary = useMemo(() => getSolveSummary(), [refreshKey]);
+  const records = useMemo(() => (isAdmin && demoActive) ? getAllSolveRecordsIncludingDemo() : getSolveRecords(), [refreshKey, isAdmin, demoActive]);
+  const summary = useMemo(() => (isAdmin && demoActive) ? getDemoSolveSummary() : getSolveSummary(), [refreshKey, isAdmin, demoActive]);
   const demoLeaderboardActive = useMemo(() => hasDemoLeaderboard(), [refreshKey]);
   const [historyExpanded, setHistoryExpanded] = useState(false);
 
