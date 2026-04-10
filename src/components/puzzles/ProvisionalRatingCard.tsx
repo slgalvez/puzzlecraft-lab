@@ -11,7 +11,8 @@
  */
 
 import { cn } from "@/lib/utils";
-import { Zap, Lock, ChevronRight, Trophy, Target } from "lucide-react";
+import { Zap, Lock, ChevronRight, Trophy, Target, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import type { PlayerRatingInfo, SkillTier } from "@/lib/solveScoring";
 import { Link } from "react-router-dom";
@@ -172,6 +173,7 @@ export function ProvisionalRatingCard({
               <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 Player Rating
               </span>
+              <RatingTooltip />
             </div>
             <div className="flex items-baseline gap-2">
               <p className="font-mono text-5xl font-bold text-foreground leading-none">
@@ -232,6 +234,7 @@ export function ProvisionalRatingCard({
           <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
             Your Rank
           </span>
+          <RatingTooltip />
           {onLeaderboard && leaderboardRank && (
             <span className="font-mono font-bold text-sm text-primary">#{leaderboardRank}</span>
           )}
