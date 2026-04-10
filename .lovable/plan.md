@@ -2,32 +2,19 @@
 
 ## Problem
 
-The iPad keyboard doesn't appear for number fill-in (and potentially other puzzles) because:
+The Privacy Policy and Terms of Service links both point to `https://puzzlecraftapp.com/privacy` and `https://puzzlecraftapp.com/terms`, which are empty/non-existent pages.
 
-1. **`MobileLetterInput.tsx` was never updated** — it still has the old broken styles from the original code (`opacity: 0`, `pointerEvents: "none"`, `zIndex: -1`, `tabIndex: -1`). The fixes discussed earlier (z-index 9999, opacity 0.01, pointerEvents auto, fontSize 16px) were not applied.
+## Fix
 
-2. **`MobileNumberPad.tsx` was never updated** — it still has `sm:hidden` which hides the number pad on iPad-sized screens (≥640px). Number fill-in and Sudoku rely on this pad instead of the OS keyboard.
+Replace those URLs with routes inside the app itself (`/privacy` and `/terms`), and create two simple static pages with placeholder legal text. This ensures the links always work regardless of external domains.
 
-These are the same two files from step 2 and step 3 of the earlier "Apply order" that were supposed to be replaced but weren't saved.
+### Changes
 
-## Fix Plan
+1. **Create `src/pages/Privacy.tsx`** — static page with standard privacy policy content (data collection, cookies, contact info placeholder) using the existing `Layout` component.
 
-### File 1: `src/components/puzzles/MobileLetterInput.tsx`
-Apply the iPad-safe hidden input fixes:
-- `zIndex: -1` → `9999`
-- `opacity: 0` → `0.01`
-- `pointerEvents: "none"` → `"auto"`
-- `tabIndex: -1` → `0`
-- `width/height: "1px"` → `"2px"`
-- `position: fixed; bottom: 0; left: 50%` → `top: "50%", left: "50%"`
-- Add `fontSize: "16px"` (prevents iOS auto-zoom)
-- Add `enterKeyHint: "done"`
+2. **Create `src/pages/Terms.tsx`** — static page with standard terms of service content using the existing `Layout` component.
 
-### File 2: `src/components/puzzles/MobileNumberPad.tsx`
-- Remove `sm:hidden` from the grid container class
-- Change `h-11` to `min-h-[44px]` for proper touch targets
-- Visibility is already controlled by the `visible` prop from the parent (which uses `needsKeyboard`), so removing `sm:hidden` is the only change needed to make it appear on iPads
+3. **Update `src/App.tsx`** — add routes for `/privacy` and `/terms` inside the public routes.
 
-### No other files need changes
-The `needsKeyboard` substitutions in CrosswordGrid, FillInGrid, SudokuGrid, and CryptogramPuzzle are already in place (confirmed by search). The issue is purely that the two input components themselves were never patched.
+4. **Update `src/pages/Account.tsx`** (lines 286–288 and 528–530) — change `<a href="https://puzzlecraftapp.com/...">` to `<Link to="/privacy">` and `<Link to="/terms">` (React Router links instead of external anchors). Remove `target="_blank"`.
 
