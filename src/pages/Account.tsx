@@ -34,7 +34,7 @@ import { cn } from "@/lib/utils";
 import { isNativeApp } from "@/lib/appMode";
 
 const APP_VERSION = "1.0.0";
-const WEB_ORIGIN = "https://puzzlecraftapp.com"; // update before launch
+const WEB_ORIGIN = "https://puzzlecraft-lab.lovable.app";
 
 export default function AccountPage() {
   const navigate = useNavigate();
