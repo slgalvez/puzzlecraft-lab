@@ -444,7 +444,8 @@ const Stats = () => {
           </div>
           {/* ── end LEFT COLUMN ── */}
 
-          {/* ── RIGHT COLUMN ── */}
+          {/* ── RIGHT COLUMN (web only) ── */}
+          {!native && (
           <div className="space-y-5 lg:sticky lg:top-24">
 
             {/* By puzzle type */}
@@ -554,6 +555,7 @@ const Stats = () => {
             )}
 
           </div>
+          )}
           {/* ── end RIGHT COLUMN ── */}
 
         </div>
