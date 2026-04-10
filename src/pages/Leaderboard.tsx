@@ -17,7 +17,7 @@ import { Trophy, Medal, Shield, TrendingUp, TrendingDown, Zap, ArrowRight } from
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "react-router-dom";
 import { getSolveRecords } from "@/lib/solveTracker";
 import { computePlayerRating, getSkillTier, getTierColor, getTierProgress } from "@/lib/solveScoring";
