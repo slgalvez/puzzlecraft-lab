@@ -261,7 +261,7 @@ export default function Leaderboard() {
 
         {/* Real leaderboard */}
         {!isLoading && ranked.length > 0 && (
-          <TooltipProvider>
+          <>
             <div className="rounded-xl border bg-card overflow-hidden">
               <div className="grid grid-cols-[40px_1fr_80px_60px] items-center px-4 py-2 border-b bg-secondary/50">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">#</span>
