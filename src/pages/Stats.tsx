@@ -437,7 +437,7 @@ const Stats = () => {
                 {account?.isAdmin && (
                   <PremiumStatsAdminControls onRefresh={() => setDataVersion((v) => v + 1)} />
                 )}
-                <PremiumStats ratingInfoOverride={ratingInfo} isAdmin={account?.isAdmin} key={dataVersion} />
+                <PremiumStats key={dataVersion} />
               </>
             )}
 
