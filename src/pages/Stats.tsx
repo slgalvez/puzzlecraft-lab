@@ -92,6 +92,20 @@ const Stats = () => {
     return getPlayerRatingInfo(recs);
   }, [dataVersion]);
 
+  // Peak rating — highest rolling-window rating across all recorded solves
+  const peakRating = useMemo(() => {
+    const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
+    if (recs.length < 5) return null;
+    let peak = 0;
+    // Slide a 25-record window across the history to find the peak
+    for (let i = 0; i <= recs.length - 5; i++) {
+      const window = recs.slice(i, i + 25);
+      const avg = window.reduce((s, r) => s + computeSolveScore(r), 0) / window.length;
+      peak = Math.max(peak, Math.round(avg));
+    }
+    return peak;
+  }, [dataVersion]);
+
   const { data: myLeaderboardEntry } = useQuery({
     queryKey: ["my-leaderboard-entry", account?.id, dataVersion],
     queryFn: async () => {
@@ -307,6 +321,7 @@ const Stats = () => {
                 <ProvisionalRatingCard
                   info={ratingInfo}
                   leaderboardRank={myLeaderboardEntry?.rank ?? null}
+                  peakRating={peakRating}
                 />
               </div>
             )}

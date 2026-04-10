@@ -375,7 +375,7 @@ export default function PremiumStats({ onDataChange, ratingInfoOverride, isAdmin
         </div>
 
         {/* ── HERO SECTION — ProvisionalRatingCard handles all solve-count states ── */}
-        <ProvisionalRatingCard info={ratingInfo} />
+        <ProvisionalRatingCard info={ratingInfo} peakRating={peakRating} />
 
         {/* ── Keep insight + accuracy mini-cards below if we have enough data ── */}
         {!ratingInfo.hasNoData && (
