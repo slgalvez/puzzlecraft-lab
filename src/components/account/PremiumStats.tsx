@@ -293,7 +293,7 @@ export default function PremiumStats({ onDataChange }: { onDataChange?: () => vo
 
         {/* ── MILESTONES ── */}
         {(() => {
-          const milestones = getAllMilestones();
+          const milestones = getAllMilestones(records);
           const achievedCount = milestones.filter((m) => m.state === "achieved").length;
           if (achievedCount === 0 && records.length < 5) return null;
 
