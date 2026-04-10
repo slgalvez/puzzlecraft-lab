@@ -53,7 +53,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getTodaysChallenge, getDailyCompletion, getDailyStreak } from "@/lib/dailyChallenge";
 import { getProgressStats } from "@/lib/progressTracker";
 import { getSolveRecords } from "@/lib/solveTracker";
-import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, DIFFICULTY_LABELS, DIFFICULTY_SELECTED, type PuzzleCategory, type Difficulty } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { isNativeApp } from "@/lib/appMode";
 import IOSPlayTab from "@/components/ios/IOSPlayTab";
@@ -404,7 +404,7 @@ const Index = () => {
                         {challengeInfo.name}
                       </h2>
                       <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground capitalize font-medium">
+                        <span className={cn("text-xs px-2 py-0.5 rounded-full border capitalize font-medium", DIFFICULTY_SELECTED[challenge.difficulty as Difficulty])}>
                           {challenge.difficulty}
                         </span>
                         {!dailyCompletion && (
