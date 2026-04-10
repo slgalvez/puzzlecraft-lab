@@ -66,6 +66,17 @@ const Stats = () => {
   const { receivedCount } = useFriends();
   const [dataVersion, setDataVersion] = useState(0);
 
+  // Bump dataVersion on visibility change (user returns after solving) + on mount
+  useEffect(() => {
+    const handler = () => {
+      if (document.visibilityState === "visible") setDataVersion((v) => v + 1);
+    };
+    document.addEventListener("visibilitychange", handler);
+    return () => document.removeEventListener("visibilitychange", handler);
+  }, []);
+
+  useEffect(() => { setDataVersion((v) => v + 1); }, []);
+
   const stats          = useMemo(() => getProgressStats(),                [dataVersion]);
   const dailyStreak    = useMemo(() => getDailyStreak(),                  [dataVersion]);
   const dailyCompleted = useMemo(() => getTotalDailyCompleted(),          [dataVersion]);
