@@ -6,31 +6,8 @@ import {
   type Difficulty,
   usePremiumAccess,
 } from "@/lib/premiumAccess";
+import { DIFFICULTY_LABELS, DIFFICULTY_HOVER, DIFFICULTY_SELECTED } from "@/lib/puzzleTypes";
 import UpgradeModal from "@/components/account/UpgradeModal";
-
-const DIFFICULTY_LABELS: Record<Difficulty, string> = {
-  easy: "Easy",
-  medium: "Medium",
-  hard: "Hard",
-  extreme: "Extreme",
-  insane: "Insane",
-};
-
-const DIFFICULTY_COLORS: Record<Difficulty, string> = {
-  easy:    "border-emerald-400/60 bg-emerald-400/10 text-emerald-700 dark:text-emerald-300",
-  medium:  "border-amber-400/60  bg-amber-400/10  text-amber-700  dark:text-amber-300",
-  hard:    "border-orange-500/60 bg-orange-500/10 text-orange-700 dark:text-orange-300",
-  extreme: "border-rose-500/60   bg-rose-500/10   text-rose-700   dark:text-rose-300",
-  insane:  "border-violet-600/60 bg-violet-600/10 text-violet-700 dark:text-violet-300",
-};
-
-const DIFFICULTY_ACTIVE: Record<Difficulty, string> = {
-  easy:    "border-emerald-500 bg-emerald-500/20 shadow-emerald-500/30",
-  medium:  "border-amber-500  bg-amber-500/20  shadow-amber-500/30",
-  hard:    "border-orange-500 bg-orange-500/20 shadow-orange-500/30",
-  extreme: "border-rose-500   bg-rose-500/20   shadow-rose-500/30",
-  insane:  "border-violet-600 bg-violet-600/20 shadow-violet-600/30",
-};
 
 interface Props {
   difficulty: Difficulty;
@@ -72,8 +49,8 @@ const DifficultySelector = ({ difficulty, onChange, showAll = false }: Props) =>
                 locked
                   ? "border-border/40 bg-muted/30 text-muted-foreground/50 cursor-pointer select-none"
                   : active
-                  ? cn(DIFFICULTY_COLORS[d], DIFFICULTY_ACTIVE[d], "shadow-sm ring-1")
-                  : cn(DIFFICULTY_COLORS[d], "hover:opacity-80")
+                  ? cn(DIFFICULTY_SELECTED[d])
+                  : cn("border-border text-muted-foreground", DIFFICULTY_HOVER[d])
               )}
               aria-label={
                 locked

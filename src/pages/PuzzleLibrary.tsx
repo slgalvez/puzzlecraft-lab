@@ -15,6 +15,8 @@ import {
   type PuzzleCategory,
   type Difficulty,
   isDifficultyDisabled,
+  DIFFICULTY_HOVER,
+  DIFFICULTY_SELECTED,
 } from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
 import { cn } from "@/lib/utils";
@@ -325,8 +327,8 @@ const PuzzleLibrary = () => {
                               premLocked
                                 ? "text-muted-foreground/40 cursor-pointer"
                                 : isActive
-                                ? "bg-primary/15 text-primary"
-                                : "text-muted-foreground hover:text-foreground"
+                                ? DIFFICULTY_SELECTED[val]
+                                : cn("text-muted-foreground", DIFFICULTY_HOVER[val])
                             )}
                             title={premLocked ? `${label} requires Puzzlecraft+` : label}
                           >
