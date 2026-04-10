@@ -25,7 +25,8 @@
  */
 
 import { useMemo, useState } from "react";
-import { getSolveRecords, getSolveSummary, type SolveRecord } from "@/lib/solveTracker";
+import { getSolveRecords, getSolveSummary, getAllSolveRecordsIncludingDemo, getDemoSolveSummary, type SolveRecord } from "@/lib/solveTracker";
+import { hasDemoData } from "@/lib/demoStats";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory, type Difficulty } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import {
