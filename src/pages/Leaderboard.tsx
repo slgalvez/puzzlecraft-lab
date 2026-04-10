@@ -338,7 +338,7 @@ export default function Leaderboard() {
                 </>
               )}
             </div>
-          </TooltipProvider>
+          </>
         )}
 
         {/* Sign-in prompt for unauthenticated users */}
