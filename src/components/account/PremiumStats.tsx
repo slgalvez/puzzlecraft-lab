@@ -349,8 +349,8 @@ export default function PremiumStats({ onDataChange, ratingInfoOverride }: { onD
           </div>
         )}
 
-        {/* ── MILESTONES ── */}
-        {(achievedCount > 0 || records.length >= 5) && (
+        {/* ── MILESTONES (always visible) ── */}
+        {(
           <div className="rounded-xl border bg-card p-5">
             <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
               <Award size={15} className="text-primary" />
