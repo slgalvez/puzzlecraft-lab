@@ -17,7 +17,7 @@ import { Trophy, Medal, Shield, TrendingUp, TrendingDown, Zap, ArrowRight } from
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "react-router-dom";
 import { getSolveRecords } from "@/lib/solveTracker";
 import { computePlayerRating, getSkillTier, getTierColor, getTierProgress } from "@/lib/solveScoring";
@@ -261,7 +261,7 @@ export default function Leaderboard() {
 
         {/* Real leaderboard */}
         {!isLoading && ranked.length > 0 && (
-          <TooltipProvider>
+          <>
             <div className="rounded-xl border bg-card overflow-hidden">
               <div className="grid grid-cols-[40px_1fr_80px_60px] items-center px-4 py-2 border-b bg-secondary/50">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">#</span>
@@ -338,7 +338,7 @@ export default function Leaderboard() {
                 </>
               )}
             </div>
-          </TooltipProvider>
+          </>
         )}
 
         {/* Sign-in prompt for unauthenticated users */}
