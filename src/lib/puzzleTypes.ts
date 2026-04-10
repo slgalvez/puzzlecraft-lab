@@ -32,6 +32,23 @@ export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   insane: "Insane",
 };
 
+/** Shared difficulty pill styling — neutral default, soft hover, soft-fill selected */
+export const DIFFICULTY_HOVER: Record<Difficulty, string> = {
+  easy:    "hover:border-emerald-400/40 hover:bg-emerald-400/5",
+  medium:  "hover:border-amber-400/40 hover:bg-amber-400/5",
+  hard:    "hover:border-orange-500/40 hover:bg-orange-500/5",
+  extreme: "hover:border-rose-500/40 hover:bg-rose-500/5",
+  insane:  "hover:border-violet-600/40 hover:bg-violet-600/5",
+};
+
+export const DIFFICULTY_SELECTED: Record<Difficulty, string> = {
+  easy:    "border-emerald-500/60 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+  medium:  "border-amber-500/60 bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  hard:    "border-orange-500/60 bg-orange-500/15 text-orange-700 dark:text-orange-300",
+  extreme: "border-rose-500/60 bg-rose-500/15 text-rose-700 dark:text-rose-300",
+  insane:  "border-violet-600/60 bg-violet-600/15 text-violet-700 dark:text-violet-300",
+};
+
 /** Difficulties that are disabled (not yet reliably supported) per puzzle type */
 export const DISABLED_DIFFICULTIES: Partial<Record<PuzzleCategory, Set<Difficulty>>> = {
   kakuro: new Set(["insane"]),

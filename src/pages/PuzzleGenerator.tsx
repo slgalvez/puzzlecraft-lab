@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import {
   CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty,
   type PuzzleCategory, isDifficultyDisabled, getEffectiveDifficulty,
+  DIFFICULTY_HOVER, DIFFICULTY_SELECTED,
 } from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
 import { computeNextDifficulty, createDifficultyMap, type PuzzlePerformance } from "@/lib/endlessDifficulty";
@@ -573,12 +574,12 @@ const PuzzleGenerator = () => {
                     }}
                       className={cn("flex items-center justify-between rounded-xl border-2 px-5 py-3.5 text-left transition-all",
                         allDisabled ? "border-border bg-muted/30 text-muted-foreground/40 cursor-not-allowed" :
-                        difficulty === val ? "border-primary bg-primary/5" :
-                        "border-border bg-card hover:border-primary/40"
+                        difficulty === val ? DIFFICULTY_SELECTED[val] :
+                        cn("border-border bg-card", DIFFICULTY_HOVER[val])
                       )}>
-                      <span className={cn("text-sm font-medium", allDisabled ? "text-muted-foreground/40" : "text-foreground")}>{label}</span>
+                      <span className={cn("text-sm font-medium", allDisabled ? "text-muted-foreground/40" : difficulty === val ? "" : "text-foreground")}>{label}</span>
                       {!allDisabled && !locked && difficulty === val && (
-                        <div className="h-2 w-2 rounded-full bg-primary" />
+                        <div className="h-2 w-2 rounded-full bg-current opacity-60" />
                       )}
                     </button>
                   );
@@ -727,8 +728,8 @@ const PuzzleGenerator = () => {
                       className={cn(
                         "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                         allDisabled ? "border-border/40 text-muted-foreground/30 cursor-not-allowed" :
-                        isActive ? "border-primary bg-primary/10 text-primary" :
-                        "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+                        isActive ? DIFFICULTY_SELECTED[val] :
+                        cn("border-border text-muted-foreground", DIFFICULTY_HOVER[val])
                       )}>
                       {label}
                       {locked && !allDisabled && (

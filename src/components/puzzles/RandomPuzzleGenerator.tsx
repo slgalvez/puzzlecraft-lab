@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory, isDifficultyDisabled } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory, isDifficultyDisabled, DIFFICULTY_HOVER, DIFFICULTY_SELECTED } from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
 import { Dices } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -132,8 +132,8 @@ const RandomPuzzleGenerator = ({ compact }: Props) => {
                   disabled
                     ? "border-border text-muted-foreground/40 cursor-not-allowed"
                     : difficulty === val
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-card text-muted-foreground hover:text-foreground"
+                      ? DIFFICULTY_SELECTED[val]
+                      : cn("border-border bg-card text-muted-foreground", DIFFICULTY_HOVER[val])
                 )}
                 title={disabled ? `${label} not available for Kakuro yet` : undefined}
               >

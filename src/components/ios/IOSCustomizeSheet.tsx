@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory, type Difficulty, isDifficultyDisabled, getEffectiveDifficulty } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory, type Difficulty, isDifficultyDisabled, getEffectiveDifficulty, DIFFICULTY_HOVER, DIFFICULTY_SELECTED } from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { hapticTap } from "@/lib/haptic";
@@ -135,8 +135,8 @@ const IOSCustomizeSheet = ({ open, onClose }: Props) => {
                     disabled
                       ? "border-border text-muted-foreground/30 cursor-not-allowed"
                       : selectedDifficulty === val
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border text-muted-foreground hover:border-primary/40"
+                        ? DIFFICULTY_SELECTED[val]
+                        : cn("border-border text-muted-foreground", DIFFICULTY_HOVER[val])
                   )}
                 >
                   {label}
