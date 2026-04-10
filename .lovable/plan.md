@@ -1,12 +1,14 @@
 
 
-# Adjust Right-Side Panel Offset: 88px → 96px
+# Lower Right-Side Bank Panels: 96px → 108px
 
-Update the desktop top padding on the right-side bank panels from `lg:pt-[88px]` to `lg:pt-[96px]` in three files:
+Increase desktop top padding from `lg:pt-[96px]` to `lg:pt-[108px]` so the word bank title aligns with the top of the puzzle grid (accounting for the direction toggles, active clue bar, and helper text above the grid).
 
-1. **`src/components/puzzles/CrosswordGrid.tsx`** — `lg:pt-[88px]` → `lg:pt-[96px]`
-2. **`src/components/puzzles/FillInGrid.tsx`** — `lg:pt-[88px]` → `lg:pt-[96px]`
-3. **`src/components/puzzles/WordSearchGrid.tsx`** — `lg:pt-[88px]` → `lg:pt-[96px]`
+## Changes
+
+1. **`src/components/puzzles/CrosswordGrid.tsx`** (line 543) — `lg:pt-[96px]` → `lg:pt-[108px]`
+2. **`src/components/puzzles/FillInGrid.tsx`** (line 570) — `lg:pt-[96px]` → `lg:pt-[108px]`
+3. **`src/components/puzzles/WordSearchGrid.tsx`** (line 453) — `lg:pt-[96px]` → `lg:pt-[108px]`
 
 No other changes.
 
