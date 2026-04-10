@@ -263,7 +263,7 @@ const Stats = () => {
 
   return (
     <Layout>
-      <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:py-10 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 md:py-10 lg:px-8">
 
         {/* Page heading */}
         <div className="mb-5">
