@@ -310,7 +310,7 @@ const Stats = () => {
         )}
 
         {/* Two-column desktop layout */}
-        <div className="grid lg:grid-cols-[1fr_340px] gap-8 items-start">
+        <div className={cn("grid gap-8 items-start", !native && "lg:grid-cols-[1fr_340px]")}>
 
           {/* ── LEFT COLUMN ── */}
           <div className="space-y-6 min-w-0">
