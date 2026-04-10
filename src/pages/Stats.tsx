@@ -135,25 +135,6 @@ const Stats = () => {
     };
   }, [premiumAccess, ratingInfo]);
 
-  const { data: myLeaderboardEntry } = useQuery({
-    queryKey: ["my-leaderboard-entry", account?.id, dataVersion],
-    queryFn: async () => {
-      if (!account) return null;
-      const { data: entry } = await supabase
-        .from("leaderboard_entries")
-        .select("rating, previous_rating, skill_tier, solve_count")
-        .eq("user_id", account.id)
-        .maybeSingle();
-      if (!entry) return null;
-      const { count } = await supabase
-        .from("leaderboard_entries")
-        .select("*", { count: "exact", head: true })
-        .gt("rating", entry.rating);
-      return { ...entry, rank: (count ?? 0) + 1 };
-    },
-    enabled: !!account && premiumAccess,
-    staleTime: 30_000,
-  });
 
   const nextTierInfo = localRating ? (() => {
     const idx = TIER_ORDER_LIST.indexOf(localRating.tier);
