@@ -523,6 +523,13 @@ export default function AccountPage() {
 
       </div>
 
+      {/* App Store compliance footer (signed-out) */}
+      <div className="pt-1 flex items-center justify-center gap-4">
+        <a href="https://puzzlecraftapp.com/privacy" target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">Privacy Policy</a>
+        <span className="text-muted-foreground/30 text-[11px]">·</span>
+        <a href="https://puzzlecraftapp.com/terms" target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">Terms of Service</a>
+      </div>
+
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </Layout>
   );
