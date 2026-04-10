@@ -75,10 +75,54 @@ const Stats = () => {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   // Unified rating info — handles provisional, confirmed, and no-data states
-  const ratingInfo = useMemo(() => {
+  const localRatingInfo = useMemo(() => {
     const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
     return getPlayerRatingInfo(recs);
   }, [dataVersion]);
+
+  const { data: myLeaderboardEntry } = useQuery({
+    queryKey: ["my-leaderboard-entry", account?.id, dataVersion],
+    queryFn: async () => {
+      if (!account) return null;
+      const { data: entry } = await supabase
+        .from("leaderboard_entries")
+        .select("rating, previous_rating, skill_tier, solve_count")
+        .eq("user_id", account.id)
+        .maybeSingle();
+      if (!entry) return null;
+      const { count } = await supabase
+        .from("leaderboard_entries")
+        .select("*", { count: "exact", head: true })
+        .gt("rating", entry.rating);
+      return { ...entry, rank: (count ?? 0) + 1 };
+    },
+    enabled: !!account && premiumAccess,
+    staleTime: 30_000,
+  });
+
+  // Merge: use local data when available, fall back to DB leaderboard entry
+  const ratingInfo = useMemo((): ReturnType<typeof getPlayerRatingInfo> => {
+    if (!localRatingInfo.hasNoData) return localRatingInfo;
+    // Local has no data — fall back to DB entry if it exists
+    if (myLeaderboardEntry) {
+      const dbRating = myLeaderboardEntry.rating;
+      const dbTier = getSkillTier(dbRating) as ReturnType<typeof getSkillTier>;
+      const dbSolveCount = myLeaderboardEntry.solve_count;
+      return {
+        rating: dbRating,
+        tier: dbTier,
+        tierColor: getTierColor(dbTier),
+        tierProgress: getTierProgress(dbRating),
+        isProvisional: dbSolveCount < 5,
+        hasNoData: false,
+        solveCount: dbSolveCount,
+        solvesUntilConfirmed: Math.max(0, 5 - dbSolveCount),
+        solvesUntilLeaderboard: Math.max(0, 10 - dbSolveCount),
+        onLeaderboard: dbSolveCount >= 10,
+      };
+    }
+    return localRatingInfo;
+  }, [localRatingInfo, myLeaderboardEntry]);
 
   // Keep localRating for components that still reference it (backwards compat)
   const localRating = useMemo(() => {
