@@ -1,57 +1,74 @@
 
 
-## Problem
+## Craft v2: Restore All Original Functionality
 
-The admin analytics page shows stale/empty data because:
+The current `/craft-v2` page has the new split-layout design but is missing significant functionality from the original `/craft` page. Here's what needs to be added back and adjusted.
 
-1. **No email column** on `user_profiles` — the code queries `select("id, email")` but `email` doesn't exist on that table, so every user shows as `user-XXXXXX`.
-2. **RLS blocks cross-user reads** on `user_progress` — the policy restricts to `auth.uid() = user_id`, so an admin sees 0 rows for other users. Solve counts and last-active are always 0/null.
-3. **Existing synced columns ignored** — `user_profiles` already has `solves_count`, `rating`, `rating_tier`, and `updated_at` which are synced by the rating-sync system. The page should use these instead of trying to read `user_progress`.
+### Missing Features to Restore
 
-## Fix
+1. **Inbox (CraftNav + CraftInbox)** — The original has a Create/Inbox tab bar with draft count badge and full inbox (drafts/sent/received tabs). V2 has none of this.
 
-**Single file change: `src/pages/AdminAnalytics.tsx`**
+2. **Theme Picker (CraftThemePicker)** — Occasion selection (birthday, anniversary, travel, etc.) with reveal message templates, word pre-fill suggestions, and accent styling. V2 has no theme support.
 
-Remove the `user_progress` query and the fake email query entirely. Instead, use data already on `user_profiles`:
+3. **Color Picker (CraftColorPicker)** — Palette selector that applies CSS custom properties for puzzle cell colors. Missing entirely.
 
-- **Email**: Use `auth.users` email via an edge function, OR simply show display name only and drop the email column (admin can look up emails in Lovable Cloud). Since emails aren't stored in `user_profiles`, the cleanest client-side fix is to remove the email field from the table and show display names.
-- **Solve count**: Use `user_profiles.solves_count` (already synced by rating-sync).
-- **Last active**: Use `user_profiles.updated_at` (updated on every sync).
-- **Rating/tier**: Use `user_profiles.rating` and `user_profiles.rating_tier`.
-- **Subscribed**: Use `user_profiles.is_premium` (already used).
+4. **Draft System** — Auto-save drafts on content changes, manual "Save draft" button, resume from draft, draft dirty/saved indicators, active draft ID tracking. V2 has no draft support.
 
-### Revised query
+5. **Type Cards with Assigned Colors** — Original uses `CraftTypeCards` component with per-type accent colors (sky for word-search, emerald for word-fill, primary for crossword, violet for cryptogram), hover states, and detailed cards. V2 uses plain tab buttons.
 
-```typescript
-const { data: profiles } = await supabase
-  .from("user_profiles")
-  .select("id, display_name, is_premium, created_at, updated_at, solves_count, rating, rating_tier, subscribed")
-  .order("created_at", { ascending: false })
-  .limit(500);
+6. **Solve-First / Challenge Timer** — Creator can solve their own puzzle to set a "time to beat" challenge. V2 has no challenge mode.
+
+7. **Dropped Words Warning** — Original checks `droppedWords` from generator and shows a destructive toast. V2 skips this check.
+
+8. **Stepper Progress** — `CraftStepper` component showing type → content → preview progression. V2 has no step indicator.
+
+9. **Limit Indicator** — Compact `{remaining}/{limit} free · Unlimited with Plus` strip. V2 only shows limit info after generation.
+
+10. **Start Over / Back Navigation** — Original has back buttons at each step and a "Start over" action on preview. V2 has no navigation between states.
+
+11. **"Send one back" prefill** — Original reads `location.state.prefillTitle` for reply flows.
+
+12. **Theme in payload** — Original includes `selectedTheme` and `colorPalette` in the DB payload. V2 omits these.
+
+### Plan
+
+**Single file change: `src/pages/CraftPreviewPage.tsx`** — Full rewrite that keeps the v2 split-layout shell but integrates all original functionality:
+
+- **Add CraftNav** at top with Create/Inbox toggle and draft count badge
+- **Add CraftInbox** view for drafts/sent/received management
+- **Replace plain type tabs** with `CraftTypeCards` component (keeps hover colors, taglines, difficulty badges)
+- **Add CraftStepper** progress bar between type → content → preview
+- **Add CraftThemePicker** in left panel (content step) — occasion selection, reveal templates, word pre-fill
+- **Add CraftColorPicker** in left panel below theme picker
+- **Add draft system** — auto-save via `useEffect` timer, manual save button, `handleResumeDraft`, dirty/saved indicators, using `craftHistory` helpers
+- **Add challenge/solve-first flow** — `CraftSolveFirst`-style UI on preview step, creator solve time tracking, DB update
+- **Add dropped words check** in `handleGenerate` before DB insert
+- **Add back/start-over navigation** at each step
+- **Add limit indicator strip** (compact, under nav)
+- **Include theme + colorPalette in payload** when saving to DB
+- **Remove admin gate** (or keep as optional flag) so this becomes the production-ready page
+- **Adjust spacing** — tighter vertical gaps (`py-6` not `py-8`), consistent `max-w-2xl` for left panel on mobile, proper gap between sections
+
+### Layout Structure (v2 with all features)
+
+```text
+┌─────────────────────────────────────────┐
+│  Header: "Create a Puzzle"              │
+│  CraftNav: [Create] [Inbox (3)]         │
+│  Limit indicator (free users)           │
+├─────────────────────────────────────────┤
+│  CraftStepper: type → content → preview │
+├───────────────────┬─────────────────────┤
+│  LEFT: Inputs     │  RIGHT: Preview     │
+│  - Type cards     │  - Live preview     │
+│  - Theme picker   │  - or Final puzzle  │
+│  - Color picker   │  - Share actions    │
+│  - Word/clue input│                     │
+│  - Settings       │                     │
+│  - Save draft     │                     │
+│  - Generate CTA   │                     │
+└───────────────────┴─────────────────────┘
 ```
 
-### Revised UserRow
-
-```typescript
-interface UserRow {
-  id: string;
-  displayName: string | null;
-  createdAt: string;
-  solveCount: number;
-  lastActive: string | null;
-  isSubscribed: boolean;
-  rating: number;
-  ratingTier: string;
-}
-```
-
-### UI updates
-- Remove "Email" from the table — replace with just display name (since email isn't available client-side).
-- Add a "Rating" or "Tier" column to replace it — more useful for admin analytics.
-- Update the CSV export to match.
-- Update search to filter by display name only.
-- Remove all `user_progress` and fake email query code.
-
-### RLS note
-The `up_search` policy on `user_profiles` already allows public SELECT (`USING (true)`), so admins can read all profiles. No migration needed.
+On mobile, this collapses to single-column with the step-based flow preserved (type → content → preview, no split).
 
