@@ -133,7 +133,7 @@ export const PuzzleHeader = ({
       )}
     >
       {/* ── Row 1: back · badge · spacer ── */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-2">
+      <div className="flex items-center justify-between px-4 pt-2 pb-1.5">
         {/* Back */}
         <button
           onClick={handleBack}
@@ -147,12 +147,12 @@ export const PuzzleHeader = ({
         {/* Center: type label + difficulty pill */}
         <div className="flex flex-col items-center gap-0.5 flex-1">
           <div className="inline-flex items-center gap-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            <span className="text-[12px] font-medium tracking-wide text-foreground">
               {typeLabel}
             </span>
             {diffLabel && (
               <span className={cn(
-                "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest border",
+                "inline-flex items-center rounded-full px-1.5 py-px text-[9px] font-medium uppercase tracking-wider border",
                 diffColor || "bg-secondary text-secondary-foreground border-border"
               )}>
                 {diffLabel}
@@ -160,7 +160,7 @@ export const PuzzleHeader = ({
             )}
           </div>
           {title && (
-            <span className="text-[12px] font-medium text-foreground leading-tight">
+            <span className="text-[11px] font-medium text-muted-foreground leading-tight">
               {title}
             </span>
           )}
@@ -173,42 +173,42 @@ export const PuzzleHeader = ({
       {/* ── Row 2: stats bar ── */}
       <div className="grid grid-cols-3 border-t border-border/40 divide-x divide-border/40">
         {/* Timer */}
-        <div className="flex flex-col items-center py-1.5">
+        <div className="flex flex-col items-center py-1">
           <span
             className={cn(
-              "font-mono text-[15px] font-semibold tabular-nums leading-none transition-colors",
+              "font-mono text-[14px] font-semibold tabular-nums leading-none transition-colors",
               timerColor,
               timerPulse && "animate-pulse"
             )}
           >
             {formatSessionTime(elapsed)}
           </span>
-          <span className="mt-0.5 text-[9px] text-muted-foreground uppercase tracking-wide">
+          <span className="mt-0.5 text-[8px] text-muted-foreground uppercase tracking-wide">
             {ahead ? "on track ↑" : "time"}
           </span>
         </div>
 
         {/* Mistakes */}
-        <div className="flex flex-col items-center py-1.5">
+        <div className="flex flex-col items-center py-1">
           <span
             className={cn(
-              "text-[15px] font-semibold leading-none tabular-nums transition-colors",
+              "text-[14px] font-semibold leading-none tabular-nums transition-colors",
               mistakeColor
             )}
           >
             {mistakes === 0 ? "—" : mistakes}
           </span>
-          <span className="mt-0.5 text-[9px] text-muted-foreground uppercase tracking-wide">
+          <span className="mt-0.5 text-[8px] text-muted-foreground uppercase tracking-wide">
             {mistakes === 0 ? "perfect" : "mistake" + (mistakes === 1 ? "" : "s")}
           </span>
         </div>
 
         {/* Personal best */}
-        <div className="flex flex-col items-center py-1.5">
-          <span className="text-[15px] font-semibold leading-none tabular-nums text-foreground">
+        <div className="flex flex-col items-center py-1">
+          <span className="text-[14px] font-semibold leading-none tabular-nums text-foreground">
             {personalBest ? formatSessionTime(personalBest) : "—"}
           </span>
-          <span className="mt-0.5 text-[9px] text-muted-foreground uppercase tracking-wide">
+          <span className="mt-0.5 text-[8px] text-muted-foreground uppercase tracking-wide">
             {personalBest ? "your best" : "no record"}
           </span>
         </div>
@@ -216,7 +216,7 @@ export const PuzzleHeader = ({
 
       {/* ── Row 3: progress bar ── */}
       {progressTotal > 0 && (
-        <div className="px-4 pb-2.5 pt-1.5">
+        <div className="px-4 pb-2 pt-1">
           {/* Track */}
           <div className="h-[3px] w-full rounded-full bg-border/50 overflow-hidden">
             <div
