@@ -265,7 +265,7 @@ const Stats = () => {
           <div className="space-y-6 min-w-0">
 
             {/* Rating hero (premium) — ProvisionalRatingCard handles all states */}
-            {showGeneral && premiumAccess && (
+            {showGeneral && premiumAccess && !ratingInfo.hasNoData && (
               <div className="mt-6">
                 <ProvisionalRatingCard
                   info={ratingInfo}
