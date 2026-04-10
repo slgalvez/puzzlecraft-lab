@@ -18,16 +18,11 @@ import { setBackDestination } from "@/hooks/useBackDestination";
 import { StreakShieldBanner } from "@/components/ios/StreakShieldBanner";
 import { WeeklyPackCard } from "@/components/ios/WeeklyPackCard";
 
-// REMOVED: DailyLeaderboard — social/stat module does not belong on the Play tab
-// REMOVED: FriendActivityFeed — social module does not belong on the Play tab
-
 const categories = Object.entries(CATEGORY_INFO) as [PuzzleCategory, (typeof CATEGORY_INFO)[PuzzleCategory]][];
 const ALL_PUZZLE_TYPES = categories.map(([type]) => type);
 
-/** Puzzle types shown first to new users — most approachable */
 const BEGINNER_FEATURED: PuzzleCategory[] = ["crossword", "word-search", "cryptogram"];
 
-/** Type labels for display */
 const TYPE_LABELS: Record<PuzzleCategory, string> = Object.fromEntries(
   categories.map(([type, info]) => [type, info.name])
 ) as Record<PuzzleCategory, string>;
@@ -61,7 +56,6 @@ function getDailyTagline(dateStr: string): string {
   return DAILY_TAGLINES[Math.abs(hash) % DAILY_TAGLINES.length];
 }
 
-// Find any in-progress puzzle saved in localStorage
 function findInProgressPuzzle(): { key: string; type: PuzzleCategory; elapsed: number } | null {
   try {
     const prefix = "puzzlecraft-progress-";
@@ -91,7 +85,6 @@ function getBestTimeForType(type: PuzzleCategory): number | null {
   } catch { return null; }
 }
 
-/** Returns puzzle types sorted by how many times this user has played them */
 function getRankedTypes(allTypes: PuzzleCategory[]): {
   ranked: PuzzleCategory[];
   topTwo: PuzzleCategory[];
@@ -122,7 +115,6 @@ const IOSPlayTab = () => {
   const [pickerType, setPickerType] = useState<PuzzleCategory | null>(null);
   const [now, setNow] = useState(Date.now());
 
-  // Refresh countdown every second
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
@@ -135,13 +127,11 @@ const IOSPlayTab = () => {
   const stats = useMemo(() => getProgressStats(), []);
   const inProgress = useMemo(() => findInProgressPuzzle(), []);
 
-  // Ranked types for personalized grid
   const { ranked: rankedTypes, topTwo, isReturningUser } = useMemo(
     () => getRankedTypes(ALL_PUZZLE_TYPES),
     []
   );
 
-  // Rating / tier — only show after 5+ solves (matches Stats.tsx threshold)
   const ratingInfo = useMemo(() => {
     const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
     if (recs.length < 5) return null;
@@ -150,7 +140,6 @@ const IOSPlayTab = () => {
     return { rating, tier };
   }, []);
 
-  // Daily countdown to midnight
   const countdownStr = useMemo(() => {
     const midnight = new Date();
     midnight.setHours(24, 0, 0, 0);
@@ -190,7 +179,8 @@ const IOSPlayTab = () => {
   const hasPlayedToday = !!dailyCompletion;
 
   return (
-    <div className="space-y-4 px-5 pt-4">
+    <div className="space-y-3 px-5 pt-4 pb-2">
+
       {/* Header row */}
       <div className="flex items-center justify-between">
         <h1 className="font-display text-lg font-bold text-foreground">Puzzlecraft</h1>
@@ -198,7 +188,9 @@ const IOSPlayTab = () => {
           <div
             className={cn(
               "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold",
-              streakAtRisk ? "bg-destructive/10 text-destructive animate-pulse" : "bg-primary/10 text-primary",
+              streakAtRisk
+                ? "bg-destructive/10 text-destructive animate-pulse"
+                : "bg-primary/10 text-primary",
             )}
           >
             <Flame size={12} />
@@ -208,7 +200,7 @@ const IOSPlayTab = () => {
         )}
       </div>
 
-      {/* Resume card — only shown when there's a recent in-progress puzzle */}
+      {/* Resume card */}
       {inProgress && (
         <button
           onClick={handleResume}
@@ -235,26 +227,46 @@ const IOSPlayTab = () => {
         </button>
       )}
 
-      {/* Daily Challenge — hero card */}
+      {/* Surprise Me */}
+      <Button
+        onClick={handleSurprise}
+        size="lg"
+        className="w-full text-base font-semibold gap-2 h-12 rounded-xl shadow-[0_0_16px_hsl(var(--primary)/0.35)] active:scale-95 transition-transform duration-150"
+      >
+        <Dices size={18} />
+        Surprise Me
+      </Button>
+
+      {/* Daily Challenge */}
       <Link
         to="/daily"
         onClick={() => hapticTap()}
         className={cn(
           "w-full rounded-xl border px-4 py-4 text-left transition-all active:scale-[0.97] block",
-          dailyCompletion ? "border-border bg-card" : "border-primary/20 bg-primary/5 active:bg-primary/10",
+          dailyCompletion
+            ? "border-border bg-card"
+            : "border-primary/20 bg-primary/5 active:bg-primary/10",
         )}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">Daily Challenge</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+                Daily Challenge
+              </p>
               {!dailyCompletion && (
-                <span className="text-[10px] text-muted-foreground/60 tabular-nums">{countdownStr} left</span>
+                <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+                  {countdownStr} left
+                </span>
               )}
             </div>
-            <p className="text-sm font-bold text-foreground truncate">{CATEGORY_INFO[challenge.category]?.name}</p>
+            <p className="text-sm font-bold text-foreground truncate">
+              {CATEGORY_INFO[challenge.category]?.name}
+            </p>
             <p className="text-[11px] text-muted-foreground mt-0.5 italic">
-              {dailyCompletion ? `Solved in ${formatTime(dailyCompletion.time)} ✓` : tagline}
+              {dailyCompletion
+                ? `Solved in ${formatTime(dailyCompletion.time)} ✓`
+                : tagline}
             </p>
           </div>
 
@@ -263,40 +275,34 @@ const IOSPlayTab = () => {
               <div className="flex items-center justify-center gap-0.5 mb-0.5">
                 <Flame size={10} className="text-primary" />
               </div>
-              <p className="font-mono text-lg font-extrabold text-foreground leading-none">{streak.current}</p>
+              <p className="font-mono text-lg font-extrabold text-foreground leading-none">
+                {streak.current}
+              </p>
               <p className="text-[9px] text-muted-foreground/60 mt-0.5">streak</p>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-0.5 mb-0.5">
                 <Trophy size={10} className="text-primary" />
               </div>
-              <p className="font-mono text-lg font-extrabold text-foreground leading-none">{streak.longest}</p>
+              <p className="font-mono text-lg font-extrabold text-foreground leading-none">
+                {streak.longest}
+              </p>
               <p className="text-[9px] text-muted-foreground/60 mt-0.5">best</p>
             </div>
           </div>
         </div>
       </Link>
 
-      {/* Surprise Me */}
-      <Button
-        onClick={handleSurprise}
-        size="lg"
-        className="w-full text-base font-semibold gap-2 h-12 rounded-xl shadow-[0_0_16px_hsl(var(--primary)/0.35)] active:scale-95 transition-transform duration-150"
-      >
-        <Dices size={18} className="animate-pulse" />
-        Surprise Me
-      </Button>
-
       {/* Weekly Pack */}
       <WeeklyPackCard />
 
-      {/* Streak Shield status */}
+      {/* Streak Shield */}
       <StreakShieldBanner
         streakLength={streak.current}
         hasPlayedToday={hasPlayedToday}
       />
 
-      {/* Rating / tier — links to Stats */}
+      {/* Rating / tier */}
       {ratingInfo && (
         <button
           onClick={() => {
@@ -311,20 +317,22 @@ const IOSPlayTab = () => {
               <p className={cn("text-sm font-semibold leading-tight", getTierColor(ratingInfo.tier as any))}>
                 {ratingInfo.tier}
               </p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">{ratingInfo.rating} rating · play to climb</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {ratingInfo.rating} rating · play to climb
+              </p>
             </div>
           </div>
           <ChevronRight size={14} className="text-muted-foreground shrink-0" />
         </button>
       )}
 
-      {/* ── Puzzle type section ── */}
-      <div className="space-y-3">
+      {/* ── Puzzle browse section ── */}
+      <div className="space-y-3 mt-5">
 
-        {/* Returning users: top 2 "Your favorites" cards */}
+        {/* Returning users — top 2 favorites */}
         {isReturningUser && topTwo.length > 0 && (
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-0.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-0.5">
               Your favorites
             </p>
             <div className="flex gap-3">
@@ -360,10 +368,10 @@ const IOSPlayTab = () => {
           </div>
         )}
 
-        {/* New users: 3 featured beginner types */}
+        {/* New users — 3 beginner types */}
         {!isReturningUser && (
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-0.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-0.5">
               Start here
             </p>
             <div className="flex gap-2">
@@ -387,9 +395,9 @@ const IOSPlayTab = () => {
           </div>
         )}
 
-        {/* Full grid — all types */}
+        {/* All puzzle types */}
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-0.5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-0.5">
             {isReturningUser ? "All puzzles" : "All types"}
           </p>
           <div className="grid grid-cols-2 gap-2.5">
@@ -431,11 +439,13 @@ const IOSPlayTab = () => {
             hapticTap();
             navigate("/stats");
           }}
-          className="w-full flex items-center justify-between rounded-xl border bg-card px-4 py-3 transition-all active:scale-[0.97]"
+          className="w-full flex items-center justify-between rounded-xl border border-border/40 bg-secondary/30 px-4 py-3 transition-all active:scale-[0.97]"
         >
           <div className="flex gap-5">
             <div className="text-center">
-              <p className="font-mono text-lg font-extrabold text-foreground leading-none">{stats.totalSolved}</p>
+              <p className="font-mono text-lg font-extrabold text-foreground leading-none">
+                {stats.totalSolved}
+              </p>
               <p className="text-[10px] text-muted-foreground mt-0.5">solved</p>
             </div>
             {stats.bestTime !== null && (
@@ -465,7 +475,7 @@ const IOSPlayTab = () => {
           hapticTap();
           setCustomizeOpen(true);
         }}
-        className="w-full flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground py-2.5 rounded-xl border border-dashed transition-all duration-150 active:scale-[0.97] active:bg-secondary/50"
+        className="w-full flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground py-2.5 rounded-xl border border-border/50 transition-all duration-150 active:scale-[0.97] active:bg-secondary/50"
       >
         <SlidersHorizontal size={14} />
         Customize
