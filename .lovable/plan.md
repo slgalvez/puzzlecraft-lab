@@ -1,36 +1,33 @@
 
 
-# Fix: Premium features showing when signed out
+## Problem
 
-## Root Cause
+The iPad keyboard doesn't appear for number fill-in (and potentially other puzzles) because:
 
-`hasPremiumAccess()` in `src/lib/premiumAccess.ts` line 33:
-```
-if (!PUZZLECRAFT_PLUS_LAUNCHED) return true; // pre-launch: everyone gets full access
-```
+1. **`MobileLetterInput.tsx` was never updated** — it still has the old broken styles from the original code (`opacity: 0`, `pointerEvents: "none"`, `zIndex: -1`, `tabIndex: -1`). The fixes discussed earlier (z-index 9999, opacity 0.01, pointerEvents auto, fontSize 16px) were not applied.
 
-Since `PUZZLECRAFT_PLUS_LAUNCHED = false`, **every user — including signed-out users — gets `isPremium = true`**. This causes:
-- Stats page shows the rating hero card, PremiumStats analytics, and hides the "Coming Soon" preview
-- Account page shows premium rating card and premium blocks even when signed out
-- The "Coming Soon" pull tab never renders because `premiumAccess` is always true
+2. **`MobileNumberPad.tsx` was never updated** — it still has `sm:hidden` which hides the number pad on iPad-sized screens (≥640px). Number fill-in and Sudoku rely on this pad instead of the OS keyboard.
 
-## Fix
+These are the same two files from step 2 and step 3 of the earlier "Apply order" that were supposed to be replaced but weren't saved.
 
-**One-line change in `src/lib/premiumAccess.ts`** — the pre-launch bypass should only grant access to **signed-in** users:
+## Fix Plan
 
-```typescript
-// Before:
-if (!PUZZLECRAFT_PLUS_LAUNCHED) return true;
+### File 1: `src/components/puzzles/MobileLetterInput.tsx`
+Apply the iPad-safe hidden input fixes:
+- `zIndex: -1` → `9999`
+- `opacity: 0` → `0.01`
+- `pointerEvents: "none"` → `"auto"`
+- `tabIndex: -1` → `0`
+- `width/height: "1px"` → `"2px"`
+- `position: fixed; bottom: 0; left: 50%` → `top: "50%", left: "50%"`
+- Add `fontSize: "16px"` (prevents iOS auto-zoom)
+- Add `enterKeyHint: "done"`
 
-// After:
-if (!PUZZLECRAFT_PLUS_LAUNCHED) return !!account;
-```
+### File 2: `src/components/puzzles/MobileNumberPad.tsx`
+- Remove `sm:hidden` from the grid container class
+- Change `h-11` to `min-h-[44px]` for proper touch targets
+- Visibility is already controlled by the `visible` prop from the parent (which uses `needsKeyboard`), so removing `sm:hidden` is the only change needed to make it appear on iPads
 
-This means:
-- **Signed in** → `hasPremiumAccess` returns `true` (pre-launch: full access as intended)
-- **Signed out** → `hasPremiumAccess` returns `false` (no premium UI shown)
-
-The "Coming Soon" pull tab on Account (line 305) already has the condition `!PUZZLECRAFT_PLUS_LAUNCHED && !isAdmin`, and `shouldShowUpgradeCTA` returns `false` pre-launch — so the signed-out Account page will correctly show the "Coming Soon" teaser. The Stats page will show `StatsPremiumPreview` for signed-out users (line 669: `!premiumAccess && !accountLoading`).
-
-No other files need changes — all gating flows through this single function.
+### No other files need changes
+The `needsKeyboard` substitutions in CrosswordGrid, FillInGrid, SudokuGrid, and CryptogramPuzzle are already in place (confirmed by search). The issue is purely that the two input components themselves were never patched.
 
