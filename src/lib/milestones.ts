@@ -5,7 +5,7 @@
  * when users hit solve count, streak, or skill tier thresholds.
  * Tracks which milestones have already been shown in localStorage.
  */
-import { getSolveRecords } from "./solveTracker";
+import { getSolveRecords, type SolveRecord } from "./solveTracker";
 import { computePlayerRating, getSkillTier, type SkillTier } from "./solveScoring";
 import { getDailyStreak } from "./dailyChallenge";
 import { toast } from "sonner";
@@ -184,9 +184,11 @@ export interface MilestoneWithProgress {
   isNext: boolean;
 }
 
-export function getAllMilestones(): MilestoneWithProgress[] {
-  const solveCount = getSolveRecords().filter((r) => r.solveTime >= 10).length;
-  const records = getSolveRecords().filter((r) => r.solveTime >= 10);
+export function getAllMilestones(overrideRecords?: SolveRecord[]): MilestoneWithProgress[] {
+  const baseRecords = overrideRecords ?? getSolveRecords();
+  const filtered = baseRecords.filter((r) => r.solveTime >= 10);
+  const solveCount = filtered.length;
+  const records = filtered;
   const rating = records.length >= 5 ? computePlayerRating(records) : 0;
   const tier = getSkillTier(rating);
   const tierIdx = TIER_ORDER.indexOf(tier);
