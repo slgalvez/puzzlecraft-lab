@@ -166,7 +166,7 @@ export default function PremiumStats({ onDataChange, ratingInfoOverride }: { onD
   const ratingInfo = ratingInfoOverride ?? localRatingInfo;
 
   // ── Empty / insufficient data states ──────────────────────────────────
-  if (records.length === 0) {
+  if (records.length === 0 && ratingInfo.hasNoData) {
     return (
       <div className="space-y-4">
         {/* ProvisionalRatingCard renders the no-data empty state */}
