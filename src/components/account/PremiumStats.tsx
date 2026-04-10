@@ -153,14 +153,13 @@ function InsightsEmptyState({ solveCount }: { solveCount: number }) {
 
 // ── Main component ────────────────────────────────────────────────────────
 
-export default function PremiumStats({ onDataChange, ratingInfoOverride }: { onDataChange?: () => void; ratingInfoOverride?: ReturnType<typeof getPlayerRatingInfo> }) {
+export default function PremiumStats({ onDataChange, ratingInfoOverride, isAdmin }: { onDataChange?: () => void; ratingInfoOverride?: ReturnType<typeof getPlayerRatingInfo>; isAdmin?: boolean }) {
   const [historyExpanded, setHistoryExpanded] = useState(false);
 
-  // ── ALWAYS read real user data. No demo flag. No isAdmin condition. ──
-  // getSolveRecords(false) explicitly excludes any __demo records.
-  // This is the single source of truth for Plus stats.
-  const records = useMemo(() => getSolveRecords(), []);
-  const summary = useMemo(() => getSolveSummary(), []);
+  // Admin with demo data active → include demo records; otherwise real data only
+  const useDemo = !!(isAdmin && hasDemoData());
+  const records = useMemo(() => useDemo ? getAllSolveRecordsIncludingDemo() : getSolveRecords(), [useDemo]);
+  const summary = useMemo(() => useDemo ? getDemoSolveSummary() : getSolveSummary(), [useDemo]);
 
   const localRatingInfo = useMemo(() => getPlayerRatingInfo(records), [records]);
   const ratingInfo = ratingInfoOverride ?? localRatingInfo;

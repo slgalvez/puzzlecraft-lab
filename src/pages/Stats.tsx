@@ -18,6 +18,7 @@ import {
 import { isNativeApp } from "@/lib/appMode";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PremiumStats from "@/components/account/PremiumStats";
+import { PremiumStatsAdminControls } from "@/components/account/PremiumStatsAdminControls";
 import { StatsPremiumPreview } from "@/components/account/PremiumPreview";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -405,7 +406,14 @@ const Stats = () => {
             )}
 
             {/* Premium stats section */}
-            {showGeneral && premiumAccess && <PremiumStats ratingInfoOverride={ratingInfo} />}
+            {showGeneral && premiumAccess && (
+              <>
+                {account?.isAdmin && (
+                  <PremiumStatsAdminControls onRefresh={() => setDataVersion((v) => v + 1)} />
+                )}
+                <PremiumStats ratingInfoOverride={ratingInfo} isAdmin={account?.isAdmin} key={dataVersion} />
+              </>
+            )}
 
           </div>
           {/* ── end LEFT COLUMN ── */}
