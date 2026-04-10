@@ -264,9 +264,9 @@ export default function AccountPage() {
           {/* Actions */}
           <div className="rounded-2xl border border-border/50 overflow-hidden">
             {([
-              { icon: BarChart3, label: "Your Stats", onPress: () => navigate("/stats") },
-              { icon: Trophy, label: "Leaderboard", onPress: () => navigate("/leaderboard") },
-              { icon: Shield, label: "Help & FAQ", onPress: () => navigate("/help") },
+              { icon: BarChart3, label: "Your Stats", onPress: () => navigate("/stats"), destructive: false },
+              { icon: Trophy, label: "Leaderboard", onPress: () => navigate("/leaderboard"), destructive: false },
+              { icon: Shield, label: "Help & FAQ", onPress: () => navigate("/help"), destructive: false },
               { icon: LogOut, label: "Sign out", onPress: () => { signOut(); navigate("/"); }, destructive: true },
             ] as const).map(({ icon: Icon, label, onPress, destructive }, i, arr) => (
               <button key={label} onClick={onPress} className={cn("w-full flex items-center justify-between px-4 py-3.5 transition-colors active:bg-muted/50", i < arr.length - 1 && "border-b border-border/40")}>
