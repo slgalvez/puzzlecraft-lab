@@ -24,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useUserAccount } from "@/contexts/UserAccountContext";
-import UpgradeModal from "@/components/account/UpgradeModal";
+import UpgradeModal from "@/components/premium/UpgradeModal";
 import { usePremiumAccess } from "@/lib/premiumAccess";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 import { checkMilestones } from "@/lib/milestones";
@@ -68,7 +68,7 @@ const Stats = () => {
   const stats          = useMemo(() => getProgressStats(),                [dataVersion]);
   const dailyStreak    = useMemo(() => getDailyStreak(),                  [dataVersion]);
   const dailyCompleted = useMemo(() => getTotalDailyCompleted(),          [dataVersion]);
-  const endlessStats   = useMemo(() => native ? null : getEndlessStats(), [dataVersion, native]);
+  const endlessStats   = useMemo(() => getEndlessStats(), [dataVersion]);
 
   const { isPremium: premiumAccess, showUpgradeCTA: showUpgrade } = usePremiumAccess();
   const { account } = useUserAccount();
@@ -155,7 +155,7 @@ const Stats = () => {
 
   const showGeneral = viewFilter === null;
   const showDaily   = viewFilter === null || viewFilter === "daily";
-  const showEndless = !native && viewFilter === null;
+  const showEndless = viewFilter === null;
   const displayStats = filteredStatCards ?? stats;
 
   const activeFilterLabel = [
