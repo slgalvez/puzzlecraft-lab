@@ -30,7 +30,7 @@ import { usePremiumAccess } from "@/lib/premiumAccess";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 
 import { getSolveRecords } from "@/lib/solveTracker";
-import { computePlayerRating, getSkillTier, getTierColor, getTierProgress, getPlayerRatingInfo } from "@/lib/solveScoring";
+import { computePlayerRating, computeSolveScore, getSkillTier, getTierColor, getTierProgress, getPlayerRatingInfo } from "@/lib/solveScoring";
 import { ProvisionalRatingCard } from "@/components/puzzles/ProvisionalRatingCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -90,6 +90,20 @@ const Stats = () => {
   const localRatingInfo = useMemo(() => {
     const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
     return getPlayerRatingInfo(recs);
+  }, [dataVersion]);
+
+  // Peak rating — highest rolling-window rating across all recorded solves
+  const peakRating = useMemo(() => {
+    const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
+    if (recs.length < 5) return null;
+    let peak = 0;
+    // Slide a 25-record window across the history to find the peak
+    for (let i = 0; i <= recs.length - 5; i++) {
+      const window = recs.slice(i, i + 25);
+      const avg = window.reduce((s, r) => s + computeSolveScore(r), 0) / window.length;
+      peak = Math.max(peak, Math.round(avg));
+    }
+    return peak;
   }, [dataVersion]);
 
   const { data: myLeaderboardEntry } = useQuery({
@@ -307,6 +321,7 @@ const Stats = () => {
                 <ProvisionalRatingCard
                   info={ratingInfo}
                   leaderboardRank={myLeaderboardEntry?.rank ?? null}
+                  peakRating={peakRating}
                 />
               </div>
             )}

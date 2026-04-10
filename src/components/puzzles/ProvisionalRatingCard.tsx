@@ -6,15 +6,30 @@
  *
  *   hasNoData      → motivating "solve your first puzzle" prompt
  *   isProvisional  → rating shown with provisional badge + progress bar toward confirmation
- *   confirmed      → full rating card (used in Stats.tsx hero and PremiumStats)
+ *   confirmed      → iOS-style rank card with tier, peak, next-rank progress
  *   onLeaderboard  → adds leaderboard rank if available
  */
 
 import { cn } from "@/lib/utils";
 import { Zap, Lock, ChevronRight, Trophy, Target } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import type { PlayerRatingInfo } from "@/lib/solveScoring";
+import type { PlayerRatingInfo, SkillTier } from "@/lib/solveScoring";
 import { Link } from "react-router-dom";
+
+// ── Tier thresholds for next-rank math ────────────────────────────────────
+
+const TIER_ORDER: SkillTier[] = ["Beginner", "Casual", "Skilled", "Advanced", "Expert"];
+const TIER_THRESHOLDS: Record<string, number> = {
+  Beginner: 0, Casual: 400, Skilled: 700, Advanced: 950, Expert: 1200,
+};
+
+function getNextTierInfo(tier: SkillTier, rating: number) {
+  const idx = TIER_ORDER.indexOf(tier);
+  if (idx >= TIER_ORDER.length - 1) return null; // already Expert
+  const next = TIER_ORDER[idx + 1];
+  const threshold = TIER_THRESHOLDS[next];
+  return { name: next, threshold, ptsToNext: threshold - rating };
+}
 
 // ── Sub-states ────────────────────────────────────────────────────────────
 
@@ -83,6 +98,8 @@ interface ProvisionalRatingCardProps {
   info: PlayerRatingInfo;
   /** Leaderboard rank if known (from Supabase query). Null until onLeaderboard. */
   leaderboardRank?: number | null;
+  /** Peak (highest) rating ever achieved */
+  peakRating?: number | null;
   /** Compact single-row variant for IOSPlayTab stats link */
   compact?: boolean;
   /** Called when user clicks the card / CTA */
@@ -93,6 +110,7 @@ interface ProvisionalRatingCardProps {
 export function ProvisionalRatingCard({
   info,
   leaderboardRank,
+  peakRating,
   compact = false,
   onClick,
   className,
@@ -133,120 +151,154 @@ export function ProvisionalRatingCard({
     );
   }
 
-  // ── Full card ────────────────────────────────────────────────────────────
-  return (
-    <div
-      className={cn(
-        "rounded-2xl border bg-card p-5 sm:p-6",
-        isProvisional ? "border-border" : "border-primary/20",
-        className
-      )}
-    >
-      <div className="flex flex-col sm:flex-row sm:items-start gap-5">
+  // ── Next tier computation ──
+  const nextTier = getNextTierInfo(tier, rating);
+  const recentWindow = Math.min(solveCount, 25);
 
-        {/* Left: rating number + tier */}
-        <div className="sm:w-48 shrink-0">
-          {/* Label row */}
-          <div className="flex items-center gap-2 mb-1.5">
-            <Zap size={14} className="text-primary" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              Player Rating
-            </span>
-            {leaderboardRank && onLeaderboard && (
-              <span className="font-mono font-bold text-xs text-primary">#{leaderboardRank}</span>
-            )}
-          </div>
-
-          {/* Rating number */}
-          <div className="flex items-baseline gap-2">
-            <p className="font-mono text-5xl font-bold text-foreground leading-none">
-              {rating}
-            </p>
-            {isProvisional && (
+  // ── PROVISIONAL full card ───────────────────────────────────────────────
+  if (isProvisional) {
+    return (
+      <div
+        className={cn(
+          "rounded-2xl border border-border bg-card p-5 sm:p-6",
+          className
+        )}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-start gap-5">
+          {/* Left: rating number + tier */}
+          <div className="sm:w-48 shrink-0">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Zap size={14} className="text-primary" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Player Rating
+              </span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <p className="font-mono text-5xl font-bold text-foreground leading-none">
+                {rating}
+              </p>
               <span className="text-[10px] font-semibold text-muted-foreground border border-border rounded-full px-2 py-0.5 whitespace-nowrap">
                 Provisional
               </span>
-            )}
+            </div>
+            <p className={cn("mt-1.5 text-sm font-semibold", tierColor)}>{tier}</p>
+            <div className="mt-2.5 space-y-1">
+              <Progress value={tierProgress} className="h-1.5" />
+              <p className="text-[10px] text-muted-foreground">Progress to next rank</p>
+            </div>
           </div>
 
-          {/* Tier name */}
-          <p className={cn("mt-1.5 text-sm font-semibold", tierColor)}>{tier}</p>
-
-          {/* Tier progress bar */}
-          <div className="mt-2.5 space-y-1">
-            <Progress value={tierProgress} className="h-1.5" />
-            <p className="text-[10px] text-muted-foreground">Progress to next rank</p>
+          {/* Right: status message + progress */}
+          <div className="flex-1 space-y-4">
+            <div className="rounded-xl bg-secondary/50 px-4 py-3">
+              <p className="text-sm font-medium text-foreground mb-0.5">
+                {solvesUntilConfirmed === 1
+                  ? "One more solve to confirm your rank"
+                  : `${solvesUntilConfirmed} more solves to confirm your rank`}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Your rating is live — it updates after every puzzle. Solve more to lock it in.
+              </p>
+            </div>
+            <ProgressPips
+              current={solveCount}
+              target={5}
+              label={`${solveCount} of 5 solves · confirmed after 5`}
+            />
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Lock size={11} className="shrink-0" />
+              <span>
+                Leaderboard unlocks after {solvesUntilLeaderboard} more solve{solvesUntilLeaderboard !== 1 ? "s" : ""}
+              </span>
+            </div>
           </div>
-        </div>
-
-        {/* Right: status message + progress */}
-        <div className="flex-1 space-y-4">
-          {isProvisional ? (
-            <>
-              {/* Motivating message */}
-              <div className="rounded-xl bg-secondary/50 px-4 py-3">
-                <p className="text-sm font-medium text-foreground mb-0.5">
-                  {solvesUntilConfirmed === 1
-                    ? "One more solve to confirm your rank"
-                    : `${solvesUntilConfirmed} more solves to confirm your rank`}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Your rating is live — it updates after every puzzle. Solve more to lock it in.
-                </p>
-              </div>
-
-              {/* Progress pips toward confirmation */}
-              <ProgressPips
-                current={solveCount}
-                target={5}
-                label={`${solveCount} of 5 solves · confirmed after 5`}
-              />
-
-              {/* Leaderboard unlock */}
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Lock size={11} className="shrink-0" />
-                <span>
-                  Leaderboard unlocks after {solvesUntilLeaderboard} more solve{solvesUntilLeaderboard !== 1 ? "s" : ""}
-                </span>
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Confirmed rating — show solve count + leaderboard status */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg border bg-secondary/30 p-3 text-center">
-                  <p className="font-mono text-xl font-bold text-foreground">{solveCount}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Puzzles solved</p>
-                </div>
-                <div className="rounded-lg border bg-secondary/30 p-3 text-center">
-                  {onLeaderboard ? (
-                    <>
-                      <p className="font-mono text-xl font-bold text-foreground">
-                        {leaderboardRank ? `#${leaderboardRank}` : "—"}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Global rank</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-sm font-semibold text-muted-foreground/60">{solvesUntilLeaderboard} more</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">To leaderboard</p>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Leaderboard progress if not yet on it */}
-              {!onLeaderboard && (
-                <ProgressPips
-                  current={solveCount}
-                  target={10}
-                  label={`${solveCount} of 10 solves · leaderboard after 10`}
-                />
-              )}
-            </>
-          )}
         </div>
       </div>
+    );
+  }
+
+  // ── CONFIRMED full card (iOS-style layout) ──────────────────────────────
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border border-primary/20 bg-card p-5 sm:p-6",
+        className
+      )}
+    >
+      {/* Top row: YOUR RANK + Leaderboard link */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Zap size={14} className="text-primary" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            Your Rank
+          </span>
+          {onLeaderboard && leaderboardRank && (
+            <span className="font-mono font-bold text-sm text-primary">#{leaderboardRank}</span>
+          )}
+        </div>
+        <Link
+          to="/leaderboard"
+          className="flex items-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary/60 transition-colors"
+        >
+          <Trophy size={13} className="text-muted-foreground" />
+          Leaderboard
+        </Link>
+      </div>
+
+      {/* Tier name */}
+      <p className={cn("text-base font-semibold mb-1", tierColor)}>{tier}</p>
+
+      {/* Large rating number */}
+      <div className="flex items-baseline gap-2 mb-1">
+        <p className="font-mono text-5xl font-bold text-foreground leading-none">
+          {rating}
+        </p>
+        <span className="text-sm text-muted-foreground font-medium">rating</span>
+      </div>
+
+      {/* Supporting text */}
+      <p className="text-sm text-muted-foreground">
+        Based on your recent {recentWindow} solves
+      </p>
+      {peakRating != null && peakRating > rating && (
+        <p className="text-xs text-muted-foreground/70 mt-0.5">
+          Peak: {peakRating}
+        </p>
+      )}
+
+      {/* Next rank progress */}
+      {nextTier && (
+        <div className="mt-4 space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground font-medium">
+              {nextTier.ptsToNext} pts to {nextTier.name}
+            </span>
+            <span className="text-muted-foreground/70 font-mono">
+              {rating}/{nextTier.threshold}
+            </span>
+          </div>
+          <Progress value={tierProgress} className="h-1.5" />
+        </div>
+      )}
+
+      {/* Expert — fully maxed */}
+      {!nextTier && (
+        <div className="mt-4 space-y-1.5">
+          <Progress value={100} className="h-1.5" />
+          <p className="text-[10px] text-muted-foreground">Expert — highest tier</p>
+        </div>
+      )}
+
+      {/* Leaderboard unlock progress if not yet on it */}
+      {!onLeaderboard && (
+        <div className="mt-3">
+          <ProgressPips
+            current={solveCount}
+            target={10}
+            label={`${solveCount} of 10 solves · leaderboard after 10`}
+          />
+        </div>
+      )}
     </div>
   );
 }

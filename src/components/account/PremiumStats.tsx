@@ -165,6 +165,19 @@ export default function PremiumStats({ onDataChange, ratingInfoOverride, isAdmin
   const localRatingInfo = useMemo(() => getPlayerRatingInfo(records), [records]);
   const ratingInfo = ratingInfoOverride ?? localRatingInfo;
 
+  // Peak rating — highest rolling-window rating across all recorded solves
+  const peakRating = useMemo(() => {
+    const valid = records.filter((r) => r.solveTime >= 10);
+    if (valid.length < 5) return null;
+    let peak = 0;
+    for (let i = 0; i <= valid.length - 5; i++) {
+      const window = valid.slice(i, i + 25);
+      const avg = window.reduce((s, r) => s + computeSolveScore(r), 0) / window.length;
+      peak = Math.max(peak, Math.round(avg));
+    }
+    return peak;
+  }, [records]);
+
   // ── Empty / insufficient data states ──────────────────────────────────
   // ── Milestones (always computed, even with 0 solves) ──
   const milestones = useMemo(() => getAllMilestones(records), [records]);
@@ -375,7 +388,7 @@ export default function PremiumStats({ onDataChange, ratingInfoOverride, isAdmin
         </div>
 
         {/* ── HERO SECTION — ProvisionalRatingCard handles all solve-count states ── */}
-        <ProvisionalRatingCard info={ratingInfo} />
+        <ProvisionalRatingCard info={ratingInfo} peakRating={peakRating} />
 
         {/* ── Keep insight + accuracy mini-cards below if we have enough data ── */}
         {!ratingInfo.hasNoData && (
