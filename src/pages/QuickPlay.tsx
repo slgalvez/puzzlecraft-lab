@@ -83,6 +83,12 @@ const QuickPlay = () => {
   const [endlessCount, setEndlessCount] = useState(1);
   const [lastDiffChange, setLastDiffChange] = useState<"up" | "down" | "stay" | null>(null);
   const [endlessSolves, setEndlessSolves] = useState<EndlessSolveRecord[]>([]);
+
+  // True when a free user has hit their per-session puzzle cap in endless mode.
+  const capReached =
+    mode === "endless" &&
+    endlessSessionCap !== null &&
+    endlessSolves.length >= endlessSessionCap;
   const [showSummary, setShowSummary] = useState(false);
   const [showFlash, setShowFlash] = useState(false);
 

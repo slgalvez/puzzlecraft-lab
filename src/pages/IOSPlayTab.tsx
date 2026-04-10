@@ -53,7 +53,7 @@ const IOSPlayTab = () => {
   const [upgradeTrigger, setUpgradeTrigger] = useState<"difficulty" | "weekly-pack" | "generic">("generic");
 
   const streak = getDailyStreak();
-  const weekPack = getCurrentWeeklyPack();
+  const weekPack = getCurrentWeeklyPack(account);
 
   const openUpgrade = (trigger: typeof upgradeTrigger) => {
     setUpgradeTrigger(trigger);
@@ -171,7 +171,7 @@ const IOSPlayTab = () => {
               <div>
                 <div className="flex items-center gap-1.5">
                   <p className="font-semibold text-foreground text-sm leading-tight">
-                    {weekPack.name}
+                    {weekPack.theme}
                   </p>
                   {!isPremium && (
                     <Crown size={11} className="text-primary" />
