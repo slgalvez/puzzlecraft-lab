@@ -567,7 +567,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
 
       {/* Entry list — desktop only: side column */}
       {!isMobile && (
-        <div className="lg:max-w-xs">
+        <div className="lg:max-w-xs lg:pt-[88px] lg:self-start">
           <h3 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             {isNumbers ? "Numbers to Place" : "Words to Place"}
           </h3>
