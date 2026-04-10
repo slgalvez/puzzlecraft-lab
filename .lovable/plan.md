@@ -1,23 +1,31 @@
 
 
-# Reduce Visual Weight of Puzzle Header
+# Align Right-Side Bank Panels with Puzzle Grid
 
-## File: `src/components/puzzles/PuzzleHeader.tsx`
+Add `lg:pt-[88px] lg:self-start` to the desktop side-panel container in all three puzzle grid components, offsetting past the PuzzleHeader so the bank content aligns with the top of the grid.
 
-Single file, class-only changes. No layout or structural modifications.
+## Changes
 
-### Changes
+### 1. `src/components/puzzles/CrosswordGrid.tsx` (line 543)
+```diff
+- <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-1 lg:max-w-xs">
++ <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-1 lg:max-w-xs lg:pt-[88px] lg:self-start">
+```
 
-| Section | Current | New |
-|---|---|---|
-| **Row 1 padding** (line 136) | `pt-3 pb-2` | `pt-2 pb-1.5` |
-| **Type label** (line 150) | `text-[11px] font-semibold uppercase tracking-widest text-muted-foreground` | `text-[12px] font-medium tracking-wide text-foreground` (normal case) |
-| **Difficulty pill** (line 155) | `px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest` | `px-1.5 py-px text-[9px] font-medium uppercase tracking-wider` |
-| **Subtitle/title** (line 163) | `text-[12px] font-medium text-foreground` | `text-[11px] font-medium text-muted-foreground` |
-| **Stat values** (lines 179, 195, 208) | `text-[15px]` | `text-[14px]` |
-| **Stat labels** (lines 186, 201, 211) | `text-[9px]` | `text-[8px]` |
-| **Stats row padding** (lines 176, 192, 207) | `py-1.5` | `py-1` |
-| **Progress row padding** (line 219) | `pb-2.5 pt-1.5` | `pb-2 pt-1` |
+### 2. `src/components/puzzles/FillInGrid.tsx` (line 570)
+```diff
+- <div className="lg:max-w-xs">
++ <div className="lg:max-w-xs lg:pt-[88px] lg:self-start">
+```
 
-No functionality, color system, or selector changes.
+### 3. `src/components/puzzles/WordSearchGrid.tsx` (line 453)
+```diff
+- <div className="lg:max-w-xs min-w-0">
++ <div className="lg:max-w-xs min-w-0 lg:pt-[88px] lg:self-start">
+```
+
+## What Does NOT Change
+- No layout structure, grid sizing, or component moves
+- Mobile layout unaffected (`lg:` prefix)
+- No new elements or redesign
 
