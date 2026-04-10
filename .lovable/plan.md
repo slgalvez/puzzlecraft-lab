@@ -1,27 +1,23 @@
 
 
-# Apply Difficulty Color to Daily Challenge Card on Index Page
+# Reduce Visual Weight of Puzzle Header
 
-## Issue
-The difficulty pill on the homepage daily challenge card (line 407 in `src/pages/Index.tsx`) uses generic `bg-secondary text-secondary-foreground` styling — a plain gray pill with no semantic color. This is inconsistent with the updated difficulty color system applied everywhere else.
+## File: `src/components/puzzles/PuzzleHeader.tsx`
 
-## Fix
-**File:** `src/pages/Index.tsx`, line 407
+Single file, class-only changes. No layout or structural modifications.
 
-Replace the generic styling with `DIFFICULTY_SELECTED` from `src/lib/puzzleTypes.ts`, matching the same approach already used in `DailyPuzzle.tsx` and `IOSPlayTab.tsx`.
+### Changes
 
-Change:
-```tsx
-<span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground capitalize font-medium">
-```
-To:
-```tsx
-<span className={cn("text-xs px-2 py-0.5 rounded-full border capitalize font-medium", DIFFICULTY_SELECTED[challenge.difficulty as Difficulty])}>
-```
+| Section | Current | New |
+|---|---|---|
+| **Row 1 padding** (line 136) | `pt-3 pb-2` | `pt-2 pb-1.5` |
+| **Type label** (line 150) | `text-[11px] font-semibold uppercase tracking-widest text-muted-foreground` | `text-[12px] font-medium tracking-wide text-foreground` (normal case) |
+| **Difficulty pill** (line 155) | `px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest` | `px-1.5 py-px text-[9px] font-medium uppercase tracking-wider` |
+| **Subtitle/title** (line 163) | `text-[12px] font-medium text-foreground` | `text-[11px] font-medium text-muted-foreground` |
+| **Stat values** (lines 179, 195, 208) | `text-[15px]` | `text-[14px]` |
+| **Stat labels** (lines 186, 201, 211) | `text-[9px]` | `text-[8px]` |
+| **Stats row padding** (lines 176, 192, 207) | `py-1.5` | `py-1` |
+| **Progress row padding** (line 219) | `pb-2.5 pt-1.5` | `pb-2 pt-1` |
 
-Add imports for `DIFFICULTY_SELECTED` and `Difficulty` from `@/lib/puzzleTypes` (some may already be imported).
-
-## What Does NOT Change
-- No layout or structural changes
-- Single class swap on one element
+No functionality, color system, or selector changes.
 
