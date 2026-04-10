@@ -93,6 +93,30 @@ function ProgressPips({
   );
 }
 
+/** Info tooltip explaining rating factors */
+function RatingTooltip() {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button type="button" className="text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+            <Info size={12} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-52 text-xs leading-relaxed">
+          <p className="font-semibold mb-1">Your rating is based on:</p>
+          <ul className="list-disc pl-3.5 space-y-0.5">
+            <li>Puzzle difficulty</li>
+            <li>Solve speed</li>
+            <li>Accuracy</li>
+            <li>Hint usage</li>
+          </ul>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────
 
 interface ProvisionalRatingCardProps {
