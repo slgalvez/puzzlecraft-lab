@@ -342,6 +342,11 @@ const CraftPuzzle = () => {
           .eq("id", shareId);
       }
 
+      // FIX: reset sentRecorded so the regenerated puzzle can be recorded as a
+      // new send when the creator shares it. Without this, sharing after a
+      // regenerate silently skips the craft history + monthly limit tracking.
+      sentRecorded.current = false;
+
       toast({ title: "Puzzle refreshed" });
     } catch (err) {
       toast({ title: "Regeneration failed", description: err instanceof Error ? err.message : "Please try different input" });
