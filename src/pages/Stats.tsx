@@ -16,7 +16,7 @@ import {
   Zap, Info, ChevronRight, Play,
 } from "lucide-react";
 import { isNativeApp } from "@/lib/appMode";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import PremiumStats from "@/components/account/PremiumStats";
 import { PremiumStatsAdminControls } from "@/components/account/PremiumStatsAdminControls";
 import { StatsPremiumPreview } from "@/components/account/PremiumPreview";
@@ -81,6 +81,14 @@ const Stats = () => {
   const dailyStreak    = useMemo(() => getDailyStreak(),                  [dataVersion]);
   const dailyCompleted = useMemo(() => getTotalDailyCompleted(),          [dataVersion]);
   const endlessStats   = useMemo(() => getEndlessStats(), [dataVersion]);
+  const endlessSummary = endlessStats ?? {
+    totalSessions: 0,
+    totalSolved: 0,
+    totalTime: 0,
+    bestSessionSolved: 0,
+    fastestEver: null as number | null,
+    recentSessions: [],
+  };
 
   const { isPremium: premiumAccess, showUpgradeCTA: showUpgrade } = usePremiumAccess();
   const { account } = useUserAccount();
@@ -307,10 +315,10 @@ const Stats = () => {
         )}
 
         {/* Two-column desktop layout */}
-        <div className="grid items-start gap-8 md:grid-cols-[minmax(0,1fr)_320px] lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="flex flex-col gap-8 md:flex-row md:items-start">
 
           {/* ── LEFT COLUMN ── */}
-          <div className="space-y-6 min-w-0">
+          <div className="min-w-0 flex-1 space-y-6">
 
             {/* Rating hero (premium) — uploaded file's detailed inline layout */}
             {showGeneral && premiumAccess && localRating && (
@@ -326,24 +334,22 @@ const Stats = () => {
                       {myLeaderboardEntry && (
                         <span className="font-mono font-bold text-sm text-primary">#{myLeaderboardEntry.rank}</span>
                       )}
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button type="button" className="text-muted-foreground/40 hover:text-muted-foreground transition-colors p-1 -m-1 min-w-[28px] min-h-[28px] flex items-center justify-center">
-                              <Info size={12} />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-52 text-xs leading-relaxed">
-                            <p className="font-medium mb-1">Rating is based on:</p>
-                            <ul className="space-y-0.5 text-muted-foreground">
-                              <li>• Puzzle difficulty</li>
-                              <li>• Solve speed</li>
-                              <li>• Accuracy</li>
-                              <li>• Hint usage</li>
-                            </ul>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" className="text-muted-foreground/40 hover:text-muted-foreground transition-colors p-1 -m-1 min-w-[28px] min-h-[28px] flex items-center justify-center">
+                            <Info size={12} />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-52 text-xs leading-relaxed">
+                          <p className="font-medium mb-1">Rating is based on:</p>
+                          <ul className="space-y-0.5 text-muted-foreground">
+                            <li>• Puzzle difficulty</li>
+                            <li>• Solve speed</li>
+                            <li>• Accuracy</li>
+                            <li>• Hint usage</li>
+                          </ul>
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
 
                     <p className={cn("text-base font-semibold", getTierColor(localRating.tier as any))}>
@@ -518,7 +524,7 @@ const Stats = () => {
           {/* ── end LEFT COLUMN ── */}
 
           {/* ── RIGHT COLUMN ── */}
-          <div className="w-full min-w-0 space-y-5 md:sticky md:top-24">
+          <div className="w-full space-y-5 md:sticky md:top-24 md:w-[320px] md:shrink-0 lg:w-[360px]">
 
             {/* By puzzle type */}
             {showGeneral && (
@@ -577,7 +583,7 @@ const Stats = () => {
             )}
 
             {/* Daily challenge */}
-            {showDaily && dailyCompleted > 0 && (
+            {showDaily && (
               <div className="rounded-2xl border bg-card overflow-hidden">
                 <div className="px-4 py-3 border-b border-border/60 flex items-center gap-2">
                   <Calendar size={13} className="text-primary" />
@@ -604,7 +610,7 @@ const Stats = () => {
             )}
 
             {/* Endless stats */}
-            {showEndless && endlessStats && endlessStats.totalSessions > 0 && (
+            {showEndless && (
               <div className="rounded-2xl border bg-card overflow-hidden">
                 <div className="px-4 py-3 border-b border-border/60 flex items-center gap-2">
                   <Infinity size={13} className="text-primary" />
@@ -612,10 +618,10 @@ const Stats = () => {
                 </div>
                 <div className="px-4 py-3 grid grid-cols-2 gap-3 text-center">
                   {[
-                    { label: "Sessions",     val: String(endlessStats.totalSessions) },
-                    { label: "Total Solved", val: String(endlessStats.totalSolved) },
-                    { label: "Best Session", val: String(endlessStats.bestSessionSolved) },
-                    { label: "Fastest",      val: endlessStats.fastestEver !== null ? formatTime(endlessStats.fastestEver) : "—" },
+                    { label: "Sessions",     val: String(endlessSummary.totalSessions) },
+                    { label: "Total Solved", val: String(endlessSummary.totalSolved) },
+                    { label: "Best Session", val: String(endlessSummary.bestSessionSolved) },
+                    { label: "Fastest",      val: endlessSummary.fastestEver !== null ? formatTime(endlessSummary.fastestEver) : "—" },
                   ].map(({ label, val }) => (
                     <div key={label}>
                       <p className="font-mono text-xl font-bold text-foreground">{val}</p>
