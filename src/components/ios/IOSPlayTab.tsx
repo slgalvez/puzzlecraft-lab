@@ -135,7 +135,7 @@ const IOSPlayTab = () => {
   const stats = useMemo(() => getProgressStats(), []);
   const inProgress = useMemo(() => findInProgressPuzzle(), []);
 
-  // Ranked types for personalised grid
+  // Ranked types for personalized grid
   const { ranked: rankedTypes, topTwo, isReturningUser } = useMemo(
     () => getRankedTypes(ALL_PUZZLE_TYPES),
     []
@@ -235,17 +235,7 @@ const IOSPlayTab = () => {
         </button>
       )}
 
-      {/* Surprise Me — primary CTA */}
-      <Button
-        onClick={handleSurprise}
-        size="lg"
-        className="w-full text-base font-semibold gap-2 h-12 rounded-xl shadow-[0_0_16px_hsl(var(--primary)/0.35)] active:scale-95 transition-transform duration-150"
-      >
-        <Dices size={18} className="animate-pulse" />
-        Surprise Me
-      </Button>
-
-      {/* Daily Challenge */}
+      {/* Daily Challenge — hero card */}
       <Link
         to="/daily"
         onClick={() => hapticTap()}
@@ -287,6 +277,16 @@ const IOSPlayTab = () => {
         </div>
       </Link>
 
+      {/* Surprise Me */}
+      <Button
+        onClick={handleSurprise}
+        size="lg"
+        className="w-full text-base font-semibold gap-2 h-12 rounded-xl shadow-[0_0_16px_hsl(var(--primary)/0.35)] active:scale-95 transition-transform duration-150"
+      >
+        <Dices size={18} className="animate-pulse" />
+        Surprise Me
+      </Button>
+
       {/* Weekly Pack */}
       <WeeklyPackCard />
 
@@ -321,11 +321,11 @@ const IOSPlayTab = () => {
       {/* ── Puzzle type section ── */}
       <div className="space-y-3">
 
-        {/* Returning users: top 2 "Your favourites" cards */}
+        {/* Returning users: top 2 "Your favorites" cards */}
         {isReturningUser && topTwo.length > 0 && (
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-0.5">
-              Your favourites
+              Your favorites
             </p>
             <div className="flex gap-3">
               {topTwo.map((type) => {

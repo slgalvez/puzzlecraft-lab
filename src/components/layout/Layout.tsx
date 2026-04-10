@@ -1,7 +1,7 @@
 import Header from "./Header";
 import Footer from "./Footer";
 import { isNativeApp } from "@/lib/appMode";
-import IOSTabBar from "@/components/IOSTabBar";
+import IOSTabBar from "@/components/ios/IOSTabBar";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const native = isNativeApp();
