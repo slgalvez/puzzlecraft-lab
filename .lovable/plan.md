@@ -1,46 +1,47 @@
 
 
-# Final Stabilization Audit — Findings and Plan
+## iOS Polish Audit — Findings and Plan
 
-## Issues Found
+### Issues Found
 
-### 1. `require()` in ESM context — `checkFreeShieldEarn()` (BUG)
-**File:** `src/hooks/useStreakShield.ts`, line 141
-**Problem:** Uses `require("@/lib/solveTracker")` which does not work in Vite's ESM environment. This function silently fails inside the `try/catch`, meaning free users can never earn a streak shield from 7-day streaks.
-**Fix:** Replace the `require()` with a static `import` at the top of the file. Import `getSolveRecords` from `@/lib/solveTracker` alongside the existing imports. This creates no circular dependency since `solveTracker` does not import from `useStreakShield`.
+**1. IOSPlayTab bottom content clipped by tab bar**
+The Play tab uses `pb-8` (32px) for bottom padding, but the tab bar is `h-14` (56px) plus safe-area inset. On iPhones with home indicators, the Customize button and bottom content will be partially hidden behind the tab bar.
+**Fix:** Change `pb-8` to `pb-24` (~96px) to clear the 56px tab bar + safe-area inset reliably.
 
-### 2. Console ref warnings from `SocialTab` sub-components (WARNING)
-**File:** `src/components/social/SocialTab.tsx`, lines 450 and 491
-**Problem:** `FriendsRatingLeaderboard` and `FriendsList` are plain function components. Radix Tabs' `Presence` mechanism tries to pass refs down, causing "Function components cannot be given refs" warnings.
-**Fix:** Wrap both components with `React.forwardRef`. They don't need to use the ref — just accept and discard it to silence the warning.
+**2. IOSCustomizeSheet close button too small for touch**
+The close `X` button uses `p-1.5` (6px padding each side), making the total touch target ~30px. Apple HIG requires 44px minimum.
+**Fix:** Change `p-1.5` to `p-2.5` and add `min-w-[44px] min-h-[44px] flex items-center justify-center` for proper touch target.
 
-### 3. Stale comment in `signUp` (COSMETIC, LOW PRIORITY)
-**File:** `src/contexts/UserAccountContext.tsx`, line 259
-**Problem:** Comment says "No emailRedirectTo" but the code passes `emailRedirectTo`. This is misleading but not a bug — the code behavior is correct.
-**Fix:** Update the comment to match the actual behavior.
+**3. PuzzleTypePicker close button too small**
+Same issue — close button is `h-8 w-8` (32px), below the 44px iOS minimum.
+**Fix:** Increase to `h-10 w-10` (40px visual, still passes with 44px effective due to padding).
 
-## Items Verified as Working (NOT TOUCHED)
+**4. IOSTabBar tap targets lack minimum height enforcement**
+Tab buttons rely on `py-1.5` padding alone. On smaller text, the total height can dip below 44px.
+**Fix:** Add `min-h-[44px]` to each tab button to guarantee the Apple-minimum touch target.
 
-- **Puzzle generation**: All 8 puzzle types use seed-based generation with correct difficulty mapping
-- **Share links**: `craftShare.ts` correctly uses published URL for preview hosts, falls back to origin
-- **Stats/Ranking**: Uses `getSolveRecords()` which filters out `__demo` records; `getPlayerRatingInfo()` handles provisional/confirmed/leaderboard thresholds correctly; NaN guards present
-- **Demo data isolation**: `getSolveRecords()` always filters `__demo`, `getDemoSolveRecords()` is admin-only
-- **Auth redirects**: Uses `WEB_ORIGIN` (published URL), no lovable.dev references found
-- **Daily challenge**: Correct date-based seed, streak calculation, completion recording
-- **Endless mode**: Session history correctly filters demo data
-- **Premium gating**: Properly checks admin/subscribed status, craft limit per month works
-- **Leaderboard sync**: Uses `LEADERBOARD_THRESHOLD` (10 solves) correctly
-- **Rating sync**: Restores from DB on fresh install, syncs on mount and after solve
-- **Input handling**: All puzzle grids have keyboard, tap, and mobile input support
-- **Auto-save**: All puzzle grids use `useAutoSave` with `loadProgress`/`clearProgress`
-- **Timer**: Resets on puzzle key change, handles countdown, expiry, and solve states
+**5. Stats link row in IOSPlayTab too small for touch**
+The "X puzzles solved → Stats" link uses `py-2 px-1` — roughly 36px tall. Easy to miss-tap.
+**Fix:** Increase to `py-3 px-2` for a comfortable 44px+ touch target.
 
-## Risky Items NOT Touched
-- Layout/structure of Stats, Play, or any page
-- Tab organization or feature placement
-- Navigation or icon changes
-- Any UI hierarchy changes
+**6. Difficulty pill buttons in IOSCustomizeSheet too short**
+The difficulty pills use `py-1.5` (~36px total height). Tight for finger taps.
+**Fix:** Change to `py-2` to bring them to ~40px, closer to the 44px guideline.
 
-## Summary of Changes
-Only 2 functional fixes + 1 cosmetic comment fix. No layout, structure, or feature changes.
+### Items Verified as Fine (NOT TOUCHED)
+
+- **Layout/structure**: No changes to tab order, section order, or feature placement
+- **Safe-area top**: Layout.tsx correctly applies `env(safe-area-inset-top)` via inline style
+- **CompletionSheet**: Already has `pb-[env(safe-area-inset-bottom)]` and proper z-indexing
+- **PuzzleToolbar**: Already has `pb-[env(safe-area-inset-bottom)]` and adequate button sizes
+- **MobileNumberPad**: Already uses `min-h-[44px]` per button
+- **Scroll behavior**: `ios-scroll-container` class applies `overscroll-behavior-y: none` correctly
+- **Keyboard avoidance**: `useKeyboardAvoidance` + `MobileLetterInput` with `fontSize: 16px` prevents iOS zoom
+- **WeeklyPackCard**: Touch target is the full card — adequate
+- **Favourites/All Puzzles grid**: Cards have `p-3.5`/`p-4` — adequate touch area
+- **Bottom sheets**: All use `animate-in slide-in-from-bottom` with safe-area bottom padding
+
+### Summary
+
+6 touch-target and spacing polish fixes. Zero layout, structure, or feature changes.
 
