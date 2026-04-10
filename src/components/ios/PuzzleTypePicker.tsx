@@ -158,7 +158,7 @@ export function PuzzleTypePicker({ type, onClose }: PuzzleTypePickerProps) {
           </div>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-muted/60 text-muted-foreground"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/60 text-muted-foreground"
           >
             <X size={16} />
           </button>

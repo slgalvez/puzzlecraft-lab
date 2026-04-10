@@ -113,7 +113,7 @@ const IOSTabBar = () => {
               key={key}
               onClick={() => handleTab(key)}
               className={cn(
-                "relative flex flex-col items-center gap-0.5 px-5 py-1.5 transition-all duration-150",
+                "relative flex flex-col items-center gap-0.5 px-5 py-1.5 min-h-[44px] transition-all duration-150",
                 "active:scale-90",
                 active ? "text-primary" : "text-muted-foreground",
               )}

@@ -75,7 +75,7 @@ const IOSCustomizeSheet = ({ open, onClose }: Props) => {
         <div className="sticky top-0 bg-card pt-3 pb-2 px-5 flex items-center justify-between z-10">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto absolute left-1/2 -translate-x-1/2 top-2" />
           <h2 className="font-display text-lg font-bold text-foreground mt-3">Customize Puzzle</h2>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-secondary mt-3">
+          <button onClick={onClose} className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-secondary mt-3">
             <X size={18} className="text-muted-foreground" />
           </button>
         </div>
@@ -131,7 +131,7 @@ const IOSCustomizeSheet = ({ open, onClose }: Props) => {
                   onClick={() => !disabled && setSelectedDifficulty(val)}
                   disabled={disabled}
                   className={cn(
-                    "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+                    "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
                     disabled
                       ? "border-border text-muted-foreground/30 cursor-not-allowed"
                       : selectedDifficulty === val
