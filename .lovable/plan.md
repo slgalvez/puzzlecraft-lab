@@ -1,35 +1,15 @@
 
 
-# Replace Stats Tab with Uploaded Version + Preserve Current Features
+# Fix Stats Page Two-Column Layout Breakpoint
 
-## Summary
-Replace `src/pages/Stats.tsx` with the uploaded `Stats_1-2.tsx` as the base, then layer in the newer features that exist in the current version but are missing from the uploaded file.
+## Problem
+The two-column layout (left: rating + recent solves, right: puzzle type + daily + endless) uses `lg:grid-cols-[1fr_340px]` which requires 1024px+ width. At your current viewport (894px), everything stacks in a single column, making the right column sections (By Puzzle Type, Daily Challenge, Endless Mode) appear below everything else instead of on the right side.
 
-## What the uploaded file provides (kept as-is)
-- The detailed inline rating card with tooltip, peak, "based on recent X solves", progress bar, "Only X pts until [Tier]!", "Play now to break through"
-- The original rating computation with peak via rolling window (lines 73-85)
-- Clean layout without the generic `ProvisionalRatingCard`
+## Fix
+**File: `src/pages/Stats.tsx`**
 
-## What the current version has that the uploaded file is missing (will be merged in)
-These features will be added into the uploaded file's structure:
+1. **Line 310**: Change `lg:grid-cols-[1fr_340px]` to `md:grid-cols-[1fr_340px]` so the two-column layout activates at 768px+ instead of 1024px+
+2. **Line 521**: Change `lg:sticky lg:top-24` to `md:sticky md:top-24` on the right column so it stays pinned when scrolling
 
-1. **Social tab** — `Tabs`/`TabsList`/`TabsContent` wrapper with Personal + Social tabs, `useFriends` for badge count, `SocialTab` component
-2. **Visibility change listener** — `useEffect` that bumps `dataVersion` when the user returns to the tab (real-time stat refresh)
-3. **Admin controls** — `PremiumStatsAdminControls` component shown for admin users, with `onRefresh` callback and `key={dataVersion}` on `PremiumStats`
-4. **DB fallback for rating** — the `ratingInfo` merge logic that falls back to `leaderboard_entries` when local data is empty (so global rank still shows)
-5. **Peak rating sliding window** — the improved `peakRating` memo that slides a 25-record window (more accurate than the uploaded file's simpler loop)
-6. **Endless stats without native guard** — current version shows endless stats regardless of native mode
-7. **checkMilestones guard** — keep it removed (the current version's comment explains why: MilestoneModalManager handles it, calling here causes duplicate toasts)
-
-## File changed
-- `src/pages/Stats.tsx` — full replacement using uploaded file as base, with the 7 features above merged in
-
-## What stays exactly the same
-- Rating card layout (tooltip, peak, trending arrows, progress bar, near-rank CTA)
-- Key stat cards grid
-- Recent solves list with PB badges and speed bars
-- Right column (puzzle type breakdown, daily challenge, endless)
-- Premium stats section
-- Upgrade modal and premium preview teaser
-- All imports from solveTracker, solveScoring, leaderboardSync, etc.
+This is a two-line change. The right column content (puzzle type breakdown, daily challenge stats, endless mode stats) is already present in the code — it's just not appearing side-by-side at your viewport width.
 
