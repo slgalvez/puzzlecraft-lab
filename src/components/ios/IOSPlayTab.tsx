@@ -227,71 +227,85 @@ const IOSPlayTab = () => {
         </button>
       )}
 
-      {/* Surprise Me */}
-      <Button
-        onClick={handleSurprise}
-        size="lg"
-        className="w-full text-base font-semibold gap-2 h-12 rounded-xl shadow-[0_0_16px_hsl(var(--primary)/0.35)] active:scale-95 transition-transform duration-150"
-      >
-        <Dices size={18} />
-        Surprise Me
-      </Button>
-
-      {/* Daily Challenge */}
+      {/* ── DAILY CHALLENGE — PRIMARY HERO ────────────────────────────────────
+          Promoted from a compact secondary card to the screen's primary action.
+          Larger padding, larger type, "Play now →" CTA at the bottom, and the
+          streak/best numbers brought inline rather than stacked on the right.
+          When already completed today, the card settles to a neutral state with
+          the solve time confirmed. */}
       <Link
         to="/daily"
         onClick={() => hapticTap()}
         className={cn(
-          "w-full rounded-xl border px-4 py-4 text-left transition-all active:scale-[0.97] block",
+          "w-full rounded-2xl border px-5 py-5 text-left transition-all active:scale-[0.97] block",
           dailyCompletion
             ? "border-border bg-card"
-            : "border-primary/20 bg-primary/5 active:bg-primary/10",
+            : "border-primary/25 bg-primary/5 active:bg-primary/10",
         )}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
-                Daily Challenge
-              </p>
-              {!dailyCompletion && (
-                <span className="text-[10px] text-muted-foreground/60 tabular-nums">
-                  {countdownStr} left
-                </span>
-              )}
+        {/* Top row: label + countdown */}
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-primary">
+            Daily Challenge
+          </p>
+          {!dailyCompletion && (
+            <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+              {countdownStr} left
+            </span>
+          )}
+        </div>
+
+        {/* Puzzle type — hero-size type */}
+        <p className="text-2xl font-bold text-foreground leading-tight">
+          {CATEGORY_INFO[challenge.category]?.name}
+        </p>
+
+        {/* Tagline */}
+        <p className="text-sm text-muted-foreground italic mt-1 mb-4">
+          {dailyCompletion
+            ? `Solved in ${formatTime(dailyCompletion.time)} ✓`
+            : tagline}
+        </p>
+
+        {/* Bottom row: streak + best + play CTA */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <Flame size={13} className="text-primary" />
+              <span className="font-mono text-base font-extrabold text-foreground leading-none">
+                {streak.current}
+              </span>
+              <span className="text-[10px] text-muted-foreground/60">streak</span>
             </div>
-            <p className="text-sm font-bold text-foreground truncate">
-              {CATEGORY_INFO[challenge.category]?.name}
-            </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5 italic">
-              {dailyCompletion
-                ? `Solved in ${formatTime(dailyCompletion.time)} ✓`
-                : tagline}
-            </p>
+            <div className="flex items-center gap-1.5">
+              <Trophy size={13} className="text-primary" />
+              <span className="font-mono text-base font-extrabold text-foreground leading-none">
+                {streak.longest}
+              </span>
+              <span className="text-[10px] text-muted-foreground/60">best</span>
+            </div>
           </div>
 
-          <div className="flex gap-4 shrink-0 items-start">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-0.5 mb-0.5">
-                <Flame size={10} className="text-primary" />
-              </div>
-              <p className="font-mono text-lg font-extrabold text-foreground leading-none">
-                {streak.current}
-              </p>
-              <p className="text-[9px] text-muted-foreground/60 mt-0.5">streak</p>
+          {!dailyCompletion && (
+            <div className="flex items-center gap-1 text-sm font-semibold text-primary">
+              Play now <ChevronRight size={15} className="shrink-0" />
             </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-0.5 mb-0.5">
-                <Trophy size={10} className="text-primary" />
-              </div>
-              <p className="font-mono text-lg font-extrabold text-foreground leading-none">
-                {streak.longest}
-              </p>
-              <p className="text-[9px] text-muted-foreground/60 mt-0.5">best</p>
-            </div>
-          </div>
+          )}
         </div>
       </Link>
+
+      {/* ── SURPRISE ME — SECONDARY ───────────────────────────────────────────
+          Demoted from the primary glowing button to a clean secondary outline
+          action. Still prominent and tappable, but clearly a tier below the
+          Daily Challenge hero above. No glow shadow. */}
+      <Button
+        onClick={handleSurprise}
+        variant="outline"
+        className="w-full font-medium gap-2 h-11 rounded-xl"
+      >
+        <Dices size={16} />
+        Surprise Me
+      </Button>
 
       {/* Weekly Pack */}
       <WeeklyPackCard />
@@ -326,14 +340,14 @@ const IOSPlayTab = () => {
         </button>
       )}
 
-      {/* ── Puzzle browse section ── */}
+      {/* ── Puzzle browse section ─────────────────────────────────────────── */}
       <div className="space-y-3 mt-5">
 
-        {/* Returning users — top 2 favorites */}
+        {/* Returning users — top 2 favourites */}
         {isReturningUser && topTwo.length > 0 && (
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-0.5">
-              Your favorites
+              Your favourites
             </p>
             <div className="flex gap-3">
               {topTwo.map((type) => {
