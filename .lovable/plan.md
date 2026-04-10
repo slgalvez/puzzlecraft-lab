@@ -1,31 +1,12 @@
 
 
-# Align Right-Side Bank Panels with Puzzle Grid
+# Adjust Right-Side Panel Offset: 88px → 96px
 
-Add `lg:pt-[88px] lg:self-start` to the desktop side-panel container in all three puzzle grid components, offsetting past the PuzzleHeader so the bank content aligns with the top of the grid.
+Update the desktop top padding on the right-side bank panels from `lg:pt-[88px]` to `lg:pt-[96px]` in three files:
 
-## Changes
+1. **`src/components/puzzles/CrosswordGrid.tsx`** — `lg:pt-[88px]` → `lg:pt-[96px]`
+2. **`src/components/puzzles/FillInGrid.tsx`** — `lg:pt-[88px]` → `lg:pt-[96px]`
+3. **`src/components/puzzles/WordSearchGrid.tsx`** — `lg:pt-[88px]` → `lg:pt-[96px]`
 
-### 1. `src/components/puzzles/CrosswordGrid.tsx` (line 543)
-```diff
-- <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-1 lg:max-w-xs">
-+ <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-1 lg:max-w-xs lg:pt-[88px] lg:self-start">
-```
-
-### 2. `src/components/puzzles/FillInGrid.tsx` (line 570)
-```diff
-- <div className="lg:max-w-xs">
-+ <div className="lg:max-w-xs lg:pt-[88px] lg:self-start">
-```
-
-### 3. `src/components/puzzles/WordSearchGrid.tsx` (line 453)
-```diff
-- <div className="lg:max-w-xs min-w-0">
-+ <div className="lg:max-w-xs min-w-0 lg:pt-[88px] lg:self-start">
-```
-
-## What Does NOT Change
-- No layout structure, grid sizing, or component moves
-- Mobile layout unaffected (`lg:` prefix)
-- No new elements or redesign
+No other changes.
 
