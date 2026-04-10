@@ -1,27 +1,27 @@
 
 
-## Re-add rating explanation tooltip to ProvisionalRatingCard
+## Fix iOS Tab Bar and Play Tab — Root Cause & Plan
 
-**What was lost**: An Info icon tooltip near the "Player Rating" / "Your Rank" label that read:
+**Problem**: The app renders the WRONG `IOSTabBar`. `Layout.tsx` imports from `@/components/IOSTabBar` (the old 5-tab version with Daily/Craft/Me labels and wrong icons), not from `@/components/ios/IOSTabBar` (the corrected 4-tab version you already provided).
 
-> **Your rating is based on:**
-> • Puzzle difficulty
-> • Solve speed
-> • Accuracy
-> • Hint usage
+The Play tab content (`IOSPlayTab`) is correctly imported from `@/components/ios/IOSPlayTab`, but that file still has British spellings ("favourites", "personalised") and the layout order doesn't match your screenshot (Daily Challenge should be the hero at top, Surprise Me below it).
 
-This was removed when the Stats page ranking card was refactored into `ProvisionalRatingCard`.
+### Changes
 
-### Change
+**1. `src/components/layout/Layout.tsx`** — Fix the import
+- Change `import IOSTabBar from "@/components/IOSTabBar"` → `import IOSTabBar from "@/components/ios/IOSTabBar"`
+- This switches from the stale 5-tab version to the corrected 4-tab version (Play/Create/Stats/Account with Dices/Palette/BarChart3/UserCircle icons)
 
-**`src/components/puzzles/ProvisionalRatingCard.tsx`**
+**2. `src/components/ios/IOSPlayTab.tsx`** — Reorder layout + fix spelling
+- Move the **Daily Challenge** card above the **Surprise Me** button so Daily is the hero (matches screenshot)
+- Fix "Your favourites" → "Your favorites"
+- Fix "personalised" → "personalized" in comment
+- Keep everything else (Resume card, Weekly Pack, Streak Shield, Rating, puzzle grids, Quick Stats, Customize) in place
 
-Add the tooltip back in both the **provisional** and **confirmed** card states, next to the header label ("Player Rating" / "Your Rank"):
+**3. Delete stale duplicate files**
+- `src/components/IOSTabBar.tsx` — old 5-tab version, no longer needed
+- `src/pages/IOSPlayTab.tsx` — old page version with "Hi Charlie", Endless Mode, DailyLeaderboard; not imported anywhere
 
-- Import `Info` from lucide-react and `Tooltip, TooltipContent, TooltipProvider, TooltipTrigger` from the UI library
-- Place an `<Info size={12}>` icon button wrapped in a Tooltip next to the existing `<Zap>` + label
-- Tooltip content: bold "Your rating is based on:" followed by a bullet list: Puzzle difficulty, Solve speed, Accuracy, Hint usage
-- Style matches original: `max-w-52 text-xs leading-relaxed`
-
-No other files need changes — the tooltip lives in the shared card component so it appears on both desktop and iOS.
+### Summary
+The fix is primarily a wrong-import bug. The correct files already exist in `src/components/ios/` — they just aren't being used by `Layout.tsx`. The layout reorder and spelling fixes are minor edits to the already-correct file.
 
