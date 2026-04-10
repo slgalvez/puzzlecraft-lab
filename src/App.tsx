@@ -28,6 +28,8 @@ import AdminPreview from "./pages/AdminPreview";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminHomepagePreview from "./pages/AdminHomepagePreview";
 import AdminPremiumEmails from "./pages/AdminPremiumEmails";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import { UserAccountProvider } from "./contexts/UserAccountContext";
 import DataMergeModal from "./components/account/DataMergeModal";
 import { MilestoneModalManager } from "./components/puzzles/MilestoneModalManager";
@@ -137,6 +139,8 @@ function PublicRoutes() {
         <Route path="/admin-preview/homepage" element={<AdminHomepagePreview />} />
          <Route path="/admin/premium-emails" element={<AdminPremiumEmails />} />
          <Route path="/admin-analytics" element={<AdminAnalytics />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
       </Routes>
     </UserAccountProvider>
   );

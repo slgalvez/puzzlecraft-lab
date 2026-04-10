@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useUserAccount } from "@/contexts/UserAccountContext";
 import Layout from "@/components/layout/Layout";
 import { Input } from "@/components/ui/input";
@@ -283,9 +283,9 @@ export default function AccountPage() {
 
           {/* App Store compliance — required by Apple guideline 5.1.1 */}
           <div className="pt-2 pb-2 flex items-center justify-center gap-4">
-            <a href="https://puzzlecraftapp.com/privacy" target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">Privacy Policy</a>
+            <Link to="/privacy" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">Privacy Policy</Link>
             <span className="text-muted-foreground/30 text-[11px]">·</span>
-            <a href="https://puzzlecraftapp.com/terms" target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">Terms of Service</a>
+            <Link to="/terms" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">Terms of Service</Link>
             <span className="text-muted-foreground/30 text-[11px]">·</span>
             <span className="text-[11px] text-muted-foreground/30">v1.0.0</span>
           </div>
@@ -525,9 +525,9 @@ export default function AccountPage() {
 
       {/* App Store compliance footer (signed-out) */}
       <div className="pt-1 flex items-center justify-center gap-4">
-        <a href="https://puzzlecraftapp.com/privacy" target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">Privacy Policy</a>
+        <Link to="/privacy" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">Privacy Policy</Link>
         <span className="text-muted-foreground/30 text-[11px]">·</span>
-        <a href="https://puzzlecraftapp.com/terms" target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">Terms of Service</a>
+        <Link to="/terms" className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors">Terms of Service</Link>
       </div>
 
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
