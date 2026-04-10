@@ -81,6 +81,14 @@ const Stats = () => {
   const dailyStreak    = useMemo(() => getDailyStreak(),                  [dataVersion]);
   const dailyCompleted = useMemo(() => getTotalDailyCompleted(),          [dataVersion]);
   const endlessStats   = useMemo(() => getEndlessStats(), [dataVersion]);
+  const endlessSummary = endlessStats ?? {
+    totalSessions: 0,
+    totalSolved: 0,
+    totalTime: 0,
+    bestSessionSolved: 0,
+    fastestEver: null as number | null,
+    recentSessions: [],
+  };
 
   const { isPremium: premiumAccess, showUpgradeCTA: showUpgrade } = usePremiumAccess();
   const { account } = useUserAccount();
@@ -575,7 +583,7 @@ const Stats = () => {
             )}
 
             {/* Daily challenge */}
-            {showDaily && dailyCompleted > 0 && (
+            {showDaily && (
               <div className="rounded-2xl border bg-card overflow-hidden">
                 <div className="px-4 py-3 border-b border-border/60 flex items-center gap-2">
                   <Calendar size={13} className="text-primary" />
@@ -602,7 +610,7 @@ const Stats = () => {
             )}
 
             {/* Endless stats */}
-            {showEndless && endlessStats && endlessStats.totalSessions > 0 && (
+            {showEndless && (
               <div className="rounded-2xl border bg-card overflow-hidden">
                 <div className="px-4 py-3 border-b border-border/60 flex items-center gap-2">
                   <Infinity size={13} className="text-primary" />
@@ -610,10 +618,10 @@ const Stats = () => {
                 </div>
                 <div className="px-4 py-3 grid grid-cols-2 gap-3 text-center">
                   {[
-                    { label: "Sessions",     val: String(endlessStats.totalSessions) },
-                    { label: "Total Solved", val: String(endlessStats.totalSolved) },
-                    { label: "Best Session", val: String(endlessStats.bestSessionSolved) },
-                    { label: "Fastest",      val: endlessStats.fastestEver !== null ? formatTime(endlessStats.fastestEver) : "—" },
+                    { label: "Sessions",     val: String(endlessSummary.totalSessions) },
+                    { label: "Total Solved", val: String(endlessSummary.totalSolved) },
+                    { label: "Best Session", val: String(endlessSummary.bestSessionSolved) },
+                    { label: "Fastest",      val: endlessSummary.fastestEver !== null ? formatTime(endlessSummary.fastestEver) : "—" },
                   ].map(({ label, val }) => (
                     <div key={label}>
                       <p className="font-mono text-xl font-bold text-foreground">{val}</p>
