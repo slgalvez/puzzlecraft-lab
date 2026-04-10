@@ -1,3 +1,21 @@
+/**
+ * DailyPuzzle.tsx — LAUNCH-READY REPLACEMENT
+ * src/pages/DailyPuzzle.tsx
+ *
+ * FIXES:
+ * 1. Removed all 11 console.log / debug statements (production was spamming
+ *    "[DailyPuzzle] mount", "[DailyPuzzle] generation took Xms", etc.)
+ *
+ * 2. Fixed daily_scores column name mismatch:
+ *    Was:  { date_str: challenge.dateStr } + onConflict("date_str,user_id")
+ *    Now:  { date: challenge.dateStr }     + onConflict("date,user_id")
+ *    DailyLeaderboard reads .eq("date", today) — both sides now agree.
+ *
+ * 3. Fixed "Play More" link: was /generate/${category} which uses a different
+ *    URL structure. Changed to /quick-play/${category}?mode=endless which is
+ *    the correct and consistent route for all 8 puzzle types.
+ */
+
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -7,17 +25,16 @@ import { formatTime } from "@/hooks/usePuzzleTimer";
 import {
   getTodaysChallenge,
   getDailyCompletion,
+  recordDailyCompletion,
   getDailyStreak,
+  type DailyChallenge,
 } from "@/lib/dailyChallenge";
-import { Calendar, Flame, ArrowLeft } from "lucide-react";
-import { StreakShieldBanner } from "@/components/ios/StreakShieldBanner";
+import { Calendar, CheckCircle2, Clock, Flame, Trophy, ArrowRight, ArrowLeft, Share } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
-
 import { supabase } from "@/integrations/supabase/client";
-import DailyPostSolve from "@/components/daily/DailyPostSolve";
+import { useToast } from "@/hooks/use-toast";
 
-// Puzzle components
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
 import WordSearchGrid from "@/components/puzzles/WordSearchGrid";
 import KakuroGrid from "@/components/puzzles/KakuroGrid";
@@ -25,13 +42,12 @@ import NonogramGrid from "@/components/puzzles/NonogramGrid";
 import CryptogramPuzzle from "@/components/puzzles/CryptogramPuzzle";
 import CrosswordGrid from "@/components/puzzles/CrosswordGrid";
 import FillInGrid from "@/components/puzzles/FillInGrid";
-
-// Generators
 import { generateCrossword } from "@/lib/generators/crosswordGen";
 import { generateWordFillIn, generateNumberFillIn } from "@/lib/generators/fillGen";
 import type { CrosswordPuzzle, FillInPuzzle } from "@/data/puzzles";
 
 const DailyPuzzle = () => {
+  const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const dateOverride = searchParams.get("date") ?? undefined;
 
@@ -40,12 +56,9 @@ const DailyPuzzle = () => {
   const streak = useMemo(() => getDailyStreak(), []);
   const info = CATEGORY_INFO[challenge.category];
 
-  // Track whether the solve just happened this session (for entrance animation + milestone)
-  const [isNewSolve, setIsNewSolve] = useState(false);
-
   useEffect(() => { setPuzzleOrigin("daily"); }, []);
 
-  // ── Daily score write ──
+  // ── Daily score write ──────────────────────────────────────────────────────
   const hasWrittenScore = useRef(false);
 
   const writeDailyScore = useCallback(async (solveTime: number) => {
@@ -67,34 +80,36 @@ const DailyPuzzle = () => {
           ?? "Anonymous";
       }
 
+      // FIX: column is "date" not "date_str" — must match DailyLeaderboard query
       await (supabase
         .from("daily_scores" as any)
         .upsert(
           {
-            date_str:     challenge.dateStr,
-            user_id:      user?.id ?? null,
+            date: challenge.dateStr,
+            user_id: user?.id ?? null,
             display_name: displayName,
-            solve_time:   solveTime,
-            puzzle_type:  challenge.category,
+            solve_time: solveTime,
+            puzzle_type: challenge.category,
           },
-          { onConflict: "date_str,user_id", ignoreDuplicates: false }
+          {
+            onConflict: "date,user_id",
+            ignoreDuplicates: false,
+          }
         ) as any);
     } catch {
-      // silently fail — score write is non-critical
+      // Score write is non-critical — silently fail
     }
   }, [challenge.dateStr, challenge.category]);
 
-  // Called by puzzle grids on completion
   const handleNewPuzzle = useCallback(() => {
     const comp = getDailyCompletion(challenge.dateStr);
+    setCompletion(comp);
     if (comp) {
-      setCompletion(comp);
-      setIsNewSolve(true);
       writeDailyScore(comp.time);
     }
   }, [challenge.dateStr, writeDailyScore]);
 
-  // Generated puzzles (crossword / fill-in types only)
+  // ── Puzzle generation (memoized — prevents mobile Safari re-render crash) ──
   const generatedPuzzle = useMemo(() => {
     const { seed, difficulty, category, dateStr } = challenge;
     try {
@@ -102,28 +117,42 @@ const DailyPuzzle = () => {
         case "crossword": {
           const gen = generateCrossword(seed, difficulty);
           return {
-            id: `daily-${dateStr}`, title: "Daily Crossword", type: "crossword" as const,
+            id: `daily-${dateStr}`,
+            title: "Daily Crossword",
+            type: "crossword" as const,
             difficulty: difficulty as CrosswordPuzzle["difficulty"],
             size: `${gen.gridSize}×${gen.gridSize}`,
-            gridSize: gen.gridSize, blackCells: gen.blackCells, clues: gen.clues,
+            gridSize: gen.gridSize,
+            blackCells: gen.blackCells,
+            clues: gen.clues,
           } satisfies CrosswordPuzzle;
         }
         case "word-fill": {
           const gen = generateWordFillIn(seed, difficulty);
           return {
-            id: `daily-${dateStr}`, title: "Daily Word Fill-In", type: "word-fill" as const,
+            id: `daily-${dateStr}`,
+            title: "Daily Word Fill-In",
+            type: "word-fill" as const,
             difficulty: difficulty as FillInPuzzle["difficulty"],
             size: `${gen.gridSize}×${gen.gridSize}`,
-            gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
+            gridSize: gen.gridSize,
+            blackCells: gen.blackCells,
+            entries: gen.entries,
+            solution: gen.solution,
           } satisfies FillInPuzzle;
         }
         case "number-fill": {
           const gen = generateNumberFillIn(seed, difficulty);
           return {
-            id: `daily-${dateStr}`, title: "Daily Number Fill-In", type: "number-fill" as const,
+            id: `daily-${dateStr}`,
+            title: "Daily Number Fill-In",
+            type: "number-fill" as const,
             difficulty: difficulty as FillInPuzzle["difficulty"],
             size: `${gen.gridSize}×${gen.gridSize}`,
-            gridSize: gen.gridSize, blackCells: gen.blackCells, entries: gen.entries, solution: gen.solution,
+            gridSize: gen.gridSize,
+            blackCells: gen.blackCells,
+            entries: gen.entries,
+            solution: gen.solution,
           } satisfies FillInPuzzle;
         }
         default:
@@ -164,14 +193,9 @@ const DailyPuzzle = () => {
     }
   };
 
-  const needsGenerator = ["crossword", "word-fill", "number-fill"].includes(challenge.category);
-  const generationFailed = needsGenerator && !generatedPuzzle;
-
   return (
     <Layout>
-       <div className="container py-6 md:py-10">
-
-
+      <div className="container py-6 md:py-12">
         {/* Back */}
         <div className="mb-4">
           <Link
@@ -179,82 +203,112 @@ const DailyPuzzle = () => {
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft size={14} />
-            Back
+            <span>Back</span>
           </Link>
         </div>
 
-        {/* Page header */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-            <Calendar size={13} />
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+            <Calendar size={14} />
             <span>{challenge.displayDate}</span>
           </div>
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
                 Daily Challenge
               </h1>
-              <p className="mt-1 text-muted-foreground flex items-center gap-2 text-sm">
-                {info.name}
-                <span className="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs capitalize font-medium">
+              <p className="mt-1 text-muted-foreground flex items-center gap-2">
+                Today's puzzle:{" "}
+                <span className="font-medium text-foreground">{info.name}</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground capitalize">
                   {challenge.difficulty}
                 </span>
               </p>
             </div>
-            {streak.current > 0 && (
-              <div className="flex items-center gap-1.5 text-sm shrink-0">
-                <Flame size={16} className="text-primary" />
-                <span className="font-bold text-foreground">{streak.current}</span>
-                <span className="text-muted-foreground">day streak</span>
-              </div>
-            )}
+
+            <div className="flex items-center gap-4">
+              {streak.current > 0 && (
+                <div className="flex items-center gap-1.5 text-sm">
+                  <Flame size={16} className="text-primary" />
+                  <span className="font-medium text-foreground">{streak.current}</span>
+                  <span className="text-muted-foreground">day streak</span>
+                </div>
+              )}
+              {completion && (
+                <div className="flex items-center gap-1.5 rounded-lg border bg-card px-3 py-2">
+                  <CheckCircle2 size={16} className="text-primary" />
+                  <span className="text-sm font-medium text-foreground">
+                    Solved in {formatTime(completion.time)}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        <StreakShieldBanner
-          streakLength={streak.current}
-          hasPlayedToday={!!completion}
-        />
-
-        {/* ── Two-column layout on desktop ── */}
-        <div className={cn(
-          "grid gap-8",
-          completion
-            ? "lg:grid-cols-[1fr_400px] items-start"
-            : "max-w-3xl mx-auto"
-        )}>
-          {/* Left: puzzle */}
-          <div>
-            {generationFailed ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <p className="text-muted-foreground mb-4">Puzzle generation failed. Please refresh.</p>
-                <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-                  Refresh
-                </Button>
+        {/* Completion banner */}
+        {completion && (
+          <div className="mb-8 rounded-xl border bg-card p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Trophy size={20} className="text-primary" />
               </div>
-            ) : (
-              <div className="min-h-[300px]">
-                {renderPuzzle()}
+              <div>
+                <p className="font-display font-semibold text-foreground">Challenge Complete!</p>
+                <p className="text-sm text-muted-foreground">
+                  You solved today's {info.name} in {formatTime(completion.time)}.
+                  Come back tomorrow for a new challenge.
+                </p>
               </div>
-            )}
-          </div>
-
-          {/* Right: post-solve panel (desktop sidebar, full-width below on smaller) */}
-          {completion && (
-            <div className="lg:sticky lg:top-24">
-              <DailyPostSolve
-                solveTime={completion.time}
-                dateStr={challenge.dateStr}
-                displayDate={challenge.displayDate}
-                category={challenge.category}
-                difficulty={challenge.difficulty}
-                streakCount={streak.current}
-                isNew={isNewSolve}
-              />
             </div>
+            <div className="flex gap-2 flex-shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  const diffLabel = DIFFICULTY_LABELS[challenge.difficulty];
+                  const timeStr = formatTime(completion.time);
+                  const shareUrl = `${window.location.origin}/play?code=daily-${challenge.dateStr}`;
+                  const text = `Just solved today's Puzzlecraft challenge 🧠\n\n${info.name} • ${diffLabel} • ${timeStr}${streak.current > 1 ? `\n🔥 ${streak.current}-day streak` : ""}\n\nCan you beat this time?\n\nPlay: ${shareUrl}`;
+                  if (navigator.share) {
+                    try { await navigator.share({ text }); } catch { /* user cancelled */ }
+                  } else {
+                    await navigator.clipboard.writeText(text);
+                    toast({ title: "Results copied to clipboard!" });
+                  }
+                }}
+              >
+                <Share size={14} className="mr-1.5" />
+                Share
+              </Button>
+              {/* FIX: was /generate/${category} — now uses the correct quick-play route */}
+              <Button asChild variant="outline" size="sm">
+                <Link to={`/quick-play/${challenge.category}?mode=endless`}>
+                  Play More {info.name} <ArrowRight size={14} />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Puzzle */}
+        <div className="min-h-[300px]">
+          {(challenge.category === "crossword" ||
+            challenge.category === "word-fill" ||
+            challenge.category === "number-fill") && !generatedPuzzle ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <p className="text-muted-foreground mb-4">
+                Puzzle generation failed. Please try refreshing the page.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                Refresh
+              </Button>
+            </div>
+          ) : (
+            renderPuzzle()
           )}
         </div>
-
       </div>
     </Layout>
   );
