@@ -32,7 +32,7 @@ import {
   Dices, SlidersHorizontal, Flame, Trophy,
   ChevronRight, Clock, Play, CheckCircle2, ArrowRight,
 } from "lucide-react";
-import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
+import { CATEGORY_INFO, DIFFICULTY_SELECTED, type PuzzleCategory, type Difficulty } from "@/lib/puzzleTypes";
 import { randomSeed } from "@/lib/seededRandom";
 import IOSCustomizeSheet from "./IOSCustomizeSheet";
 import { PuzzleTypePicker } from "./PuzzleTypePicker";
