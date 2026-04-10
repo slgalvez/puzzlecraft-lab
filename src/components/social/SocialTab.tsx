@@ -644,19 +644,16 @@ export function SocialTab({ myRating }: SocialTabProps) {
 
       {/* My code — always bottom */}
       {myFriendCode && (
-        <div
-          className="flex items-center justify-between rounded-xl border bg-card px-4 py-3 cursor-pointer"
+        <button
+          className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors mx-auto pt-1"
           onClick={async () => {
             await navigator.clipboard.writeText(myFriendCode);
             toast({ title: "Friend code copied!" });
           }}
         >
-          <div>
-            <p className="text-[10px] text-muted-foreground/50 mb-0.5">Your friend code</p>
-            <code className="font-mono text-sm font-bold text-foreground tracking-wider">{myFriendCode}</code>
-          </div>
-          <Copy size={13} className="text-muted-foreground/40" />
-        </div>
+          <span>Your code: <span className="font-mono tracking-wider">{myFriendCode}</span></span>
+          <Copy size={10} />
+        </button>
       )}
     </div>
   );
