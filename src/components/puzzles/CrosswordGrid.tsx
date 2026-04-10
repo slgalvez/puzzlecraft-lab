@@ -540,7 +540,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
 
       {/* Clues — desktop only: side column */}
       {!isMobile && (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-1 lg:max-w-xs lg:pt-[96px] lg:self-start">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-1 lg:max-w-xs lg:pt-[108px] lg:self-start">
           <div>
             <h3 className="mb-2 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Across</h3>
             <ul className="space-y-1 text-sm">
