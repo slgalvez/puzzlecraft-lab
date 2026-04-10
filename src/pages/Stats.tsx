@@ -255,7 +255,7 @@ const Stats = () => {
 
   return (
     <Layout>
-      <div className="container py-6 md:py-10 max-w-5xl">
+      <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:py-10 lg:px-8">
 
         {/* Page heading */}
         <div className="mb-5">
@@ -307,7 +307,7 @@ const Stats = () => {
         )}
 
         {/* Two-column desktop layout */}
-        <div className="grid md:grid-cols-[1fr_340px] gap-8 items-start">
+        <div className="grid items-start gap-8 md:grid-cols-[minmax(0,1fr)_320px] lg:grid-cols-[minmax(0,1fr)_360px]">
 
           {/* ── LEFT COLUMN ── */}
           <div className="space-y-6 min-w-0">
@@ -518,7 +518,7 @@ const Stats = () => {
           {/* ── end LEFT COLUMN ── */}
 
           {/* ── RIGHT COLUMN ── */}
-          <div className="space-y-5 md:sticky md:top-24">
+          <div className="w-full min-w-0 space-y-5 md:sticky md:top-24">
 
             {/* By puzzle type */}
             {showGeneral && (
