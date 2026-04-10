@@ -52,16 +52,17 @@ const MobileLetterInput = forwardRef<MobileLetterInputHandle, Props>(
         ref={ref}
         style={{
           position: "fixed",
-          bottom: 0,
+          top: "50%",
           left: "50%",
-          opacity: 0,
-          width: "1px",
-          height: "1px",
+          opacity: 0.01,
+          width: "2px",
+          height: "2px",
           border: "none",
           padding: 0,
           margin: 0,
-          pointerEvents: "none",
-          zIndex: -1,
+          pointerEvents: "auto",
+          zIndex: 9999,
+          fontSize: "16px",
         }}
         inputMode={inputMode === "numeric" ? "numeric" : "text"}
         autoCapitalize="characters"
@@ -70,7 +71,8 @@ const MobileLetterInput = forwardRef<MobileLetterInputHandle, Props>(
         spellCheck={false}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
-        tabIndex={-1}
+        tabIndex={0}
+        enterKeyHint="done"
         aria-hidden="true"
       />
     );
