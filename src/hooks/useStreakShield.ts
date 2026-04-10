@@ -14,6 +14,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { usePremiumAccess } from "@/lib/premiumAccess";
+import { getSolveRecords } from "@/lib/solveTracker";
 
 // ── Storage keys ──────────────────────────────────────────────────────────
 const SHIELD_COUNT_KEY   = "puzzlecraft_shield_count";
@@ -138,7 +139,6 @@ export function useStreakShield(): StreakShieldState {
 
 export function checkFreeShieldEarn(): boolean {
   try {
-    const { getSolveRecords } = require("@/lib/solveTracker");
     const records = getSolveRecords();
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);

@@ -256,7 +256,8 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
   }, [account]);
 
   /**
-   * FIX: No emailRedirectTo. No email confirmation.
+   * Uses canonical WEB_ORIGIN for emailRedirectTo so confirmation
+   * links work correctly even when called from Capacitor.
    */
   const signUp = useCallback(async (
     email: string,
