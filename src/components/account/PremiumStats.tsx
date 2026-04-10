@@ -224,6 +224,57 @@ export default function PremiumStats({ onDataChange, ratingInfoOverride }: { onD
     );
   }
 
+  // Has DB-backed rating but no local records — show rating + milestones only
+  if (records.length === 0) {
+    return (
+      <TooltipProvider>
+        <div className="space-y-4">
+          <ProvisionalRatingCard info={ratingInfo} />
+          <div className="rounded-xl border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <Award size={15} className="text-primary" />
+              Milestones
+              <span className="text-xs text-muted-foreground font-normal">{achievedCount}/{milestones.length}</span>
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {milestones.map((m) => {
+                const IconComp = MILESTONE_ICONS[m.icon] ?? Target;
+                const isAchieved   = m.state === "achieved";
+                const isInProgress = m.state === "in-progress";
+                const progressPct  = Math.round((m.current / m.target) * 100);
+                return (
+                  <div
+                    key={m.id}
+                    className={cn(
+                      "rounded-lg border p-3 transition-all",
+                      isAchieved   && "bg-primary/5 border-primary/25",
+                      isInProgress && "bg-card border-border",
+                      !isAchieved && !isInProgress && "opacity-40",
+                    )}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <IconComp size={14} className={isAchieved ? "text-primary" : "text-muted-foreground"} />
+                      {isAchieved && <CheckCircle size={11} className="text-primary ml-auto" />}
+                    </div>
+                    <p className={cn("text-xs font-semibold leading-tight", isAchieved ? "text-foreground" : "text-muted-foreground")}>
+                      {m.label}
+                    </p>
+                    {!isAchieved && (
+                      <div className="mt-1.5">
+                        <Progress value={progressPct} className="h-1" />
+                        <p className="text-[9px] text-muted-foreground mt-0.5">{m.progressText}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </TooltipProvider>
+    );
+  }
+
   // ── From here: records.length >= 5, summary guaranteed non-null ──────
 
   const playerRating = computePlayerRating(records);
