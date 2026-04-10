@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { ArrowLeft, Dices, Infinity, TrendingUp, TrendingDown, Minus, Square } from "lucide-react";
 import { usePremiumAccess } from "@/lib/premiumAccess";
-import UpgradeModal from "@/components/account/UpgradeModal";
+import UpgradeModal from "@/components/premium/UpgradeModal";
 import DifficultySelector from "@/components/puzzles/DifficultySelector";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -69,6 +69,14 @@ const QuickPlay = () => {
     endlessSessionCap,
     availableDifficulties,
   } = usePremiumAccess();
+
+  // True when a free user has hit their per-session puzzle cap in endless mode.
+  // endlessSessionCap === null means unlimited (premium users).
+  const capReached =
+    mode === "endless" &&
+    endlessSessionCap !== null &&
+    endlessSolves.length >= endlessSessionCap;
+
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
@@ -170,6 +178,19 @@ const QuickPlay = () => {
     }
     setLastDiffChange(direction);
     setShowFlash(true);
+
+    // ── Cap enforcement ──────────────────────────────────────────────────────────
+    // After recording this solve, check whether the free session cap is now reached.
+    if (
+      !isPremium &&
+      endlessSessionCap !== null &&
+      endlessSolves.length + 1 >= endlessSessionCap
+    ) {
+      setTimeout(() => {
+        setShowSummary(true);
+        setUpgradeOpen(true);
+      }, 700);
+    }
 
     if (direction === "up") {
       toast({
@@ -330,7 +351,7 @@ const QuickPlay = () => {
           )}
 
           {mode === "endless" && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs text-muted-foreground">
                 Difficulty: <span className="font-medium text-foreground capitalize">{DIFFICULTY_LABELS[effectiveDifficulty]}</span>
               </span>
@@ -340,6 +361,19 @@ const QuickPlay = () => {
               {endlessSolves.length > 0 && (
                 <span className="text-xs text-muted-foreground ml-2">
                   · {endlessSolves.length} solved
+                </span>
+              )}
+              {/* Free session cap counter */}
+              {!isPremium && endlessSessionCap !== null && (
+                <span
+                  className={cn(
+                    "text-xs ml-1",
+                    endlessSolves.length >= endlessSessionCap - 2
+                      ? "text-destructive font-medium"
+                      : "text-muted-foreground/60"
+                  )}
+                >
+                  · {Math.max(0, endlessSessionCap - endlessSolves.length)} left
                 </span>
               )}
             </div>
