@@ -166,18 +166,59 @@ export default function PremiumStats({ onDataChange, ratingInfoOverride }: { onD
   const ratingInfo = ratingInfoOverride ?? localRatingInfo;
 
   // ── Empty / insufficient data states ──────────────────────────────────
+  // ── Milestones (always computed, even with 0 solves) ──
+  const milestones = getAllMilestones();
+  const achievedCount = milestones.filter((m) => m.state === "achieved").length;
+  const uncelebrated = getUncelebratedIds();
+  const newlyAchievedEarly = milestones
+    .filter((m) => m.state === "achieved" && uncelebrated.has(m.id))
+    .map((m) => m.id);
+  if (newlyAchievedEarly.length > 0) setTimeout(() => markCelebrated(newlyAchievedEarly), 2000);
+
   if (records.length === 0 && ratingInfo.hasNoData) {
     return (
       <div className="space-y-4">
-        {/* ProvisionalRatingCard renders the no-data empty state */}
         <ProvisionalRatingCard info={ratingInfo} />
-        {/* Show milestones scaffold even with 0 solves so the page isn't blank */}
-        <div className="rounded-xl border bg-card p-5 opacity-50">
+        {/* Full milestone grid — all locked/greyed at 0% */}
+        <div className="rounded-xl border bg-card p-5">
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <Award size={15} className="text-primary" />
             Milestones
+            <span className="text-xs text-muted-foreground font-normal">{achievedCount}/{milestones.length}</span>
           </h3>
-          <p className="text-xs text-muted-foreground">Solve puzzles to earn milestones.</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {milestones.map((m) => {
+              const IconComp = MILESTONE_ICONS[m.icon] ?? Target;
+              const isAchieved   = m.state === "achieved";
+              const isInProgress = m.state === "in-progress";
+              const progressPct  = Math.round((m.current / m.target) * 100);
+              return (
+                <div
+                  key={m.id}
+                  className={cn(
+                    "rounded-lg border p-3 transition-all",
+                    isAchieved   && "bg-primary/5 border-primary/25",
+                    isInProgress && "bg-card border-border",
+                    !isAchieved && !isInProgress && "opacity-40",
+                  )}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <IconComp size={14} className={isAchieved ? "text-primary" : "text-muted-foreground"} />
+                    {isAchieved && <CheckCircle size={11} className="text-primary ml-auto" />}
+                  </div>
+                  <p className={cn("text-xs font-semibold leading-tight", isAchieved ? "text-foreground" : "text-muted-foreground")}>
+                    {m.label}
+                  </p>
+                  {!isAchieved && (
+                    <div className="mt-1.5">
+                      <Progress value={progressPct} className="h-1" />
+                      <p className="text-[9px] text-muted-foreground mt-0.5">{m.progressText}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
@@ -264,15 +305,7 @@ export default function PremiumStats({ onDataChange, ratingInfoOverride }: { onD
   const recent20 = records.slice(0, 20);
   const historyVisible = historyExpanded ? recent20 : recent20.slice(0, HISTORY_PREVIEW);
 
-  // ── Milestones ───────────────────────────────────────────────────────
-
-  const milestones = getAllMilestones();
-  const achievedCount = milestones.filter((m) => m.state === "achieved").length;
-  const uncelebrated = getUncelebratedIds();
-  const newlyAchieved = milestones
-    .filter((m) => m.state === "achieved" && uncelebrated.has(m.id))
-    .map((m) => m.id);
-  if (newlyAchieved.length > 0) setTimeout(() => markCelebrated(newlyAchieved), 2000);
+  // ── Milestones (already computed above early return) ──
 
   // ── Render ───────────────────────────────────────────────────────────
 
