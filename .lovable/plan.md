@@ -1,32 +1,35 @@
 
 
-# Restore Detailed Inline Rating Card on Stats Page
+# Replace Stats Tab with Uploaded Version + Preserve Current Features
 
 ## Summary
-Replace the generic `ProvisionalRatingCard` on the Stats page (lines 318-327) with the detailed inline rating card matching your screenshots. The Stats page renders identically on iOS and desktop, so this single change covers both.
+Replace `src/pages/Stats.tsx` with the uploaded `Stats_1-2.tsx` as the base, then layer in the newer features that exist in the current version but are missing from the uploaded file.
 
-## What gets restored
-- **Rank #X with (i) tooltip** — "YOUR RANK #3" header with info icon explaining rating factors
-- **Tier name** in tier color (e.g. "Advanced" in blue)
-- **Large rating number** + "rating" label
-- **Trending indicator** — up/down arrow comparing current vs `previous_rating` from leaderboard
-- **"Based on your recent X solves"** text
-- **"Peak: X"** when peak > current rating
-- **Next-tier progress bar** with "X pts to [Tier]" and threshold labels
-- **"Only X pts until Expert!"** highlight when close (within 12%) to next tier
-- **"Play a puzzle now to break through →"** CTA link to `/daily`
-- **Leaderboard button** linking to `/leaderboard`
+## What the uploaded file provides (kept as-is)
+- The detailed inline rating card with tooltip, peak, "based on recent X solves", progress bar, "Only X pts until [Tier]!", "Play now to break through"
+- The original rating computation with peak via rolling window (lines 73-85)
+- Clean layout without the generic `ProvisionalRatingCard`
 
-## Changes
+## What the current version has that the uploaded file is missing (will be merged in)
+These features will be added into the uploaded file's structure:
 
-**`src/pages/Stats.tsx`** (only file changed)
+1. **Social tab** — `Tabs`/`TabsList`/`TabsContent` wrapper with Personal + Social tabs, `useFriends` for badge count, `SocialTab` component
+2. **Visibility change listener** — `useEffect` that bumps `dataVersion` when the user returns to the tab (real-time stat refresh)
+3. **Admin controls** — `PremiumStatsAdminControls` component shown for admin users, with `onRefresh` callback and `key={dataVersion}` on `PremiumStats`
+4. **DB fallback for rating** — the `ratingInfo` merge logic that falls back to `leaderboard_entries` when local data is empty (so global rank still shows)
+5. **Peak rating sliding window** — the improved `peakRating` memo that slides a 25-record window (more accurate than the uploaded file's simpler loop)
+6. **Endless stats without native guard** — current version shows endless stats regardless of native mode
+7. **checkMilestones guard** — keep it removed (the current version's comment explains why: MilestoneModalManager handles it, calling here causes duplicate toasts)
 
-1. **Lines 318-327**: Replace `<ProvisionalRatingCard ... />` block with the inline rating card that uses the already-computed variables: `localRating`, `ratingInfo`, `myLeaderboardEntry`, `peakRating`, `nextTierInfo`, `tierProgressValue`, `pointsToNext`, `nearRank`
+## File changed
+- `src/pages/Stats.tsx` — full replacement using uploaded file as base, with the 7 features above merged in
 
-2. **Line 160**: Update `bestRating` in the `localRating` memo to use `peakRating ?? ratingInfo.rating` instead of just `ratingInfo.rating`, so the peak displays correctly
-
-3. The `ProvisionalRatingCard` import can remain (used elsewhere) — it just won't be rendered on this page anymore
-
-## No other files changed
-All computation logic (`peakRating`, `nextTierInfo`, `pointsToNext`, `nearRank`) already exists in the current code. This is purely a rendering change.
+## What stays exactly the same
+- Rating card layout (tooltip, peak, trending arrows, progress bar, near-rank CTA)
+- Key stat cards grid
+- Recent solves list with PB badges and speed bars
+- Right column (puzzle type breakdown, daily challenge, endless)
+- Premium stats section
+- Upgrade modal and premium preview teaser
+- All imports from solveTracker, solveScoring, leaderboardSync, etc.
 
