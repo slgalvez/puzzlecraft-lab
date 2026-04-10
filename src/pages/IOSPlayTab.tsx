@@ -32,7 +32,7 @@ import { usePremiumAccess } from "@/lib/premiumAccess";
 import UpgradeModal from "@/components/premium/UpgradeModal";
 import DailyLeaderboard from "@/components/DailyLeaderboard";
 import FriendActivityFeed from "@/components/FriendActivityFeed";
-import { getCurrentWeekPack } from "@/lib/weeklyPacks";
+import { getCurrentWeeklyPack } from "@/lib/weeklyPacks";
 import { useUserAccount } from "@/contexts/UserAccountContext";
 
 const ALL_CATEGORIES: PuzzleCategory[] = [
@@ -53,7 +53,7 @@ const IOSPlayTab = () => {
   const [upgradeTrigger, setUpgradeTrigger] = useState<"difficulty" | "weekly-pack" | "generic">("generic");
 
   const streak = getDailyStreak();
-  const weekPack = getCurrentWeekPack();
+  const weekPack = getCurrentWeeklyPack();
 
   const openUpgrade = (trigger: typeof upgradeTrigger) => {
     setUpgradeTrigger(trigger);
