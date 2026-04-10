@@ -70,13 +70,6 @@ const QuickPlay = () => {
     availableDifficulties,
   } = usePremiumAccess();
 
-  // True when a free user has hit their per-session puzzle cap in endless mode.
-  // endlessSessionCap === null means unlimited (premium users).
-  const capReached =
-    mode === "endless" &&
-    endlessSessionCap !== null &&
-    endlessSolves.length >= endlessSessionCap;
-
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
