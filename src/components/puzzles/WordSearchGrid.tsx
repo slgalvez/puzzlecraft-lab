@@ -450,7 +450,7 @@ const WordSearchGrid = ({ seed, difficulty, onNewPuzzle, onSolve, timeLimit, isE
 
       {/* Word bank — desktop only: side column */}
       {!isMobile && (
-        <div className="lg:max-w-xs min-w-0">
+        <div className="lg:max-w-xs min-w-0 lg:pt-[88px] lg:self-start">
           <h3 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Words to Find ({foundWords.size}/{puzzle.words.length})
           </h3>
