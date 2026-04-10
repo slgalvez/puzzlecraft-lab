@@ -255,7 +255,7 @@ const Stats = () => {
 
   return (
     <Layout>
-      <div className="container py-6 md:py-10">
+      <div className="container py-6 md:py-10 max-w-5xl">
 
         {/* Page heading */}
         <div className="mb-5">
