@@ -1,27 +1,45 @@
 
 
-## Fix iOS Tab Bar and Play Tab — Root Cause & Plan
+# Restore Detailed Inline Rating Card on Stats Page
 
-**Problem**: The app renders the WRONG `IOSTabBar`. `Layout.tsx` imports from `@/components/IOSTabBar` (the old 5-tab version with Daily/Craft/Me labels and wrong icons), not from `@/components/ios/IOSTabBar` (the corrected 4-tab version you already provided).
+## What was lost
 
-The Play tab content (`IOSPlayTab`) is correctly imported from `@/components/ios/IOSPlayTab`, but that file still has British spellings ("favourites", "personalised") and the layout order doesn't match your screenshot (Daily Challenge should be the hero at top, Surprise Me below it).
+The current Stats page delegates the rating card entirely to `ProvisionalRatingCard` (lines 318-327), which is a generic component missing several details visible in your screenshots:
 
-### Changes
+1. **`(i)` tooltip after the rank `#X`** — explaining rating factors (difficulty, speed, accuracy, hints)
+2. **"Based on your recent X solves"** text below the rating number
+3. **"Peak: X"** display showing all-time best rating
+4. **"Only X pts until Expert!"** motivational text when close to next tier
+5. **"Play a puzzle now to break through →"** CTA link
+6. **Trending up/down arrow** showing rating change vs previous rating from leaderboard data
 
-**1. `src/components/layout/Layout.tsx`** — Fix the import
-- Change `import IOSTabBar from "@/components/IOSTabBar"` → `import IOSTabBar from "@/components/ios/IOSTabBar"`
-- This switches from the stale 5-tab version to the corrected 4-tab version (Play/Create/Stats/Account with Dices/Palette/BarChart3/UserCircle icons)
+## What will change
 
-**2. `src/components/ios/IOSPlayTab.tsx`** — Reorder layout + fix spelling
-- Move the **Daily Challenge** card above the **Surprise Me** button so Daily is the hero (matches screenshot)
-- Fix "Your favourites" → "Your favorites"
-- Fix "personalised" → "personalized" in comment
-- Keep everything else (Resume card, Weekly Pack, Streak Shield, Rating, puzzle grids, Quick Stats, Customize) in place
+**File: `src/pages/Stats.tsx`** (only file modified)
 
-**3. Delete stale duplicate files**
-- `src/components/IOSTabBar.tsx` — old 5-tab version, no longer needed
-- `src/pages/IOSPlayTab.tsx` — old page version with "Hi Charlie", Endless Mode, DailyLeaderboard; not imported anywhere
+### 1. Replace ProvisionalRatingCard block with inline rating card
+Lines 318-327 will be replaced with the historical inline card that renders:
+- `YOUR RANK` header with `#X` rank + `(i)` tooltip
+- Tier name in tier color
+- Large rating number + "rating" label
+- Trending indicator (up/down arrow comparing current vs `myLeaderboardEntry.previous_rating`)
+- "Based on your recent X solves" + "Peak: X" when peak > current
+- Next-tier progress bar with pts remaining
+- "Only X pts until [Tier]!" highlight when within 12% of next threshold
+- "Play a puzzle now to break through →" link to `/daily`
+- Leaderboard button linking to `/leaderboard`
 
-### Summary
-The fix is primarily a wrong-import bug. The correct files already exist in `src/components/ios/` — they just aren't being used by `Layout.tsx`. The layout reorder and spelling fixes are minor edits to the already-correct file.
+### 2. Restore `localRating.bestRating` to use actual peak
+Update the `localRating` memo (lines 154-162) so `bestRating` uses the computed `peakRating` value instead of just echoing `ratingInfo.rating`.
+
+### 3. No other files changed
+All other recent project changes remain intact. The `ProvisionalRatingCard` component file is untouched (it's still used elsewhere like IOSPlayTab).
+
+## Summary of UI restored
+- Rank # with info tooltip
+- Peak rating display
+- "Based on your recent X solves"
+- "Only X pts until [Tier]!" + "Play now to break through"
+- Trending up/down indicator
+- Next-tier progress bar with threshold labels
 
