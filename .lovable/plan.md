@@ -2,19 +2,27 @@
 
 ## Problem
 
-The Privacy Policy and Terms of Service links both point to `https://puzzlecraftapp.com/privacy` and `https://puzzlecraftapp.com/terms`, which are empty/non-existent pages.
+When a user has no rating data, "Your ranking starts here" appears twice on the Stats page:
+1. From the `ProvisionalRatingCard` in Stats.tsx (line 270)
+2. From the `ProvisionalRatingCard` inside `PremiumStats` (line 172, rendered at line 383)
+
+Both render the same `NoDataState` card, making it redundant.
 
 ## Fix
 
-Replace those URLs with routes inside the app itself (`/privacy` and `/terms`), and create two simple static pages with placeholder legal text. This ensures the links always work regardless of external domains.
+**Skip the hero `ProvisionalRatingCard` in Stats.tsx when there's no data**, since `PremiumStats` already handles that state. The layout stays intact — the card simply won't render when there's nothing to show, and `PremiumStats` below will still show its version along with the milestones scaffold.
 
-### Changes
+### Change
 
-1. **Create `src/pages/Privacy.tsx`** — static page with standard privacy policy content (data collection, cookies, contact info placeholder) using the existing `Layout` component.
+**`src/pages/Stats.tsx`** (~line 268): Add `!ratingInfo.hasNoData` to the existing condition:
 
-2. **Create `src/pages/Terms.tsx`** — static page with standard terms of service content using the existing `Layout` component.
+```tsx
+// Before
+{showGeneral && premiumAccess && (
 
-3. **Update `src/App.tsx`** — add routes for `/privacy` and `/terms` inside the public routes.
+// After
+{showGeneral && premiumAccess && !ratingInfo.hasNoData && (
+```
 
-4. **Update `src/pages/Account.tsx`** (lines 286–288 and 528–530) — change `<a href="https://puzzlecraftapp.com/...">` to `<Link to="/privacy">` and `<Link to="/terms">` (React Router links instead of external anchors). Remove `target="_blank"`.
+This keeps the full rating card visible once the user has any solves (provisional or confirmed), but removes the duplicate empty-state prompt.
 
