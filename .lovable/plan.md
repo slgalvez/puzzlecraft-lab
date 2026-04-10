@@ -1,18 +1,27 @@
 
 
-## Fix milestones not reflecting demo data for admin
+## Re-add rating explanation tooltip to ProvisionalRatingCard
 
-**Root cause**: `getAllMilestones()` in `milestones.ts` hardcodes `getSolveRecords()` internally (line 188-189), which always filters out `__demo` records. Even though `PremiumStats` correctly fetches demo-inclusive records for the rest of its analytics, the milestone grid ignores them because `getAllMilestones()` never receives them.
+**What was lost**: An Info icon tooltip near the "Player Rating" / "Your Rank" label that read:
 
-### Changes
+> **Your rating is based on:**
+> • Puzzle difficulty
+> • Solve speed
+> • Accuracy
+> • Hint usage
 
-**`src/lib/milestones.ts`**
-- Add an optional `overrideRecords?: SolveRecord[]` parameter to `getAllMilestones()`
-- When provided, use those records instead of calling `getSolveRecords()` internally
-- Same change for `checkMilestones()` for consistency
+This was removed when the Stats page ranking card was refactored into `ProvisionalRatingCard`.
 
-**`src/components/account/PremiumStats.tsx`**
-- Pass the already-computed `records` array into `getAllMilestones(records)` so demo records are included when admin mode is active
+### Change
 
-No other files need changes. The fix is surgical — just threading the existing records through instead of letting `getAllMilestones` re-fetch filtered data.
+**`src/components/puzzles/ProvisionalRatingCard.tsx`**
+
+Add the tooltip back in both the **provisional** and **confirmed** card states, next to the header label ("Player Rating" / "Your Rank"):
+
+- Import `Info` from lucide-react and `Tooltip, TooltipContent, TooltipProvider, TooltipTrigger` from the UI library
+- Place an `<Info size={12}>` icon button wrapped in a Tooltip next to the existing `<Zap>` + label
+- Tooltip content: bold "Your rating is based on:" followed by a bullet list: Puzzle difficulty, Solve speed, Accuracy, Hint usage
+- Style matches original: `max-w-52 text-xs leading-relaxed`
+
+No other files need changes — the tooltip lives in the shared card component so it appears on both desktop and iOS.
 
