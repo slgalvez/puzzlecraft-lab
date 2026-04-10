@@ -167,7 +167,7 @@ export default function PremiumStats({ onDataChange, ratingInfoOverride, isAdmin
 
   // ── Empty / insufficient data states ──────────────────────────────────
   // ── Milestones (always computed, even with 0 solves) ──
-  const milestones = useMemo(() => getAllMilestones(), [records]);
+  const milestones = useMemo(() => getAllMilestones(records), [records]);
   const achievedCount = milestones.filter((m) => m.state === "achieved").length;
   const uncelebrated = getUncelebratedIds();
   const newlyAchievedEarly = milestones
