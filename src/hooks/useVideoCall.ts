@@ -240,10 +240,15 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
           return;
         }
 
-        diag("recoveryGuard:ending", { reason, connectionState: currentPc.connectionState, iceState: currentPc.iceConnectionState });
+        const capturedCallId = callIdRef.current;
+        diag("recoveryGuard:ending", { reason, connectionState: currentPc.connectionState, iceState: currentPc.iceConnectionState, callId: capturedCallId });
         setEndReason(reason);
         setCallState("ended");
         cleanup();
+        // Notify server so the call record is properly ended
+        if (capturedCallId) {
+          api("end-call", { call_id: capturedCallId }).catch(() => {});
+        }
       }, delayMs);
     };
 
@@ -485,10 +490,10 @@ export function useVideoCall({ token, conversationId, onSessionExpired }: UseVid
 
   // End an active call
   const endCall = useCallback(async () => {
-    if (!callIdRef.current || callStateRef.current === "ended" || callStateRef.current === "idle") return;
     const cid = callIdRef.current;
+    if (!cid || callStateRef.current === "idle") return;
+    // Allow ending even if already "ended" (retry server notification)
     diag("endCall", { callId: cid });
-    // Cleanup FIRST so tracks stop, then notify server
     cleanup();
     setCallState("ended");
     try {
