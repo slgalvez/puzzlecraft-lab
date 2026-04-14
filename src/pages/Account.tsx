@@ -44,6 +44,7 @@ export default function AccountPage() {
     subscribed, subscriptionEnd, openCustomerPortal,
     entitlementSource,
   } = useUserAccount();
+  const { isPremium: premiumAccess, showUpgradeCTA: showUpgrade } = usePremiumAccess();
 
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [tab, setTab] = useState<"login" | "signup">("login");
