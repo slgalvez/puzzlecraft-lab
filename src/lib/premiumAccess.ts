@@ -27,6 +27,8 @@
  */
 
 import { useUserAccount } from "@/contexts/UserAccountContext";
+import { resolveEntitlement, type EntitlementSource, type EntitlementResult } from "@/lib/entitlements";
+export type { EntitlementSource, EntitlementResult };
 
 // ─── Launch flag ──────────────────────────────────────────────────────────────
 
@@ -217,6 +219,8 @@ export interface PremiumAccessState {
   recordCraftSent:      (id: string) => void;
   /** ISO string of when the subscription expires — null if no subscription */
   subscriptionEnd:      string | null;
+  /** Source of the current entitlement (stripe, admin_grant, or none) */
+  entitlementSource:    EntitlementSource;
 }
 
 /**
@@ -235,7 +239,7 @@ export interface PremiumAccessState {
  *   const { isPremium, craftStatus, isDiffLocked, loading } = usePremiumAccess();
  */
 export function usePremiumAccess(): PremiumAccessState {
-  const { account, subscribed, subscriptionEnd, checkingSubscription, loading: accountLoading } = useUserAccount();
+  const { account, subscribed, subscriptionEnd, checkingSubscription, loading: accountLoading, entitlementSource } = useUserAccount();
 
   // Loading = auth session resolving OR server subscription check running
   const loading = !!(accountLoading || checkingSubscription);
@@ -261,5 +265,6 @@ export function usePremiumAccess(): PremiumAccessState {
     canSeeFullStats: canSeeFullStats(loading ? null : gateAccount),
     recordCraftSent,
     subscriptionEnd: subscriptionEnd ?? null,
+    entitlementSource: (entitlementSource as EntitlementSource) ?? "none",
   };
 }

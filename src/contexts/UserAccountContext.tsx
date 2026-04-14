@@ -44,6 +44,7 @@ interface UserAccountContextType {
   refreshAccount: () => Promise<void>;
   startCheckout: () => Promise<void>;
   openCustomerPortal: () => Promise<void>;
+  entitlementSource: string | null;
 }
 
 const UserAccountContext = createContext<UserAccountContextType | null>(null);
@@ -177,6 +178,7 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
   const [subscribed,   setSubscribed]   = useState(false);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [checkingSubscription, setCheckingSubscription] = useState(false);
+  const [entitlementSource, setEntitlementSource] = useState<string | null>(null);
 
   const refreshSubscription = useCallback(async () => {
     try {
@@ -185,6 +187,7 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
       if (!error && data) {
         setSubscribed(!!data.subscribed);
         setSubscriptionEnd(data.subscription_end ?? null);
+        setEntitlementSource(data.source ?? null);
       }
     } catch {}
     finally { setCheckingSubscription(false); }
@@ -335,7 +338,7 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
       account, loading, signUp, signIn, signOut,
       pendingMerge, resolveMerge,
       subscribed, subscriptionEnd, checkingSubscription, refreshSubscription,
-      refreshAccount, startCheckout, openCustomerPortal,
+      refreshAccount, startCheckout, openCustomerPortal, entitlementSource,
     }}>
       {children}
     </UserAccountContext.Provider>
