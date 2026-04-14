@@ -1,36 +1,80 @@
 
 
-# Stripe Webhook Hardening — 4 Fixes from Verification Audit
+# Add `webhook_events` Audit Table
 
 ## Summary
-Apply 4 targeted fixes identified in the verification pass: 2 real bugs (immediate revoke on payment failure, missing admin guard on invoice.paid) and 2 hardening changes (auto-revoke guard in check-subscription, cleanup on subscription deletion). No UI changes. No schema changes.
+Create a `webhook_events` table with a unique `event_id` constraint, and insert one audit row per processed Stripe webhook event. Backend only, no UI, no refactors.
 
-## Fixes
+## Step 1 — SQL Migration
 
-### Fix 1 — `stripe-webhook`: Add admin_grant guard to `invoice.paid` (Bug 1+3)
-Add the same admin_grant guard pattern used by the other 3 events. Also add 0-row warning and user_id logging.
+```sql
+CREATE TABLE public.webhook_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id text NOT NULL UNIQUE,
+  event_type text NOT NULL,
+  stripe_customer_id text,
+  stripe_subscription_id text,
+  supabase_user_id uuid,
+  processed_at timestamptz NOT NULL DEFAULT now(),
+  status text NOT NULL DEFAULT 'success'
+    CHECK (status IN ('success', 'skipped', 'error')),
+  error_message text
+);
 
-### Fix 2 — `stripe-webhook`: Only revoke on final cancellation in `invoice.payment_failed` (Bug 4)
-Instead of immediately setting `subscribed=false`, retrieve the Stripe subscription object and check `sub.status`. Only revoke if status is `"canceled"`. If `past_due` or `unpaid`, log and skip — Stripe is still retrying.
+ALTER TABLE public.webhook_events ENABLE ROW LEVEL SECURITY;
 
-### Fix 3 — `check-subscription`: Add explicit `subscription_platform !== 'admin_grant'` guard before auto-revoke (Bug 6)
-One condition added to the existing `if (profile.subscribed && isExpired)` block.
+CREATE POLICY "Deny all client access to webhook_events"
+  ON public.webhook_events FOR ALL
+  TO anon, authenticated
+  USING (false) WITH CHECK (false);
 
-### Fix 4 — `stripe-webhook`: Clean up `subscription_expires_at` on `customer.subscription.deleted` (Bug 5)
-Add `subscription_expires_at: null` to the update payload. Keeps `subscription_platform = 'stripe'` for history.
+CREATE INDEX idx_webhook_events_processed_at
+  ON public.webhook_events (processed_at DESC);
+```
+
+- `event_id` is `UNIQUE` (dedup / lookup by Stripe event ID)
+- `status` constrained to `success`, `skipped`, `error`
+- RLS denies all client access; only `service_role` can read/write
+- Index on `processed_at` for forensic queries
+
+## Step 2 — Patch `stripe-webhook/index.ts`
+
+Add a `logWebhookEvent` helper at the top (after the `supabase` client):
+
+```ts
+async function logWebhookEvent(fields: {
+  event_id: string; event_type: string;
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
+  supabase_user_id?: string | null;
+  status: "success" | "skipped" | "error";
+  error_message?: string | null;
+}) {
+  const { error } = await supabase.from("webhook_events").insert({ ... });
+  if (error) console.error("[stripe-webhook] Audit log insert failed:", error);
+}
+```
+
+Then add three tracking variables before the `switch`:
+```ts
+let auditCustomerId: string | null = null;
+let auditSubscriptionId: string | null = null;
+let auditUserId: string | null = null;
+let auditStatus: "success" | "skipped" | "error" = "success";
+```
+
+Within each `case` branch, assign these variables as data becomes available. When a branch hits an admin-grant guard or missing-data early return, set `auditStatus = "skipped"`.
+
+Two audit insert points:
+1. **Success/skipped path** — after the `switch`, before the 200 response
+2. **Error path** — in the `catch` block, before the 500 response, with `status: "error"` and `error_message`
+
+No changes to any webhook logic — only variable assignments and the final insert.
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `supabase/functions/stripe-webhook/index.ts` | Fixes 1, 2, 4 |
-| `supabase/functions/check-subscription/index.ts` | Fix 3 |
-
-Both edge functions redeployed after changes.
-
-## What Does NOT Change
-- No database migration
-- No frontend code changes
-- No changes to `entitlements.ts`, `premiumAccess.ts`, or `UserAccountContext.tsx`
-- All existing behavior for checkout.session.completed and admin_grant users is preserved
+| SQL migration | New `webhook_events` table |
+| `supabase/functions/stripe-webhook/index.ts` | Add audit helper + tracking vars + 2 insert calls |
 
