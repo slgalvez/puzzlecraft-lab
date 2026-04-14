@@ -23,3 +23,17 @@ export function hapticSuccess() {
     navigator.vibrate([12, 60, 12]);
   }
 }
+
+/** Personal best — celebratory double-pulse */
+export function hapticPB() {
+  if (typeof navigator !== "undefined" && navigator.vibrate) {
+    navigator.vibrate([15, 80, 15]);
+  }
+}
+
+/** Hard+ completion — heavier rumble */
+export function hapticHardComplete() {
+  if (typeof navigator !== "undefined" && navigator.vibrate) {
+    navigator.vibrate([20, 50, 20, 50, 20]);
+  }
+}

@@ -7,13 +7,16 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory 
 import { getPuzzleOrigin, getBackPath, getBackLabel } from "@/lib/puzzleOrigin";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { hapticSuccess } from "@/lib/haptic";
+import { hapticSuccess, hapticPB, hapticHardComplete } from "@/lib/haptic";
 import { getSolveRecords } from "@/lib/solveTracker";
 import { computePlayerRating, getSkillTier, getTierColor, computeSolveScore } from "@/lib/solveScoring";
 import { getDailyStreak } from "@/lib/dailyChallenge";
 import { isNativeApp } from "@/lib/appMode";
 import { usePaywallTiming } from "@/hooks/usePaywallTiming";
 import { useSolveShareCard } from "@/hooks/useSolveShareCard";
+import { maybeRequestRating } from "@/lib/appRating";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import UpgradeModal from "@/components/account/UpgradeModal";
 
 interface Props {
@@ -36,8 +39,9 @@ function buildShareData(props: {
   time: number;
   isDaily: boolean;
   dailyCode?: string;
+  prevBest?: number | null;
 }) {
-  const { category, seed, difficulty, time, isDaily, dailyCode } = props;
+  const { category, seed, difficulty, time, isDaily, dailyCode, prevBest } = props;
   if (!category || seed == null) return null;
 
   const typeName = CATEGORY_INFO[category]?.name ?? category;
@@ -53,7 +57,9 @@ function buildShareData(props: {
     ? "Just solved today's Puzzlecraft challenge 🧠"
     : "Just tackled a Puzzlecraft puzzle 🧠";
 
-  const text = `${headline}\n\n${typeName} • ${diffLabel} • ${timeStr}\n\nCan you beat this time?\n\nPlay: ${shareUrl}\n\nPuzzle Code: ${displayCode}`;
+  const pbLine = prevBest ? `\nBeat my previous time of ${formatTime(prevBest)}!` : "";
+
+  const text = `${headline}\n\n${typeName} • ${diffLabel} • ${timeStr}${pbLine}\n\nCan you beat this time?\n\nPlay: ${shareUrl}\n\nPuzzle Code: ${displayCode}`;
 
   return { text, url: shareUrl, displayCode };
 }
@@ -116,15 +122,16 @@ const CompletionPanel = ({
   const [statsVisible, setStatsVisible] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const native = isNativeApp();
 
   const { shouldShow: paywallOpen, dismiss: dismissPaywall, checkAfterSolve } = usePaywallTiming();
 
   const origin = getPuzzleOrigin();
   const isDaily = origin === "daily";
-  const shareData = buildShareData({ category, seed, difficulty, time, isDaily, dailyCode });
   const ratingDelta = useRatingDelta();
   const personalBest = usePersonalBest(category, difficulty, time, assisted);
+  const shareData = buildShareData({ category, seed, difficulty, time, isDaily, dailyCode, prevBest: personalBest?.prev });
   const streak = useMemo(() => getDailyStreak(), []);
 
   const score = useMemo(() => {
@@ -146,8 +153,33 @@ const CompletionPanel = ({
     shareUrl: shareData?.url,
   });
 
+  // Daily rank query
+  const { data: dailyRank } = useQuery({
+    queryKey: ["daily-rank", dailyCode],
+    enabled: isDaily && !!dailyCode,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("daily_scores")
+        .select("solve_time")
+        .eq("date_str", dailyCode!)
+        .order("solve_time", { ascending: true });
+      if (!data || data.length === 0) return null;
+      const rank = data.findIndex((r) => r.solve_time >= time) + 1;
+      return { rank: rank || data.length + 1, total: data.length };
+    },
+    staleTime: 30_000,
+  });
+
   useEffect(() => {
-    hapticSuccess();
+    // Conditional haptics
+    if (isNewBest) {
+      hapticPB();
+    } else if (["hard", "extreme", "insane"].includes(difficulty)) {
+      hapticHardComplete();
+    } else {
+      hapticSuccess();
+    }
+
     const id = requestAnimationFrame(() => setVisible(true));
     const t1 = setTimeout(() => setStatsVisible(true), 300);
 
@@ -155,12 +187,17 @@ const CompletionPanel = ({
       checkAfterSolve(difficulty);
     }
 
+    // App rating prompt (fire-and-forget)
+    const records = getSolveRecords();
+    maybeRequestRating({ solveCount: records.length, isNewBest, streakLength: streak.current });
+
     if (isNewBest) {
+      setShareOpen(true);
       const t2 = setTimeout(() => setShowConfetti(true), 400);
       return () => { cancelAnimationFrame(id); clearTimeout(t1); clearTimeout(t2); };
     }
     return () => { cancelAnimationFrame(id); clearTimeout(t1); };
-  }, [isNewBest, difficulty, assisted, checkAfterSolve]);
+  }, [isNewBest, difficulty, assisted, checkAfterSolve, streak.current]);
 
   const handleShare = async () => {
     if (!shareData) return;
@@ -335,6 +372,19 @@ const CompletionPanel = ({
           </div>
         )}
 
+        {/* Daily rank */}
+        {isDaily && dailyRank && (
+          <div className={cn(
+            "mx-4 mb-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/40 transition-all duration-700",
+            statsVisible ? "opacity-100" : "opacity-0",
+          )}>
+            <Trophy size={13} className="text-muted-foreground shrink-0" />
+            <span className="text-sm text-muted-foreground">
+              You ranked <span className="font-semibold text-foreground">#{dailyRank.rank}</span> of {dailyRank.total} player{dailyRank.total !== 1 ? "s" : ""} today
+            </span>
+          </div>
+        )}
+
         {assisted && (
           <p className="text-xs text-muted-foreground mx-4 mb-3">
             Hints were used — this solve won't count toward your best time or streak.
@@ -380,7 +430,7 @@ const CompletionPanel = ({
             </Button>
           </div>
 
-          {shareData && (
+          {shareData && (shareOpen || !isNewBest) && (
             <div className={cn(
               "mt-3 rounded-lg bg-muted/50 px-3 py-2.5 space-y-1 transition-all duration-500",
               statsVisible ? "opacity-100" : "opacity-0",
