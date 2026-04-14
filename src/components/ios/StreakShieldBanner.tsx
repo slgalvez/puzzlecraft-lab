@@ -24,6 +24,8 @@ export function StreakShieldBanner({
   const { showUpgradeCTA } = usePremiumAccess();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
+  const highStake = streakLength > 7;
+
   // State A — shield auto-fired last night
   if (shieldAutoUsedLastNight) {
     return (
@@ -54,30 +56,45 @@ export function StreakShieldBanner({
     );
   }
 
-  // State B — has shield, just show pill
+  // State B — has shield, styled pill with amber tint for high-stake streaks
   if (hasShield) {
     return (
-      <div className="flex items-center justify-center gap-1.5 py-1">
-        <Shield size={11} className="text-primary/60" />
-        <span className="text-[11px] text-muted-foreground">
+      <div
+        className={cn(
+          "flex items-center justify-center gap-1.5 py-1.5 px-3 mx-auto rounded-full border",
+          highStake
+            ? "border-amber-500/30 bg-amber-500/10"
+            : "border-border/40 bg-muted/30"
+        )}
+      >
+        <Shield
+          size={11}
+          className={cn(highStake ? "text-amber-500" : "text-primary/60")}
+        />
+        <span
+          className={cn(
+            "text-[11px] font-medium",
+            highStake ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"
+          )}
+        >
           {shieldCount} Streak Shield{shieldCount > 1 ? "s" : ""} ready
         </span>
       </div>
     );
   }
 
-  // State C — no shield, streak at risk, show upgrade nudge
+  // State C — no shield, streak at risk, show upgrade nudge with concrete messaging
   if (!hasShield && !hasPlayedToday && streakLength > 3 && showUpgradeCTA) {
     return (
       <>
         <button
           onClick={() => setUpgradeOpen(true)}
-          className="flex w-full items-center justify-between rounded-2xl border border-border/50 bg-muted/30 px-4 py-3"
+          className="flex w-full items-center justify-between rounded-2xl border border-amber-500/30 bg-amber-500/5 px-4 py-3"
         >
           <div className="flex items-center gap-2">
-            <Shield size={14} className="text-muted-foreground" />
+            <Shield size={14} className="text-amber-500" />
             <span className="text-xs text-muted-foreground">
-              Protect your {streakLength}-day streak with Streak Shield
+              Your {streakLength}-day streak expires tonight
             </span>
           </div>
           <span className="text-xs font-medium text-primary">Upgrade</span>

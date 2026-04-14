@@ -145,7 +145,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     } else {
       hapticSuccess();
       onComplete();
-      navigate(`/quick-play/crossword?seed=${randomSeed()}&d=easy&onboarding=1`);
+      navigate(`/quick-play/word-search?seed=${randomSeed()}&d=easy&onboarding=1`);
     }
   };
 
