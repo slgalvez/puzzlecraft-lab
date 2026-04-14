@@ -105,16 +105,42 @@ export function WeeklyPackCard() {
 
         <div className="border-t border-border/40 px-4 py-2.5">
           {pack.isUnlocked ? (
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-1.5 rounded-full bg-border/50 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-primary transition-all duration-500"
-                  style={{ width: `${progressPct}%` }}
-                />
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-1.5 rounded-full bg-border/50 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-500"
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+                <span className="text-[10px] font-medium text-muted-foreground shrink-0">
+                  {completed}/{pack.puzzles.length} done
+                </span>
               </div>
-              <span className="text-[10px] font-medium text-muted-foreground shrink-0">
-                {completed}/{pack.puzzles.length} done
-              </span>
+              {daysRemaining != null && (
+                <div className="flex items-center gap-1">
+                  {daysRemaining < 3 && (
+                    <span className={cn(
+                      "inline-block w-1.5 h-1.5 rounded-full",
+                      daysRemaining < 1 ? "bg-destructive" : "bg-amber-500"
+                    )} />
+                  )}
+                  <span className={cn(
+                    "text-[10px]",
+                    daysRemaining < 1
+                      ? "font-medium text-destructive"
+                      : daysRemaining < 3
+                      ? "font-medium text-amber-600 dark:text-amber-400"
+                      : "text-muted-foreground"
+                  )}>
+                    {daysRemaining < 1
+                      ? "Ends today"
+                      : daysRemaining === 1
+                      ? "Ends tomorrow"
+                      : `Ends in ${daysRemaining} days`}
+                  </span>
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex items-center justify-between">
