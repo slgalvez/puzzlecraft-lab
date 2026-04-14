@@ -83,13 +83,25 @@ Deno.serve(async (req: Request) => {
         const customerId = invoice.customer as string;
         if (!customerId) break;
 
+        // Fix 1: Guard — don't overwrite admin-granted access
+        const { data: paidProfile } = await supabase
+          .from("user_profiles")
+          .select("id, subscription_platform")
+          .eq("stripe_customer_id", customerId)
+          .single();
+
+        if (paidProfile?.subscription_platform === "admin_grant") {
+          console.log(`[stripe-webhook] Skipping invoice.paid — user ${paidProfile.id} has admin_grant`);
+          break;
+        }
+
         let expiresAt: string | null = null;
         if (invoice.subscription) {
           const sub = await stripe.subscriptions.retrieve(invoice.subscription as string);
           expiresAt = new Date(sub.current_period_end * 1000).toISOString();
         }
 
-        const { error } = await supabase
+        const { error, count } = await supabase
           .from("user_profiles")
           .update({
             subscribed: true,
@@ -97,8 +109,13 @@ Deno.serve(async (req: Request) => {
           })
           .eq("stripe_customer_id", customerId);
 
-        if (error) console.error("[stripe-webhook] invoice.paid DB error:", error);
-        else console.log(`[stripe-webhook] Renewed subscription for customer ${customerId}`);
+        if (error) {
+          console.error("[stripe-webhook] invoice.paid DB error:", error);
+        } else if (count === 0) {
+          console.warn(`[stripe-webhook] invoice.paid — 0 rows updated for customer ${customerId} (user may not exist)`);
+        } else {
+          console.log(`[stripe-webhook] Renewed subscription for customer ${customerId} (user ${paidProfile?.id ?? "unknown"})`);
+        }
         break;
       }
 
@@ -118,9 +135,10 @@ Deno.serve(async (req: Request) => {
           break;
         }
 
+        // Fix 4: Clean up subscription_expires_at on deletion
         const { error } = await supabase
           .from("user_profiles")
-          .update({ subscribed: false })
+          .update({ subscribed: false, subscription_expires_at: null })
           .eq("stripe_customer_id", customerId);
 
         if (error) console.error("[stripe-webhook] deletion DB error:", error);
@@ -144,13 +162,26 @@ Deno.serve(async (req: Request) => {
           break;
         }
 
+        // Fix 2: Only revoke if Stripe has fully canceled — not during retry period
+        if (invoice.subscription) {
+          const sub = await stripe.subscriptions.retrieve(invoice.subscription as string);
+          if (sub.status === "past_due" || sub.status === "unpaid") {
+            console.log(`[stripe-webhook] payment_failed but sub status is ${sub.status} — Stripe still retrying, skipping revoke for customer ${customerId}`);
+            break;
+          }
+          if (sub.status !== "canceled") {
+            console.log(`[stripe-webhook] payment_failed with sub status ${sub.status} — not revoking for customer ${customerId}`);
+            break;
+          }
+        }
+
         const { error } = await supabase
           .from("user_profiles")
           .update({ subscribed: false })
           .eq("stripe_customer_id", customerId);
 
         if (error) console.error("[stripe-webhook] payment_failed DB error:", error);
-        else console.log(`[stripe-webhook] Revoked subscription (payment failed) for customer ${customerId}`);
+        else console.log(`[stripe-webhook] Revoked subscription (payment failed, sub canceled) for customer ${customerId}`);
         break;
       }
 

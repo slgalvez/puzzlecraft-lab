@@ -88,8 +88,8 @@ Deno.serve(async (req: Request) => {
     const isExpired = expiresAt !== null && expiresAt <= now;
     const activeSubscription = profile.subscribed === true && !isExpired;
 
-    // Auto-revoke expired subscriptions
-    if (profile.subscribed && isExpired) {
+    // Auto-revoke expired subscriptions (Fix 3: skip admin_grant users)
+    if (profile.subscribed && isExpired && profile.subscription_platform !== 'admin_grant') {
       await supabase
         .from("user_profiles")
         .update({ subscribed: false })
