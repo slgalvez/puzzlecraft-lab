@@ -955,6 +955,7 @@ export type Database = {
     }
     Functions: {
       generate_friend_code: { Args: never; Returns: string }
+      is_admin_granted: { Args: { _user_id: string }; Returns: boolean }
       upsert_leaderboard_entry: {
         Args: {
           p_display_name: string
