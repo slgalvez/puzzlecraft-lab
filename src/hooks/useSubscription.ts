@@ -12,8 +12,8 @@ import { useUserAccount } from "@/contexts/UserAccountContext";
 
 // ── Config ────────────────────────────────────────────────────────────────
 
-const STRIPE_MONTHLY_PRICE_ID = import.meta.env.VITE_STRIPE_MONTHLY_PRICE_ID ?? "";
-const STRIPE_ANNUAL_PRICE_ID  = import.meta.env.VITE_STRIPE_ANNUAL_PRICE_ID ?? "";
+const STRIPE_MONTHLY_PRICE_ID = "price_1TDHYZI2mQ3QaWmEly0lqHqQ";
+const STRIPE_ANNUAL_PRICE_ID  = "price_1TMDohI2mQ3QaWmEMXCAR3FH";
 
 const RC_ENTITLEMENT_ID = "puzzlecraft_plus";
 
