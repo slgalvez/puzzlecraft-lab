@@ -69,7 +69,7 @@ export default defineConfig(({ mode }) => ({
   ].filter(Boolean),
   build: {
     rollupOptions: {
-      external: ["@revenuecat/purchases-capacitor", "@capacitor/browser"],
+      external: ["@revenuecat/purchases-capacitor", "@capacitor/browser", "@nicepng/capacitor-in-app-review"],
     },
   },
   resolve: {
