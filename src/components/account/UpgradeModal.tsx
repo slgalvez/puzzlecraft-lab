@@ -14,6 +14,7 @@ import {
   Crown, Check, Star, Zap, BarChart2, Shield,
   Infinity as InfinityIcon, X, RefreshCw, Bell,
 } from "lucide-react";
+import UpgradeModalNextUI from "./UpgradeModalNextUI";
 import { cn } from "@/lib/utils";
 import { useSubscription } from "@/hooks/useSubscription";
 import { isNativeApp } from "@/lib/appMode";
@@ -50,7 +51,30 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
   const { purchase, restore, purchasing, result, errorMessage } = useSubscription();
   const native = isNativeApp();
 
+  const showNext =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("paywall") === "new";
+
   if (!open) return null;
+
+  // ── Pre-launch, stripe-missing, and success states handled here (single source of truth) ──
+
+  // If showNext flag is active and we're past early returns, delegate to new UI
+  if (showNext && PUZZLECRAFT_PLUS_LAUNCHED && STRIPE_CONFIGURED && result !== "success") {
+    return (
+      <UpgradeModalNextUI
+        annual={annual}
+        setAnnual={setAnnual}
+        purchasing={purchasing}
+        result={result}
+        errorMessage={errorMessage}
+        native={native}
+        onPurchase={() => purchase(annual)}
+        onRestore={() => restore()}
+        onClose={onClose}
+      />
+    );
+  }
 
   // ── Pre-launch Coming Soon ──
   if (!PUZZLECRAFT_PLUS_LAUNCHED) {
