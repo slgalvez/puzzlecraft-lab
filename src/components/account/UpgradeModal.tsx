@@ -25,8 +25,7 @@ import { Button } from "@/components/ui/button";
 // ── Stripe configured check ───────────────────────────────────────────────
 // If price IDs are absent, payment is not yet wired. Show Coming Soon instead.
 
-const STRIPE_CONFIGURED =
-  !!(import.meta.env.VITE_STRIPE_MONTHLY_PRICE_ID && import.meta.env.VITE_STRIPE_ANNUAL_PRICE_ID);
+const STRIPE_CONFIGURED = true;
 
 // ── Features list ─────────────────────────────────────────────────────────
 

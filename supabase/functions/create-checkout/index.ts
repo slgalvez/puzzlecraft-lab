@@ -7,7 +7,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const DEFAULT_PRICE_ID = "price_1TDHYZI2mQ3QaWmEly0lqHqQ";
+const MONTHLY_PRICE_ID = "price_1TDHYZI2mQ3QaWmEly0lqHqQ";
+const ANNUAL_PRICE_ID  = "price_1TMDohI2mQ3QaWmEMXCAR3FH";
+
+const VALID_PRICES = new Set([MONTHLY_PRICE_ID, ANNUAL_PRICE_ID]);
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -20,35 +23,25 @@ serve(async (req) => {
   );
 
   try {
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("No authorization header");
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
     if (!user?.email) throw new Error("User not authenticated");
 
-    // Accept optional body params from useSubscription
-    let priceId = DEFAULT_PRICE_ID;
-    let successUrl = `${req.headers.get("origin")}/account?subscribed=1`;
-    let cancelUrl = `${req.headers.get("origin")}/account`;
-
-    try {
-      const body = await req.json();
-      if (body.priceId) priceId = body.priceId;
-      if (body.successUrl) successUrl = body.successUrl;
-      if (body.cancelUrl) cancelUrl = body.cancelUrl;
-    } catch {
-      // No body — use defaults
-    }
+    const body = await req.json().catch(() => ({}));
+    const priceId = VALID_PRICES.has(body.priceId) ? body.priceId : MONTHLY_PRICE_ID;
+    const origin = req.headers.get("origin") || "https://puzzlecraft-lab.lovable.app";
+    const successUrl = body.successUrl || `${origin}/account?subscribed=1`;
+    const cancelUrl  = body.cancelUrl  || `${origin}/account`;
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
 
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    let customerId;
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
-    }
+    const customerId = customers.data.length > 0 ? customers.data[0].id : undefined;
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -57,6 +50,7 @@ serve(async (req) => {
       mode: "subscription",
       success_url: successUrl,
       cancel_url: cancelUrl,
+      client_reference_id: user.id,
       subscription_data: {
         metadata: { supabase_user_id: user.id },
       },
