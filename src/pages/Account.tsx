@@ -24,7 +24,7 @@ import {
   BarChart3, Trophy, HelpCircle, LogOut, ExternalLink,
 } from "lucide-react";
 import UpgradeModal from "@/components/account/UpgradeModal";
-import { hasPremiumAccess, shouldShowUpgradeCTA, PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
+import { hasPremiumAccess, shouldShowUpgradeCTA, usePremiumAccess, PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 import { toast } from "sonner";
@@ -99,8 +99,7 @@ export default function AccountPage() {
 
   if (account) {
     const isAdmin = account.isAdmin;
-    const premiumAccess = hasPremiumAccess({ subscribed, isAdmin });
-    const showUpgrade = shouldShowUpgradeCTA({ subscribed, isAdmin });
+    const { isPremium: premiumAccess, showUpgradeCTA: showUpgrade } = usePremiumAccess();
     const initial = (account.displayName || account.email)[0]?.toUpperCase();
 
     return (
@@ -194,7 +193,7 @@ export default function AccountPage() {
           </div>
 
           {/* ── Puzzlecraft+ — ACTIVE (subscriber view) ── */}
-          {(subscribed || isAdmin) && (
+          {premiumAccess && (
             <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">

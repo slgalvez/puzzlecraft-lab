@@ -57,18 +57,31 @@ export const FREE_ENDLESS_SESSION_CAP = 10; // puzzles per session (only used if
 
 // ─── Core access check ───────────────────────────────────────────────────────
 
-type GateAccount = { isAdmin?: boolean; subscribed?: boolean } | null;
+type GateAccount = {
+  isAdmin?: boolean;
+  subscribed?: boolean;
+  subscription_platform?: string | null;
+  subscription_expires_at?: string | null;
+} | null;
 
 /**
  * Returns true if this account has active Puzzlecraft+ access.
  *
+ * Delegates to resolveEntitlement() so the full resolution order
+ * (admin flag → admin_grant platform → active Stripe) is respected.
+ *
  * When LAUNCHED = false: any signed-in user passes (pre-launch mode).
- * When LAUNCHED = true:  requires isAdmin=true OR subscribed=true.
+ * When LAUNCHED = true:  runs through resolveEntitlement().
  */
 export function hasPremiumAccess(account: GateAccount): boolean {
   if (!PUZZLECRAFT_PLUS_LAUNCHED) return !!account; // pre-launch: signed-in = full access
   if (!account)                   return false;
-  return !!(account.isAdmin || account.subscribed);
+  return resolveEntitlement({
+    subscribed: !!account.subscribed,
+    subscription_platform: account.subscription_platform ?? null,
+    subscription_expires_at: account.subscription_expires_at ?? null,
+    is_admin: !!account.isAdmin,
+  }).hasPlus;
 }
 
 /**
@@ -244,9 +257,11 @@ export function usePremiumAccess(): PremiumAccessState {
   // Loading = auth session resolving OR server subscription check running
   const loading = !!(accountLoading || checkingSubscription);
 
-  // Build the gate account shape
+  // Build the gate account shape — includes subscription fields for resolveEntitlement()
   const gateAccount: GateAccount = account
-    ? { isAdmin: account.isAdmin, subscribed }
+    ? { isAdmin: account.isAdmin, subscribed,
+        subscription_platform: account.subscription_platform,
+        subscription_expires_at: account.subscription_expires_at }
     : null;
 
   const isPremium      = loading ? false : hasPremiumAccess(gateAccount);
