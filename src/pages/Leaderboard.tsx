@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/layout/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserAccount } from "@/contexts/UserAccountContext";
+import { usePremiumAccess } from "@/lib/premiumAccess";
 import { cn } from "@/lib/utils";
 import { Trophy, Medal, Shield, TrendingUp, TrendingDown, Zap, ArrowRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,7 +22,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Link } from "react-router-dom";
 import { getSolveRecords } from "@/lib/solveTracker";
 import { computePlayerRating, getSkillTier, getTierColor, getTierProgress } from "@/lib/solveScoring";
-import { hasPremiumAccess } from "@/lib/premiumAccess";
+
 
 interface LeaderboardEntry {
   user_id: string;
@@ -87,9 +88,8 @@ function RatingChange({ current, previous }: { current: number; previous: number
 }
 
 export default function Leaderboard() {
-  const { account, subscribed, checkingSubscription } = useUserAccount();
-  const isAdmin = account?.isAdmin ?? false;
-  const premiumAccess = hasPremiumAccess({ subscribed, isAdmin });
+  const { account } = useUserAccount();
+  const { isPremium: premiumAccess } = usePremiumAccess();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
 
   const { data: entries, isLoading } = useQuery({

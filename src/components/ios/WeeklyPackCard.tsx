@@ -18,7 +18,7 @@ export function WeeklyPackCard() {
     fetchDbCustomPacks().then(() => setReady(true));
   }, []);
 
-  const pack = useMemo(() => getCurrentWeeklyPack(null), [ready]);
+  const pack = useMemo(() => getCurrentWeeklyPack(isPremium ? { subscribed: true } : null), [isPremium, ready]);
   const completed = getPackCompletionCount(pack.id);
   const progressPct = (completed / pack.puzzles.length) * 100;
 

@@ -27,6 +27,8 @@ export interface UserAccount {
   displayName: string | null;
   isPremium: boolean;
   isAdmin: boolean;
+  subscription_platform: string | null;
+  subscription_expires_at: string | null;
 }
 
 interface UserAccountContextType {
@@ -77,7 +79,7 @@ function getLocalBlob(key: string, fallback: any = []) {
 async function fetchProfile(userId: string): Promise<UserAccount | null> {
   const { data } = await supabase
     .from("user_profiles")
-    .select("display_name, is_premium, subscribed, is_admin")
+    .select("display_name, is_premium, subscribed, is_admin, subscription_platform, subscription_expires_at")
     .eq("id", userId)
     .single();
   if (!data) return null;
@@ -88,6 +90,8 @@ async function fetchProfile(userId: string): Promise<UserAccount | null> {
     displayName: (data as any).display_name,
     isPremium:   !!((data as any).is_premium || (data as any).subscribed),
     isAdmin:     !!((data as any).is_admin),
+    subscription_platform:   (data as any).subscription_platform ?? null,
+    subscription_expires_at: (data as any).subscription_expires_at ?? null,
   };
 }
 
