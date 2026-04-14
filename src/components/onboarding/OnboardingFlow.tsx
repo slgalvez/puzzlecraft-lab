@@ -240,7 +240,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         {isLast && (
           <div className="w-full max-w-sm space-y-2 mb-6 text-center">
             <p className="text-sm text-muted-foreground">
-              We'll start you with an easy crossword — no account needed.
+              We'll start you with an easy word search — no account needed.
             </p>
             <p className="text-xs text-muted-foreground/60">
               Sign up any time to save your streak and progress.
