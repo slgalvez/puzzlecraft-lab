@@ -121,7 +121,7 @@ Deno.serve(async (req: Request) => {
           break;
         }
 
-        // Fix 1: Guard — don't overwrite admin-granted access
+        // Guard — don't overwrite admin-granted access
         const { data: paidProfile } = await supabase
           .from("user_profiles")
           .select("id, subscription_platform")
@@ -136,13 +136,25 @@ Deno.serve(async (req: Request) => {
           break;
         }
 
-        let expiresAt: string | null = null;
-        if (invoice.subscription) {
-          const sub = await stripe.subscriptions.retrieve(invoice.subscription as string);
-          expiresAt = new Date(sub.current_period_end * 1000).toISOString();
+        // Hard skip if not a subscription invoice
+        if (!invoice.subscription) {
+          console.log(`[stripe-webhook] invoice.paid — no subscription field, skipping for customer ${customerId}`);
+          auditStatus = "skipped";
+          break;
         }
 
-        const { error, count } = await supabase
+        const sub = await stripe.subscriptions.retrieve(invoice.subscription as string);
+
+        // Only renew for active or trialing subscriptions
+        if (sub.status !== "active" && sub.status !== "trialing") {
+          console.log(`[stripe-webhook] invoice.paid — sub status is ${sub.status}, skipping renewal for customer ${customerId}`);
+          auditStatus = "skipped";
+          break;
+        }
+
+        const expiresAt = new Date(sub.current_period_end * 1000).toISOString();
+
+        const { error } = await supabase
           .from("user_profiles")
           .update({
             subscribed: true,
@@ -152,10 +164,8 @@ Deno.serve(async (req: Request) => {
 
         if (error) {
           console.error("[stripe-webhook] invoice.paid DB error:", error);
-        } else if (count === 0) {
-          console.warn(`[stripe-webhook] invoice.paid — 0 rows updated for customer ${customerId} (user may not exist)`);
         } else {
-          console.log(`[stripe-webhook] Renewed subscription for customer ${customerId} (user ${paidProfile?.id ?? "unknown"})`);
+          console.log(`[stripe-webhook] Renewed subscription for customer ${customerId} (user ${paidProfile?.id ?? "unknown"}, expires ${expiresAt})`);
         }
         break;
       }
@@ -223,19 +233,21 @@ Deno.serve(async (req: Request) => {
           break;
         }
 
-        // Fix 2: Only revoke if Stripe has fully canceled — not during retry period
-        if (invoice.subscription) {
-          const sub = await stripe.subscriptions.retrieve(invoice.subscription as string);
-          if (sub.status === "past_due" || sub.status === "unpaid") {
-            console.log(`[stripe-webhook] payment_failed but sub status is ${sub.status} — Stripe still retrying, skipping revoke for customer ${customerId}`);
-            auditStatus = "skipped";
-            break;
-          }
-          if (sub.status !== "canceled") {
-            console.log(`[stripe-webhook] payment_failed with sub status ${sub.status} — not revoking for customer ${customerId}`);
-            auditStatus = "skipped";
-            break;
-          }
+        // Skip if not a subscription invoice
+        if (!invoice.subscription) {
+          console.log(`[stripe-webhook] payment_failed — no subscription field, skipping for customer ${customerId}`);
+          auditStatus = "skipped";
+          break;
+        }
+
+        const sub = await stripe.subscriptions.retrieve(invoice.subscription as string);
+        console.log(`[stripe-webhook] payment_failed — sub status is ${sub.status} for customer ${customerId}`);
+
+        // Only revoke if Stripe has fully canceled — not during retry period
+        if (sub.status !== "canceled") {
+          console.log(`[stripe-webhook] payment_failed — sub not canceled (${sub.status}), skipping revoke for customer ${customerId}`);
+          auditStatus = "skipped";
+          break;
         }
 
         const { error } = await supabase
@@ -244,7 +256,7 @@ Deno.serve(async (req: Request) => {
           .eq("stripe_customer_id", customerId);
 
         if (error) console.error("[stripe-webhook] payment_failed DB error:", error);
-        else console.log(`[stripe-webhook] Revoked subscription (payment failed, sub canceled) for customer ${customerId}`);
+        else console.log(`[stripe-webhook] Revoked subscription (canceled after payment failed) for customer ${customerId}`);
         break;
       }
 
