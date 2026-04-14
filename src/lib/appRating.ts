@@ -25,13 +25,13 @@ export async function maybeRequestRating({ solveCount, isNewBest, streakLength }
   if (last && Date.now() - Number(last) < COOLDOWN_MS) return;
 
   try {
-    const { InAppReview } = await import("@nicepng/capacitor-in-app-review" as any).catch(() =>
-      import("@nicepng/capacitor-in-app-review" as any)
-    ).catch(() => ({ InAppReview: null }));
+    // Use variable to prevent Vite's static import analysis from resolving the module
+    const moduleName = "@nicepng/capacitor-in-app-review";
+    const mod = await new Function("m", "return import(m)")(moduleName).catch(() => null);
 
-    if (!InAppReview?.requestReview) return;
+    if (!mod?.InAppReview?.requestReview) return;
 
-    await InAppReview.requestReview();
+    await mod.InAppReview.requestReview();
     localStorage.setItem(COOLDOWN_KEY, String(Date.now()));
   } catch {
     // Silent — plugin not installed or web environment
