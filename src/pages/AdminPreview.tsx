@@ -8,6 +8,7 @@ import PremiumStats from "@/components/account/PremiumStats";
 import { StatsPremiumPreview, LoginPremiumPreview } from "@/components/account/PremiumPreview";
 import PremiumLockedCard from "@/components/account/PremiumLockedCard";
 import UpgradeModal from "@/components/account/UpgradeModal";
+import UpgradeModalNextUI from "@/components/account/UpgradeModalNextUI";
 
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import CraftThemePicker from "@/components/craft/CraftThemePicker";
@@ -1554,6 +1555,8 @@ export default function AdminPreview() {
 
   // ── Premium / modals state ──
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradeNextOpen, setUpgradeNextOpen] = useState(false);
+  const [upgradeNextAnnual, setUpgradeNextAnnual] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   const handleAchieve = useCallback((id: string) => {
@@ -1913,9 +1916,14 @@ export default function AdminPreview() {
               <p className="text-xs text-muted-foreground">
                 The Puzzlecraft+ upsell modal. Shows pricing, features, purchase CTA, and restore button.
               </p>
-              <Button size="sm" onClick={() => setUpgradeOpen(true)}>
-                Open Upgrade Modal
-              </Button>
+              <div className="flex gap-2 flex-wrap">
+                <Button size="sm" onClick={() => setUpgradeOpen(true)}>
+                  Open Current Modal
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setUpgradeNextOpen(true)}>
+                  Open New Paywall (preview)
+                </Button>
+              </div>
             </section>
 
             {/* ── Premium Gate Component ── */}
@@ -2382,6 +2390,19 @@ export default function AdminPreview() {
 
       {/* ── Global overlays ── */}
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+      {upgradeNextOpen && (
+        <UpgradeModalNextUI
+          annual={upgradeNextAnnual}
+          setAnnual={setUpgradeNextAnnual}
+          purchasing={false}
+          result="idle"
+          errorMessage={null}
+          native={false}
+          onPurchase={() => {}}
+          onRestore={() => {}}
+          onClose={() => setUpgradeNextOpen(false)}
+        />
+      )}
       
 
       {/* ── Onboarding overlay ── */}
