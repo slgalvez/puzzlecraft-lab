@@ -372,6 +372,19 @@ const CompletionPanel = ({
           </div>
         )}
 
+        {/* Daily rank */}
+        {isDaily && dailyRank && (
+          <div className={cn(
+            "mx-4 mb-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/40 transition-all duration-700",
+            statsVisible ? "opacity-100" : "opacity-0",
+          )}>
+            <Trophy size={13} className="text-muted-foreground shrink-0" />
+            <span className="text-sm text-muted-foreground">
+              You ranked <span className="font-semibold text-foreground">#{dailyRank.rank}</span> of {dailyRank.total} player{dailyRank.total !== 1 ? "s" : ""} today
+            </span>
+          </div>
+        )}
+
         {assisted && (
           <p className="text-xs text-muted-foreground mx-4 mb-3">
             Hints were used — this solve won't count toward your best time or streak.
@@ -417,7 +430,7 @@ const CompletionPanel = ({
             </Button>
           </div>
 
-          {shareData && (
+          {shareData && (shareOpen || !isNewBest) && (
             <div className={cn(
               "mt-3 rounded-lg bg-muted/50 px-3 py-2.5 space-y-1 transition-all duration-500",
               statsVisible ? "opacity-100" : "opacity-0",
