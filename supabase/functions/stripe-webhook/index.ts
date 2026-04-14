@@ -10,6 +10,27 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
 );
 
+async function logWebhookEvent(fields: {
+  event_id: string;
+  event_type: string;
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
+  supabase_user_id?: string | null;
+  status: "success" | "skipped" | "error";
+  error_message?: string | null;
+}) {
+  const { error } = await supabase.from("webhook_events").insert({
+    event_id: fields.event_id,
+    event_type: fields.event_type,
+    stripe_customer_id: fields.stripe_customer_id ?? null,
+    stripe_subscription_id: fields.stripe_subscription_id ?? null,
+    supabase_user_id: fields.supabase_user_id ?? null,
+    status: fields.status,
+    error_message: fields.error_message ?? null,
+  });
+  if (error) console.error("[stripe-webhook] Audit log insert failed:", error);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
@@ -33,13 +54,23 @@ Deno.serve(async (req: Request) => {
 
   console.log(`[stripe-webhook] Received event: ${event.type}`);
 
+  let auditCustomerId: string | null = null;
+  let auditSubscriptionId: string | null = null;
+  let auditUserId: string | null = null;
+  let auditStatus: "success" | "skipped" | "error" = "success";
+
   try {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.client_reference_id || session.metadata?.supabase_user_id;
+        auditCustomerId = (session.customer as string) || null;
+        auditSubscriptionId = (session.subscription as string) || null;
+        auditUserId = userId || null;
+
         if (!userId) {
           console.error("[stripe-webhook] No user ID in checkout session");
+          auditStatus = "skipped";
           break;
         }
 
@@ -51,6 +82,7 @@ Deno.serve(async (req: Request) => {
           .single();
         if (existingProfile?.subscription_platform === "admin_grant") {
           console.log(`[stripe-webhook] Skipping checkout — user ${userId} has admin_grant`);
+          auditStatus = "skipped";
           break;
         }
 
@@ -81,7 +113,13 @@ Deno.serve(async (req: Request) => {
       case "invoice.paid": {
         const invoice = event.data.object as Stripe.Invoice;
         const customerId = invoice.customer as string;
-        if (!customerId) break;
+        auditCustomerId = customerId || null;
+        auditSubscriptionId = (invoice.subscription as string) || null;
+
+        if (!customerId) {
+          auditStatus = "skipped";
+          break;
+        }
 
         // Fix 1: Guard — don't overwrite admin-granted access
         const { data: paidProfile } = await supabase
@@ -90,8 +128,11 @@ Deno.serve(async (req: Request) => {
           .eq("stripe_customer_id", customerId)
           .single();
 
+        auditUserId = paidProfile?.id ?? null;
+
         if (paidProfile?.subscription_platform === "admin_grant") {
           console.log(`[stripe-webhook] Skipping invoice.paid — user ${paidProfile.id} has admin_grant`);
+          auditStatus = "skipped";
           break;
         }
 
@@ -122,16 +163,26 @@ Deno.serve(async (req: Request) => {
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
-        if (!customerId) break;
+        auditCustomerId = customerId || null;
+        auditSubscriptionId = subscription.id || null;
+
+        if (!customerId) {
+          auditStatus = "skipped";
+          break;
+        }
 
         // Guard: don't revoke admin-granted access (also protected by DB trigger)
         const { data: profileToRevoke } = await supabase
           .from("user_profiles")
-          .select("subscription_platform")
+          .select("id, subscription_platform")
           .eq("stripe_customer_id", customerId)
           .single();
+
+        auditUserId = profileToRevoke?.id ?? null;
+
         if (profileToRevoke?.subscription_platform === "admin_grant") {
           console.log(`[stripe-webhook] Skipping deletion — customer ${customerId} has admin_grant`);
+          auditStatus = "skipped";
           break;
         }
 
@@ -149,16 +200,26 @@ Deno.serve(async (req: Request) => {
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
         const customerId = invoice.customer as string;
-        if (!customerId) break;
+        auditCustomerId = customerId || null;
+        auditSubscriptionId = (invoice.subscription as string) || null;
+
+        if (!customerId) {
+          auditStatus = "skipped";
+          break;
+        }
 
         // Guard: don't revoke admin-granted access
         const { data: failedProfile } = await supabase
           .from("user_profiles")
-          .select("subscription_platform")
+          .select("id, subscription_platform")
           .eq("stripe_customer_id", customerId)
           .single();
+
+        auditUserId = failedProfile?.id ?? null;
+
         if (failedProfile?.subscription_platform === "admin_grant") {
           console.log(`[stripe-webhook] Skipping payment_failed — customer ${customerId} has admin_grant`);
+          auditStatus = "skipped";
           break;
         }
 
@@ -167,10 +228,12 @@ Deno.serve(async (req: Request) => {
           const sub = await stripe.subscriptions.retrieve(invoice.subscription as string);
           if (sub.status === "past_due" || sub.status === "unpaid") {
             console.log(`[stripe-webhook] payment_failed but sub status is ${sub.status} — Stripe still retrying, skipping revoke for customer ${customerId}`);
+            auditStatus = "skipped";
             break;
           }
           if (sub.status !== "canceled") {
             console.log(`[stripe-webhook] payment_failed with sub status ${sub.status} — not revoking for customer ${customerId}`);
+            auditStatus = "skipped";
             break;
           }
         }
@@ -190,8 +253,26 @@ Deno.serve(async (req: Request) => {
     }
   } catch (err) {
     console.error("[stripe-webhook] Processing error:", err);
+    await logWebhookEvent({
+      event_id: event.id,
+      event_type: event.type,
+      stripe_customer_id: auditCustomerId,
+      stripe_subscription_id: auditSubscriptionId,
+      supabase_user_id: auditUserId,
+      status: "error",
+      error_message: err instanceof Error ? err.message : String(err),
+    });
     return new Response("Webhook processing error", { status: 500 });
   }
+
+  await logWebhookEvent({
+    event_id: event.id,
+    event_type: event.type,
+    stripe_customer_id: auditCustomerId,
+    stripe_subscription_id: auditSubscriptionId,
+    supabase_user_id: auditUserId,
+    status: auditStatus,
+  });
 
   return new Response(JSON.stringify({ received: true }), {
     status: 200,
