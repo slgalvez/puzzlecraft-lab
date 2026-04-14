@@ -7,13 +7,16 @@ import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory 
 import { getPuzzleOrigin, getBackPath, getBackLabel } from "@/lib/puzzleOrigin";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { hapticSuccess } from "@/lib/haptic";
+import { hapticSuccess, hapticPB, hapticHardComplete } from "@/lib/haptic";
 import { getSolveRecords } from "@/lib/solveTracker";
 import { computePlayerRating, getSkillTier, getTierColor, computeSolveScore } from "@/lib/solveScoring";
 import { getDailyStreak } from "@/lib/dailyChallenge";
 import { isNativeApp } from "@/lib/appMode";
 import { usePaywallTiming } from "@/hooks/usePaywallTiming";
 import { useSolveShareCard } from "@/hooks/useSolveShareCard";
+import { maybeRequestRating } from "@/lib/appRating";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import UpgradeModal from "@/components/account/UpgradeModal";
 
 interface Props {
@@ -36,8 +39,9 @@ function buildShareData(props: {
   time: number;
   isDaily: boolean;
   dailyCode?: string;
+  prevBest?: number | null;
 }) {
-  const { category, seed, difficulty, time, isDaily, dailyCode } = props;
+  const { category, seed, difficulty, time, isDaily, dailyCode, prevBest } = props;
   if (!category || seed == null) return null;
 
   const typeName = CATEGORY_INFO[category]?.name ?? category;
@@ -53,7 +57,9 @@ function buildShareData(props: {
     ? "Just solved today's Puzzlecraft challenge 🧠"
     : "Just tackled a Puzzlecraft puzzle 🧠";
 
-  const text = `${headline}\n\n${typeName} • ${diffLabel} • ${timeStr}\n\nCan you beat this time?\n\nPlay: ${shareUrl}\n\nPuzzle Code: ${displayCode}`;
+  const pbLine = prevBest ? `\nBeat my previous time of ${formatTime(prevBest)}!` : "";
+
+  const text = `${headline}\n\n${typeName} • ${diffLabel} • ${timeStr}${pbLine}\n\nCan you beat this time?\n\nPlay: ${shareUrl}\n\nPuzzle Code: ${displayCode}`;
 
   return { text, url: shareUrl, displayCode };
 }
@@ -116,13 +122,14 @@ const CompletionPanel = ({
   const [statsVisible, setStatsVisible] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const native = isNativeApp();
 
   const { shouldShow: paywallOpen, dismiss: dismissPaywall, checkAfterSolve } = usePaywallTiming();
 
   const origin = getPuzzleOrigin();
   const isDaily = origin === "daily";
-  const shareData = buildShareData({ category, seed, difficulty, time, isDaily, dailyCode });
+  const shareData = buildShareData({ category, seed, difficulty, time, isDaily, dailyCode, prevBest: personalBest?.prev });
   const ratingDelta = useRatingDelta();
   const personalBest = usePersonalBest(category, difficulty, time, assisted);
   const streak = useMemo(() => getDailyStreak(), []);
@@ -146,8 +153,33 @@ const CompletionPanel = ({
     shareUrl: shareData?.url,
   });
 
+  // Daily rank query
+  const { data: dailyRank } = useQuery({
+    queryKey: ["daily-rank", dailyCode],
+    enabled: isDaily && !!dailyCode,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("daily_scores")
+        .select("solve_time")
+        .eq("date_str", dailyCode!)
+        .order("solve_time", { ascending: true });
+      if (!data || data.length === 0) return null;
+      const rank = data.findIndex((r) => r.solve_time >= time) + 1;
+      return { rank: rank || data.length + 1, total: data.length };
+    },
+    staleTime: 30_000,
+  });
+
   useEffect(() => {
-    hapticSuccess();
+    // Conditional haptics
+    if (isNewBest) {
+      hapticPB();
+    } else if (["hard", "extreme", "insane"].includes(difficulty)) {
+      hapticHardComplete();
+    } else {
+      hapticSuccess();
+    }
+
     const id = requestAnimationFrame(() => setVisible(true));
     const t1 = setTimeout(() => setStatsVisible(true), 300);
 
@@ -155,12 +187,17 @@ const CompletionPanel = ({
       checkAfterSolve(difficulty);
     }
 
+    // App rating prompt (fire-and-forget)
+    const records = getSolveRecords();
+    maybeRequestRating({ solveCount: records.length, isNewBest, streakLength: streak.current });
+
     if (isNewBest) {
+      setShareOpen(true);
       const t2 = setTimeout(() => setShowConfetti(true), 400);
       return () => { cancelAnimationFrame(id); clearTimeout(t1); clearTimeout(t2); };
     }
     return () => { cancelAnimationFrame(id); clearTimeout(t1); };
-  }, [isNewBest, difficulty, assisted, checkAfterSolve]);
+  }, [isNewBest, difficulty, assisted, checkAfterSolve, streak.current]);
 
   const handleShare = async () => {
     if (!shareData) return;
