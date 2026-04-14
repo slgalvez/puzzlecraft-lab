@@ -1,56 +1,43 @@
 
 
-# Diagnosis: Video Call Dropped But Can't Call Back
+# Stripe Webhook for Puzzlecraft+ Subscriptions
 
-## What Happened
+## What This Does
+Creates a backend webhook endpoint that Stripe calls automatically whenever a subscription event occurs. This is the secure, server-side way to grant and revoke Puzzlecraft+ access — instead of relying on the user landing on a success URL.
 
-Your call dropped due to a WebRTC connection failure (likely a network hiccup), but the server-side call record was **never cleaned up**. There is currently a call stuck in `connected` status in the database (call ID `c38eea7e...`, connected at 00:42 UTC). When you try to start a new call, the server sees this "active" call and rejects with "A call is already active" (HTTP 409).
+## Technical Plan
 
-The root cause: when the WebRTC peer connection drops (disconnected/failed state), the client runs `cleanup()` locally (stops tracks, closes peer connection) and then tries to call `end-call` on the server. But by that point, the call state is already set to `ended` and the `endCall` guard (`if callState === "ended" return`) prevents the API call from firing. The server never learns the call ended.
+### 1. Add STRIPE_WEBHOOK_SECRET secret
+The webhook needs a signing secret to verify requests actually come from Stripe. You'll need to grab this from your Stripe Dashboard (Developers → Webhooks) after creating the endpoint. The endpoint URL will be:
+`https://nkfxdupsbxgbclsgseez.supabase.co/functions/v1/stripe-webhook`
 
-## Immediate Fix (unblock you now)
+### 2. Create edge function: `supabase/functions/stripe-webhook/index.ts`
 
-Force-end the stuck call in the database so you can call again immediately.
+Handles three Stripe events:
 
-## Code Fix (prevent recurrence)
+- **`checkout.session.completed`** — A user just finished checkout. Reads `client_reference_id` or `metadata.supabase_user_id` to find the user. Also stores the Stripe customer ID. Retrieves the subscription from Stripe to get `current_period_end`. Updates `user_profiles`: `subscribed = true`, `subscription_platform = 'stripe'`, `subscription_expires_at`, `stripe_customer_id`.
 
-**`src/hooks/useVideoCall.ts`** — Two changes:
+- **`invoice.paid`** — A renewal payment succeeded. Looks up the user by `stripe_customer_id` in `user_profiles`. Updates `subscription_expires_at` to the new `current_period_end`. Keeps `subscribed = true`.
 
-1. **In `endCall`**: The current code calls `cleanup()` first (which sets state to "ended"), then tries the API call. But the guard at the top checks `callStateRef.current === "ended"` and bails. Fix: capture the call ID before cleanup, and always send the end-call API regardless of state.
+- **`customer.subscription.deleted`** — Subscription cancelled/expired. Looks up user by `stripe_customer_id`. Sets `subscribed = false`.
 
-2. **In `scheduleRecoveryGuard` (the disconnect/fail handler)**: When the recovery timer fires and the connection is still dead, it calls `cleanup()` and sets state to `ended` — but never calls `end-call` on the server. Fix: after cleanup, also fire the `end-call` API with the captured call ID.
+Key security details:
+- Verifies Stripe signature using `stripe.webhooks.constructEventAsync()` with the webhook secret
+- Uses service role key for database writes (bypasses RLS)
+- No CORS needed (Stripe calls server-to-server)
+- No JWT verification (Stripe doesn't send auth headers)
+- Returns 200 for unhandled event types (Stripe best practice)
 
-### Specific changes:
+### 3. Configure function in `supabase/config.toml`
+Add `[functions.stripe-webhook]` with `verify_jwt = false` since Stripe sends raw POST requests without a Supabase JWT.
 
-**scheduleRecoveryGuard** (~line 228): After cleanup, also notify the server:
-```typescript
-const capturedCallId = callIdRef.current;
-// ... existing cleanup + setState ...
-if (capturedCallId) {
-  api("end-call", { call_id: capturedCallId }).catch(() => {});
-}
-```
+### 4. No frontend changes needed
+The existing `check-subscription` polling (every 60s) will automatically pick up the database changes made by the webhook. The `refreshSubscription` call on page load also catches it.
 
-**endCall** (~line 487): Capture call ID before cleanup to avoid the guard issue:
-```typescript
-const endCall = useCallback(async () => {
-  const cid = callIdRef.current;
-  if (!cid || callStateRef.current === "idle") return;
-  // Allow ending even if already "ended" state (retry)
-  diag("endCall", { callId: cid });
-  cleanup();
-  setCallState("ended");
-  try {
-    await api("end-call", { call_id: cid });
-  } catch { }
-}, [api, cleanup]);
-```
-
-### Database cleanup (migration):
-
-Run a one-time update to end the stuck call so you can call right now:
-```sql
-UPDATE calls SET status = 'ended', ended_at = NOW(), end_reason = 'stale'
-WHERE id = 'c38eea7e-dac7-43b5-ba66-9995386cee38' AND status = 'connected';
-```
+## After Deployment
+You'll need to:
+1. Go to Stripe Dashboard → Developers → Webhooks
+2. Add endpoint: `https://nkfxdupsbxgbclsgseez.supabase.co/functions/v1/stripe-webhook`
+3. Select events: `checkout.session.completed`, `invoice.paid`, `customer.subscription.deleted`
+4. Copy the signing secret and add it as `STRIPE_WEBHOOK_SECRET`
 
