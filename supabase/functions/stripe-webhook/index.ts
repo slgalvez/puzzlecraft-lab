@@ -43,6 +43,17 @@ Deno.serve(async (req: Request) => {
           break;
         }
 
+        // Guard: don't overwrite admin-granted access
+        const { data: existingProfile } = await supabase
+          .from("user_profiles")
+          .select("subscription_platform")
+          .eq("id", userId)
+          .single();
+        if (existingProfile?.subscription_platform === "admin_grant") {
+          console.log(`[stripe-webhook] Skipping checkout — user ${userId} has admin_grant`);
+          break;
+        }
+
         const customerId = session.customer as string;
         let expiresAt: string | null = null;
 
@@ -96,6 +107,17 @@ Deno.serve(async (req: Request) => {
         const customerId = subscription.customer as string;
         if (!customerId) break;
 
+        // Guard: don't revoke admin-granted access (also protected by DB trigger)
+        const { data: profileToRevoke } = await supabase
+          .from("user_profiles")
+          .select("subscription_platform")
+          .eq("stripe_customer_id", customerId)
+          .single();
+        if (profileToRevoke?.subscription_platform === "admin_grant") {
+          console.log(`[stripe-webhook] Skipping deletion — customer ${customerId} has admin_grant`);
+          break;
+        }
+
         const { error } = await supabase
           .from("user_profiles")
           .update({ subscribed: false })
@@ -103,6 +125,32 @@ Deno.serve(async (req: Request) => {
 
         if (error) console.error("[stripe-webhook] deletion DB error:", error);
         else console.log(`[stripe-webhook] Revoked subscription for customer ${customerId}`);
+        break;
+      }
+
+      case "invoice.payment_failed": {
+        const invoice = event.data.object as Stripe.Invoice;
+        const customerId = invoice.customer as string;
+        if (!customerId) break;
+
+        // Guard: don't revoke admin-granted access
+        const { data: failedProfile } = await supabase
+          .from("user_profiles")
+          .select("subscription_platform")
+          .eq("stripe_customer_id", customerId)
+          .single();
+        if (failedProfile?.subscription_platform === "admin_grant") {
+          console.log(`[stripe-webhook] Skipping payment_failed — customer ${customerId} has admin_grant`);
+          break;
+        }
+
+        const { error } = await supabase
+          .from("user_profiles")
+          .update({ subscribed: false })
+          .eq("stripe_customer_id", customerId);
+
+        if (error) console.error("[stripe-webhook] payment_failed DB error:", error);
+        else console.log(`[stripe-webhook] Revoked subscription (payment failed) for customer ${customerId}`);
         break;
       }
 

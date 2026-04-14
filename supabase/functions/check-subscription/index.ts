@@ -66,7 +66,15 @@ Deno.serve(async (req: Request) => {
     // Admins always have access
     if (profile.is_admin) {
       return new Response(
-        JSON.stringify({ subscribed: true, subscription_end: null, is_admin: true }),
+        JSON.stringify({ subscribed: true, subscription_end: null, is_admin: true, source: "admin_grant" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Admin-granted subscription (protected by DB trigger)
+    if (profile.subscription_platform === "admin_grant" && profile.subscribed) {
+      return new Response(
+        JSON.stringify({ subscribed: true, subscription_end: null, source: "admin_grant" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -93,6 +101,7 @@ Deno.serve(async (req: Request) => {
         subscribed: activeSubscription,
         subscription_end: profile.subscription_expires_at ?? null,
         platform: profile.subscription_platform ?? null,
+        source: activeSubscription ? (profile.subscription_platform || "stripe") : "none",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

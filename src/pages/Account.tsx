@@ -42,6 +42,7 @@ export default function AccountPage() {
   const {
     account, signIn, signUp, signOut,
     subscribed, subscriptionEnd, openCustomerPortal,
+    entitlementSource,
   } = useUserAccount();
 
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -205,15 +206,27 @@ export default function AccountPage() {
                 </div>
               </div>
 
-              {subscriptionEnd && (
+              {/* Source-aware subtitle */}
+              {entitlementSource === "admin_grant" && !isAdmin && (
+                <p className="text-[11px] text-muted-foreground mb-3">
+                  Granted by admin — no expiry
+                </p>
+              )}
+              {entitlementSource === "stripe" && subscriptionEnd && (
                 <p className="text-[11px] text-muted-foreground mb-3">
                   Renews {new Date(subscriptionEnd).toLocaleDateString(undefined, {
                     month: "long", day: "numeric", year: "numeric",
                   })}
                 </p>
               )}
+              {isAdmin && (
+                <p className="text-[11px] text-muted-foreground mb-3">
+                  Admin access — all features unlocked
+                </p>
+              )}
 
-              {!isAdmin && (
+              {/* Only show manage button for Stripe subscribers */}
+              {entitlementSource === "stripe" && !isAdmin && (
                 <Button
                   variant="outline"
                   size="sm"
