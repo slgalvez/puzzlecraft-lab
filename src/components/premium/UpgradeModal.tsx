@@ -29,15 +29,11 @@ import {
 } from "lucide-react";
 import { isNativeApp } from "@/lib/appMode";
 import { PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
+import { useSubscription } from "@/hooks/useSubscription";
 
-// ─── Stripe config ────────────────────────────────────────────────────────────
-// Replace with your real Stripe Payment Links
-const STRIPE_MONTHLY_URL = "https://buy.stripe.com/REPLACE_MONTHLY";
-const STRIPE_ANNUAL_URL  = "https://buy.stripe.com/REPLACE_ANNUAL";
-
-// ─── Apple IAP product IDs (for future StoreKit integration) ─────────────────
-const IAP_MONTHLY_PRODUCT = "com.puzzlecraft.plus.monthly";
-const IAP_ANNUAL_PRODUCT  = "com.puzzlecraft.plus.annual";
+// IAP product IDs kept for reference
+// const IAP_MONTHLY_PRODUCT = "com.puzzlecraft.plus.monthly";
+// const IAP_ANNUAL_PRODUCT  = "com.puzzlecraft.plus.annual";
 
 // ─── Feature list ─────────────────────────────────────────────────────────────
 const FEATURES = [
@@ -99,45 +95,20 @@ interface UpgradeModalProps {
 
 const UpgradeModal = ({ open, onClose, trigger = "generic" }: UpgradeModalProps) => {
   const [plan, setPlan] = useState<"monthly" | "annual">("annual");
-  const [loading, setLoading] = useState(false);
+  const { purchase, restore, purchasing, result, errorMessage } = useSubscription();
   const native = isNativeApp();
   const launched = PUZZLECRAFT_PLUS_LAUNCHED;
   const copy = TRIGGER_COPY[trigger];
 
-  // ── Stripe redirect (web / PWA) ────────────────────────────────────────────
-  const handleStripeCheckout = () => {
+  const handleCTA = () => {
     if (!launched) return;
-    const url = plan === "annual" ? STRIPE_ANNUAL_URL : STRIPE_MONTHLY_URL;
-    window.open(url, "_blank", "noopener,noreferrer");
-    onClose();
+    purchase(plan === "annual");
   };
 
-  // ── Apple IAP (native iOS) ─────────────────────────────────────────────────
-  const handleAppleIAP = async () => {
-    if (!launched) return;
-    setLoading(true);
-    try {
-      // Future: wire up @capacitor-community/in-app-purchases or RevenueCat
-      // const productId = plan === "annual" ? IAP_ANNUAL_PRODUCT : IAP_MONTHLY_PRODUCT;
-      // await Purchases.purchaseProduct({ productIdentifier: productId });
-      console.warn("Apple IAP not yet integrated. Product:", plan === "annual" ? IAP_ANNUAL_PRODUCT : IAP_MONTHLY_PRODUCT);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ── Restore purchases (native iOS) ────────────────────────────────────────
-  const handleRestorePurchases = async () => {
+  const handleRestorePurchases = () => {
     if (!native) return;
-    try {
-      // Future: await Purchases.restoreTransactions();
-      console.warn("Restore purchases: Apple IAP not yet integrated.");
-    } catch {
-      // noop
-    }
+    restore();
   };
-
-  const handleCTA = native ? handleAppleIAP : handleStripeCheckout;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -241,13 +212,13 @@ const UpgradeModal = ({ open, onClose, trigger = "generic" }: UpgradeModalProps)
           <Button
             className="w-full h-12 rounded-xl font-bold text-base touch-manipulation"
             onClick={handleCTA}
-            disabled={!launched || loading}
+            disabled={!launched || purchasing}
           >
             <Crown size={15} className="mr-2" />
             {!launched
               ? "Coming Soon"
-              : loading
-                ? "Loading…"
+              : purchasing
+                ? "Opening…"
                 : native
                   ? `Subscribe ${plan === "annual" ? "($2.99/mo)" : "($4.99/mo)"}`
                   : `Get Puzzlecraft+ ${plan === "annual" ? "· $2.99/mo" : "· $4.99/mo"}`
