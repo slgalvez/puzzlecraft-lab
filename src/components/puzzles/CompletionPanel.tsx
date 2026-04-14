@@ -129,9 +129,9 @@ const CompletionPanel = ({
 
   const origin = getPuzzleOrigin();
   const isDaily = origin === "daily";
-  const shareData = buildShareData({ category, seed, difficulty, time, isDaily, dailyCode, prevBest: personalBest?.prev });
   const ratingDelta = useRatingDelta();
   const personalBest = usePersonalBest(category, difficulty, time, assisted);
+  const shareData = buildShareData({ category, seed, difficulty, time, isDaily, dailyCode, prevBest: personalBest?.prev });
   const streak = useMemo(() => getDailyStreak(), []);
 
   const score = useMemo(() => {
