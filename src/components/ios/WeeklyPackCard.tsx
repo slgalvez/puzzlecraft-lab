@@ -22,6 +22,15 @@ export function WeeklyPackCard() {
   const completed = getPackCompletionCount(pack.id);
   const progressPct = (completed / pack.puzzles.length) * 100;
 
+  // Expiry countdown: pack expires 7 days after release
+  const daysRemaining = useMemo(() => {
+    if (!pack.releaseDate) return null;
+    const expiry = new Date(pack.releaseDate);
+    expiry.setDate(expiry.getDate() + 7);
+    const diff = Math.ceil((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return Math.max(0, diff);
+  }, [pack.releaseDate]);
+
   const handlePlay = () => {
     hapticTap();
     if (!pack.isUnlocked) {
