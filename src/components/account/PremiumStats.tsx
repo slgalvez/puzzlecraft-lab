@@ -2,7 +2,7 @@
  * Puzzlecraft+ Advanced Stats — premium-only sections.
  * Milestones → Accuracy → Performance by Type → Solve History
  */
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState } from "react";
 import { getSolveRecords, getSolveSummary, getAllSolveRecordsIncludingDemo, getDemoSolveSummary, type SolveRecord } from "@/lib/solveTracker";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory, type Difficulty } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
