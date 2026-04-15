@@ -25,6 +25,8 @@ interface UpgradeModalNextUIProps {
   onPurchase: () => void;
   onRestore: () => void;
   onClose: () => void;
+  headline?: string;
+  subline?: string;
 }
 
 const BENEFIT_SECTIONS = [

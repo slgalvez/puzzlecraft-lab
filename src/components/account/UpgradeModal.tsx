@@ -21,12 +21,31 @@ import { Button } from "@/components/ui/button";
 
 const STRIPE_CONFIGURED = true;
 
+// ─── Trigger-specific copy ─────────────────────────────────────────────────
+export type UpgradeTrigger =
+  | "difficulty"
+  | "craft-limit"
+  | "stats"
+  | "streak-shield"
+  | "weekly-pack"
+  | "generic";
+
+const TRIGGER_COPY: Record<UpgradeTrigger, { headline: string; sub: string }> = {
+  difficulty:      { headline: "Unlock harder puzzles",       sub: "Extreme & Insane difficulties are a Puzzlecraft+ feature." },
+  "craft-limit":   { headline: "You've hit your craft limit", sub: "Upgrade to send unlimited craft puzzles every month." },
+  stats:           { headline: "See your full stats",         sub: "Rating, tier tracking, and deep analytics are Puzzlecraft+ features." },
+  "streak-shield": { headline: "Protect your streak",        sub: "Streak shields let you skip a day without losing progress." },
+  "weekly-pack":   { headline: "Weekly packs await",          sub: "Curated themed packs are exclusive to Puzzlecraft+ members." },
+  generic:         { headline: "Puzzlecraft+",                sub: "Create puzzles. Compete. Improve." },
+};
+
 interface UpgradeModalProps {
   open: boolean;
   onClose: () => void;
+  trigger?: UpgradeTrigger;
 }
 
-export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
+export default function UpgradeModal({ open, onClose, trigger = "generic" }: UpgradeModalProps) {
   const [annual, setAnnual] = useState(true);
   const [notifyEmail, setNotifyEmail] = useState("");
   const [notifySubmitted, setNotifySubmitted] = useState(false);
