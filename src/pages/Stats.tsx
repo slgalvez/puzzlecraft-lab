@@ -94,6 +94,11 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
   // View-as context
   const { viewAsUser } = useViewAsUser();
   const isViewAs = viewAsMode && !!viewAsUser;
+
+  const { isPremium: premiumAccess, showUpgradeCTA: showUpgrade } = usePremiumAccess();
+  const { account } = useUserAccount();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+
   const demoActive = !!(account?.isAdmin && hasDemoData());
 
   const stats          = useMemo(() => isViewAs ? getProgressStatsFrom(viewAsUser!.completions) : getProgressStats(demoActive),                [dataVersion, isViewAs, viewAsUser, demoActive]);
@@ -120,10 +125,6 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
     fastestEver: null as number | null,
     recentSessions: [],
   };
-
-  const { isPremium: premiumAccess, showUpgradeCTA: showUpgrade } = usePremiumAccess();
-  const { account } = useUserAccount();
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   // Unified rating info — handles provisional, confirmed, and no-data states
   const localRatingInfo = useMemo(() => {
