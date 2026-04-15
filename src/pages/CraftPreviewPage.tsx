@@ -194,6 +194,13 @@ export default function CraftPreviewPage() {
 
   useEffect(() => () => { if (challengeTimerRef.current) clearInterval(challengeTimerRef.current); }, []);
 
+  // Reset color palette on unmount so it doesn't leak to other pages
+  useEffect(() => {
+    return () => {
+      applyPalette({ id: "default", label: "Default", cell: "", active: "", highlight: "", correct: "", border: "", text: "" });
+    };
+  }, []);
+
   // Mark dirty
   useEffect(() => {
     if (selectedType) { setDraftDirty(true); setDraftSaved(false); }
