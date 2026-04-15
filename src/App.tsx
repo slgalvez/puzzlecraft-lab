@@ -99,6 +99,7 @@ function GlobalHooks() {
 /** Wraps public routes with the main account system */
 function PublicRoutes() {
   const { onboardingComplete, completeOnboarding } = useOnboarding();
+  const native = isNativeApp();
 
   // If this is a shared craft puzzle link (/s/:id), skip onboarding entirely.
   // The recipient came from a friend's share — that IS their first experience.
@@ -108,7 +109,8 @@ function PublicRoutes() {
     completeOnboarding();
   }
 
-  if (!onboardingComplete && !isShareLink) {
+  // Onboarding only shows inside the native iOS/Android app shell
+  if (native && !onboardingComplete && !isShareLink) {
     return <OnboardingFlow onComplete={completeOnboarding} />;
   }
 
