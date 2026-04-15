@@ -6,12 +6,13 @@ import { useState } from "react";
 import { generateDemoSolves, clearDemoSolves, hasDemoData } from "@/lib/demoStats";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export function PremiumStatsAdminControls({ onRefresh }: { onRefresh?: () => void }) {
+export function PremiumStatsAdminControls({ onRefresh, className }: { onRefresh?: () => void; className?: string }) {
   const [demoActive, setDemoActive] = useState(hasDemoData());
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className={cn("flex items-center gap-2 flex-wrap", className)}>
       {!demoActive ? (
         <Button
           size="sm"
