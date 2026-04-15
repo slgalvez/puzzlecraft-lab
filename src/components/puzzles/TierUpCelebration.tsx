@@ -8,7 +8,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { getTierBadgeStyle, getTierColor, type SkillTier } from "@/lib/solveScoring";
-import { Crown, ChevronUp, Sparkles } from "lucide-react";
+import { Crown, ChevronUp } from "lucide-react";
 import { hapticSuccess } from "@/lib/haptic";
 
 interface TierUpCelebrationProps {
@@ -70,14 +70,6 @@ export function TierUpCelebration({ fromTier, toTier, rating, onDismiss }: TierU
           )}
         </div>
 
-        {/* Sparkle accent */}
-        <Sparkles
-          size={14}
-          className={cn(
-            "absolute top-4 right-6 animate-[tier-sparkle_1.5s_ease-in-out_0.5s_both]",
-            isExpert ? "text-amber-400" : "text-primary/60"
-          )}
-        />
 
         {/* Title */}
         <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">
