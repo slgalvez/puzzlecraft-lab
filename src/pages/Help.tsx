@@ -1,10 +1,11 @@
 import Layout from "@/components/layout/Layout";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Grid3X3, Hash, Type, Calculator, Search, Plus, Palette, Lock } from "lucide-react";
+import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
+import type { PuzzleCategory } from "@/lib/puzzleTypes";
 
-const puzzleTypes = [
+const puzzleTypes: { type: PuzzleCategory; title: string; steps: string[]; tips: string[] }[] = [
   {
-    icon: Grid3X3,
+    type: "crossword",
     title: "Crossword",
     steps: [
       "Click a white cell and type a letter — the cursor advances automatically.",
@@ -17,7 +18,7 @@ const puzzleTypes = [
     ],
   },
   {
-    icon: Calculator,
+    type: "sudoku",
     title: "Sudoku",
     steps: [
       "Fill every row, column, and 3×3 box with digits 1–9.",
@@ -30,7 +31,7 @@ const puzzleTypes = [
     ],
   },
   {
-    icon: Search,
+    type: "word-search",
     title: "Word Search",
     steps: [
       "Find all listed words hidden in the grid.",
@@ -43,7 +44,7 @@ const puzzleTypes = [
     ],
   },
   {
-    icon: Plus,
+    type: "kakuro",
     title: "Kakuro",
     steps: [
       "Fill cells with digits 1–9 so each run sums to its clue.",
@@ -56,7 +57,7 @@ const puzzleTypes = [
     ],
   },
   {
-    icon: Palette,
+    type: "nonogram",
     title: "Nonogram",
     steps: [
       "Use row and column clues to determine which cells to fill.",
@@ -69,7 +70,7 @@ const puzzleTypes = [
     ],
   },
   {
-    icon: Lock,
+    type: "cryptogram",
     title: "Cryptogram",
     steps: [
       "Each letter has been substituted with another letter.",
@@ -82,7 +83,7 @@ const puzzleTypes = [
     ],
   },
   {
-    icon: Hash,
+    type: "number-fill",
     title: "Number Fill-In",
     steps: [
       "Place each number from the bank into matching grid slots.",
@@ -95,7 +96,7 @@ const puzzleTypes = [
     ],
   },
   {
-    icon: Type,
+    type: "word-fill",
     title: "Word Fill-In",
     steps: [
       "Place each word from the bank into the grid.",
@@ -124,7 +125,7 @@ const faqItems = [
   },
   {
     question: "How do I share puzzles?",
-    answer: "Use the Craft tool to build a custom puzzle — choose a type, enter your content, and generate a shareable link. Recipients can solve it directly in their browser, and you can track their times.",
+    answer: "Use the Create tool to build a custom puzzle — choose a type, enter your content, and generate a shareable link. Recipients can solve it directly in their browser, and you can track their times.",
   },
   {
     question: "What is Puzzlecraft+?",
@@ -143,18 +144,16 @@ const Help = () => (
       {/* How to Play */}
       <h2 className="mt-10 font-display text-xl font-semibold text-foreground">How to Play</h2>
       <Accordion type="multiple" className="mt-4">
-        {puzzleTypes.map(({ icon: Icon, title, steps, tips }) => (
-          <AccordionItem key={title} value={title}>
+        {puzzleTypes.map(({ type, title, steps, tips }) => (
+          <AccordionItem key={type} value={type}>
             <AccordionTrigger className="hover:no-underline">
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Icon size={16} />
-                </div>
+                <PuzzleIcon type={type} size={28} />
                 <span className="font-display font-medium">{title}</span>
               </div>
             </AccordionTrigger>
             <AccordionContent>
-              <div className="pl-11 space-y-3">
+              <div className="pl-[40px] space-y-3">
                 <ol className="space-y-1.5">
                   {steps.map((step, i) => (
                     <li key={i} className="text-sm text-muted-foreground list-decimal ml-4 leading-relaxed">
