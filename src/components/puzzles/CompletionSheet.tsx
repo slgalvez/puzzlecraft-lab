@@ -16,6 +16,8 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { hapticSuccess } from "@/lib/haptic";
 import CompletionPanel from "@/components/puzzles/CompletionPanel";
+import { TierUpCelebration } from "@/components/puzzles/TierUpCelebration";
+import { checkTierUp, type TierUpEvent } from "@/lib/solveTracker";
 import type { Difficulty, PuzzleCategory } from "@/lib/puzzleTypes";
 
 // ── Types (mirror CompletionPanel props) ─────────────────────────────────
