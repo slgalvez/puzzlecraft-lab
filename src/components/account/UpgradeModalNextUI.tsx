@@ -83,7 +83,7 @@ export default function UpgradeModalNextUI({
           <X size={15} className="text-muted-foreground" />
         </button>
 
-        <div className="px-6 pt-2 pb-6 space-y-6">
+        <div className="px-6 pt-2 pb-6 space-y-8">
           {/* ── Header ── */}
           <div className="text-center pt-2">
             <div className="flex h-10 w-10 mx-auto mb-3 items-center justify-center rounded-xl bg-primary/8">
@@ -91,31 +91,39 @@ export default function UpgradeModalNextUI({
             </div>
             <h2 className="text-xl font-bold text-foreground">Puzzlecraft+</h2>
             <p className="text-sm text-muted-foreground mt-1.5 leading-snug">
-              Play deeper. Compete smarter. Create without limits.
+              Create puzzles. Compete. Improve.
             </p>
           </div>
 
           {/* ── Benefits ── */}
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {BENEFIT_SECTIONS.map(({ title, icon: Icon, emphasis, items }) => (
               <div
                 key={title}
                 className={cn(
-                  "rounded-xl border px-4 py-3",
+                  "rounded-xl px-4",
                   emphasis
-                    ? "border-primary/20 bg-primary/[0.03]"
-                    : "border-border/60 bg-muted/30",
+                    ? "border border-primary/20 bg-primary/[0.03] py-3.5"
+                    : "border border-border/30 py-2.5",
                 )}
               >
                 <div className="flex items-center gap-2 mb-1.5">
-                  <Icon size={12} className="text-muted-foreground" />
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Icon size={12} className={cn(emphasis ? "text-primary/70" : "text-muted-foreground/60")} />
+                  <span className={cn(
+                    "uppercase tracking-wider",
+                    emphasis
+                      ? "text-[11px] font-semibold text-foreground/80"
+                      : "text-[10px] font-medium text-muted-foreground/70",
+                  )}>
                     {title}
                   </span>
                 </div>
                 <ul className="space-y-0.5">
                   {items.map((item) => (
-                    <li key={item} className="text-sm text-foreground leading-snug">
+                    <li key={item} className={cn(
+                      "leading-snug",
+                      emphasis ? "text-sm text-foreground" : "text-[13px] text-muted-foreground",
+                    )}>
                       {item}
                     </li>
                   ))}
@@ -125,7 +133,7 @@ export default function UpgradeModalNextUI({
           </div>
 
           {/* ── Pricing cards ── */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2.5">
             {/* Monthly */}
             <button
               type="button"
@@ -134,14 +142,14 @@ export default function UpgradeModalNextUI({
                 "rounded-xl border p-3 text-left transition-all",
                 !annual
                   ? "ring-2 ring-primary/30 border-primary bg-primary/5"
-                  : "border-border/60 bg-muted/30",
+                  : "border-border/40 bg-muted/20",
               )}
             >
-              <span className="text-xs font-semibold text-foreground">Monthly</span>
-              <p className="text-lg font-bold text-foreground mt-1 leading-none">
+              <span className={cn("text-xs font-semibold", !annual ? "text-foreground" : "text-muted-foreground")}>Monthly</span>
+              <p className={cn("text-lg font-bold mt-1 leading-none", !annual ? "text-foreground" : "text-muted-foreground")}>
                 {MONTHLY_PRICE}
               </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">per month</p>
+              <p className="text-[10px] text-muted-foreground/70 mt-0.5">per month</p>
             </button>
 
             {/* Annual */}
@@ -149,16 +157,16 @@ export default function UpgradeModalNextUI({
               type="button"
               onClick={() => setAnnual(true)}
               className={cn(
-                "rounded-xl border p-3 text-left transition-all relative",
+                "rounded-xl border p-3.5 text-left transition-all relative",
                 annual
                   ? "ring-2 ring-primary/30 border-primary bg-primary/5"
-                  : "border-border/60 bg-muted/30",
+                  : "border-border/40 bg-muted/20",
               )}
             >
               <div className="flex items-start justify-between gap-1 mb-1">
                 <span className="text-xs font-semibold text-foreground">Annual</span>
-                <span className="shrink-0 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-bold text-white leading-none">
-                  Best Value · Save {ANNUAL_SAVING_PCT}
+                <span className="shrink-0 rounded-full bg-primary/15 text-primary px-1.5 py-0.5 text-[9px] font-semibold leading-none">
+                  Save {ANNUAL_SAVING_PCT}
                 </span>
               </div>
               <p className="text-lg font-bold text-foreground leading-none">
