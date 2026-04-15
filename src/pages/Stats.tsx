@@ -567,7 +567,10 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                   <h2 className="font-display text-sm font-semibold text-foreground">Activity</h2>
                 </div>
                 <div className="px-3 py-3">
-                  <ActivityCalendar />
+                  <ActivityCalendar
+                    overridePlayedDates={isViewAs ? getPlayedDatesFrom(viewAsUser!.completions) : undefined}
+                    overrideDailyFn={isViewAs ? (dateStr: string) => getDailyCompletionFrom(viewAsUser!.dailyData, dateStr) : undefined}
+                  />
                 </div>
               </div>
             )}
