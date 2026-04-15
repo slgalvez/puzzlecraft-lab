@@ -2,27 +2,24 @@
  * solveScoring.ts
  * src/lib/solveScoring.ts
  *
- * Puzzlecraft+ Solve Scoring Engine with provisional rating support.
+ * Puzzlecraft+ Solve Scoring Engine with recalibrated tiers and solve gates.
  *
  * Score = 1000 × DifficultyMult × SpeedFactor × AccuracyFactor × HintFactor
  *
- * Exports:
- * - PROVISIONAL_THRESHOLD (5) and LEADERBOARD_THRESHOLD (10) as shared constants
- * - getPlayerRatingInfo() — unified function replacing scattered computePlayerRating + getSkillTier calls
+ * CALIBRATION (v2):
+ *   Average easy player   (~700)  → Casual
+ *   Average medium player (~1000) → Skilled
+ *   Fast hard player      (~1400) → Advanced
+ *   Elite hard/insane     (~1800) → Expert
+ *
+ * Minimum solve gates prevent 1-solve Expert assignments.
+ * Use getSkillTier(rating, solveCount) for all user-facing displays.
  */
 
 import type { PuzzleCategory, Difficulty } from "./puzzleTypes";
 import type { SolveRecord } from "./solveTracker";
 
-// ── Thresholds ────────────────────────────────────────────────────────────
-
-/** Solves required before rating is no longer "provisional". */
-export const PROVISIONAL_THRESHOLD = 5;
-
-/** Solves required before appearing on the global leaderboard. */
-export const LEADERBOARD_THRESHOLD = 10;
-
-// ── Difficulty multipliers ────────────────────────────────────────────────
+// ── Difficulty multipliers ─────────────────────────────────────────────────
 
 const DIFFICULTY_MULT: Record<Difficulty, number> = {
   easy:    0.7,
@@ -32,20 +29,20 @@ const DIFFICULTY_MULT: Record<Difficulty, number> = {
   insane:  2.8,
 };
 
-// ── Expected solve times ──────────────────────────────────────────────────
+// ── Expected solve times (seconds) per type × difficulty ──────────────────
 
 const EXPECTED_TIMES: Record<PuzzleCategory, Record<Difficulty, number>> = {
-  crossword:    { easy: 180, medium: 300, hard: 480, extreme: 840,  insane: 1150 },
-  "word-fill":  { easy: 120, medium: 210, hard: 360, extreme: 420,  insane: 560  },
-  "number-fill":{ easy: 120, medium: 210, hard: 360, extreme: 400,  insane: 520  },
-  sudoku:       { easy: 180, medium: 360, hard: 600, extreme: 900,  insane: 1200 },
-  "word-search":{ easy: 60,  medium: 120, hard: 210, extreme: 240,  insane: 340  },
-  kakuro:       { easy: 180, medium: 300, hard: 480, extreme: 720,  insane: 1000 },
-  nonogram:     { easy: 120, medium: 240, hard: 420, extreme: 660,  insane: 900  },
-  cryptogram:   { easy: 90,  medium: 180, hard: 300, extreme: 420,  insane: 560  },
+  crossword:     { easy: 180, medium: 300, hard: 480, extreme: 840,  insane: 1150 },
+  "word-fill":   { easy: 120, medium: 210, hard: 360, extreme: 420,  insane: 560  },
+  "number-fill": { easy: 120, medium: 210, hard: 360, extreme: 400,  insane: 520  },
+  sudoku:        { easy: 180, medium: 360, hard: 600, extreme: 900,  insane: 1200 },
+  "word-search": { easy: 60,  medium: 120, hard: 210, extreme: 240,  insane: 340  },
+  kakuro:        { easy: 180, medium: 300, hard: 480, extreme: 720,  insane: 1000 },
+  nonogram:      { easy: 120, medium: 240, hard: 420, extreme: 660,  insane: 900  },
+  cryptogram:    { easy: 90,  medium: 180, hard: 300, extreme: 420,  insane: 560  },
 };
 
-// ── Mistake forgiveness ───────────────────────────────────────────────────
+// ── Mistake forgiveness ────────────────────────────────────────────────────
 
 const FORGIVEN_MISTAKES: Record<PuzzleCategory, number> = {
   "word-search":  3,
@@ -63,7 +60,7 @@ export function trueMistakes(record: SolveRecord): number {
   return Math.max(0, record.mistakesCount - forgiven);
 }
 
-// ── Score calculation ─────────────────────────────────────────────────────
+// ── Score calculation ──────────────────────────────────────────────────────
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -83,34 +80,94 @@ export function computeSolveScore(record: SolveRecord): number {
     record.hintsUsed === 2 ? 0.8 : 0.7;
 
   let score = 1000 * diffMult * speedFactor * accuracyFactor * hintFactor;
+
   if (record.difficulty === "insane" && record.hintsUsed === 0 && mistakes <= 1) {
     score *= 1.05;
   }
+
   return Math.round(score);
 }
 
-// ── Player Rating ─────────────────────────────────────────────────────────
+// ── Rating windows ─────────────────────────────────────────────────────────
 
-const RATING_WINDOW = 25;
+const RATING_WINDOW           = 25;
+const TYPE_RATING_WINDOW      = 15;
+const MIN_SOLVES_FOR_RATING   = 5;
+const MIN_SOLVES_FOR_LEADERBOARD = 10;
+const MIN_TYPE_SOLVES_FOR_LEADERBOARD = 5;
+
+export const LEADERBOARD_MIN_SOLVES      = MIN_SOLVES_FOR_LEADERBOARD;
+export const TYPE_LEADERBOARD_MIN_SOLVES = MIN_TYPE_SOLVES_FOR_LEADERBOARD;
 
 export function computePlayerRating(records: SolveRecord[]): number {
   const valid = records.filter((r) => r.solveTime >= 10);
   if (valid.length === 0) return 0;
   const window = valid.slice(0, RATING_WINDOW);
-  const total  = window.reduce((sum, r) => sum + computeSolveScore(r), 0);
+  const total = window.reduce((sum, r) => sum + computeSolveScore(r), 0);
   return Math.round(total / window.length);
 }
 
-// ── Skill Tiers ───────────────────────────────────────────────────────────
+/** Per-puzzle-type rating. Filters to the given type then computes. */
+export function computeTypeRating(records: SolveRecord[], puzzleType: PuzzleCategory): number {
+  const typeRecords = records.filter(
+    (r) => r.puzzleType === puzzleType && r.solveTime >= 10
+  );
+  if (typeRecords.length === 0) return 0;
+  const window = typeRecords.slice(0, TYPE_RATING_WINDOW);
+  const total = window.reduce((sum, r) => sum + computeSolveScore(r), 0);
+  return Math.round(total / window.length);
+}
+
+// ── Skill Tiers ────────────────────────────────────────────────────────────
 
 export type SkillTier = "Beginner" | "Casual" | "Skilled" | "Advanced" | "Expert";
 
-export function getSkillTier(rating: number): SkillTier {
-  if (rating >= 1200) return "Expert";
-  if (rating >= 950)  return "Advanced";
-  if (rating >= 700)  return "Skilled";
-  if (rating >= 400)  return "Casual";
-  return "Beginner";
+const TIER_RATING_THRESHOLDS: Record<SkillTier, number> = {
+  Expert:   1650,
+  Advanced: 1300,
+  Skilled:  850,
+  Casual:   650,
+  Beginner: 0,
+};
+
+/** Minimum solve count needed to DISPLAY a tier (prevents 1-solve Expert). */
+export const TIER_MIN_SOLVES: Record<SkillTier, number> = {
+  Beginner: 0,
+  Casual:   3,
+  Skilled:  8,
+  Advanced: 18,
+  Expert:   30,
+};
+
+const TIER_ORDER: SkillTier[] = ["Beginner", "Casual", "Skilled", "Advanced", "Expert"];
+
+/**
+ * Returns the skill tier for a given rating.
+ *
+ * @param rating      - The computed player rating
+ * @param solveCount  - Optional. When provided, caps the tier at the level
+ *                      the user has earned through enough solves. Always pass
+ *                      this when displaying a user's own tier.
+ */
+export function getSkillTier(rating: number, solveCount?: number): SkillTier {
+  let ratingTier: SkillTier = "Beginner";
+  for (const tier of [...TIER_ORDER].reverse()) {
+    if (rating >= TIER_RATING_THRESHOLDS[tier]) {
+      ratingTier = tier;
+      break;
+    }
+  }
+
+  if (solveCount === undefined) return ratingTier;
+
+  let maxUnlockedTier: SkillTier = "Beginner";
+  for (const tier of TIER_ORDER) {
+    if (solveCount >= TIER_MIN_SOLVES[tier]) maxUnlockedTier = tier;
+  }
+
+  const ratingIdx   = TIER_ORDER.indexOf(ratingTier);
+  const unlockedIdx = TIER_ORDER.indexOf(maxUnlockedTier);
+  return TIER_ORDER[Math.min(ratingIdx, unlockedIdx)];
 }
 
 export function getTierColor(tier: SkillTier): string {
@@ -149,9 +206,14 @@ export function getTierBadgeStyle(tier: SkillTier): string {
   return TIER_BADGE_STYLES[tier] ?? TIER_BADGE_STYLES.Beginner;
 }
 
+/** Progress within current tier as 0–100. */
 export function getTierProgress(rating: number): number {
   const bands: [number, number][] = [
-    [0, 400], [400, 700], [700, 950], [950, 1200], [1200, 1800],
+    [0,    650],
+    [650,  850],
+    [850,  1300],
+    [1300, 1650],
+    [1650, 2400],
   ];
   for (const [low, high] of bands) {
     if (rating < high) {
@@ -161,66 +223,70 @@ export function getTierProgress(rating: number): number {
   return 100;
 }
 
-// ── Provisional Rating Info ───────────────────────────────────────────────
+// ── Unified rating info object ─────────────────────────────────────────────
 
 export interface PlayerRatingInfo {
-  /** The computed rating. 0 only when solveCount === 0. */
+  /** Computed rating score (0 if no data) */
   rating: number;
-  /** Skill tier based on rating. */
+  /** Tier accounting for both rating AND solve count gate */
   tier: SkillTier;
-  /** Tier colour class. */
+  /** Tailwind color class for the tier */
   tierColor: string;
-  /** Progress within current tier (0–100). */
+  /** 0–100 progress within the current tier band */
   tierProgress: number;
-  /** True when user has 1–(PROVISIONAL_THRESHOLD-1) qualifying solves. */
+  /**
+   * True when the user has enough solves to show a rating (5–9)
+   * but not enough to appear on the public leaderboard (10+).
+   */
   isProvisional: boolean;
-  /** True when user has zero qualifying solves. */
+  /** True when the user has fewer than MIN_SOLVES_FOR_RATING valid solves */
   hasNoData: boolean;
-  /** Number of qualifying solves. */
+  /** Total valid solve count */
   solveCount: number;
-  /** How many more solves until provisional label is removed. */
+  /** How many more solves until the rating is confirmed (non-provisional) */
   solvesUntilConfirmed: number;
-  /** How many more solves until leaderboard appearance. */
+  /** How many more solves until the user qualifies for the global leaderboard */
   solvesUntilLeaderboard: number;
-  /** Whether this rating appears on the global leaderboard. */
+  /** Whether the user has qualified for the public leaderboard */
   onLeaderboard: boolean;
 }
 
 /**
- * Unified rating info for a set of solve records.
- *
- * This is the single source of truth for all rating-related UI.
- * Use it everywhere instead of calling computePlayerRating + getSkillTier
- * separately — this ensures provisional state is always reflected correctly.
- *
- * @param records - filtered real user records (no demo data)
+ * Unified rating info for use in Stats, IOSStatsTab, CompletionPanel, etc.
  */
 export function getPlayerRatingInfo(records: SolveRecord[]): PlayerRatingInfo {
-  const valid      = records.filter((r) => r.solveTime >= 10);
+  const valid = records.filter((r) => r.solveTime >= 10);
   const solveCount = valid.length;
 
-  const hasNoData      = solveCount === 0;
-  const isProvisional  = solveCount > 0 && solveCount < PROVISIONAL_THRESHOLD;
-  const onLeaderboard  = solveCount >= LEADERBOARD_THRESHOLD;
+  if (solveCount < MIN_SOLVES_FOR_RATING) {
+    return {
+      rating:                 0,
+      tier:                   "Beginner",
+      tierColor:              getTierColor("Beginner"),
+      tierProgress:           0,
+      isProvisional:          false,
+      hasNoData:              true,
+      solveCount,
+      solvesUntilConfirmed:   Math.max(0, MIN_SOLVES_FOR_RATING - solveCount),
+      solvesUntilLeaderboard: Math.max(0, MIN_SOLVES_FOR_LEADERBOARD - solveCount),
+      onLeaderboard:          false,
+    };
+  }
 
-  const rating      = hasNoData ? 0 : computePlayerRating(valid);
-  const tier        = getSkillTier(rating);
-  const tierColor   = getTierColor(tier);
-  const tierProgress = getTierProgress(rating);
-
-  const solvesUntilConfirmed  = Math.max(0, PROVISIONAL_THRESHOLD  - solveCount);
-  const solvesUntilLeaderboard = Math.max(0, LEADERBOARD_THRESHOLD - solveCount);
+  const rating = computePlayerRating(valid);
+  const tier      = getSkillTier(rating, solveCount);
+  const tierColor = getTierColor(tier);
 
   return {
     rating,
     tier,
     tierColor,
-    tierProgress,
-    isProvisional,
-    hasNoData,
+    tierProgress:           getTierProgress(rating),
+    isProvisional:          solveCount < MIN_SOLVES_FOR_LEADERBOARD,
+    hasNoData:              false,
     solveCount,
-    solvesUntilConfirmed,
-    solvesUntilLeaderboard,
-    onLeaderboard,
+    solvesUntilConfirmed:   0,
+    solvesUntilLeaderboard: Math.max(0, MIN_SOLVES_FOR_LEADERBOARD - solveCount),
+    onLeaderboard:          solveCount >= MIN_SOLVES_FOR_LEADERBOARD,
   };
 }

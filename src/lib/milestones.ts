@@ -145,7 +145,7 @@ export function checkMilestones() {
   const records = getSolveRecords().filter((r) => r.solveTime >= 10);
   if (records.length >= 5) {
     const rating = computePlayerRating(records);
-    const tier = getSkillTier(rating);
+    const tier = getSkillTier(rating, records.length);
     const tierIdx = TIER_ORDER.indexOf(tier);
     for (const { tier: t, milestone } of TIER_MILESTONES) {
       if (TIER_ORDER.indexOf(t) <= tierIdx && tierIdx >= 0 && !shown.has(milestone.id)) {
@@ -190,7 +190,7 @@ export function getAllMilestones(overrideRecords?: SolveRecord[]): MilestoneWith
   const solveCount = filtered.length;
   const records = filtered;
   const rating = records.length >= 5 ? computePlayerRating(records) : 0;
-  const tier = getSkillTier(rating);
+  const tier = getSkillTier(rating, records.length);
   const tierIdx = TIER_ORDER.indexOf(tier);
 
   let streakCurrent = 0;

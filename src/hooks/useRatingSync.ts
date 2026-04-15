@@ -30,7 +30,7 @@ function computeCurrentRating(): { rating: number; tier: string; solvesCount: nu
     const records = getSolveRecords().filter((r) => r.solveTime >= 10);
     if (records.length < MIN_SOLVES_FOR_RATING) return null;
     const rating = computePlayerRating(records);
-    const tier = getSkillTier(rating);
+    const tier = getSkillTier(rating, records.length);
     return { rating, tier, solvesCount: records.length };
   } catch {
     return null;

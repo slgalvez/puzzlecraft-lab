@@ -1,28 +1,40 @@
 /**
- * Leaderboard.tsx — LAUNCH-READY REPLACEMENT
+ * Leaderboard.tsx
  * src/pages/Leaderboard.tsx
  *
- * FIX: Removed demo/fake player data that was injected when <10 real entries exist.
- *      Demo data was showing fake names ("PuzzleMaster99", "GridNinja", etc.) to
- *      real users who had not yet appeared on the leaderboard. This is a launch blocker.
- *      Replaced with a proper empty state and a motivational CTA.
+ * Tabbed leaderboard: Overall + per-puzzle-type.
+ * Real data only — no demo/fake entries.
  */
+
 import { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/layout/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserAccount } from "@/contexts/UserAccountContext";
-import { usePremiumAccess } from "@/lib/premiumAccess";
+import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { cn } from "@/lib/utils";
-import { Trophy, Medal, Shield, TrendingUp, TrendingDown, Zap, ArrowRight } from "lucide-react";
+import {
+  Trophy, Medal, Shield, TrendingUp, TrendingDown,
+  Zap, ArrowRight, Info,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Link } from "react-router-dom";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getSolveRecords } from "@/lib/solveTracker";
-import { computePlayerRating, getSkillTier, getTierColor, getTierProgress } from "@/lib/solveScoring";
+import {
+  computePlayerRating,
+  computeTypeRating,
+  getSkillTier,
+  getTierColor,
+  getTierProgress,
+  LEADERBOARD_MIN_SOLVES,
+  TYPE_LEADERBOARD_MIN_SOLVES,
+} from "@/lib/solveScoring";
+import { hasPremiumAccess } from "@/lib/premiumAccess";
 
+// ── Types ──────────────────────────────────────────────────────────────────
 
 interface LeaderboardEntry {
   user_id: string;
@@ -34,9 +46,19 @@ interface LeaderboardEntry {
   updated_at: string;
 }
 
+type TabType = "global" | PuzzleCategory;
+type TimeFilter = "all" | "week";
+
+const PUZZLE_TYPES: PuzzleCategory[] = [
+  "crossword", "word-fill", "number-fill", "sudoku",
+  "word-search", "kakuro", "nonogram", "cryptogram",
+];
+
+// ── Sub-components ─────────────────────────────────────────────────────────
+
 const TIER_COLORS: Record<string, string> = {
   Expert:   "text-amber-500",
-  Advanced: "text-orange-500",
+  Advanced: "text-primary",
   Skilled:  "text-emerald-500",
   Casual:   "text-sky-500",
   Beginner: "text-muted-foreground",
@@ -44,27 +66,25 @@ const TIER_COLORS: Record<string, string> = {
 
 const TIER_BG: Record<string, string> = {
   Expert:   "bg-amber-500/10",
-  Advanced: "bg-orange-500/10",
+  Advanced: "bg-primary/10",
   Skilled:  "bg-emerald-500/10",
   Casual:   "bg-sky-500/10",
   Beginner: "bg-muted/50",
 };
 
-const TIER_THRESHOLDS: { tier: string; min: number }[] = [
-  { tier: "Expert",   min: 1200 },
-  { tier: "Advanced", min: 950 },
-  { tier: "Skilled",  min: 700 },
-  { tier: "Casual",   min: 400 },
-  { tier: "Beginner", min: 0 },
+const TIER_THRESHOLDS_DISPLAY: { tier: string; min: number }[] = [
+  { tier: "Expert",   min: 1650 },
+  { tier: "Advanced", min: 1300 },
+  { tier: "Skilled",  min: 850  },
+  { tier: "Casual",   min: 650  },
+  { tier: "Beginner", min: 0    },
 ];
 
 function getNextTier(currentTier: string): { name: string; threshold: number } | null {
-  const idx = TIER_THRESHOLDS.findIndex((t) => t.tier === currentTier);
+  const idx = TIER_THRESHOLDS_DISPLAY.findIndex((t) => t.tier === currentTier);
   if (idx <= 0) return null;
-  return { name: TIER_THRESHOLDS[idx - 1].tier, threshold: TIER_THRESHOLDS[idx - 1].min };
+  return { name: TIER_THRESHOLDS_DISPLAY[idx - 1].tier, threshold: TIER_THRESHOLDS_DISPLAY[idx - 1].min };
 }
-
-type TimeFilter = "all" | "week";
 
 const RankBadge = ({ rank }: { rank: number }) => {
   if (rank === 1) return <Trophy size={16} className="text-amber-500" />;
@@ -79,7 +99,7 @@ function RatingChange({ current, previous }: { current: number; previous: number
   return (
     <span className={cn(
       "inline-flex items-center gap-0.5 text-[11px] font-medium",
-      diff > 0 ? "text-emerald-500" : "text-destructive"
+      diff > 0 ? "text-emerald-500" : "text-destructive",
     )}>
       {diff > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
       {diff > 0 ? "+" : ""}{diff}
@@ -87,18 +107,56 @@ function RatingChange({ current, previous }: { current: number; previous: number
   );
 }
 
+// ── Main component ─────────────────────────────────────────────────────────
+
 export default function Leaderboard() {
-  const { account } = useUserAccount();
-  const { isPremium: premiumAccess } = usePremiumAccess();
+  const navigate = useNavigate();
+  const { account, subscribed } = useUserAccount();
+  const isAdmin       = account?.isAdmin ?? false;
+  const premiumAccess = hasPremiumAccess({ subscribed, isAdmin });
+
+  const [activeTab,  setActiveTab]  = useState<TabType>("global");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
 
-  const { data: entries, isLoading } = useQuery({
-    queryKey: ["leaderboard", timeFilter],
+  const isGlobal  = activeTab === "global";
+  const puzzleType = isGlobal ? null : activeTab as PuzzleCategory;
+
+  // ── Local rating data for "Your Rank" card ─────────────────────────────
+  const localRating = useMemo(() => {
+    const records = getSolveRecords().filter((r) => r.solveTime >= 10);
+    const minSolves = isGlobal ? LEADERBOARD_MIN_SOLVES : TYPE_LEADERBOARD_MIN_SOLVES;
+    if (!isGlobal && puzzleType) {
+      const typeRecords = records.filter((r) => r.puzzleType === puzzleType);
+      if (typeRecords.length < minSolves) return null;
+      const rating = computeTypeRating(records, puzzleType);
+      const tier   = getSkillTier(rating, typeRecords.length);
+      return { rating, tier, solveCount: typeRecords.length };
+    }
+    if (records.length < LEADERBOARD_MIN_SOLVES) return null;
+    const rating = computePlayerRating(records);
+    const tier   = getSkillTier(rating, records.length);
+    return { rating, tier, solveCount: records.length };
+  }, [isGlobal, puzzleType]);
+
+  const localSolveCount = useMemo(() => {
+    const records = getSolveRecords().filter((r) => r.solveTime >= 10);
+    if (!isGlobal && puzzleType) {
+      return records.filter((r) => r.puzzleType === puzzleType).length;
+    }
+    return records.length;
+  }, [isGlobal, puzzleType]);
+
+  const minSolves = isGlobal ? LEADERBOARD_MIN_SOLVES : TYPE_LEADERBOARD_MIN_SOLVES;
+  const solvesNeeded = Math.max(0, minSolves - localSolveCount);
+
+  // ── Global leaderboard query ───────────────────────────────────────────
+  const { data: globalEntries, isLoading: globalLoading } = useQuery({
+    queryKey: ["leaderboard-global", timeFilter],
     queryFn: async () => {
       let query = supabase
         .from("leaderboard_entries")
         .select("user_id, display_name, rating, previous_rating, skill_tier, solve_count, updated_at")
-        .gte("solve_count", 10)
+        .gte("solve_count", LEADERBOARD_MIN_SOLVES)
         .order("rating", { ascending: false })
         .limit(50);
 
@@ -112,51 +170,80 @@ export default function Leaderboard() {
       if (error) throw error;
       return (data ?? []) as LeaderboardEntry[];
     },
+    enabled: isGlobal,
     staleTime: 30_000,
   });
 
-  // ── Real entries only — NO demo data ──
+  // ── Per-type leaderboard query ─────────────────────────────────────────
+  const { data: typeEntries, isLoading: typeLoading } = useQuery({
+    queryKey: ["leaderboard-type", puzzleType, timeFilter],
+    queryFn: async () => {
+      if (!puzzleType) return [];
+
+      let query = (supabase as any)
+        .from("type_leaderboard_entries")
+        .select("user_id, display_name, rating, previous_rating, skill_tier, solve_count, updated_at")
+        .eq("puzzle_type", puzzleType)
+        .gte("solve_count", TYPE_LEADERBOARD_MIN_SOLVES)
+        .order("rating", { ascending: false })
+        .limit(50);
+
+      if (timeFilter === "week") {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        query = query.gte("updated_at", weekAgo.toISOString());
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data ?? []) as LeaderboardEntry[];
+    },
+    enabled: !isGlobal && !!puzzleType,
+    staleTime: 30_000,
+  });
+
+  const rawEntries = isGlobal ? (globalEntries ?? []) : (typeEntries ?? []);
+  const isLoading  = isGlobal ? globalLoading : typeLoading;
+
   const ranked = useMemo(() => {
-    const real = entries ?? [];
-    return real
+    return [...rawEntries]
       .sort((a, b) => b.rating - a.rating)
       .slice(0, 25)
       .map((e, i) => ({ ...e, rank: i + 1 }));
-  }, [entries]);
+  }, [rawEntries]);
 
   const myEntry = useMemo(
     () => (account ? ranked.find((e) => e.user_id === account.id) : null),
-    [ranked, account]
+    [ranked, account],
   );
 
-  const localRating = useMemo(() => {
-    const records = getSolveRecords().filter((r) => r.solveTime >= 10);
-    if (records.length < 10) return null;
-    const rating = computePlayerRating(records);
-    const tier = getSkillTier(rating);
-    return { rating, tier, solveCount: records.length };
-  }, []);
-
-  const nextTier = localRating ? getNextTier(localRating.tier) : null;
+  const nextTier     = localRating ? getNextTier(localRating.tier) : null;
   const tierProgress = localRating ? getTierProgress(localRating.rating) : 0;
   const ratingChange = myEntry ? myEntry.rating - myEntry.previous_rating : 0;
-  const myRankOutside = myEntry && myEntry.rank > 25;
+
+  const typeLabel = puzzleType ? (CATEGORY_INFO[puzzleType]?.name ?? puzzleType) : null;
 
   return (
     <Layout>
       <div className="container py-6 md:py-12 max-w-2xl">
+
+        {/* Header */}
         <div className="flex items-center gap-3 mb-2">
           <Shield size={22} className="text-primary" />
-          <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Leaderboard</h1>
+          <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
+            Leaderboard
+          </h1>
         </div>
         <p className="text-muted-foreground mb-6">
-          Top players ranked by Player Rating. Solve at least 10 puzzles while signed in to qualify.
+          {isGlobal
+            ? `Top players ranked by Player Rating. Minimum ${LEADERBOARD_MIN_SOLVES} solves to qualify.`
+            : `Top ${typeLabel} players. Minimum ${TYPE_LEADERBOARD_MIN_SOLVES} solves of this type to qualify.`}
         </p>
 
-        {/* Your Rank Card — premium users with enough solves */}
+        {/* Your Rank card — premium + enough solves */}
         {premiumAccess && localRating && (
           <div className="mb-6 rounded-2xl border-2 border-primary/20 bg-card p-5 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <Zap size={16} className="text-primary" />
@@ -164,6 +251,24 @@ export default function Leaderboard() {
                   {myEntry && (
                     <span className="font-mono font-bold text-sm text-primary">#{myEntry.rank}</span>
                   )}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="text-muted-foreground/40 hover:text-muted-foreground transition-colors p-1 -m-1 min-w-[28px] min-h-[28px] flex items-center justify-center">
+                          <Info size={12} />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-52 text-xs leading-relaxed">
+                        <p className="font-medium mb-1">Rating is based on:</p>
+                        <ul className="space-y-0.5 text-muted-foreground">
+                          <li>• Puzzle difficulty</li>
+                          <li>• Solve speed vs. expected</li>
+                          <li>• Accuracy (mistakes)</li>
+                          <li>• Hint usage</li>
+                        </ul>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <p className={cn("text-lg font-semibold", getTierColor(localRating.tier as any))}>
                   {localRating.tier}
@@ -174,7 +279,7 @@ export default function Leaderboard() {
                   {myEntry && myEntry.previous_rating > 0 && ratingChange !== 0 && (
                     <span className={cn(
                       "text-xs font-semibold inline-flex items-center gap-0.5",
-                      ratingChange > 0 ? "text-emerald-500" : "text-destructive"
+                      ratingChange > 0 ? "text-emerald-500" : "text-destructive",
                     )}>
                       {ratingChange > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
                       {ratingChange > 0 ? "+" : ""}{ratingChange}
@@ -194,23 +299,52 @@ export default function Leaderboard() {
           </div>
         )}
 
-        {/* Not enough solves yet — motivational nudge */}
-        {premiumAccess && localRating === null && (
+        {/* Not enough solves yet nudge */}
+        {premiumAccess && !localRating && localSolveCount > 0 && (
           <div className="mb-6 rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-5">
             <div className="flex items-center gap-3">
               <Zap size={18} className="text-primary shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-foreground">Keep solving to earn your rank</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  You need at least 10 completed puzzles to appear on the leaderboard.
-                  {getSolveRecords().filter(r => r.solveTime >= 10).length > 0 && (
-                    <> You have {getSolveRecords().filter(r => r.solveTime >= 10).length} so far.</>
-                  )}
+                  {solvesNeeded} more {isGlobal ? "" : (typeLabel + " ")}solve{solvesNeeded !== 1 ? "s" : ""} needed to qualify.
+                  You have {localSolveCount} so far.
                 </p>
               </div>
             </div>
           </div>
         )}
+
+        {/* ── Puzzle type tabs ─────────────────────────────────────────── */}
+        <div className="mb-5">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+            <button
+              onClick={() => setActiveTab("global")}
+              className={cn(
+                "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium border transition-colors",
+                isGlobal
+                  ? "bg-foreground text-background border-foreground"
+                  : "bg-card text-muted-foreground border-border hover:border-foreground/30 hover:text-foreground",
+              )}
+            >
+              Overall
+            </button>
+            {PUZZLE_TYPES.map((pt) => (
+              <button
+                key={pt}
+                onClick={() => setActiveTab(pt)}
+                className={cn(
+                  "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium border transition-colors whitespace-nowrap",
+                  activeTab === pt
+                    ? "bg-foreground text-background border-foreground"
+                    : "bg-card text-muted-foreground border-border hover:border-foreground/30 hover:text-foreground",
+                )}
+              >
+                {CATEGORY_INFO[pt]?.name}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Time filter */}
         <div className="flex items-center gap-2 mb-6">
@@ -239,29 +373,34 @@ export default function Leaderboard() {
           </div>
         )}
 
-        {/* Empty state — NO demo data */}
+        {/* Empty state */}
         {!isLoading && ranked.length === 0 && (
           <div className="rounded-xl border bg-card p-8 text-center space-y-3">
             <Trophy className="mx-auto h-10 w-10 text-muted-foreground/30" />
             <p className="font-display text-base font-semibold text-foreground">
-              {timeFilter === "week" ? "No active players this week" : "Be the first on the board"}
+              {timeFilter === "week"
+                ? "No active players this week"
+                : isGlobal
+                  ? "Be the first on the board"
+                  : `No ${typeLabel} players yet`}
             </p>
             <p className="text-sm text-muted-foreground">
               {timeFilter === "week"
-                ? "Switch to All Time to see the full leaderboard, or come back after playing some puzzles."
-                : "Solve at least 10 puzzles while signed in to earn your spot."}
+                ? "Switch to All Time, or come back after playing."
+                : `Solve at least ${minSolves} ${isGlobal ? "" : (typeLabel + " ")}puzzles while signed in to qualify.`}
             </p>
-            <Button asChild size="sm" variant="outline" className="mt-2">
-              <Link to="/daily">
-                Play Today's Challenge <ArrowRight size={14} className="ml-1.5" />
+            <Button asChild size="sm" variant="outline">
+              <Link to={isGlobal ? "/daily" : `/quick-play/${puzzleType}`}>
+                {isGlobal ? "Play Today's Challenge" : `Play ${typeLabel}`}
+                <ArrowRight size={14} className="ml-1.5" />
               </Link>
             </Button>
           </div>
         )}
 
-        {/* Real leaderboard */}
+        {/* Leaderboard table */}
         {!isLoading && ranked.length > 0 && (
-          <>
+          <TooltipProvider>
             <div className="rounded-xl border bg-card overflow-hidden">
               <div className="grid grid-cols-[40px_1fr_80px_60px] items-center px-4 py-2 border-b bg-secondary/50">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">#</span>
@@ -269,7 +408,9 @@ export default function Leaderboard() {
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right">Rating</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right cursor-default">+/−</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-right cursor-default">
+                      +/−
+                    </span>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="text-xs">Rating change (recent)</TooltipContent>
                 </Tooltip>
@@ -279,10 +420,10 @@ export default function Leaderboard() {
                 const isMe = account?.id === entry.user_id;
                 return (
                   <div
-                    key={entry.user_id}
+                    key={`${entry.user_id}-${activeTab}`}
                     className={cn(
-                      "grid grid-cols-[40px_1fr_80px_60px] items-center px-4 py-3 border-b last:border-0 transition-colors",
-                      isMe && "bg-primary/5 border-l-2 border-l-primary"
+                      "grid grid-cols-[40px_1fr_80px_60px] items-center px-4 py-3 border-b last:border-0",
+                      isMe && "bg-primary/5 border-l-2 border-l-primary",
                     )}
                   >
                     <div className="flex items-center justify-center">
@@ -296,12 +437,14 @@ export default function Leaderboard() {
                       <span className={cn(
                         "inline-block rounded-full px-1.5 py-0 text-[9px] font-medium",
                         TIER_BG[entry.skill_tier],
-                        TIER_COLORS[entry.skill_tier] ?? "text-muted-foreground"
+                        TIER_COLORS[entry.skill_tier] ?? "text-muted-foreground",
                       )}>
                         {entry.skill_tier}
                       </span>
                     </div>
-                    <p className="font-mono text-sm font-bold text-foreground text-right">{entry.rating}</p>
+                    <p className="font-mono text-sm font-bold text-foreground text-right">
+                      {entry.rating}
+                    </p>
                     <div className="text-right">
                       <RatingChange current={entry.rating} previous={entry.previous_rating} />
                     </div>
@@ -310,7 +453,7 @@ export default function Leaderboard() {
               })}
 
               {/* Current user outside top 25 */}
-              {myRankOutside && myEntry && (
+              {account && myEntry && myEntry.rank > 25 && (
                 <>
                   <div className="px-4 py-1 text-center text-[10px] text-muted-foreground border-t">···</div>
                   <div className="grid grid-cols-[40px_1fr_80px_60px] items-center px-4 py-3 border-t bg-primary/5 border-l-2 border-l-primary">
@@ -325,7 +468,7 @@ export default function Leaderboard() {
                       <span className={cn(
                         "inline-block rounded-full px-1.5 py-0 text-[9px] font-medium",
                         TIER_BG[myEntry.skill_tier],
-                        TIER_COLORS[myEntry.skill_tier] ?? "text-muted-foreground"
+                        TIER_COLORS[myEntry.skill_tier] ?? "text-muted-foreground",
                       )}>
                         {myEntry.skill_tier}
                       </span>
@@ -338,14 +481,14 @@ export default function Leaderboard() {
                 </>
               )}
             </div>
-          </>
+          </TooltipProvider>
         )}
 
-        {/* Sign-in prompt for unauthenticated users */}
+        {/* Sign-in prompt */}
         {!account && !isLoading && (
           <div className="mt-6 rounded-xl border border-dashed bg-card p-5 text-center space-y-3">
             <p className="text-sm text-muted-foreground">
-              Sign in and solve 10+ puzzles to appear on the leaderboard.
+              Sign in and solve {minSolves}+ puzzles to appear on the leaderboard.
             </p>
             <Button asChild size="sm" variant="outline">
               <Link to="/account">Sign in <ArrowRight size={14} className="ml-1.5" /></Link>

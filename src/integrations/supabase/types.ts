@@ -865,6 +865,39 @@ export type Database = {
         }
         Relationships: []
       }
+      type_leaderboard_entries: {
+        Row: {
+          display_name: string
+          previous_rating: number
+          puzzle_type: string
+          rating: number
+          skill_tier: string
+          solve_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          display_name?: string
+          previous_rating?: number
+          puzzle_type: string
+          rating?: number
+          skill_tier?: string
+          solve_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          display_name?: string
+          previous_rating?: number
+          puzzle_type?: string
+          rating?: number
+          skill_tier?: string
+          solve_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           created_at: string
@@ -987,7 +1020,18 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      leaderboard_summary: {
+        Row: {
+          display_name: string | null
+          puzzle_type: string | null
+          rating: number | null
+          scope: string | null
+          skill_tier: string | null
+          solve_count: number | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_get_user_progress: {
@@ -1005,6 +1049,18 @@ export type Database = {
         Args: {
           p_display_name: string
           p_previous_rating: number
+          p_rating: number
+          p_skill_tier: string
+          p_solve_count: number
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      upsert_type_leaderboard_entry: {
+        Args: {
+          p_display_name: string
+          p_previous_rating: number
+          p_puzzle_type: string
           p_rating: number
           p_skill_tier: string
           p_solve_count: number
