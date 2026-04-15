@@ -11,10 +11,11 @@
  */
 
 import { cn } from "@/lib/utils";
-import { Zap, Lock, ChevronRight, Trophy, Target, Info } from "lucide-react";
+import { Zap, Lock, ChevronRight, Trophy, Target, Info, Crown } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import type { PlayerRatingInfo, SkillTier } from "@/lib/solveScoring";
+import { getTierCardStyle, getTierBadgeStyle } from "@/lib/solveScoring";
 import { Link } from "react-router-dom";
 
 // ── Tier thresholds for next-rank math ────────────────────────────────────
@@ -207,7 +208,7 @@ export function ProvisionalRatingCard({
                 Provisional
               </span>
             </div>
-            <p className={cn("mt-1.5 text-sm font-semibold", tierColor)}>{tier}</p>
+            <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold mt-1.5", getTierBadgeStyle(tier))}>{tier}</span>
             <div className="mt-2.5 space-y-1">
               <Progress value={tierProgress} className="h-1.5" />
               <p className="text-[10px] text-muted-foreground">Progress to next rank</p>
@@ -247,7 +248,8 @@ export function ProvisionalRatingCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-primary/20 bg-card p-5 sm:p-6",
+        "rounded-2xl border p-5 sm:p-6 shadow-sm",
+        getTierCardStyle(tier),
         className
       )}
     >
@@ -272,8 +274,8 @@ export function ProvisionalRatingCard({
         </Link>
       </div>
 
-      {/* Tier name */}
-      <p className={cn("text-base font-semibold mb-1", tierColor)}>{tier}</p>
+      {/* Tier badge */}
+      <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold mb-1", getTierBadgeStyle(tier))}>{tier}</span>
 
       {/* Large rating number */}
       <div className="flex items-baseline gap-2 mb-1">
@@ -287,6 +289,11 @@ export function ProvisionalRatingCard({
       <p className="text-sm text-muted-foreground">
         Based on your recent {recentWindow} solves
       </p>
+      {tier === "Expert" && (
+        <p className="text-xs font-medium text-amber-500/80 mt-1">
+          You've reached Expert level
+        </p>
+      )}
       {peakRating != null && peakRating > rating && (
         <p className="text-xs text-muted-foreground/70 mt-0.5">
           Peak: {peakRating}
@@ -308,11 +315,11 @@ export function ProvisionalRatingCard({
         </div>
       )}
 
-      {/* Expert — fully maxed */}
+      {/* Expert — top tier achieved */}
       {!nextTier && (
-        <div className="mt-4 space-y-1.5">
-          <Progress value={100} className="h-1.5" />
-          <p className="text-[10px] text-muted-foreground">Expert — highest tier</p>
+        <div className="mt-4 flex items-center gap-2 text-sm">
+          <Crown size={14} className="text-amber-500" />
+          <span className="text-amber-500 font-medium">Top-tier solver</span>
         </div>
       )}
 
