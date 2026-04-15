@@ -1,36 +1,61 @@
 
 
-# Fix: Restore supporting subtext and puzzle link in Stats player profile card
+# Refactor: Leaderboard puzzle-type navigation
 
-## Problem
-When the tier thresholds were updated in `Stats.tsx`, the "nearRank" condition changed from true to false for the viewed user. This caused the "Play a puzzle now to break through →" link underneath the progress bar to disappear. Additionally, the card is missing the "Based on your recent X solves" subtext that exists in the equivalent ProvisionalRatingCard confirmed layout.
+## Change
 
-## Root cause
-- The puzzle link only renders when `nearRank` is true (within 12% of next tier). With old thresholds, -177 pts triggered the condition; with correct thresholds, 273 pts does not.
-- "Based on your recent X solves" was never added to the Stats card, but exists in ProvisionalRatingCard's confirmed state.
+Replace the horizontal scrolling tab list (lines 318–347) with two buttons: "Overall" (filled when active) and a "Puzzle Type" dropdown.
 
-## Fix
-**File:** `src/pages/Stats.tsx`
+## Implementation
 
-**1. Add "Based on your recent X solves" subtext** (after line 422, below the rating number):
+**File:** `src/pages/Leaderboard.tsx`
+
+**1. Add import** for `DropdownMenu` components:
 ```tsx
-<p className="text-xs text-muted-foreground mt-1">
-  Based on your recent {Math.min(localRating.solveCount, 25)} solves
-</p>
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown } from "lucide-react";
 ```
 
-**2. Always show puzzle link** underneath the progress bar (change line 443-447):
+**2. Replace lines 318–347** (the scroll tab section) with:
 ```tsx
-{nearRank ? (
-  <Link to="/daily" className="text-[10px] text-primary mt-1 font-semibold hover:underline">
-    Only {pointsToNext} pts away — play now →
-  </Link>
-) : (
-  <Link to="/puzzles" className="text-[10px] text-primary/70 mt-1 font-medium hover:underline hover:text-primary">
-    Keep solving to rank up →
-  </Link>
-)}
+<div className="flex items-center gap-2 mb-5">
+  <Button
+    variant={isGlobal ? "default" : "outline"}
+    size="sm"
+    onClick={() => setActiveTab("global")}
+  >
+    Overall
+  </Button>
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <Button variant={!isGlobal ? "default" : "outline"} size="sm">
+        {isGlobal ? "Puzzle Type" : typeLabel}
+        <ChevronDown size={14} className="ml-1.5" />
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="start">
+      {PUZZLE_TYPES.map((pt) => (
+        <DropdownMenuItem
+          key={pt}
+          onClick={() => setActiveTab(pt)}
+          className={cn(activeTab === pt && "font-semibold")}
+        >
+          {CATEGORY_INFO[pt]?.name}
+        </DropdownMenuItem>
+      ))}
+    </DropdownMenuContent>
+  </DropdownMenu>
+</div>
 ```
 
-Two additions in one file. Nothing else changes.
+**Behavior:**
+- "Overall" is a filled button when `isGlobal` is true, outlined otherwise
+- Dropdown button shows "Puzzle Type" when on Overall, or the selected type name when a type is active — filled when a type is selected
+- Selecting a type sets `activeTab`, closes dropdown automatically (Radix default)
+- No horizontal scroll, no wrapping, no layout shift
+- All existing query logic (`activeTab`, `isGlobal`, `puzzleType`) unchanged
+
+One file, one section replaced. No backend changes.
 
