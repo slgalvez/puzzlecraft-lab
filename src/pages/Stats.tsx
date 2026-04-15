@@ -34,6 +34,7 @@ import { computePlayerRating, computeSolveScore, getSkillTier, getTierColor, get
 import { ProvisionalRatingCard } from "@/components/puzzles/ProvisionalRatingCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { ActivityCalendar } from "@/components/stats/ActivityCalendar";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
