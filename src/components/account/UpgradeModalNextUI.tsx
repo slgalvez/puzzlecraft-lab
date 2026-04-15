@@ -85,8 +85,8 @@ export default function UpgradeModalNextUI({
             <div className="flex h-10 w-10 mx-auto mb-3 items-center justify-center rounded-xl bg-primary/8">
               <Crown size={20} className="text-primary" />
             </div>
-            <h2 className="text-xl font-bold text-foreground">Puzzlecraft+</h2>
-            <p className="text-sm text-muted-foreground mt-1.5 leading-snug">
+            <h2 className="text-[22px] font-extrabold text-foreground tracking-tight">Puzzlecraft+</h2>
+            <p className="text-sm text-muted-foreground/80 mt-1.5 leading-snug">
               Create puzzles. Compete. Improve.
             </p>
           </div>
@@ -99,8 +99,8 @@ export default function UpgradeModalNextUI({
                 className="rounded-xl border border-border/20 px-4 py-2.5"
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <Icon size={11} className="text-muted-foreground/50" />
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground/60">
+                  <Icon size={11} className="text-muted-foreground/60" />
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground/70">
                     {title}
                   </span>
                 </div>
@@ -128,11 +128,11 @@ export default function UpgradeModalNextUI({
                   : "border-border/25 bg-muted/10",
               )}
             >
-              <span className={cn("text-xs font-medium", !annual ? "text-foreground/80" : "text-muted-foreground/60")}>Monthly</span>
-              <p className={cn("text-lg font-bold mt-1 leading-none", !annual ? "text-foreground/80" : "text-muted-foreground/50")}>
+              <span className={cn("text-xs font-medium", !annual ? "text-foreground/80" : "text-muted-foreground/70")}>Monthly</span>
+              <p className={cn("text-lg font-bold mt-1 leading-none", !annual ? "text-foreground/80" : "text-muted-foreground/60")}>
                 {MONTHLY_PRICE}
               </p>
-              <p className="text-[10px] text-muted-foreground/50 mt-0.5">per month</p>
+              <p className="text-[10px] text-muted-foreground/60 mt-0.5">per month</p>
             </button>
 
             {/* Annual */}
@@ -146,7 +146,7 @@ export default function UpgradeModalNextUI({
                   : "border-border/30 bg-muted/15",
               )}
             >
-              <div className="flex items-start justify-between gap-1 mb-1.5">
+              <div className="flex items-center justify-between gap-1.5 mb-1.5">
                 <span className={cn("text-xs font-semibold", annual ? "text-foreground" : "text-foreground/70")}>Annual</span>
                 <span className="shrink-0 rounded-full bg-primary/12 text-primary px-1.5 py-0.5 text-[9px] font-semibold leading-none">
                   Save {ANNUAL_SAVING_PCT}
