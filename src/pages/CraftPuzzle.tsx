@@ -31,9 +31,10 @@ import {
 import {
   type CraftPayload,
   type CraftType,
-  buildCraftShareText,
   buildCraftShareUrl,
 } from "@/lib/craftShare";
+import { buildCraftShareText as buildUnifiedCraftShareText } from "@/lib/shareText";
+import { CraftSharePreview } from "@/components/craft/CraftSharePreview";
 import {
   type CraftDraft,
   generateDraftId,
