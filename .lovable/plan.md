@@ -1,30 +1,36 @@
 
 
-# Fix: Stale tier thresholds in ProvisionalRatingCard
+# Fix: Restore supporting subtext and puzzle link in Stats player profile card
 
 ## Problem
-`ProvisionalRatingCard.tsx` has its own hardcoded `TIER_THRESHOLDS` (line 24-26) with the **old** values:
-```ts
-{ Beginner: 0, Casual: 400, Skilled: 700, Advanced: 950, Expert: 1200 }
-```
+When the tier thresholds were updated in `Stats.tsx`, the "nearRank" condition changed from true to false for the viewed user. This caused the "Play a puzzle now to break through →" link underneath the progress bar to disappear. Additionally, the card is missing the "Based on your recent X solves" subtext that exists in the equivalent ProvisionalRatingCard confirmed layout.
 
-These are used by `getNextTierInfo()` to compute "pts to next tier" text and the `rating/threshold` label. With a rating of 1377 and the old Expert threshold of 1200, it shows `-177 pts to Expert` and `1377/1200`.
-
-The actual thresholds in `solveScoring.ts` are `650/850/1300/1650`. The progress bar value (`tierProgress`) comes from `solveScoring.ts` and is correct — but the text labels contradict it.
+## Root cause
+- The puzzle link only renders when `nearRank` is true (within 12% of next tier). With old thresholds, -177 pts triggered the condition; with correct thresholds, 273 pts does not.
+- "Based on your recent X solves" was never added to the Stats card, but exists in ProvisionalRatingCard's confirmed state.
 
 ## Fix
-**File:** `src/components/puzzles/ProvisionalRatingCard.tsx`
+**File:** `src/pages/Stats.tsx`
 
-Update `TIER_THRESHOLDS` on line 24-26 to match the canonical values:
-```ts
-const TIER_THRESHOLDS: Record<string, number> = {
-  Beginner: 0, Casual: 650, Skilled: 850, Advanced: 1300, Expert: 1650,
-};
+**1. Add "Based on your recent X solves" subtext** (after line 422, below the rating number):
+```tsx
+<p className="text-xs text-muted-foreground mt-1">
+  Based on your recent {Math.min(localRating.solveCount, 25)} solves
+</p>
 ```
 
-One constant updated. Nothing else changes.
+**2. Always show puzzle link** underneath the progress bar (change line 443-447):
+```tsx
+{nearRank ? (
+  <Link to="/daily" className="text-[10px] text-primary mt-1 font-semibold hover:underline">
+    Only {pointsToNext} pts away — play now →
+  </Link>
+) : (
+  <Link to="/puzzles" className="text-[10px] text-primary/70 mt-1 font-medium hover:underline hover:text-primary">
+    Keep solving to rank up →
+  </Link>
+)}
+```
 
-## Result
-- Rating 1377 with Advanced tier → shows `273 pts to Expert` and `1377/1650`
-- Progress bar (already correct from `getTierProgress`) now matches the text
+Two additions in one file. Nothing else changes.
 
