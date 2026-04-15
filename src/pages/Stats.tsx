@@ -94,21 +94,24 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
   // View-as context
   const { viewAsUser } = useViewAsUser();
   const isViewAs = viewAsMode && !!viewAsUser;
+  const demoActive = !!(account?.isAdmin && hasDemoData());
 
-  const stats          = useMemo(() => isViewAs ? getProgressStatsFrom(viewAsUser!.completions) : getProgressStats(),                [dataVersion, isViewAs, viewAsUser]);
+  const stats          = useMemo(() => isViewAs ? getProgressStatsFrom(viewAsUser!.completions) : getProgressStats(demoActive),                [dataVersion, isViewAs, viewAsUser, demoActive]);
   const dailyStreak    = useMemo(() => isViewAs ? getDailyStreakFrom(viewAsUser!.dailyData) : getDailyStreak(),                  [dataVersion, isViewAs, viewAsUser]);
   const dailyCompleted = useMemo(() => isViewAs ? getTotalDailyCompletedFrom(viewAsUser!.dailyData) : getTotalDailyCompleted(),          [dataVersion, isViewAs, viewAsUser]);
   const endlessStats   = useMemo(() => isViewAs ? getEndlessStatsFrom(viewAsUser!.endlessData) : getEndlessStats(), [dataVersion, isViewAs, viewAsUser]);
 
   // Build solve record lookup for matching completions to scores/badges
   const solveRecordMap = useMemo(() => {
-    const recs = isViewAs ? getSolveRecordsFrom(viewAsUser!.solves) : getSolveRecords();
+    const recs = isViewAs
+      ? getSolveRecordsFrom(viewAsUser!.solves)
+      : demoActive ? getAllSolveRecordsIncludingDemo() : getSolveRecords();
     const map = new Map<string, SolveRecord>();
     for (const r of recs) {
       map.set(`${r.puzzleType}-${r.completedAt.slice(0, 16)}`, r);
     }
     return map;
-  }, [dataVersion, isViewAs, viewAsUser]);
+  }, [dataVersion, isViewAs, viewAsUser, demoActive]);
   const endlessSummary = endlessStats ?? {
     totalSessions: 0,
     totalSolved: 0,
@@ -126,7 +129,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
   const localRatingInfo = useMemo(() => {
     const recs = isViewAs
       ? getSolveRecordsFrom(viewAsUser!.solves).filter((r) => r.solveTime >= 10)
-      : getSolveRecords().filter((r) => r.solveTime >= 10);
+      : (demoActive ? getAllSolveRecordsIncludingDemo() : getSolveRecords()).filter((r) => r.solveTime >= 10);
     return getPlayerRatingInfo(recs);
   }, [dataVersion, isViewAs, viewAsUser]);
 
@@ -134,7 +137,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
   const peakRating = useMemo(() => {
     const recs = isViewAs
       ? getSolveRecordsFrom(viewAsUser!.solves).filter((r) => r.solveTime >= 10)
-      : getSolveRecords().filter((r) => r.solveTime >= 10);
+      : (demoActive ? getAllSolveRecordsIncludingDemo() : getSolveRecords()).filter((r) => r.solveTime >= 10);
     if (recs.length < 5) return null;
     let peak = 0;
     for (let i = 0; i <= recs.length - 5; i++) {
@@ -311,10 +314,15 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
       <div className="container py-6 md:py-10">
 
         {/* Page heading */}
-        <div className="mb-5">
+        <div className="mb-5 relative">
+          <div className="flex items-start justify-between gap-4">
           <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
             {headingLabel}
           </h1>
+          {account?.isAdmin && !isViewAs && (
+            <PremiumStatsAdminControls onRefresh={() => setDataVersion((v) => v + 1)} className="shrink-0" />
+          )}
+          </div>
           <p className="mt-1 text-sm text-muted-foreground">
             Your solving stats, streaks, and best times.
             {activeFilterLabel && (
@@ -453,9 +461,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
             {/* Premium stats section */}
             {showGeneral && premiumAccess && (
               <>
-{account?.isAdmin && !isViewAs && (
-                  <PremiumStatsAdminControls onRefresh={() => setDataVersion((v) => v + 1)} />
-                )}
+
                 <PremiumStats key={dataVersion} hideAdminControls={isViewAs} overrideSolveRecords={isViewAs ? getSolveRecordsFrom(viewAsUser!.solves) : undefined} />
               </>
             )}
