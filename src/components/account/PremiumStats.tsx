@@ -83,7 +83,7 @@ const MILESTONE_ICONS: Record<MilestoneIcon, any> = {
   bolt: Bolt,
 };
 
-export default function PremiumStats({ onDataChange }: { onDataChange?: () => void }) {
+export default function PremiumStats({ onDataChange, hideAdminControls = false }: { onDataChange?: () => void; hideAdminControls?: boolean }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const { account } = useUserAccount();
   const isAdmin = account?.isAdmin ?? false;
