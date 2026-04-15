@@ -56,7 +56,7 @@ const ALL_CATEGORIES: PuzzleCategory[] = [
 ];
 
 const TIER_THRESHOLDS: Record<string, number> = {
-  Expert: 1200, Advanced: 950, Skilled: 700, Casual: 400, Beginner: 0,
+  Expert: 1650, Advanced: 1300, Skilled: 850, Casual: 650, Beginner: 0,
 };
 const TIER_ORDER_LIST = ["Beginner", "Casual", "Skilled", "Advanced", "Expert"];
 
