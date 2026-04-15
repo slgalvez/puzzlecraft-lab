@@ -26,6 +26,19 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 const MIN_SOLVES_FOR_AVG = 2;
 
+type MilestoneCategory = "ranking" | "solves" | "streak";
+const CATEGORY_TABS: { key: MilestoneCategory; label: string }[] = [
+  { key: "ranking", label: "Ranking" },
+  { key: "solves", label: "Solves" },
+  { key: "streak", label: "Streak" },
+];
+
+function getMilestoneCategory(id: string): MilestoneCategory {
+  if (id.startsWith("tier-")) return "ranking";
+  if (id.startsWith("streak-")) return "streak";
+  return "solves";
+}
+
 
 const ALL_CATEGORIES: PuzzleCategory[] = [
   "crossword", "word-fill", "number-fill", "sudoku",
