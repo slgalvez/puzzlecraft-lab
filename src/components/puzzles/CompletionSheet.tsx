@@ -122,6 +122,16 @@ export function CompletionSheet({
           }}
         />
       </div>
+
+      {/* Tier-up celebration overlay */}
+      {tierUp && (
+        <TierUpCelebration
+          fromTier={tierUp.fromTier}
+          toTier={tierUp.toTier}
+          rating={tierUp.rating}
+          onDismiss={() => setTierUp(null)}
+        />
+      )}
     </>
   );
 }
