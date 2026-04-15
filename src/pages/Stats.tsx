@@ -29,7 +29,7 @@ import UpgradeModal from "@/components/premium/UpgradeModal";
 import { usePremiumAccess } from "@/lib/premiumAccess";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 
-import { getSolveRecords } from "@/lib/solveTracker";
+import { getSolveRecords, type SolveRecord } from "@/lib/solveTracker";
 import { computePlayerRating, computeSolveScore, getSkillTier, getTierColor, getTierProgress, getPlayerRatingInfo, getTierCardStyle, getTierBadgeStyle, type SkillTier } from "@/lib/solveScoring";
 
 import { ProvisionalRatingCard } from "@/components/puzzles/ProvisionalRatingCard";
@@ -98,6 +98,16 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
   const dailyStreak    = useMemo(() => isViewAs ? getDailyStreakFrom(viewAsUser!.dailyData) : getDailyStreak(),                  [dataVersion, isViewAs, viewAsUser]);
   const dailyCompleted = useMemo(() => isViewAs ? getTotalDailyCompletedFrom(viewAsUser!.dailyData) : getTotalDailyCompleted(),          [dataVersion, isViewAs, viewAsUser]);
   const endlessStats   = useMemo(() => isViewAs ? getEndlessStatsFrom(viewAsUser!.endlessData) : getEndlessStats(), [dataVersion, isViewAs, viewAsUser]);
+
+  // Build solve record lookup for matching completions to scores/badges
+  const solveRecordMap = useMemo(() => {
+    const recs = isViewAs ? getSolveRecordsFrom(viewAsUser!.solves) : getSolveRecords();
+    const map = new Map<string, SolveRecord>();
+    for (const r of recs) {
+      map.set(`${r.puzzleType}-${r.completedAt.slice(0, 16)}`, r);
+    }
+    return map;
+  }, [dataVersion, isViewAs, viewAsUser]);
   const endlessSummary = endlessStats ?? {
     totalSessions: 0,
     totalSolved: 0,
@@ -474,6 +484,12 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                       ? Math.round(Math.min(100, (overallBest / c.time) * 100)) : 0;
                     const isPB = overallBest !== null && c.time === overallBest;
 
+                    const matchKey = `${c.category}-${c.date.slice(0, 16)}`;
+                    const solveRec = solveRecordMap.get(matchKey);
+                    const score = solveRec ? computeSolveScore(solveRec) : null;
+                    const isClean = solveRec && solveRec.hintsUsed === 0 && solveRec.mistakesCount === 0;
+                    const isDaily = solveRec?.isDailyChallenge;
+
                     return (
                       <div key={`${c.date}-${i}`}
                         className={cn("flex items-center gap-3 px-4 py-3", !isLast && "border-b border-border/40")}>
@@ -485,6 +501,22 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                             </span>
                             {isPB && (
                               <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">PB</span>
+                            )}
+                            {isClean && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Shield size={12} className="text-emerald-500/80" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs">Clean solve — no hints or mistakes</TooltipContent>
+                              </Tooltip>
+                            )}
+                            {isDaily && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Flame size={12} className="text-primary/80" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs">Daily challenge</TooltipContent>
+                              </Tooltip>
                             )}
                           </div>
                           <div className="mt-1.5 flex items-center gap-2">
@@ -498,9 +530,16 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                         </div>
                         <div className="text-right shrink-0">
                           <p className="font-mono text-sm font-semibold text-foreground">{formatTime(c.time)}</p>
-                          <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                            {new Date(c.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                          </p>
+                          <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                            {score !== null && (
+                              <span className="font-mono text-[10px] text-muted-foreground">{score.toLocaleString()} pts</span>
+                            )}
+                            {score === null && (
+                              <span className="text-[10px] text-muted-foreground/60">
+                                {new Date(c.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
