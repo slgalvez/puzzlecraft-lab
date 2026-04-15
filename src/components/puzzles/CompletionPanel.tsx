@@ -94,6 +94,7 @@ const CompletionPanel = ({
   const [copied, setCopied] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [shareFailedFallback, setShareFailedFallback] = useState(false);
   const native = isNativeApp();
 
   const { shouldShow: paywallOpen, dismiss: dismissPaywall, checkAfterSolve } = usePaywallTiming();
