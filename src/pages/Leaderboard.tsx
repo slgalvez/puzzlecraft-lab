@@ -401,6 +401,12 @@ export default function Leaderboard() {
         )}
 
         {/* Leaderboard table */}
+        {!isLoading && ranked.length > 0 && ranked.length < 3 && (
+          <p className="text-xs text-muted-foreground text-center mb-3 italic">
+            Early leaderboard — be one of the first to rank
+          </p>
+        )}
+
         {!isLoading && ranked.length > 0 && (
           <TooltipProvider>
             <div className="rounded-xl border bg-card overflow-hidden">
