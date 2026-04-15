@@ -549,7 +549,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
 {account?.isAdmin && !isViewAs && (
                   <PremiumStatsAdminControls onRefresh={() => setDataVersion((v) => v + 1)} />
                 )}
-                <PremiumStats key={dataVersion} hideAdminControls={isViewAs} />
+                <PremiumStats key={dataVersion} hideAdminControls={isViewAs} overrideSolveRecords={isViewAs ? getSolveRecordsFrom(viewAsUser!.solves) : undefined} />
               </>
             )}
 
