@@ -1,82 +1,70 @@
 
 
-# Revised Preview Architecture — No Logic Duplication
+# Activity Calendar Redesign — Ring Indicators
 
-## Approach
-Extract only the payment-ready UI into `UpgradeModalNextUI.tsx` as a **pure presentational component**. All hooks, state, early returns, and handlers stay in `UpgradeModal.tsx`. The query param flag selects which UI to render for the final payment-ready state only.
+## Overview
+Rewrite `ActivityCalendar.tsx` with triple-ring day cells showing Daily/Played/Crafted activity. Add it to the Stats page right column sidebar.
 
-## Files
+## Data Extension
+
+Extend `DayData` with `hasDaily`, `hasPlayed`, `hasCrafted` booleans. In `buildMonthGrid`:
+- `hasDaily`: `!!getDailyCompletion(dateStr)` (already used as `completed`)
+- `hasPlayed`: check if any `getProgressStats().recentCompletions` has a matching date string
+- `hasCrafted`: check if any `loadSentItems()` has a `sentAt` on that date
+
+Pre-compute completion dates and craft dates as `Set<string>` outside the loop for performance.
+
+## Day Cell Design
+
+Replace current background-highlight cells with SVG-based ring indicators:
+- Each cell is `aspect-square` (~36px) with a centered `<svg>` containing three concentric circle tracks
+- **Outer ring** — primary/orange — Daily Challenge
+- **Middle ring** — emerald — Puzzle played
+- **Inner ring** — violet — Crafted/shared
+- Radii: 15, 11, 7 with `strokeWidth` ~2
+- Unfilled: `stroke-opacity: 0.08` (extremely subtle)
+- Filled: full opacity with `strokeLinecap: round`
+- Day number centered as text overlay
+- Future days: no rings, just muted number
+- Today: subtle primary dot or ring highlight
+- Selected: `ring-2 ring-primary` with slight scale
+
+## Selected Day Detail Panel
+
+Update to show three activity indicators:
+- Three inline items with colored dots + labels ("Daily ✓", "Played ✓", "Crafted —")
+- Keep existing Replay/Play/Catch-up button unchanged
+
+## Legend
+
+Small row below the grid with three colored dots and labels: "Daily", "Played", "Crafted" — using `text-[9px]` muted styling.
+
+## Stats Page Integration
+
+In `src/pages/Stats.tsx` right column (line ~527), add `ActivityCalendar` wrapped in:
+```tsx
+<div className="rounded-2xl border bg-card overflow-hidden">
+  <div className="px-4 py-3 border-b border-border/60 flex items-center gap-2">
+    <Calendar size={13} className="text-primary" />
+    <h2 className="font-display text-sm font-semibold text-foreground">Activity</h2>
+  </div>
+  <div className="px-4 py-3">
+    <ActivityCalendar />
+  </div>
+</div>
+```
+
+Place it as the first item in the right column, above "By Puzzle Type".
+
+## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/components/account/UpgradeModal.tsx` | Add query param flag; pass props to `UpgradeModalNextUI` for payment-ready state |
-| `src/components/account/UpgradeModalNextUI.tsx` | **New** — pure presentational component, no hooks, no logic |
+| `src/components/stats/ActivityCalendar.tsx` | Full rewrite — SVG rings, triple data sources, legend |
+| `src/pages/Stats.tsx` | Import + add ActivityCalendar in right column sidebar |
 
-## UpgradeModal.tsx changes
-
-Add at top of file:
-```tsx
-import UpgradeModalNextUI from "./UpgradeModalNextUI";
-```
-
-Add inside component, before existing state:
-```tsx
-const showNext =
-  typeof window !== "undefined" &&
-  new URLSearchParams(window.location.search).get("paywall") === "new";
-```
-
-All hooks, state, early returns (pre-launch, stripe-missing, success) remain exactly as-is.
-
-Only the final payment-ready return (lines 206–302) gets wrapped:
-```tsx
-if (showNext) {
-  return (
-    <UpgradeModalNextUI
-      annual={annual}
-      setAnnual={setAnnual}
-      purchasing={purchasing}
-      result={result}
-      errorMessage={errorMessage}
-      native={native}
-      onPurchase={() => purchase(annual)}
-      onRestore={() => restore()}
-      onClose={onClose}
-    />
-  );
-}
-
-// existing payment-ready return unchanged below...
-```
-
-## UpgradeModalNextUI.tsx — pure presentational
-
-```tsx
-interface Props {
-  annual: boolean;
-  setAnnual: (v: boolean) => void;
-  purchasing: boolean;
-  result: "idle" | "success" | "cancelled" | "error";
-  errorMessage: string | null;
-  native: boolean;
-  onPurchase: () => void;
-  onRestore: () => void;
-  onClose: () => void;
-}
-```
-
-No hooks. No imports of `useSubscription`, `isNativeApp`, or `PUZZLECRAFT_PLUS_LAUNCHED`. Receives everything via props. Contains only JSX for the redesigned paywall:
-
-- **Header**: Crown icon (small `h-10 w-10 rounded-xl bg-primary/8`), "Puzzlecraft+" title, subtitle "Play deeper. Compete smarter. Create without limits."
-- **4 benefit sections** as subtle cards with muted icons (no checkmarks):
-  - Create & Share (emphasized `border-primary/20`) — "Create & send puzzles to friends", "Add personal messages"
-  - Track Progress — "60-day activity history", "Replay past challenges", "Protect your streaks"
-  - Unlock Gameplay — "Extreme & Insane modes", "Access weekly puzzle packs"
-  - Compete — "Track rank by puzzle type", "Climb global rankings"
-- **Pricing**: Two side-by-side cards. Monthly `$2.99 / month`, Annual `$19.99 / year` with `$1.67/mo billed annually` and "Best Value · Save 44%" badge
-- **CTA**: Dynamic text via pricing constants — calls `onPurchase`
-- **Secondary**: "Continue with free plan" (`onClose`), restore purchases (`onRestore`, native only), error display
-
-## How to test
-Append `?paywall=new` to any URL, trigger upgrade modal. Without param, current UI renders unchanged.
+## Unchanged
+- Month navigation, streak display, replay/catch-up buttons
+- No new hooks, persistence, or backend logic
+- AdminPreview continues to render the component automatically
 
