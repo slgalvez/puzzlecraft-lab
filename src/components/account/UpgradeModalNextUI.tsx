@@ -54,7 +54,7 @@ const BENEFIT_SECTIONS = [
 
 export default function UpgradeModalNextUI({
   annual, setAnnual, purchasing, result, errorMessage,
-  native, onPurchase, onRestore, onClose,
+  native, onPurchase, onRestore, onClose, headline, subline,
 }: UpgradeModalNextUIProps) {
   const ctaLabel = () => {
     if (purchasing) return "Opening…";
@@ -87,9 +87,9 @@ export default function UpgradeModalNextUI({
             <div className="flex h-10 w-10 mx-auto mb-3 items-center justify-center rounded-xl bg-primary/8">
               <Crown size={20} className="text-primary" />
             </div>
-            <h2 className="text-[22px] font-extrabold text-foreground tracking-tight">Puzzlecraft+</h2>
+            <h2 className="text-[22px] font-extrabold text-foreground tracking-tight">{headline || "Puzzlecraft+"}</h2>
             <p className="text-sm text-muted-foreground/80 mt-1.5 leading-snug">
-              Create puzzles. Compete. Improve.
+              {subline || "Create puzzles. Compete. Improve."}
             </p>
           </div>
 
