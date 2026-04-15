@@ -141,6 +141,13 @@ const CraftPuzzle = () => {
     };
   }, []);
 
+  // Reset color palette on unmount so it doesn't leak to other pages
+  useEffect(() => {
+    return () => {
+      applyPalette({ id: "default", label: "Default", cell: "", active: "", highlight: "", correct: "", border: "", text: "" });
+    };
+  }, []);
+
   /* ── Mark dirty on any content change ── */
   useEffect(() => {
     if (step === "content" || step === "preview") {
