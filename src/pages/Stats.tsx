@@ -97,6 +97,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
   const isViewAs = viewAsMode && !!viewAsUser;
 
   const { isPremium: premiumAccess, showUpgradeCTA: showUpgrade } = usePremiumAccess();
+  const isPlus = premiumAccess;
   const { account } = useUserAccount();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
