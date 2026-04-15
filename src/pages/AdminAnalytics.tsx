@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   Users, Clock, Activity, TrendingUp,
-  ArrowLeft, RefreshCw, Download,
+  ArrowLeft, RefreshCw, Download, Eye,
 } from "lucide-react";
 
 interface UserRow {

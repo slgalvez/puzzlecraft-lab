@@ -118,36 +118,39 @@ function PublicRoutes() {
 
   return (
     <UserAccountProvider>
-      <GlobalHooks />
-      <DataMergeModal />
-      {/* Global milestone celebration modal — fires after any solve */}
-      <MilestoneModalManager />
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/puzzles" element={<PuzzleLibrary />} />
-        <Route path="/generate" element={<PuzzleGenerator />} />
-        <Route path="/generate/:type" element={<PuzzleGenerator />} />
-        <Route path="/daily" element={<DailyPuzzle />} />
-        <Route path="/play/:id" element={<PlayPuzzle />} />
-        <Route path="/play" element={<SharedPuzzle />} />
-        <Route path="/quick-play/:type" element={<QuickPlay />} />
-        <Route path="/surprise" element={<SurprisePlay />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/help" element={<Help />} />
-        <Route path="/stats" element={<Stats />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/craft" element={<CraftPuzzle />} />
-        <Route path="/craft/play" element={<PlayCraftPuzzle />} />
-        <Route path="/s/:id" element={<SharedCraftPuzzle />} />
-        <Route path="/account" element={<Account />} />
-        <Route path="/admin-preview" element={<AdminPreview />} />
-        <Route path="/craft-v2" element={<CraftPreviewPage />} />
-        <Route path="/admin-preview/homepage" element={<AdminHomepagePreview />} />
-         <Route path="/admin/premium-emails" element={<AdminPremiumEmails />} />
-         <Route path="/admin-analytics" element={<AdminAnalytics />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/terms" element={<Terms />} />
-      </Routes>
+      <ViewAsUserProvider>
+        <GlobalHooks />
+        <DataMergeModal />
+        {/* Global milestone celebration modal — fires after any solve */}
+        <MilestoneModalManager />
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/puzzles" element={<PuzzleLibrary />} />
+          <Route path="/generate" element={<PuzzleGenerator />} />
+          <Route path="/generate/:type" element={<PuzzleGenerator />} />
+          <Route path="/daily" element={<DailyPuzzle />} />
+          <Route path="/play/:id" element={<PlayPuzzle />} />
+          <Route path="/play" element={<SharedPuzzle />} />
+          <Route path="/quick-play/:type" element={<QuickPlay />} />
+          <Route path="/surprise" element={<SurprisePlay />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/help" element={<Help />} />
+          <Route path="/stats" element={<Stats />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/craft" element={<CraftPuzzle />} />
+          <Route path="/craft/play" element={<PlayCraftPuzzle />} />
+          <Route path="/s/:id" element={<SharedCraftPuzzle />} />
+          <Route path="/account" element={<Account />} />
+          <Route path="/admin-preview" element={<AdminPreview />} />
+          <Route path="/craft-v2" element={<CraftPreviewPage />} />
+          <Route path="/admin-preview/homepage" element={<AdminHomepagePreview />} />
+           <Route path="/admin/premium-emails" element={<AdminPremiumEmails />} />
+           <Route path="/admin-analytics" element={<AdminAnalytics />} />
+           <Route path="/admin-view-as-stats" element={<AdminViewAsStats />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+        </Routes>
+      </ViewAsUserProvider>
     </UserAccountProvider>
   );
 }
