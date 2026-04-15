@@ -1603,6 +1603,7 @@ export default function AdminPreview() {
             <TabsTrigger value="patterns" className="text-xs flex-1 min-w-0">Patterns</TabsTrigger>
             <TabsTrigger value="sharecards" className="text-xs flex-1 min-w-0">Share Cards</TabsTrigger>
             <TabsTrigger value="weeklypacks" className="text-xs flex-1 min-w-0">Weekly Packs</TabsTrigger>
+            <TabsTrigger value="ranking" className="text-xs flex-1 min-w-0">Ranking</TabsTrigger>
           </TabsList>
 
           {/* ══════════════════════════════════════════════════════════════ */}
@@ -2384,6 +2385,13 @@ export default function AdminPreview() {
           {/* ══════════════════════════════════════════════════════════════ */}
           <TabsContent value="weeklypacks" className="space-y-6 mt-4">
             <WeeklyPacksPreview />
+          </TabsContent>
+
+          {/* ══════════════════════════════════════════════════════════════ */}
+          {/* TAB: RANKING                                                  */}
+          {/* ══════════════════════════════════════════════════════════════ */}
+          <TabsContent value="ranking" className="space-y-6 mt-4">
+            <RankingPreview />
           </TabsContent>
         </Tabs>
       </div>
