@@ -252,7 +252,7 @@ Deno.serve(async (req: Request) => {
 
         const { error } = await supabase
           .from("user_profiles")
-          .update({ subscribed: false })
+          .update({ subscribed: false, subscription_expires_at: null })
           .eq("stripe_customer_id", customerId);
 
         if (error) console.error("[stripe-webhook] payment_failed DB error:", error);
