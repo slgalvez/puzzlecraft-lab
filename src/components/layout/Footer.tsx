@@ -6,7 +6,7 @@ const Footer = () => (
       <div className="flex flex-col items-center gap-5 md:flex-row md:justify-between">
         <div className="text-center md:text-left">
           <p className="font-display text-lg font-semibold text-foreground">Puzzlecraft</p>
-          <p className="mt-1 text-sm text-muted-foreground">Daily puzzles for curious minds.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Solve. Compete. Create.</p>
         </div>
         <nav className="flex justify-center gap-6 text-sm text-muted-foreground">
           <Link to="/about" className="hover:text-foreground transition-colors py-2 px-1">About</Link>
