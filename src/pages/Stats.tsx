@@ -98,6 +98,16 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
   const dailyStreak    = useMemo(() => isViewAs ? getDailyStreakFrom(viewAsUser!.dailyData) : getDailyStreak(),                  [dataVersion, isViewAs, viewAsUser]);
   const dailyCompleted = useMemo(() => isViewAs ? getTotalDailyCompletedFrom(viewAsUser!.dailyData) : getTotalDailyCompleted(),          [dataVersion, isViewAs, viewAsUser]);
   const endlessStats   = useMemo(() => isViewAs ? getEndlessStatsFrom(viewAsUser!.endlessData) : getEndlessStats(), [dataVersion, isViewAs, viewAsUser]);
+
+  // Build solve record lookup for matching completions to scores/badges
+  const solveRecordMap = useMemo(() => {
+    const recs = isViewAs ? getSolveRecordsFrom(viewAsUser!.solves) : getSolveRecords();
+    const map = new Map<string, SolveRecord>();
+    for (const r of recs) {
+      map.set(`${r.puzzleType}-${r.completedAt.slice(0, 16)}`, r);
+    }
+    return map;
+  }, [dataVersion, isViewAs, viewAsUser]);
   const endlessSummary = endlessStats ?? {
     totalSessions: 0,
     totalSolved: 0,
