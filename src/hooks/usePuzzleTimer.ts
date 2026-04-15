@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { recordCompletion } from "@/lib/progressTracker";
 import { recordDailyCompletion, getTodaysChallenge } from "@/lib/dailyChallenge";
-import { recordSolve } from "@/lib/solveTracker";
+import { recordSolve, getSolveRecords, type TierUpEvent } from "@/lib/solveTracker";
 import { checkMilestones } from "@/lib/milestones";
+import { computePlayerRating, getSkillTier } from "@/lib/solveScoring";
 import type { PuzzleCategory } from "@/lib/puzzleTypes";
 
 interface TimerState {
@@ -143,6 +144,11 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
         }
       }
 
+      // Snapshot tier BEFORE recording
+      const recordsBefore = getSolveRecords();
+      const ratingBefore = recordsBefore.length > 0 ? computePlayerRating(recordsBefore) : 0;
+      const tierBefore = recordsBefore.length > 0 ? getSkillTier(ratingBefore) : null;
+
       // Standardized solve record
       recordSolve({
         puzzleId: puzzleKey,
@@ -155,6 +161,24 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
         assisted,
         origin: isDailyChallenge ? "daily" : undefined,
       });
+
+      // Detect tier-up AFTER recording
+      if (tierBefore) {
+        const recordsAfter = getSolveRecords();
+        const ratingAfter = computePlayerRating(recordsAfter);
+        const tierAfter = getSkillTier(ratingAfter);
+        if (tierAfter !== tierBefore) {
+          const event: TierUpEvent = {
+            fromTier: tierBefore,
+            toTier: tierAfter,
+            rating: ratingAfter,
+            timestamp: new Date().toISOString(),
+          };
+          try {
+            localStorage.setItem("puzzlecraft-tier-up", JSON.stringify(event));
+          } catch {}
+        }
+      }
 
       // Check milestones after recording
       setTimeout(() => checkMilestones(), 1500);

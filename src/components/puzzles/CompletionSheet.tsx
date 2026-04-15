@@ -16,6 +16,8 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { hapticSuccess } from "@/lib/haptic";
 import CompletionPanel from "@/components/puzzles/CompletionPanel";
+import { TierUpCelebration } from "@/components/puzzles/TierUpCelebration";
+import { checkTierUp, type TierUpEvent } from "@/lib/solveTracker";
 import type { Difficulty, PuzzleCategory } from "@/lib/puzzleTypes";
 
 // ── Types (mirror CompletionPanel props) ─────────────────────────────────
@@ -48,6 +50,7 @@ export function CompletionSheet({
   const [animateIn, setAnimateIn] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
   const firedHaptic = useRef(false);
+  const [tierUp, setTierUp] = useState<TierUpEvent | null>(null);
 
   useEffect(() => {
     if (open && !visible) {
@@ -55,6 +58,11 @@ export function CompletionSheet({
       if (!firedHaptic.current) {
         firedHaptic.current = true;
         hapticSuccess();
+        // Check for tier-up after a short delay to let the sheet animate in
+        setTimeout(() => {
+          const event = checkTierUp();
+          if (event) setTierUp(event);
+        }, 800);
       }
       requestAnimationFrame(() => {
         requestAnimationFrame(() => setAnimateIn(true));
@@ -114,6 +122,16 @@ export function CompletionSheet({
           }}
         />
       </div>
+
+      {/* Tier-up celebration overlay */}
+      {tierUp && (
+        <TierUpCelebration
+          fromTier={tierUp.fromTier}
+          toTier={tierUp.toTier}
+          rating={tierUp.rating}
+          onDismiss={() => setTierUp(null)}
+        />
+      )}
     </>
   );
 }

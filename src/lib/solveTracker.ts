@@ -102,6 +102,33 @@ export function recordSolve(input: RecordSolveInput): SolveRecord {
   return record;
 }
 
+// ── Tier-up detection ─────────────────────────────────────────────────────
+
+const TIER_UP_KEY = "puzzlecraft-tier-up";
+
+export interface TierUpEvent {
+  fromTier: string;
+  toTier: string;
+  rating: number;
+  timestamp: string;
+}
+
+/**
+ * Check if the latest solve caused a tier change.
+ * Call AFTER recordSolve(). Returns the event if a tier-up occurred, null otherwise.
+ * Consumes the event (one-shot read).
+ */
+export function checkTierUp(): TierUpEvent | null {
+  try {
+    const raw = localStorage.getItem(TIER_UP_KEY);
+    if (!raw) return null;
+    localStorage.removeItem(TIER_UP_KEY);
+    return JSON.parse(raw) as TierUpEvent;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Returns real solve records only — never includes demo data.
  * This is the ONLY function components should use for real user views.
