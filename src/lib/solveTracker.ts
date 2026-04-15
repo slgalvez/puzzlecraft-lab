@@ -102,6 +102,63 @@ export function recordSolve(input: RecordSolveInput): SolveRecord {
   return record;
 }
 
+// ── Tier-up detection ─────────────────────────────────────────────────────
+
+const TIER_UP_KEY = "puzzlecraft-tier-up";
+
+export interface TierUpEvent {
+  fromTier: string;
+  toTier: string;
+  rating: number;
+  timestamp: string;
+}
+
+/**
+ * Check if the latest solve caused a tier change.
+ * Call AFTER recordSolve(). Returns the event if a tier-up occurred, null otherwise.
+ * Consumes the event (one-shot read).
+ */
+export function checkTierUp(): TierUpEvent | null {
+  try {
+    const raw = localStorage.getItem(TIER_UP_KEY);
+    if (!raw) return null;
+    localStorage.removeItem(TIER_UP_KEY);
+    return JSON.parse(raw) as TierUpEvent;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Detect and store a tier-up event by comparing the tier before and after adding a record.
+ * Called internally by recordSolve — consumers read via checkTierUp().
+ */
+function detectAndStoreTierUp(recordsBefore: SolveRecord[], recordsAfter: SolveRecord[]): void {
+  // Lazy import to avoid circular deps
+  const { computePlayerRating, getSkillTier } = require("./solveScoring");
+  const validBefore = recordsBefore.filter((r: SolveRecord) => r.solveTime >= 10 && !(r as any).__demo);
+  const validAfter  = recordsAfter.filter((r: SolveRecord) => r.solveTime >= 10 && !(r as any).__demo);
+
+  if (validBefore.length === 0) return; // first solve — no tier-up possible
+
+  const ratingBefore = computePlayerRating(validBefore);
+  const ratingAfter  = computePlayerRating(validAfter);
+  const tierBefore = getSkillTier(ratingBefore);
+  const tierAfter  = getSkillTier(ratingAfter);
+
+  if (tierAfter !== tierBefore) {
+    const event: TierUpEvent = {
+      fromTier: tierBefore,
+      toTier: tierAfter,
+      rating: ratingAfter,
+      timestamp: new Date().toISOString(),
+    };
+    try {
+      localStorage.setItem(TIER_UP_KEY, JSON.stringify(event));
+    } catch {}
+  }
+}
+
 /**
  * Returns real solve records only — never includes demo data.
  * This is the ONLY function components should use for real user views.
