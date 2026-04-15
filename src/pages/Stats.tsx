@@ -48,6 +48,7 @@ import {
 
 type ViewFilter = null | "daily";
 const RECENT_COLLAPSED_COUNT = 8;
+const RECENT_FREE_COUNT = 5;
 
 const ALL_CATEGORIES: PuzzleCategory[] = [
   "crossword", "word-fill", "number-fill", "sudoku",
@@ -96,6 +97,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
   const isViewAs = viewAsMode && !!viewAsUser;
 
   const { isPremium: premiumAccess, showUpgradeCTA: showUpgrade } = usePremiumAccess();
+  const isPlus = premiumAccess;
   const { account } = useUserAccount();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
@@ -256,9 +258,10 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
     return { totalSolved, totalTime, averageTime: totalSolved > 0 ? Math.round(totalTime / totalSolved) : 0, bestTime };
   }, [dateFilter, categoryFilter, stats.recentCompletions]);
 
+  const recentMaxRows = isPlus ? RECENT_COLLAPSED_COUNT : RECENT_FREE_COUNT;
   const visibleCompletions = recentExpanded
     ? filteredCompletions
-    : filteredCompletions.slice(0, RECENT_COLLAPSED_COUNT);
+    : filteredCompletions.slice(0, recentMaxRows);
 
   const showGeneral = viewFilter === null;
   const showDaily   = viewFilter === null || viewFilter === "daily";
@@ -374,22 +377,19 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
           {/* ── LEFT COLUMN ── */}
           <div className="min-w-0 flex-1 space-y-6">
 
-            {/* ── UNIFIED PLAYER PROFILE CARD ── */}
-            {showGeneral && premiumAccess && localRating && (() => {
-
-
-
+            {/* ── UNIFIED PLAYER PROFILE CARD (Plus only) ── */}
+            {showGeneral && isPlus && localRating && (() => {
               return (
                 <div className={cn(
                   "rounded-2xl border p-5 sm:p-6 shadow-sm mb-2",
                   getTierCardStyle(localRating.tier as SkillTier)
                 )}>
-                  {/* Header row: label + P+ badge + leaderboard */}
+                  {/* Header row */}
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Zap size={14} className="text-primary" />
                       <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Player Profile</span>
-                      <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-primary">P+</span>
+                      <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-primary">Puzzlecraft+</span>
                     </div>
                     <Button asChild variant="outline" size="sm" className="h-7 text-xs gap-1">
                       <Link to="/leaderboard"><Shield size={11} className="mr-0.5" /> Leaderboard</Link>
@@ -424,7 +424,6 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                         <p className="text-[10px] text-muted-foreground/60 mt-1">Peak: {localRating.bestRating}</p>
                       )}
 
-                      {/* Expert crown or progress */}
                       {localRating.tier === "Expert" ? (
                         <div className="mt-3 flex items-center gap-2 text-sm">
                           <Crown size={14} className="text-amber-500" />
@@ -454,21 +453,8 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
               );
             })()}
 
-            {/* Premium upgrade teaser — hidden in view-as mode */}
-            {showGeneral && showUpgrade && !premiumAccess && !isViewAs && (
-              <StatsPremiumPreview onUpgrade={() => setUpgradeOpen(true)} />
-            )}
-
-            {/* Premium stats section */}
-            {showGeneral && premiumAccess && (
-              <>
-
-                <PremiumStats key={dataVersion} hideAdminControls={isViewAs} overrideSolveRecords={isViewAs ? getSolveRecordsFrom(viewAsUser!.solves) : undefined} />
-              </>
-            )}
-
-            {/* Recent solves */}
-            {filteredCompletions.length > 0 && (
+            {/* FREE: Recent Solves first (simplified) */}
+            {!isPlus && filteredCompletions.length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-display text-base font-semibold text-foreground">Recent Solves</h2>
@@ -484,7 +470,63 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="rounded-xl border bg-card overflow-hidden">
+                  {visibleCompletions.map((c, i) => {
+                    const isLast = i === visibleCompletions.length - 1;
+                    return (
+                      <div key={`${c.date}-${i}`}
+                        className={cn("flex items-center gap-3 px-4 py-3", !isLast && "border-b border-border/40")}>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium text-foreground truncate">
+                            {CATEGORY_INFO[c.category]?.name ?? c.category}
+                          </span>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-mono text-sm font-semibold text-foreground">{formatTime(c.time)}</p>
+                          <span className="text-[10px] text-muted-foreground/60">
+                            {new Date(c.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {filteredCompletions.length > RECENT_FREE_COUNT && (
+                  <button onClick={() => setRecentExpanded((v) => !v)}
+                    className="mt-2 w-full text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors text-center py-1">
+                    {recentExpanded ? "Show less" : `Show all ${filteredCompletions.length} solves`}
+                  </button>
+                )}
+              </div>
+            )}
 
+            {/* Premium upgrade teaser — hidden in view-as mode */}
+            {showGeneral && showUpgrade && !isPlus && !isViewAs && (
+              <StatsPremiumPreview onUpgrade={() => setUpgradeOpen(true)} />
+            )}
+
+            {/* PLUS: Premium stats section (Milestones, Accuracy, Performance) */}
+            {showGeneral && isPlus && (
+              <PremiumStats key={dataVersion} hideAdminControls={isViewAs} overrideSolveRecords={isViewAs ? getSolveRecordsFrom(viewAsUser!.solves) : undefined} />
+            )}
+
+            {/* PLUS: Recent Solves (full detail, lower on page) */}
+            {isPlus && filteredCompletions.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="font-display text-base font-semibold text-foreground">Recent Solves</h2>
+                  <Select value={categoryFilter ?? "all"} onValueChange={handleCategoryChange}>
+                    <SelectTrigger className="w-36 h-8 text-xs">
+                      <SelectValue placeholder="All Types" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      {ALL_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat} value={cat}>{CATEGORY_INFO[cat]?.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="rounded-xl border bg-card overflow-hidden">
                   {visibleCompletions.map((c, i) => {
                     const isLast = i === visibleCompletions.length - 1;
@@ -553,7 +595,6 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                     );
                   })}
                 </div>
-
                 {filteredCompletions.length > RECENT_COLLAPSED_COUNT && (
                   <button onClick={() => setRecentExpanded((v) => !v)}
                     className="mt-2 w-full text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors text-center py-1">
