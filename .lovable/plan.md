@@ -1,33 +1,89 @@
 
 
-# Rewrite Help, FAQ & About Pages
+# View as User (Stats) — Admin Feature
 
 ## Overview
-Rewrite all three files with a premium, product-confident tone. No "we believe" or filler. Add FAQ section to Help page covering ranking, leaderboards, sharing, and daily challenge.
+Allow admins to view the Stats page as any user by fetching their data from the database and injecting it via React context — no localStorage swapping.
 
-## Changes
+## Architecture
 
-### 1. `src/pages/About.tsx` — Full rewrite
-- Opening: one clear sentence — "Puzzlecraft is a competitive puzzle platform where you solve, rank, and share."
-- Short sections with icons: **Eight puzzle types** (list them), **Competitive play** (rating system, skill tiers, global leaderboard), **Daily Challenge** (fresh puzzle every day, one attempt), **Create & Share** (craft custom puzzles, send to friends), **Puzzlecraft+** (premium tier mention)
-- Concise paragraphs, no fluff. Active voice throughout.
+### 1. Database: Admin RPC for reading user progress
+Create a `SECURITY DEFINER` function `admin_get_user_progress(p_user_id uuid)` that returns the `user_progress` row. Gated on `user_is_admin()` — returns null for non-admins.
 
-### 2. `src/pages/Help.tsx` — Restructure with Accordion + FAQ
-- **Top section**: "How to Play" — each puzzle type collapsed into an `Accordion` (from `@/components/ui/accordion`), showing 3–4 steps + 2 best tips per type. Much more compact than current layout.
-- **Bottom section**: "Frequently Asked Questions" — new accordion group:
-  - *How does the ranking system work?* — Solve puzzles → earn a score (speed, accuracy, difficulty). First 5 solves are provisional. After 5 your rating is confirmed.
-  - *How do leaderboards work?* — Complete 10+ puzzles to appear on the global leaderboard. Rankings update based on your rolling average.
-  - *What is the daily challenge?* — A new puzzle every day. One attempt. Compete with other solvers on time and accuracy.
-  - *How do I share puzzles?* — Use the Craft tool to build custom puzzles and send them to friends via link.
-  - *What is Puzzlecraft+?* — Premium tier with all difficulties, unlimited crafting, full stats, and leaderboard access.
+```sql
+CREATE OR REPLACE FUNCTION public.admin_get_user_progress(p_user_id uuid)
+RETURNS TABLE(completions jsonb, solves jsonb, daily_data jsonb, endless_data jsonb)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = 'public'
+AS $$
+  SELECT completions, solves, daily_data, endless_data
+  FROM public.user_progress
+  WHERE user_id = p_user_id
+    AND (SELECT is_admin FROM public.user_profiles WHERE id = auth.uid()) = true
+$$;
+```
 
-### 3. `src/components/layout/Footer.tsx` — Tagline update
-- Change "Daily puzzles for curious minds." → "Solve. Compete. Create."
+### 2. New context: `src/contexts/ViewAsUserContext.tsx`
+- Stores `viewAsUser: { id, displayName, completions, solves, dailyData, endlessData } | null`
+- Provides `enterViewAs(userId)` — calls the RPC, fetches leaderboard entry
+- Provides `exitViewAs()` — clears state
+- Wraps children and renders a sticky banner when active
+
+### 3. Data override layer: `src/lib/viewAsOverrides.ts`
+Pure functions that mirror the localStorage-based helpers but accept data arrays:
+- `getProgressStatsFrom(completions)` — same logic as `progressTracker.getProgressStats()` but from provided data
+- `getSolveRecordsFrom(solves)` — returns solves array directly
+- `getDailyStreakFrom(dailyData)` — computes streak from provided daily completions map
+- `getEndlessStatsFrom(endlessData)` — computes endless summary from provided sessions
+- `getDailyCompletionFrom(dailyData, dateStr)` — single day lookup
+
+These are thin wrappers reusing the same math as the originals.
+
+### 4. Update `src/pages/Stats.tsx`
+- Accept optional `viewAsMode` prop (default false)
+- Import `useViewAsUser` context
+- When `viewAsUser` is present:
+  - Use override functions instead of localStorage helpers for `stats`, `dailyStreak`, `dailyCompleted`, `endlessStats`, `solveRecords`
+  - Skip `syncLeaderboardRating` effect
+  - Skip `useQuery` for leaderboard (use data from context instead)
+  - Hide upgrade CTAs
+  - Fetch leaderboard entry for the target user directly
+
+### 5. Update `src/components/stats/ActivityCalendar.tsx`
+- Accept optional override props: `overridePlayedDates`, `overrideCraftedDates`, `overrideDailyFn`
+- When overrides present, use them instead of `getProgressStats()`, `loadSentItems()`, `getDailyCompletion()`
+- Stats.tsx passes these from context data when in view-as mode
+
+### 6. New page: `src/pages/AdminViewAsStats.tsx`
+- Route: `/admin-view-as-stats`
+- Admin-gated (redirects non-admins)
+- Top: search input querying `user_profiles` for display_name/id
+- User list with "View Stats" button per row
+- On select: calls `enterViewAs(userId)`, renders `<Stats viewAsMode />`
+- Sticky banner: "Viewing as [User Name]" with Exit button
+- Exit: calls `exitViewAs()`, returns to user selector
+
+### 7. Route in `src/App.tsx`
+Add `<Route path="/admin-view-as-stats" element={<AdminViewAsStats />} />` in PublicRoutes.
+
+### 8. Link from `AdminAnalytics.tsx`
+Add a small icon button per user row linking to `/admin-view-as-stats?userId={id}`.
 
 ## Files changed
+
 | File | Change |
 |------|--------|
-| `src/pages/About.tsx` | Full content rewrite |
-| `src/pages/Help.tsx` | Accordion restructure + FAQ section |
-| `src/components/layout/Footer.tsx` | Tagline update |
+| Migration | `admin_get_user_progress` RPC |
+| `src/contexts/ViewAsUserContext.tsx` | New — context with enter/exit, banner |
+| `src/lib/viewAsOverrides.ts` | New — pure data-driven stat functions |
+| `src/pages/AdminViewAsStats.tsx` | New — admin page with user selector |
+| `src/pages/Stats.tsx` | Add `viewAsMode` prop, context-based data branching |
+| `src/components/stats/ActivityCalendar.tsx` | Accept optional override props |
+| `src/App.tsx` | Add route |
+| `src/pages/AdminAnalytics.tsx` | Add "View Stats" link per row |
+
+## Safety
+- No localStorage reads or writes in view-as mode
+- No sync, no mutations, no upgrade CTAs
+- RPC is `SECURITY DEFINER` gated on `is_admin`
+- All data flows through React context — fully reversible by unmounting
 
