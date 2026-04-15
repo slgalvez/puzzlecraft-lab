@@ -22,7 +22,7 @@ import { Link } from "react-router-dom";
 
 const TIER_ORDER: SkillTier[] = ["Beginner", "Casual", "Skilled", "Advanced", "Expert"];
 const TIER_THRESHOLDS: Record<string, number> = {
-  Beginner: 0, Casual: 400, Skilled: 700, Advanced: 950, Expert: 1200,
+  Beginner: 0, Casual: 650, Skilled: 850, Advanced: 1300, Expert: 1650,
 };
 
 function getNextTierInfo(tier: SkillTier, rating: number) {
