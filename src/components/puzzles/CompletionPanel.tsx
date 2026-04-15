@@ -103,7 +103,7 @@ const CompletionPanel = ({
   const isDaily = origin === "daily";
   const ratingDelta = useRatingDelta();
   const personalBest = usePersonalBest(category, difficulty, time, assisted);
-  const shareData = buildShareData({ category, seed, difficulty, time, isDaily, dailyCode, prevBest: personalBest?.prev });
+  // shareData is built after dailyRank resolves — declared below as a memo
   const streak = useMemo(() => getDailyStreak(), []);
 
   const score = useMemo(() => {
