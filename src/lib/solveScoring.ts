@@ -126,19 +126,19 @@ export function getTierColor(tier: SkillTier): string {
 // ── Tier Visual Styles ────────────────────────────────────────────────────
 
 const TIER_CARD_STYLES: Record<SkillTier, string> = {
-  Beginner:  "border-border bg-card",
-  Casual:    "border-sky-500/20 bg-sky-500/[0.02]",
-  Skilled:   "border-emerald-500/20 bg-emerald-500/[0.02]",
-  Advanced:  "border-primary/20 bg-primary/[0.03]",
-  Expert:    "border-amber-500/25 bg-amber-500/[0.03]",
+  Beginner:  "border-border bg-muted/30",
+  Casual:    "border-sky-500/30 bg-sky-500/[0.06]",
+  Skilled:   "border-emerald-500/30 bg-emerald-500/[0.06]",
+  Advanced:  "border-primary/30 bg-primary/[0.07]",
+  Expert:    "border-amber-500/35 bg-amber-500/[0.08]",
 };
 
 const TIER_BADGE_STYLES: Record<SkillTier, string> = {
   Beginner:  "bg-muted text-muted-foreground",
-  Casual:    "bg-sky-500/10 text-sky-500",
-  Skilled:   "bg-emerald-500/10 text-emerald-500",
-  Advanced:  "bg-primary/10 text-primary",
-  Expert:    "bg-amber-500/10 text-amber-500",
+  Casual:    "bg-sky-500/15 text-sky-500",
+  Skilled:   "bg-emerald-500/15 text-emerald-500",
+  Advanced:  "bg-primary/15 text-primary",
+  Expert:    "bg-amber-500/15 text-amber-500",
 };
 
 export function getTierCardStyle(tier: SkillTier): string {
