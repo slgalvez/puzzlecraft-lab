@@ -449,13 +449,13 @@ const CraftPuzzle = () => {
   const handleCopyLink = async () => {
     if (limitReached) { setUpgradeOpen(true); return; }
     if (!shareUrl) return;
-    const fullText = buildCraftShareText(
-      puzzleTitle.trim() || undefined,
-      puzzleFrom.trim() || undefined,
-      shareUrl,
-      selectedType ?? undefined,
+    const fullText = buildUnifiedCraftShareText({
+      title: puzzleTitle.trim() || undefined,
+      from: puzzleFrom.trim() || undefined,
+      url: shareUrl,
+      type: selectedType ?? undefined,
       creatorSolveTime,
-    );
+    });
     try {
       await navigator.clipboard.writeText(fullText);
       recordSent();
@@ -473,13 +473,13 @@ const CraftPuzzle = () => {
     if (limitReached) { setUpgradeOpen(true); return; }
     if (!shareUrl || !generatedData || !selectedType) return;
 
-    const shareText = buildCraftShareText(
-      puzzleTitle.trim() || undefined,
-      puzzleFrom.trim() || undefined,
-      shareUrl,
-      selectedType ?? undefined,
+    const shareText = buildUnifiedCraftShareText({
+      title: puzzleTitle.trim() || undefined,
+      from: puzzleFrom.trim() || undefined,
+      url: shareUrl,
+      type: selectedType ?? undefined,
       creatorSolveTime,
-    );
+    });
 
     if (navigator.share) {
       try {
