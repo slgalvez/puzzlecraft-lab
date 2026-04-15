@@ -16,7 +16,7 @@ import {
   type SkillTier,
 } from "@/lib/solveScoring";
 import { getAllMilestones, getUncelebratedIds, markCelebrated, type MilestoneIcon, type MilestoneState } from "@/lib/milestones";
-import { Clock, Trophy, Target, BarChart3, CheckCircle, FlaskConical, Trash2, TrendingUp, TrendingDown, ChevronDown, ChevronUp, Award, Puzzle, Flame, Crown, Medal, Bolt, Star, Gauge, Sparkles } from "lucide-react";
+import { Clock, Trophy, Target, BarChart3, Zap, CheckCircle, FlaskConical, Trash2, TrendingUp, TrendingDown, ChevronDown, ChevronUp, Award, Puzzle, Flame, Crown, Medal, Bolt, Star, Gauge, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateDemoSolves, clearDemoSolves, hasDemoData, generateDemoLeaderboard, clearDemoLeaderboard, hasDemoLeaderboard } from "@/lib/demoStats";
 import { useUserAccount } from "@/contexts/UserAccountContext";
@@ -186,7 +186,7 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
   const timeTrend = computeTrend(records, (r) => r.solveTime);
   const accuracyTrend = computeTrend(records, (r) => trueMistakes(r));
 
-  const insight = getBestInsight(records);
+  
 
   const noHintSolves = records.filter((r) => r.hintsUsed === 0 && !r.assisted);
   const noHintRate = Math.round((noHintSolves.length / records.length) * 100);
