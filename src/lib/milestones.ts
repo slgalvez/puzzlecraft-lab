@@ -51,30 +51,36 @@ export const MILESTONE_ICON_EMOJI: Record<MilestoneIcon, string> = {
 };
 
 const SOLVE_MILESTONES: { count: number; milestone: Milestone }[] = [
-  { count: 10,  milestone: { id: "solves-10",  label: "10 Puzzles Solved",  icon: "puzzle", quote: "Every puzzle solved is a mind sharpened." } },
-  { count: 50,  milestone: { id: "solves-50",  label: "50 Puzzles Solved",  icon: "flame",  quote: "Consistency is the secret. Keep that streak burning." } },
-  { count: 100, milestone: { id: "solves-100", label: "100 Puzzles Solved", icon: "trophy", quote: "100 down. You're in rare company." } },
-  { count: 250, milestone: { id: "solves-250", label: "250 Puzzles Solved", icon: "medal",  quote: "This is what dedication looks like." } },
+  { count: 10,   milestone: { id: "solves-10",   label: "10 Puzzles Solved",   icon: "puzzle", quote: "Every puzzle solved is a mind sharpened." } },
+  { count: 50,   milestone: { id: "solves-50",   label: "50 Puzzles Solved",   icon: "flame",  quote: "Consistency is the secret. Keep that streak burning." } },
+  { count: 100,  milestone: { id: "solves-100",  label: "100 Puzzles Solved",  icon: "trophy", quote: "100 down. You're in rare company." } },
+  { count: 250,  milestone: { id: "solves-250",  label: "250 Puzzles Solved",  icon: "medal",  quote: "This is what dedication looks like." } },
+  { count: 500,  milestone: { id: "solves-500",  label: "500 Puzzles Solved",  icon: "crown",  quote: "Half a thousand. Legendary." } },
+  { count: 1000, milestone: { id: "solves-1000", label: "1000 Puzzles Solved", icon: "trophy", quote: "Four digits. You're in a class of your own." } },
 ];
 
 const STREAK_MILESTONES: { days: number; milestone: Milestone }[] = [
-  { days: 3,  milestone: { id: "streak-3",  label: "3-Day Streak",  icon: "flame",  quote: "Three in a row. The habit is forming." } },
-  { days: 7,  milestone: { id: "streak-7",  label: "7-Day Streak",  icon: "zap",    quote: "One full week. You keep showing up." } },
-  { days: 14, milestone: { id: "streak-14", label: "14-Day Streak", icon: "bolt",   quote: "Two weeks strong. This is real commitment." } },
-  { days: 30, milestone: { id: "streak-30", label: "30-Day Streak", icon: "crown",  quote: "30 days. You've earned this." } },
+  { days: 3,   milestone: { id: "streak-3",   label: "3-Day Streak",   icon: "flame",  quote: "Three in a row. The habit is forming." } },
+  { days: 7,   milestone: { id: "streak-7",   label: "7-Day Streak",   icon: "zap",    quote: "One full week. You keep showing up." } },
+  { days: 14,  milestone: { id: "streak-14",  label: "14-Day Streak",  icon: "bolt",   quote: "Two weeks strong. This is real commitment." } },
+  { days: 30,  milestone: { id: "streak-30",  label: "30-Day Streak",  icon: "crown",  quote: "30 days. You've earned this." } },
+  { days: 60,  milestone: { id: "streak-60",  label: "60-Day Streak",  icon: "award",  quote: "Two months. Unbreakable." } },
+  { days: 100, milestone: { id: "streak-100", label: "100-Day Streak", icon: "crown",  quote: "Triple digits. This is mastery." } },
 ];
 
-const TIER_ORDER: SkillTier[] = ["Skilled", "Advanced", "Expert"];
+const TIER_ORDER: SkillTier[] = ["Casual", "Skilled", "Advanced", "Expert"];
 const TIER_MILESTONES: { tier: SkillTier; milestone: Milestone }[] = [
+  { tier: "Casual",   milestone: { id: "tier-casual",   label: "Casual Rank Reached",   icon: "zap",    quote: "You've found your rhythm." } },
   { tier: "Skilled",  milestone: { id: "tier-skilled",  label: "Skilled Rank Reached",  icon: "target", quote: "Your solve speed is climbing. Keep pushing." } },
   { tier: "Advanced", milestone: { id: "tier-advanced", label: "Advanced Rank Reached", icon: "award",  quote: "Advanced. Most players never get here." } },
   { tier: "Expert",   milestone: { id: "tier-expert",   label: "Expert Rank Reached",   icon: "medal",  quote: "Expert tier. You're among the very best." } },
 ];
 
 const TIER_RATING_THRESHOLDS: Record<string, number> = {
-  Skilled: 700,
-  Advanced: 950,
-  Expert: 1200,
+  Casual: 650,
+  Skilled: 850,
+  Advanced: 1300,
+  Expert: 1650,
 };
 
 const CELEBRATED_KEY = "puzzlecraft-milestones-celebrated";
