@@ -79,7 +79,7 @@ export default function UpgradeModalNextUI({
           <X size={15} className="text-muted-foreground" />
         </button>
 
-        <div className="px-6 pt-2 pb-6 space-y-8">
+        <div className="px-6 pt-2 pb-6 space-y-5">
           {/* ── Header ── */}
           <div className="text-center pt-2">
             <div className="flex h-10 w-10 mx-auto mb-3 items-center justify-center rounded-xl bg-primary/8">
@@ -96,17 +96,17 @@ export default function UpgradeModalNextUI({
             {BENEFIT_SECTIONS.map(({ title, icon: Icon, items }) => (
               <div
                 key={title}
-                className="rounded-xl border border-border/20 px-4 py-2.5"
+                className="rounded-xl border border-border/40 px-4 py-3"
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <Icon size={11} className="text-muted-foreground/60" />
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground/70">
+                  <Icon size={13} className="text-muted-foreground/60" />
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground/70">
                     {title}
                   </span>
                 </div>
                 <ul className="space-y-0.5">
                   {items.map((item) => (
-                    <li key={item} className="text-[13px] leading-snug text-muted-foreground">
+                    <li key={item} className="text-sm leading-snug text-muted-foreground">
                       {item}
                     </li>
                   ))}
