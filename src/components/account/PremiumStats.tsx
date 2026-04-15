@@ -2,7 +2,7 @@
  * Puzzlecraft+ Advanced Stats — premium-only sections.
  * Milestones → Accuracy → Performance by Type → Solve History
  */
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState } from "react";
 import { getSolveRecords, getSolveSummary, getAllSolveRecordsIncludingDemo, getDemoSolveSummary, type SolveRecord } from "@/lib/solveTracker";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory, type Difficulty } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
@@ -115,58 +115,12 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
     }
     return (isAdmin && demoActive) ? getDemoSolveSummary() : getSolveSummary();
   }, [refreshKey, isAdmin, demoActive, hasOverride, overrideSolveRecords]);
-  const demoLeaderboardActive = useMemo(() => hasDemoLeaderboard(), [refreshKey]);
-  
 
-  const handleGenerate = useCallback(() => {
-    generateDemoSolves(25);
-    setRefreshKey((k) => k + 1);
-    onDataChange?.();
-  }, [onDataChange]);
-
-  const handleClear = useCallback(() => {
-    clearDemoSolves();
-    setRefreshKey((k) => k + 1);
-    onDataChange?.();
-  }, [onDataChange]);
-
-  const handleGenerateLeaderboard = useCallback(async () => {
-    await generateDemoLeaderboard();
-    setRefreshKey((k) => k + 1);
-  }, []);
-
-  const handleClearLeaderboard = useCallback(async () => {
-    await clearDemoLeaderboard();
-    setRefreshKey((k) => k + 1);
-  }, []);
-
-  const adminControls = isAdmin && !hideAdminControls && (
-    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2">
-      <FlaskConical size={14} className="text-primary" />
-      <span className="text-xs font-medium text-primary">Admin</span>
-      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleGenerate}>
-        Generate Stats Demo
-      </Button>
-      {demoActive && (
-        <Button size="sm" variant="outline" className="h-7 text-xs text-destructive border-destructive/30 hover:bg-destructive/10" onClick={handleClear}>
-          <Trash2 size={12} className="mr-1" /> Clear Stats
-        </Button>
-      )}
-      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleGenerateLeaderboard}>
-        Generate Leaderboard Demo
-      </Button>
-      {demoLeaderboardActive && (
-        <Button size="sm" variant="outline" className="h-7 text-xs text-destructive border-destructive/30 hover:bg-destructive/10" onClick={handleClearLeaderboard}>
-          <Trash2 size={12} className="mr-1" /> Clear Leaderboard
-        </Button>
-      )}
-    </div>
-  );
 
   if (!summary || records.length === 0) {
     return (
       <div className="space-y-3">
-        {adminControls}
+        
         <div className="rounded-xl border border-primary/20 bg-card p-6 text-center">
           <Target className="mx-auto h-6 w-6 text-primary mb-3" />
           <p className="text-sm text-muted-foreground">
@@ -224,7 +178,7 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {adminControls}
+        
         {demoActive && (
           <p className="text-xs text-primary/60 italic">
             Viewing demo data — not from real solves
