@@ -87,26 +87,26 @@ function Ring({ radius, active, colorClass }: RingProps) {
       {/* Track */}
       <circle
         r={radius}
-        cx="18"
-        cy="18"
+        cx="20"
+        cy="20"
         fill="none"
         strokeWidth={1.8}
         className={colorClass}
-        style={{ strokeOpacity: 0.08 }}
+        style={{ strokeOpacity: 0.14 }}
       />
       {/* Fill */}
       {active && (
         <circle
           r={radius}
-          cx="18"
-          cy="18"
+          cx="20"
+          cy="20"
           fill="none"
           strokeWidth={1.8}
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={0}
           className={colorClass}
-          style={{ strokeOpacity: 0.85 }}
+          style={{ strokeOpacity: 0.92 }}
         />
       )}
     </>
@@ -201,7 +201,7 @@ export function ActivityCalendar({ className }: ActivityCalendarProps) {
       {/* Month nav */}
       <div className="flex items-center justify-between">
         <button onClick={prevMonth} className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-muted transition-colors active:scale-90">
-          <ChevronLeft size={14} className="text-muted-foreground" />
+          <ChevronLeft size={14} className="text-muted-foreground/70" />
         </button>
         <div className="text-center">
           <p className="text-xs font-semibold text-foreground">
@@ -221,7 +221,7 @@ export function ActivityCalendar({ className }: ActivityCalendarProps) {
             isAtCurrentMonth ? "opacity-20 cursor-not-allowed" : "hover:bg-muted active:scale-90",
           )}
         >
-          <ChevronRight size={14} className="text-muted-foreground" />
+          <ChevronRight size={14} className="text-muted-foreground/70" />
         </button>
       </div>
 
@@ -255,16 +255,16 @@ export function ActivityCalendar({ className }: ActivityCalendarProps) {
               )}
             >
               {showRings && anyActivity(day) ? (
-                <svg width="36" height="36" viewBox="0 0 36 36" className="-rotate-90">
-                  <Ring radius={15} active={day.hasDaily} colorClass={RING_COLORS.daily} />
-                  <Ring radius={11} active={day.hasPlayed} colorClass={RING_COLORS.played} />
-                  <Ring radius={7} active={day.hasCrafted} colorClass={RING_COLORS.crafted} />
+                <svg width="40" height="40" viewBox="0 0 40 40" className="-rotate-90">
+                  <Ring radius={17} active={day.hasDaily} colorClass={RING_COLORS.daily} />
+                  <Ring radius={12.5} active={day.hasPlayed} colorClass={RING_COLORS.played} />
+                  <Ring radius={8} active={day.hasCrafted} colorClass={RING_COLORS.crafted} />
                 </svg>
               ) : showRings ? (
-                <svg width="36" height="36" viewBox="0 0 36 36" className="-rotate-90">
-                  <Ring radius={15} active={false} colorClass={RING_COLORS.daily} />
-                  <Ring radius={11} active={false} colorClass={RING_COLORS.played} />
-                  <Ring radius={7} active={false} colorClass={RING_COLORS.crafted} />
+                <svg width="40" height="40" viewBox="0 0 40 40" className="-rotate-90">
+                  <Ring radius={17} active={false} colorClass={RING_COLORS.daily} />
+                  <Ring radius={12.5} active={false} colorClass={RING_COLORS.played} />
+                  <Ring radius={8} active={false} colorClass={RING_COLORS.crafted} />
                 </svg>
               ) : null}
 
@@ -272,8 +272,8 @@ export function ActivityCalendar({ className }: ActivityCalendarProps) {
               <span
                 className={cn(
                   "absolute inset-0 flex items-center justify-center text-[10px] font-medium",
-                  day.isToday && "font-bold text-primary",
-                  !day.isToday && day.isInMonth && !day.isFuture && "text-foreground/70",
+                  day.isToday && "font-bold text-primary drop-shadow-[0_0_3px_hsl(var(--primary)/0.4)]",
+                  !day.isToday && day.isInMonth && !day.isFuture && "text-foreground/80",
                   day.isFuture && "text-muted-foreground/30",
                   !day.isInMonth && "text-muted-foreground/30",
                 )}
@@ -283,7 +283,7 @@ export function ActivityCalendar({ className }: ActivityCalendarProps) {
 
               {/* Today dot */}
               {day.isToday && (
-                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-[3px] w-[3px] rounded-full bg-primary" />
+                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-[3px] w-[3px] rounded-full bg-primary shadow-[0_0_4px_hsl(var(--primary)/0.5)]" />
               )}
             </button>
           );
@@ -294,12 +294,12 @@ export function ActivityCalendar({ className }: ActivityCalendarProps) {
       <div className="flex items-center justify-center gap-4 pt-1">
         {([
           ["Daily", DOT_COLORS.daily],
-          ["Played", DOT_COLORS.played],
-          ["Crafted", DOT_COLORS.crafted],
+          ["Solved", DOT_COLORS.played],
+          ["Created", DOT_COLORS.crafted],
         ] as const).map(([label, color]) => (
           <div key={label} className="flex items-center gap-1">
             <span className={cn("h-[5px] w-[5px] rounded-full", color)} />
-            <span className="text-[9px] text-muted-foreground/50">{label}</span>
+            <span className="text-[9px] text-muted-foreground/70">{label}</span>
           </div>
         ))}
       </div>
@@ -315,8 +315,8 @@ export function ActivityCalendar({ className }: ActivityCalendarProps) {
               <div className="flex items-center gap-3">
                 {([
                   ["Daily", selected.hasDaily, DOT_COLORS.daily],
-                  ["Played", selected.hasPlayed, DOT_COLORS.played],
-                  ["Crafted", selected.hasCrafted, DOT_COLORS.crafted],
+                  ["Solved", selected.hasPlayed, DOT_COLORS.played],
+                  ["Created", selected.hasCrafted, DOT_COLORS.crafted],
                 ] as const).map(([label, active, color]) => (
                   <div key={label} className="flex items-center gap-1">
                     <span className={cn("h-1.5 w-1.5 rounded-full", active ? color : "bg-muted-foreground/20")} />
