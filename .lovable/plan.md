@@ -1,55 +1,82 @@
 
 
-# Add Demo Data Support for Recent Solves + Move Admin Controls
+# Membership-Based Stats Page Layout
 
-## Problem
-1. `generateDemoSolves()` creates records with `__demo: true`, but `getSolveRecords()` and `getCompletions()` filter those out — so the Stats page shows nothing when demo data is generated.
-2. The admin controls (`PremiumStatsAdminControls`) sit inline in the left column between the Player Profile card and PremiumStats, breaking layout flow.
+## Overview
+Two changes: (1) replace "P+" badge text with "Puzzlecraft+", (2) add `isPlus` flag to conditionally reorder sections and adjust content depth for free vs Plus users.
 
 ## Changes
 
-### 1. Make demo records visible when demo mode is active (`src/pages/Stats.tsx`)
+### `src/pages/Stats.tsx`
 
-When the admin generates demo data, use `getAllSolveRecordsIncludingDemo()` instead of `getSolveRecords()` for the solve record map, and pass demo-inclusive data through to all memo computations. Add a `demoActive` state that toggles with the admin controls.
+**1. Replace "P+" label** (line 392)
+- Change `P+` → `Puzzlecraft+`
 
-Specifically:
-- Import `hasDemoData` from `demoStats` and `getAllSolveRecordsIncludingDemo` from `solveTracker`
-- When `account?.isAdmin && hasDemoData()`, use demo-inclusive getters for `solveRecordMap`, `stats`, `localRatingInfo`, etc.
-- The `progressTracker.getCompletions` also needs demo inclusion — add an `includeDemo` parameter usage or use the existing `getCompletions(true)` path (it already accepts `includeDemo`).
-
-### 2. Move admin controls to a fixed top-right position (`src/pages/Stats.tsx`)
-
-Move the `PremiumStatsAdminControls` out of the left column flow. Place it as a fixed/absolute-positioned toolbar in the top-right corner of the page container (near the heading), styled as a small floating pill. This keeps it accessible but out of the layout flow.
-
-```
-┌─────────────────────────────────────────────┐
-│  Your Progress              [Admin Tools ▾] │
-│  Your solving stats...                      │
-├─────────────────────────────────────────────┤
-│  Player Profile Card                        │
-│  ...                                        │
+**2. Add membership flag**
+```tsx
+const isPlus = premiumAccess;
 ```
 
-- Move admin controls render from lines 455-457 into the heading area (lines 312-323)
-- Style as `absolute top-0 right-0` within a `relative` wrapper on the heading div
-- Compact horizontal layout with small buttons
+**3. Conditional section ordering in left column** (lines 375-564)
 
-### 3. Include demo completions in progress stats
+Current order: Player Profile → Premium Preview → PremiumStats (Milestones, Accuracy, Performance) → Recent Solves
 
-In `progressTracker.ts`, the `getCompletions()` already accepts `includeDemo` parameter. Export a `getProgressStatsIncludingDemo()` or have Stats.tsx call a different path when demo mode is active.
+**Free users** — reorder to:
+1. Player Profile (already gated by `premiumAccess`, so free users skip it — keep as-is)
+2. Recent Solves (moved UP, limited to 5 rows, no score/badges/difficulty bar)
+3. Milestones (via PremiumStats — but this is premium-gated, so free users see the preview teaser instead)
+4. Premium Preview teaser (already exists)
 
-Simpler approach: In Stats.tsx, when demo is active, override the `stats` memo to use the `includeDemo` flow. Since `getCompletions(true)` is internal, we can either:
-- Export it, or
-- Have Stats.tsx read completions directly from localStorage when demo is active
+**Puzzlecraft+ users** — reorder to:
+1. Player Profile
+2. PremiumStats (Milestones → Accuracy full → Performance full)
+3. Recent Solves (full: 8+ rows, score, PB/clean/daily icons, difficulty bar)
 
-Best approach: Export `getProgressStats(includeDemo?: boolean)` from progressTracker.
+Implementation: Render sections conditionally based on `isPlus`:
+
+```tsx
+{/* LEFT COLUMN */}
+<div className="min-w-0 flex-1 space-y-6">
+  {/* Player Profile — always first when available */}
+  {showGeneral && isPlus && localRating && (/* existing profile card */)}
+
+  {/* FREE: Recent Solves first (simplified) */}
+  {!isPlus && <RecentSolvesSection simplified />}
+
+  {/* Premium Preview teaser for free */}
+  {showGeneral && showUpgrade && !isPlus && !isViewAs && <StatsPremiumPreview ... />}
+
+  {/* PLUS: full premium stats */}
+  {showGeneral && isPlus && <PremiumStats ... />}
+
+  {/* PLUS: Recent Solves after premium sections */}
+  {isPlus && <RecentSolvesSection full />}
+</div>
+```
+
+**4. Recent Solves — extract inline render to avoid duplication**
+
+Create a local `renderRecentSolves(simplified: boolean)` function:
+- `simplified = true` (free): max 5 rows, hide score, hide clean/daily icons, hide difficulty progress bar, show only type name + time + date
+- `simplified = false` (Plus): current full render with all badges, score, bar, 8+ rows
+
+**5. PremiumStats receives `isPlus` prop** — already only rendered for Plus users, so no change needed there.
+
+### `src/components/account/PremiumStats.tsx`
+
+**1. Accept optional `simplified` prop** for potential future use (not needed now since it's only rendered for Plus users).
+
+**No other changes** — Accuracy and Performance sections stay as-is inside PremiumStats since the component is only rendered for Plus users.
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/pages/Stats.tsx` | Move admin controls to heading area; use demo-inclusive data when demo active |
-| `src/lib/progressTracker.ts` | Export `getProgressStatsWithDemo()` that includes `__demo` records |
-| `src/lib/solveTracker.ts` | Already has `getAllSolveRecordsIncludingDemo()` — no change needed |
-| `src/components/account/PremiumStatsAdminControls.tsx` | No change needed |
+| `src/pages/Stats.tsx` | Replace "P+" with "Puzzlecraft+"; add `isPlus` flag; reorder sections conditionally; extract `renderRecentSolves(simplified)` to handle free vs Plus row depth |
+
+## What does NOT change
+- Data logic, rating calculations, view-as mode
+- Right column (Activity, Daily, Endless)
+- PremiumStats internals (Milestones, Accuracy, Performance)
+- Social tab
 
