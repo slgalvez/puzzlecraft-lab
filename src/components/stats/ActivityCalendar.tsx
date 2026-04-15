@@ -36,6 +36,7 @@ function buildMonthGrid(
   month: number,
   playedDates: Set<string>,
   craftedDates: Set<string>,
+  dailyFnOverride?: (dateStr: string) => any,
 ): DayData[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -51,6 +52,7 @@ function buildMonthGrid(
     d.setHours(0, 0, 0, 0);
     const isToday = d.getTime() === today.getTime();
     const isFuture = d > today;
+    const dailyResult = dailyFnOverride ? dailyFnOverride(dateStr) : getDailyCompletion(dateStr);
     grid.push({
       dateStr,
       date: d,
@@ -58,7 +60,7 @@ function buildMonthGrid(
       isFuture,
       isPast: !isToday && !isFuture,
       isInMonth,
-      hasDaily: !!getDailyCompletion(dateStr),
+      hasDaily: !!dailyResult,
       hasPlayed: playedDates.has(dateStr),
       hasCrafted: craftedDates.has(dateStr),
     });
@@ -137,9 +139,12 @@ const DOT_COLORS = {
 
 interface ActivityCalendarProps {
   className?: string;
+  overridePlayedDates?: Set<string>;
+  overrideCraftedDates?: Set<string>;
+  overrideDailyFn?: (dateStr: string) => any;
 }
 
-export function ActivityCalendar({ className }: ActivityCalendarProps) {
+export function ActivityCalendar({ className, overridePlayedDates, overrideCraftedDates, overrideDailyFn }: ActivityCalendarProps) {
   const navigate = useNavigate();
   const today = new Date();
 
@@ -149,18 +154,20 @@ export function ActivityCalendar({ className }: ActivityCalendarProps) {
 
   // Pre-compute date sets
   const playedDates = useMemo(() => {
+    if (overridePlayedDates) return overridePlayedDates;
     const stats = getProgressStats();
     return new Set(stats.recentCompletions.map((r) => toDateStr(r.date)));
-  }, []);
+  }, [overridePlayedDates]);
 
   const craftedDates = useMemo(() => {
+    if (overrideCraftedDates) return overrideCraftedDates;
     const sent = loadSentItems();
     return new Set(sent.map((s) => toDateStr(new Date(s.sentAt).toISOString())));
-  }, []);
+  }, [overrideCraftedDates]);
 
   const grid = useMemo(
-    () => buildMonthGrid(viewYear, viewMonth, playedDates, craftedDates),
-    [viewYear, viewMonth, playedDates, craftedDates],
+    () => buildMonthGrid(viewYear, viewMonth, playedDates, craftedDates, overrideDailyFn),
+    [viewYear, viewMonth, playedDates, craftedDates, overrideDailyFn],
   );
 
   const streak = useMemo(() => getDailyStreak(), []);

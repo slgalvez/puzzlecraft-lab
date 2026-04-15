@@ -35,6 +35,12 @@ import { ProvisionalRatingCard } from "@/components/puzzles/ProvisionalRatingCar
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ActivityCalendar } from "@/components/stats/ActivityCalendar";
+import { useViewAsUser } from "@/contexts/ViewAsUserContext";
+import {
+  getProgressStatsFrom, getSolveRecordsFrom, getDailyStreakFrom,
+  getTotalDailyCompletedFrom, getEndlessStatsFrom, getPlayedDatesFrom,
+  getDailyCompletionFrom,
+} from "@/lib/viewAsOverrides";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -61,7 +67,11 @@ const DIFF_COLORS: Record<string, string> = {
 
 // ── Component ──────────────────────────────────────────────────────────────
 
-const Stats = () => {
+interface StatsProps {
+  viewAsMode?: boolean;
+}
+
+const Stats = ({ viewAsMode = false }: StatsProps) => {
   const navigate = useNavigate();
   const native   = isNativeApp();
   const { receivedCount } = useFriends();
@@ -69,19 +79,24 @@ const Stats = () => {
 
   // Bump dataVersion on visibility change (user returns after solving) + on mount
   useEffect(() => {
+    if (viewAsMode) return;
     const handler = () => {
       if (document.visibilityState === "visible") setDataVersion((v) => v + 1);
     };
     document.addEventListener("visibilitychange", handler);
     return () => document.removeEventListener("visibilitychange", handler);
-  }, []);
+  }, [viewAsMode]);
 
-  useEffect(() => { setDataVersion((v) => v + 1); }, []);
+  useEffect(() => { if (!viewAsMode) setDataVersion((v) => v + 1); }, [viewAsMode]);
 
-  const stats          = useMemo(() => getProgressStats(),                [dataVersion]);
-  const dailyStreak    = useMemo(() => getDailyStreak(),                  [dataVersion]);
-  const dailyCompleted = useMemo(() => getTotalDailyCompleted(),          [dataVersion]);
-  const endlessStats   = useMemo(() => getEndlessStats(), [dataVersion]);
+  // View-as context
+  const { viewAsUser } = useViewAsUser();
+  const isViewAs = viewAsMode && !!viewAsUser;
+
+  const stats          = useMemo(() => isViewAs ? getProgressStatsFrom(viewAsUser!.completions) : getProgressStats(),                [dataVersion, isViewAs, viewAsUser]);
+  const dailyStreak    = useMemo(() => isViewAs ? getDailyStreakFrom(viewAsUser!.dailyData) : getDailyStreak(),                  [dataVersion, isViewAs, viewAsUser]);
+  const dailyCompleted = useMemo(() => isViewAs ? getTotalDailyCompletedFrom(viewAsUser!.dailyData) : getTotalDailyCompleted(),          [dataVersion, isViewAs, viewAsUser]);
+  const endlessStats   = useMemo(() => isViewAs ? getEndlessStatsFrom(viewAsUser!.endlessData) : getEndlessStats(), [dataVersion, isViewAs, viewAsUser]);
   const endlessSummary = endlessStats ?? {
     totalSessions: 0,
     totalSolved: 0,
@@ -97,13 +112,17 @@ const Stats = () => {
 
   // Unified rating info — handles provisional, confirmed, and no-data states
   const localRatingInfo = useMemo(() => {
-    const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
+    const recs = isViewAs
+      ? getSolveRecordsFrom(viewAsUser!.solves).filter((r) => r.solveTime >= 10)
+      : getSolveRecords().filter((r) => r.solveTime >= 10);
     return getPlayerRatingInfo(recs);
-  }, [dataVersion]);
+  }, [dataVersion, isViewAs, viewAsUser]);
 
   // Peak rating — highest rolling-window rating across all recorded solves
   const peakRating = useMemo(() => {
-    const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
+    const recs = isViewAs
+      ? getSolveRecordsFrom(viewAsUser!.solves).filter((r) => r.solveTime >= 10)
+      : getSolveRecords().filter((r) => r.solveTime >= 10);
     if (recs.length < 5) return null;
     let peak = 0;
     for (let i = 0; i <= recs.length - 5; i++) {
@@ -112,16 +131,20 @@ const Stats = () => {
       peak = Math.max(peak, Math.round(avg));
     }
     return peak;
-  }, [dataVersion]);
+  }, [dataVersion, isViewAs, viewAsUser]);
+
+  // In view-as mode, fetch the target user's leaderboard entry instead
+  const viewAsUserId = isViewAs ? viewAsUser!.id : null;
 
   const { data: myLeaderboardEntry } = useQuery({
-    queryKey: ["my-leaderboard-entry", account?.id, dataVersion],
+    queryKey: ["my-leaderboard-entry", isViewAs ? viewAsUserId : account?.id, dataVersion],
     queryFn: async () => {
-      if (!account) return null;
+      const targetId = isViewAs ? viewAsUserId : account?.id;
+      if (!targetId) return null;
       const { data: entry } = await supabase
         .from("leaderboard_entries")
         .select("rating, previous_rating, skill_tier, solve_count")
-        .eq("user_id", account.id)
+        .eq("user_id", targetId)
         .maybeSingle();
       if (!entry) return null;
       const { count } = await supabase
@@ -130,7 +153,7 @@ const Stats = () => {
         .gt("rating", entry.rating);
       return { ...entry, rank: (count ?? 0) + 1 };
     },
-    enabled: !!account && premiumAccess,
+    enabled: isViewAs ? !!viewAsUserId : (!!account && premiumAccess),
     staleTime: 30_000,
   });
 
@@ -159,6 +182,16 @@ const Stats = () => {
 
   // Local rating for the inline rating card (uses uploaded file's layout style)
   const localRating = useMemo(() => {
+    // In view-as mode, always show rating data if available (ignore premium gate)
+    if (isViewAs) {
+      if (ratingInfo.hasNoData) return null;
+      return {
+        rating: ratingInfo.rating,
+        tier: ratingInfo.tier,
+        solveCount: ratingInfo.solveCount,
+        bestRating: peakRating ?? ratingInfo.rating,
+      };
+    }
     if (!premiumAccess || ratingInfo.hasNoData) return null;
     return {
       rating:     ratingInfo.rating,
@@ -166,7 +199,7 @@ const Stats = () => {
       solveCount: ratingInfo.solveCount,
       bestRating: peakRating ?? ratingInfo.rating,
     };
-  }, [premiumAccess, ratingInfo, peakRating]);
+  }, [premiumAccess, ratingInfo, peakRating, isViewAs]);
 
   const nextTierInfo = localRating ? (() => {
     const idx = TIER_ORDER_LIST.indexOf(localRating.tier);
@@ -175,12 +208,11 @@ const Stats = () => {
     return { name: next, threshold: TIER_THRESHOLDS[next] };
   })() : null;
 
+  // Skip sync in view-as mode
   useEffect(() => {
+    if (isViewAs) return;
     if (account) syncLeaderboardRating(account.id, account.displayName);
-    // NOTE: checkMilestones() intentionally removed here.
-    // MilestoneModalManager (mounted in App.tsx via PublicRoutes) fires after
-    // every solve. Calling it again on Stats navigation caused duplicate toasts.
-  }, [account, dataVersion]);
+  }, [account, dataVersion, isViewAs]);
 
   // Filters
   const [viewFilter,     setViewFilter]     = useState<ViewFilter>(null);
@@ -406,8 +438,8 @@ const Stats = () => {
               </div>
             )}
 
-            {/* Premium upgrade teaser */}
-            {showGeneral && showUpgrade && !premiumAccess && (
+            {/* Premium upgrade teaser — hidden in view-as mode */}
+            {showGeneral && showUpgrade && !premiumAccess && !isViewAs && (
               <StatsPremiumPreview onUpgrade={() => setUpgradeOpen(true)} />
             )}
 
@@ -535,7 +567,10 @@ const Stats = () => {
                   <h2 className="font-display text-sm font-semibold text-foreground">Activity</h2>
                 </div>
                 <div className="px-3 py-3">
-                  <ActivityCalendar />
+                  <ActivityCalendar
+                    overridePlayedDates={isViewAs ? getPlayedDatesFrom(viewAsUser!.completions) : undefined}
+                    overrideDailyFn={isViewAs ? (dateStr: string) => getDailyCompletionFrom(viewAsUser!.dailyData, dateStr) : undefined}
+                  />
                 </div>
               </div>
             )}
@@ -659,7 +694,7 @@ const Stats = () => {
         </Tabs>
       </div>
 
-      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+      {!isViewAs && <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />}
     </Layout>
   );
 };

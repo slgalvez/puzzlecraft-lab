@@ -990,6 +990,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_get_user_progress: {
+        Args: { p_user_id: string }
+        Returns: {
+          completions: Json
+          daily_data: Json
+          endless_data: Json
+          solves: Json
+        }[]
+      }
       generate_friend_code: { Args: never; Returns: string }
       is_admin_granted: { Args: { _user_id: string }; Returns: boolean }
       upsert_leaderboard_entry: {

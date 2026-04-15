@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { useUserAccount } from "@/contexts/UserAccountContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   Users, Clock, Activity, TrendingUp,
-  ArrowLeft, RefreshCw, Download,
+  ArrowLeft, RefreshCw, Download, Eye,
 } from "lucide-react";
 
 interface UserRow {
@@ -228,13 +228,14 @@ export default function AdminAnalytics() {
           <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">Loading…</div>
         ) : (
           <div className="rounded-xl border overflow-hidden">
-            <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-4 px-4 py-2.5 bg-secondary/50 border-b text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] gap-4 px-4 py-2.5 bg-secondary/50 border-b text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               <span>User</span>
               <span className="text-right">Solves</span>
               <span className="text-right">Rating</span>
               <span className="text-right">Last active</span>
               <span className="text-right">Joined</span>
               <span className="text-right">Plan</span>
+              <span className="text-right sr-only">Actions</span>
             </div>
 
             {filtered.length === 0 ? (
@@ -244,7 +245,7 @@ export default function AdminAnalytics() {
             ) : (
               <div className="divide-y divide-border/40 max-h-[560px] overflow-y-auto">
                 {filtered.map((user) => (
-                  <div key={user.id} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-4 px-4 py-3 items-center hover:bg-secondary/20 transition-colors">
+                  <div key={user.id} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] gap-4 px-4 py-3 items-center hover:bg-secondary/20 transition-colors">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">
                         {user.displayName ?? "—"}
@@ -262,6 +263,13 @@ export default function AdminAnalytics() {
                     )}>
                       {user.isSubscribed ? "Plus" : "Free"}
                     </span>
+                    <Link
+                      to={`/admin-view-as-stats?userId=${user.id}`}
+                      className="flex items-center justify-center h-7 w-7 rounded-md hover:bg-secondary transition-colors shrink-0"
+                      title="View Stats as this user"
+                    >
+                      <Eye size={13} className="text-muted-foreground" />
+                    </Link>
                   </div>
                 ))}
               </div>
