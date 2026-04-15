@@ -434,13 +434,18 @@ export default function Leaderboard() {
                         {entry.display_name}
                         {isMe && <span className="text-[10px] text-muted-foreground ml-1.5">• YOU</span>}
                       </p>
-                      <span className={cn(
-                        "inline-block rounded-full px-1.5 py-0 text-[9px] font-medium",
-                        TIER_BG[entry.skill_tier],
-                        TIER_COLORS[entry.skill_tier] ?? "text-muted-foreground",
-                      )}>
-                        {entry.skill_tier}
-                      </span>
+                      {(() => {
+                        const computedTier = getSkillTier(entry.rating, entry.solve_count);
+                        return (
+                          <span className={cn(
+                            "inline-block rounded-full px-1.5 py-0 text-[9px] font-medium",
+                            TIER_BG[computedTier],
+                            TIER_COLORS[computedTier] ?? "text-muted-foreground",
+                          )}>
+                            {computedTier}
+                          </span>
+                        );
+                      })()}
                     </div>
                     <p className="font-mono text-sm font-bold text-foreground text-right">
                       {entry.rating}
@@ -465,13 +470,18 @@ export default function Leaderboard() {
                         {myEntry.display_name}
                         <span className="text-[10px] text-muted-foreground ml-1.5">• YOU</span>
                       </p>
-                      <span className={cn(
-                        "inline-block rounded-full px-1.5 py-0 text-[9px] font-medium",
-                        TIER_BG[myEntry.skill_tier],
-                        TIER_COLORS[myEntry.skill_tier] ?? "text-muted-foreground",
-                      )}>
-                        {myEntry.skill_tier}
-                      </span>
+                      {(() => {
+                        const computedTier = getSkillTier(myEntry.rating, myEntry.solve_count);
+                        return (
+                          <span className={cn(
+                            "inline-block rounded-full px-1.5 py-0 text-[9px] font-medium",
+                            TIER_BG[computedTier],
+                            TIER_COLORS[computedTier] ?? "text-muted-foreground",
+                          )}>
+                            {computedTier}
+                          </span>
+                        );
+                      })()}
                     </div>
                     <p className="font-mono text-sm font-bold text-foreground text-right">{myEntry.rating}</p>
                     <div className="text-right">
