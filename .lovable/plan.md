@@ -1,46 +1,30 @@
 
 
-# Rating System Overhaul — Corrected Implementation Plan
+# Fix: Stale tier thresholds in ProvisionalRatingCard
 
-## What's being fixed
+## Problem
+`ProvisionalRatingCard.tsx` has its own hardcoded `TIER_THRESHOLDS` (line 24-26) with the **old** values:
+```ts
+{ Beginner: 0, Casual: 400, Skilled: 700, Advanced: 950, Expert: 1200 }
+```
 
-1. **Tier thresholds recalibrated** — Average medium player (score ~1000) was mapping to Advanced. Now maps to Skilled.
-2. **Minimum solve gates** — Prevents 1-solve Expert. Tiers require 3/8/18/30 solves respectively.
-3. **Per-type leaderboards** — New table + tabbed UI on Leaderboard page.
-4. **Demo data removed** from Leaderboard page.
-5. **`getPlayerRatingInfo`** available as unified rating state object.
-6. **All rank displays use gated tiers** — single source of truth.
+These are used by `getNextTierInfo()` to compute "pts to next tier" text and the `rating/threshold` label. With a rating of 1377 and the old Expert threshold of 1200, it shows `-177 pts to Expert` and `1377/1200`.
 
-## Files changed (12 total)
+The actual thresholds in `solveScoring.ts` are `650/850/1300/1650`. The progress bar value (`tierProgress`) comes from `solveScoring.ts` and is correct — but the text labels contradict it.
 
-| File | Action |
-|------|--------|
-| **Migration SQL** | New: `type_leaderboard_entries` table, RPCs, tier recalc, display name trigger update |
-| `src/lib/solveScoring.ts` | Full replace from upload + add back `getTierCardStyle`, `getTierBadgeStyle` |
-| `src/lib/leaderboardSync.ts` | Full replace from upload |
-| `src/pages/Leaderboard.tsx` | Full replace from upload |
-| `src/components/puzzles/CompletionPanel.tsx` | Pass `solveCount` to `getSkillTier` (line 82) |
-| `src/hooks/usePuzzleTimer.ts` | Pass `solveCount` to both `getSkillTier` calls (lines 150, 169) |
-| `src/hooks/useRatingSync.ts` | Pass `solveCount` to `getSkillTier` (line 33) |
-| `src/lib/milestones.ts` | Pass `solveCount` to both `getSkillTier` calls (lines 148, 193) |
-| `src/pages/Account.tsx` | Pass `solveCount` to `getSkillTier` (line 66) |
-| `src/components/account/PremiumStats.tsx` | Pass `solveCount` to `getSkillTier` (line 136) |
-| `src/components/ios/IOSPlayTab.tsx` | Pass `solveCount` to `getSkillTier` (line 160) |
-| `src/lib/demoStats.ts` | Update `tierForRating` thresholds (lines 207-211) |
+## Fix
+**File:** `src/components/puzzles/ProvisionalRatingCard.tsx`
 
-## Critical compatibility fixes applied
+Update `TIER_THRESHOLDS` on line 24-26 to match the canonical values:
+```ts
+const TIER_THRESHOLDS: Record<string, number> = {
+  Beginner: 0, Casual: 650, Skilled: 850, Advanced: 1300, Expert: 1650,
+};
+```
 
-1. **`getTierCardStyle` and `getTierBadgeStyle`** — Missing from uploaded file. Will be added back with identical style maps (imported by `ProvisionalRatingCard`, `TierUpCelebration`, `AdminPreview`, `Stats`).
+One constant updated. Nothing else changes.
 
-2. **RLS policy conflict** — The uploaded SQL creates a restrictive `FOR ALL` policy alongside permissive `FOR SELECT`. Restrictive ALL blocks authenticated SELECT. Fix: remove the restrictive ALL policy entirely; writes are protected by SECURITY DEFINER RPC pattern (same as `leaderboard_entries`).
-
-3. **Display name trigger** — `propagate_display_name_change()` must also update `type_leaderboard_entries.display_name`. Added to migration.
-
-4. **`demoStats.ts` thresholds** — `tierForRating()` uses hardcoded old thresholds. Updated to 650/850/1300/1650.
-
-5. **8 ungated `getSkillTier` calls** — All updated to pass `records.length` as second argument.
-
-## Single source of truth
-
-`getSkillTier(rating, solveCount)` is the sole authority for displayed rank. Every user-facing call site passes `solveCount`. DB-stored tiers in `leaderboard_entries` and `type_leaderboard_entries` are snapshots written by SECURITY DEFINER RPCs that also use gated tiers.
+## Result
+- Rating 1377 with Advanced tier → shows `273 pts to Expert` and `1377/1650`
+- Progress bar (already correct from `getTierProgress`) now matches the text
 
