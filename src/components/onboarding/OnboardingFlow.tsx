@@ -99,8 +99,8 @@ const SCREENS = [
     headline: "The puzzle app\nyou'll come back to",
     bullets: [
       { icon: Trophy,   text: "8 puzzle types — daily challenges, quick play, endless mode" },
-      { icon: Sparkles, text: "Track your rating, build streaks, unlock skill tiers"         },
-      { icon: Users,    text: "Create personalized puzzles and challenge your friends"        },
+      { icon: Sparkles, text: "Earn a skill rating and climb through tiers as you improve" },
+      { icon: Users,    text: "Challenge friends with puzzles you create yourself"          },
     ],
     cta: "Next",
   },
