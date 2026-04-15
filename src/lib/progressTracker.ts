@@ -113,8 +113,8 @@ function calcStreak(dates: string[]): { current: number; longest: number } {
   return { current, longest };
 }
 
-export function getProgressStats(): ProgressStats {
-  const records = getCompletions();
+export function getProgressStats(includeDemo = false): ProgressStats {
+  const records = getCompletions(includeDemo);
 
   if (records.length === 0) {
     return {

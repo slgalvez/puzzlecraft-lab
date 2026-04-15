@@ -29,8 +29,9 @@ import UpgradeModal from "@/components/premium/UpgradeModal";
 import { usePremiumAccess } from "@/lib/premiumAccess";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 
-import { getSolveRecords, type SolveRecord } from "@/lib/solveTracker";
+import { getSolveRecords, getAllSolveRecordsIncludingDemo, type SolveRecord } from "@/lib/solveTracker";
 import { computePlayerRating, computeSolveScore, getSkillTier, getTierColor, getTierProgress, getPlayerRatingInfo, getTierCardStyle, getTierBadgeStyle, type SkillTier } from "@/lib/solveScoring";
+import { hasDemoData } from "@/lib/demoStats";
 
 import { ProvisionalRatingCard } from "@/components/puzzles/ProvisionalRatingCard";
 import { useQuery } from "@tanstack/react-query";
