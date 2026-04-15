@@ -433,11 +433,10 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                         </div>
                       )}
                     </div>
-
-                    </div>
                   </div>
                 </div>
               );
+            })()}
             })()}
 
             {/* Premium upgrade teaser — hidden in view-as mode */}
