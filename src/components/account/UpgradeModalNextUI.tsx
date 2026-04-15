@@ -31,25 +31,21 @@ const BENEFIT_SECTIONS = [
   {
     title: "Create & Share",
     icon: Send,
-    emphasis: true,
-    items: ["Create & send puzzles to friends", "Add personal messages"],
+    items: ["Create & send unlimited puzzles", "Add personal messages"],
   },
   {
     title: "Track Progress",
     icon: BarChart2,
-    emphasis: false,
     items: ["60-day activity history", "Replay past challenges", "Protect your streaks"],
   },
   {
     title: "Unlock Gameplay",
     icon: Zap,
-    emphasis: false,
     items: ["Extreme & Insane modes", "Access weekly puzzle packs"],
   },
   {
     title: "Compete",
     icon: Trophy,
-    emphasis: false,
     items: ["Track rank by puzzle type", "Climb global rankings"],
   },
 ] as const;
@@ -97,33 +93,20 @@ export default function UpgradeModalNextUI({
 
           {/* ── Benefits ── */}
           <div className="space-y-1.5">
-            {BENEFIT_SECTIONS.map(({ title, icon: Icon, emphasis, items }) => (
+            {BENEFIT_SECTIONS.map(({ title, icon: Icon, items }) => (
               <div
                 key={title}
-                className={cn(
-                  "rounded-xl px-4",
-                  emphasis
-                    ? "border border-primary/10 py-2.5"
-                    : "border border-border/15 py-2",
-                )}
+                className="rounded-xl border border-border/20 px-4 py-2.5"
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <Icon size={11} className={cn(emphasis ? "text-primary/50" : "text-muted-foreground/40")} />
-                  <span className={cn(
-                    "uppercase tracking-wider",
-                    emphasis
-                      ? "text-[10px] font-semibold text-foreground/60"
-                      : "text-[10px] font-medium text-muted-foreground/50",
-                  )}>
+                  <Icon size={11} className="text-muted-foreground/50" />
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground/60">
                     {title}
                   </span>
                 </div>
                 <ul className="space-y-0.5">
                   {items.map((item) => (
-                    <li key={item} className={cn(
-                      "leading-snug",
-                      emphasis ? "text-[13px] text-foreground/80" : "text-[13px] text-muted-foreground/70",
-                    )}>
+                    <li key={item} className="text-[13px] leading-snug text-muted-foreground">
                       {item}
                     </li>
                   ))}
