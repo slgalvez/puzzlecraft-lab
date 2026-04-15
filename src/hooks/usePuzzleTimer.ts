@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { recordCompletion } from "@/lib/progressTracker";
 import { recordDailyCompletion, getTodaysChallenge } from "@/lib/dailyChallenge";
-import { recordSolve } from "@/lib/solveTracker";
+import { recordSolve, getSolveRecords, type TierUpEvent } from "@/lib/solveTracker";
 import { checkMilestones } from "@/lib/milestones";
+import { computePlayerRating, getSkillTier } from "@/lib/solveScoring";
 import type { PuzzleCategory } from "@/lib/puzzleTypes";
 
 interface TimerState {
