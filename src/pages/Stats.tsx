@@ -25,7 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useUserAccount } from "@/contexts/UserAccountContext";
-import UpgradeModal from "@/components/premium/UpgradeModal";
+import UpgradeModal from "@/components/account/UpgradeModal";
 import { usePremiumAccess } from "@/lib/premiumAccess";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 

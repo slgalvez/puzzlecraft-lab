@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { ArrowLeft, Dices, Infinity, TrendingUp, TrendingDown, Minus, Square } from "lucide-react";
 import { usePremiumAccess } from "@/lib/premiumAccess";
-import UpgradeModal from "@/components/premium/UpgradeModal";
+import UpgradeModal from "@/components/account/UpgradeModal";
 import DifficultySelector from "@/components/puzzles/DifficultySelector";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
