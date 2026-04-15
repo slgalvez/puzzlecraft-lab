@@ -387,7 +387,7 @@ export default function Leaderboard() {
             <p className="text-sm text-muted-foreground">
               {timeFilter === "week"
                 ? "Switch to All Time, or come back after playing."
-                : `Solve at least ${minSolves} ${isGlobal ? "" : (typeLabel + " ")}puzzle${minSolves !== 1 ? "s" : ""} while signed in to qualify.`}
+                : `Solve at least ${minSolves} ${isGlobal ? "" : (typeLabel + " ")}puzzles while signed in to qualify.`}
             </p>
             <Button asChild size="sm" variant="outline">
               <Link to={isGlobal ? "/daily" : `/quick-play/${puzzleType}`}>
