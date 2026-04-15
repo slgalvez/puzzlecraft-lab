@@ -1002,6 +1002,14 @@ const CraftPuzzle = () => {
                   </div>
                 )}
 
+                <CraftSharePreview
+                  title={puzzleTitle.trim() || undefined}
+                  from={puzzleFrom.trim() || undefined}
+                  url={shareUrl}
+                  type={selectedType ?? undefined}
+                  creatorSolveTime={creatorSolveTime}
+                />
+
                 <div className="relative space-y-3 p-5 rounded-xl border border-border bg-card overflow-hidden">
                   {shareSuccess && (
                     <div className="absolute inset-0 flex items-center justify-center bg-card/90 z-10 animate-in fade-in-0 duration-200">
