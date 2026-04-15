@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { buildDailyShareText, shareOrCopy } from "@/lib/shareText";
 
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
 import WordSearchGrid from "@/components/puzzles/WordSearchGrid";
@@ -80,19 +81,19 @@ const DailyPuzzle = () => {
           ?? "Anonymous";
       }
 
-      // FIX: column is "date" not "date_str" — must match DailyLeaderboard query
+      // FIX: column is "date_str" — must match DailyLeaderboard query and DB schema
       await (supabase
-        .from("daily_scores" as any)
+        .from("daily_scores")
         .upsert(
           {
-            date: challenge.dateStr,
+            date_str: challenge.dateStr,
             user_id: user?.id ?? null,
             display_name: displayName,
             solve_time: solveTime,
             puzzle_type: challenge.category,
           },
           {
-            onConflict: "date,user_id",
+            onConflict: "date_str,user_id",
             ignoreDuplicates: false,
           }
         ) as any);
