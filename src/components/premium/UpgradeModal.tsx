@@ -30,6 +30,7 @@ import {
 import { isNativeApp } from "@/lib/appMode";
 import { PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
 import { useSubscription } from "@/hooks/useSubscription";
+import { MONTHLY_PRICE, ANNUAL_PRICE, ANNUAL_SAVING_PCT, ANNUAL_MONTHLY_EQUIV } from "@/lib/pricing";
 
 // IAP product IDs kept for reference
 // const IAP_MONTHLY_PRODUCT = "com.puzzlecraft.plus.monthly";
@@ -182,11 +183,11 @@ const UpgradeModal = ({ open, onClose, trigger = "generic" }: UpgradeModalProps)
               <div className="flex items-start justify-between gap-1 mb-1">
                 <span className="text-xs font-bold text-foreground">Annual</span>
                 <Badge variant="default" className="text-[10px] px-1.5 py-0.5 h-auto bg-emerald-500 hover:bg-emerald-500 shrink-0">
-                  Save 42%
+                  Save {ANNUAL_SAVING_PCT}
                 </Badge>
               </div>
-              <p className="font-mono text-lg font-bold text-foreground leading-none">$2.99</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">per month, billed yearly</p>
+              <p className="font-mono text-lg font-bold text-foreground leading-none">{ANNUAL_PRICE}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{ANNUAL_MONTHLY_EQUIV}/mo billed annually</p>
             </button>
 
             {/* Monthly */}
@@ -201,7 +202,7 @@ const UpgradeModal = ({ open, onClose, trigger = "generic" }: UpgradeModalProps)
               )}
             >
               <p className="text-xs font-bold text-foreground mb-1">Monthly</p>
-              <p className="font-mono text-lg font-bold text-foreground leading-none">$4.99</p>
+              <p className="font-mono text-lg font-bold text-foreground leading-none">{MONTHLY_PRICE}</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">per month</p>
             </button>
           </div>
@@ -220,8 +221,8 @@ const UpgradeModal = ({ open, onClose, trigger = "generic" }: UpgradeModalProps)
               : purchasing
                 ? "Opening…"
                 : native
-                  ? `Subscribe ${plan === "annual" ? "($2.99/mo)" : "($4.99/mo)"}`
-                  : `Get Puzzlecraft+ ${plan === "annual" ? "· $2.99/mo" : "· $4.99/mo"}`
+                   ? `Subscribe ${plan === "annual" ? `(${ANNUAL_MONTHLY_EQUIV}/mo)` : `(${MONTHLY_PRICE}/mo)`}`
+                   : `Get Puzzlecraft+ ${plan === "annual" ? `· ${ANNUAL_MONTHLY_EQUIV}/mo` : `· ${MONTHLY_PRICE}/mo`}`
             }
           </Button>
 
