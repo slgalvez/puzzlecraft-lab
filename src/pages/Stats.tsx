@@ -527,6 +527,19 @@ const Stats = () => {
           {/* ── RIGHT COLUMN ── */}
           <div className="w-full space-y-5 md:sticky md:top-24 md:w-[320px] md:shrink-0 lg:w-[360px]">
 
+            {/* Activity calendar */}
+            {showGeneral && (
+              <div className="rounded-2xl border bg-card overflow-hidden">
+                <div className="px-4 py-3 border-b border-border/60 flex items-center gap-2">
+                  <Calendar size={13} className="text-primary" />
+                  <h2 className="font-display text-sm font-semibold text-foreground">Activity</h2>
+                </div>
+                <div className="px-3 py-3">
+                  <ActivityCalendar />
+                </div>
+              </div>
+            )}
+
             {/* By puzzle type */}
             {showGeneral && (
               <div className="rounded-2xl border bg-card overflow-hidden">
