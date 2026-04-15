@@ -12,7 +12,10 @@ import {
   getSkillTier,
   getTierColor,
   getTierProgress,
+  getTierCardStyle,
+  getTierBadgeStyle,
   trueMistakes,
+  type SkillTier,
 } from "@/lib/solveScoring";
 import { getBestInsight } from "@/lib/solveInsights";
 import { getAllMilestones, getUncelebratedIds, markCelebrated, type MilestoneIcon, type MilestoneState } from "@/lib/milestones";
