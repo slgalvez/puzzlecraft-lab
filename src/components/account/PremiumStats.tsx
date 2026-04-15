@@ -214,6 +214,9 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
             setTimeout(() => markCelebrated(newlyAchieved), 2000);
           }
 
+          const filtered = milestones.filter(m => getMilestoneCategory(m.id) === activeCategory);
+          const catAchieved = filtered.filter(m => m.state === "achieved").length;
+
           return (
             <div className="rounded-xl border bg-card p-5">
               <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -221,8 +224,30 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
                 Milestones
                 <span className="text-xs text-muted-foreground font-normal">{achievedCount}/{milestones.length}</span>
               </h3>
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {CATEGORY_TABS.map((tab) => {
+                  const tabMilestones = milestones.filter(m => getMilestoneCategory(m.id) === tab.key);
+                  const tabAchieved = tabMilestones.filter(m => m.state === "achieved").length;
+                  return (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setActiveCategory(tab.key)}
+                      className={cn(
+                        "px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors",
+                        activeCategory === tab.key
+                          ? "bg-primary/15 text-primary"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {tab.label}
+                      <span className="ml-1 opacity-60">{tabAchieved}/{tabMilestones.length}</span>
+                    </button>
+                  );
+                })}
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {milestones.map((m) => {
+                {filtered.map((m) => {
                   const IconComp = MILESTONE_ICONS[m.icon] ?? Target;
                   const isAchieved = m.state === "achieved";
                   const isInProgress = m.state === "in-progress";
