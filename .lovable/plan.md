@@ -1,80 +1,70 @@
 
 
-# Stats Page Refactor — Remove Redundancy, Clarify Hierarchy
+# Stats Page Refinement — Declutter and Improve Hierarchy
 
-## Current Problems
-- **Two rating cards**: Stats.tsx renders a "Your Rank" hero (lines 357-438), then PremiumStats renders another hero with rating/tier/insight (lines 283-327). Both show rating, tier, and progress.
-- **Three puzzle-type sections**: PremiumStats "Personal Bests", PremiumStats "Average Performance", and right-column "By Puzzle Type" all show per-category data.
-- **Standalone P+ header**: "Performance Breakdown" with a P+ badge sits mid-page as a section header.
-- **Accuracy Insights** is a full card competing visually with the hero.
+## Changes
 
-## Plan
+### 1. Simplify Player Profile card in `src/pages/Stats.tsx` (lines 357-470)
 
-### 1. Create unified Player Profile card in Stats.tsx (replaces both rating heroes)
+**Remove** the 2x2 key metrics grid (lines 438-459) — the four stat boxes (No-Hint, Solves, Avg Time, Streak).
 
-Remove the inline rating hero block (lines 357-438) from Stats.tsx. Move PremiumStats hero section logic into a new unified card rendered directly in Stats.tsx's left column. This card contains:
+**Remove** the insight quote block (lines 462-467).
 
-- Tier badge pill (using `getTierBadgeStyle`)
-- Rating number (mono, large) with trend badge
-- Leaderboard rank if available
-- Expert crown message OR progress-to-next bar
-- Key metrics row: no-hint %, total solves, avg time, streak
-- Insight quote (from `getBestInsight`)
-- Small P+ indicator badge in the header area
-- Peak rating if higher than current
+**Keep only:**
+- Tier badge pill
+- Rating number + rank + trend
+- Peak rating (if higher)
+- Expert crown message OR progress bar with CTA
+- Header row with P+ badge and Leaderboard link
 
-This replaces both the Stats.tsx rating hero AND the PremiumStats hero section.
+Result: a clean, focused card with just rank identity and progression.
 
-### 2. Strip hero from PremiumStats
+### 2. Restore Accuracy as a full card in `src/components/account/PremiumStats.tsx` (lines 363-390)
 
-Remove the hero section (lines 283-327) from PremiumStats.tsx entirely. PremiumStats now starts with Milestones, then Accuracy, then Solve History. The "Performance Breakdown" header with P+ badge is also removed — the parent handles that context.
+Replace the current inline `border-b` row with a proper card:
+- Wrap in `rounded-xl border bg-card p-5`
+- Keep the 4-stat grid (Avg Mistakes, No Hints %, Unassisted %, Avg Hints)
+- Add the `accuracyInsight` sentence below the grid
+- Keep the accuracy trend badge in the header
 
-### 3. Simplify Accuracy Insights in PremiumStats
+### 3. Reorder sections in `src/pages/Stats.tsx`
 
-Convert the full bordered card (lines 422-451) into a compact inline row:
-- Remove the card wrapper, use a lighter `border-b` separator style
-- Keep the 4-stat grid but reduce from `text-2xl` to `text-lg`
-- Remove the insight paragraph (it's now in the player card)
-- Result: visually subordinate to the player profile card
+Change the left column order to:
+1. Player Profile card (existing, now simplified)
+2. Premium upgrade teaser (if applicable)
+3. **PremiumStats** (contains: Milestones → Accuracy → Performance by Type)
+4. Recent Solves (moved below PremiumStats)
 
-### 4. Create "Performance by Puzzle Type" section in PremiumStats
+Currently Recent Solves (lines 477-541) renders **before** PremiumStats (lines 544-552). Swap their positions.
 
-Replace "Personal Bests" (lines 453-476) and "Average Performance" (lines 478-499) with ONE section. Each puzzle type row shows:
-- Type name
-- Best time
-- Average time
-- Solve count
+### 4. Delete Solve History table from `src/components/account/PremiumStats.tsx` (lines 432-511)
 
-Rendered as a compact list/table rather than two separate grids. This also absorbs the data from the right-column "By Puzzle Type".
+Remove the entire "Solve History" collapsible table section. The "Recent Solves" list in Stats.tsx is the single solve listing.
 
-### 5. Remove "By Puzzle Type" from right column in Stats.tsx
+### 5. Enhance Recent Solves rows in `src/pages/Stats.tsx` (lines 496-531)
 
-Delete lines 578-631 (the right-column puzzle type list). Keep Activity calendar, Daily Challenge, Endless Mode.
+Add to each row:
+- Score (from `computeSolveScore` on the solve record — requires matching solve records to completions or computing inline)
+- PB icon (already exists) and streak flame icon when the solve was a daily challenge
+- Difficulty is already shown as a dot + label — keep as-is
 
-### 6. Remove standalone key stat cards grid
+This requires importing `computeSolveScore` usage and matching completions against solve records. The completion data from `progressTracker` doesn't have score, so we'll compute it from solve records where available.
 
-The 4-card grid (Puzzles Solved, Streak, Avg Time, Fastest) at lines 447-477 is now redundant — these metrics are in the unified player card. Remove it.
+### 6. Remove unused imports
 
-### 7. Hierarchy improvements
-
-- Player Profile card gets `shadow-sm` and tier-aware border (already exists via `getTierCardStyle`)
-- Milestones, Accuracy, Performance by Type, Solve History use plain `rounded-xl border bg-card` without shadow
-- Slightly more spacing before the player card (`mb-8` vs current `space-y-6`)
+Clean up imports that become dead after removing the metrics grid and insight (`ShieldCheck`, `getBestInsight`, etc. from Stats.tsx; `Clock`, `ChevronDown`, `ChevronUp` from PremiumStats.tsx if only used by deleted Solve History).
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/pages/Stats.tsx` | Replace rating hero + stat cards with unified Player Profile card; remove right-column "By Puzzle Type"; remove standalone P+ section wrapper |
-| `src/components/account/PremiumStats.tsx` | Remove hero section; simplify Accuracy to compact row; merge Personal Bests + Average Performance into one "Performance by Puzzle Type" section |
+| `src/pages/Stats.tsx` | Simplify player card (remove metrics grid + insight); move Recent Solves below PremiumStats; enhance solve rows with score/badges |
+| `src/components/account/PremiumStats.tsx` | Restore Accuracy as full card with insight sentence; delete Solve History table |
 
 ## What does NOT change
-- Rating calculations, solve tracking, data sources
-- View-as mode data flow
-- Right column: Activity, Daily, Endless
-- Recent Solves list
+- Rating calculations, data sources, view-as logic
+- Right column (Activity, Daily, Endless)
 - Milestones section
-- Solve History table
+- Performance by Puzzle Type section
 - Social tab
-- Admin controls logic
 
