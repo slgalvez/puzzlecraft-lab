@@ -33,37 +33,7 @@ interface Props {
   mistakesCount?: number;
 }
 
-function buildShareData(props: {
-  category?: PuzzleCategory;
-  seed?: number;
-  difficulty: Difficulty;
-  time: number;
-  isDaily: boolean;
-  dailyCode?: string;
-  prevBest?: number | null;
-}) {
-  const { category, seed, difficulty, time, isDaily, dailyCode, prevBest } = props;
-  if (!category || seed == null) return null;
-
-  const typeName = CATEGORY_INFO[category]?.name ?? category;
-  const diffLabel = DIFFICULTY_LABELS[difficulty];
-  const timeStr = formatTime(time);
-
-  const shareUrl = dailyCode
-    ? `${window.location.origin}/play?code=${dailyCode}`
-    : `${window.location.origin}/play?code=${category}-${seed}-${difficulty}`;
-  const displayCode = dailyCode ?? String(seed);
-
-  const headline = isDaily
-    ? "Just solved today's Puzzlecraft challenge 🧠"
-    : "Just tackled a Puzzlecraft puzzle 🧠";
-
-  const pbLine = prevBest ? `\nBeat my previous time of ${formatTime(prevBest)}!` : "";
-
-  const text = `${headline}\n\n${typeName} • ${diffLabel} • ${timeStr}${pbLine}\n\nCan you beat this time?\n\nPlay: ${shareUrl}\n\nPuzzle Code: ${displayCode}`;
-
-  return { text, url: shareUrl, displayCode };
-}
+// buildShareData removed — now uses buildSolveShareText from shareText.ts
 
 function useRatingDelta() {
   return useMemo(() => {
