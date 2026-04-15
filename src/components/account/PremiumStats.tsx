@@ -98,6 +98,7 @@ const MILESTONE_ICONS: Record<MilestoneIcon, any> = {
 
 export default function PremiumStats({ onDataChange, hideAdminControls = false, overrideSolveRecords }: { onDataChange?: () => void; hideAdminControls?: boolean; overrideSolveRecords?: SolveRecord[] }) {
   const [refreshKey, setRefreshKey] = useState(0);
+  const [activeCategory, setActiveCategory] = useState<MilestoneCategory>("ranking");
   const { account } = useUserAccount();
   const isAdmin = account?.isAdmin ?? false;
   const hasOverride = overrideSolveRecords != null;
