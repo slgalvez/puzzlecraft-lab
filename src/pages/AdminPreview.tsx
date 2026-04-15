@@ -33,6 +33,10 @@ import { generateCryptogram } from "@/lib/generators/cryptogram";
 import { generateWordFillIn } from "@/lib/generators/fillGen";
 import { WORD_CLUES } from "@/lib/wordList";
 import type { Difficulty } from "@/lib/puzzleTypes";
+import { ProvisionalRatingCard } from "@/components/puzzles/ProvisionalRatingCard";
+import { TierUpCelebration } from "@/components/puzzles/TierUpCelebration";
+import type { PlayerRatingInfo, SkillTier } from "@/lib/solveScoring";
+import { getTierBadgeStyle } from "@/lib/solveScoring";
 
 // ── Icon map ───────────────────────────────────────────────────────────────
 
