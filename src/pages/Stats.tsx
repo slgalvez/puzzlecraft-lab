@@ -420,6 +420,9 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                           );
                         })()}
                       </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Based on your recent {Math.min(localRating.solveCount, 25)} solves
+                      </p>
                       {localRating.bestRating > localRating.rating && (
                         <p className="text-[10px] text-muted-foreground/60 mt-1">Peak: {localRating.bestRating}</p>
                       )}
@@ -440,9 +443,13 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                             <span className="text-[10px] text-muted-foreground/60 font-mono">{localRating.rating}/{nextTierInfo.threshold}</span>
                           </div>
                           <Progress value={tierProgressValue} className={cn("h-2", nearRank && "h-2.5")} />
-                          {nearRank && (
-                            <Link to="/daily" className="text-[10px] text-primary mt-1 font-medium hover:underline">
-                              Play a puzzle now to break through →
+                          {nearRank ? (
+                            <Link to="/daily" className="text-[10px] text-primary mt-1 font-semibold hover:underline">
+                              Only {pointsToNext} pts away — play now →
+                            </Link>
+                          ) : (
+                            <Link to="/puzzles" className="text-[10px] text-primary/70 mt-1 font-medium hover:underline hover:text-primary">
+                              Keep solving to rank up →
                             </Link>
                           )}
                         </div>
