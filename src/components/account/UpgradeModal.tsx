@@ -182,6 +182,7 @@ export default function UpgradeModal({ open, onClose, trigger = "generic" }: Upg
   }
 
   // ── Payment-ready state — always use new UI ──
+  const copy = TRIGGER_COPY[trigger];
   return (
     <UpgradeModalNextUI
       annual={annual}
@@ -193,6 +194,8 @@ export default function UpgradeModal({ open, onClose, trigger = "generic" }: Upg
       onPurchase={() => purchase(annual)}
       onRestore={() => restore()}
       onClose={onClose}
+      headline={copy.headline}
+      subline={copy.sub}
     />
   );
 }
