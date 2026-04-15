@@ -96,24 +96,24 @@ export default function UpgradeModalNextUI({
           </div>
 
           {/* ── Benefits ── */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {BENEFIT_SECTIONS.map(({ title, icon: Icon, emphasis, items }) => (
               <div
                 key={title}
                 className={cn(
                   "rounded-xl px-4",
                   emphasis
-                    ? "border border-primary/20 bg-primary/[0.03] py-3.5"
-                    : "border border-border/30 py-2.5",
+                    ? "border border-primary/10 py-2.5"
+                    : "border border-border/15 py-2",
                 )}
               >
-                <div className="flex items-center gap-2 mb-1.5">
-                  <Icon size={12} className={cn(emphasis ? "text-primary/70" : "text-muted-foreground/60")} />
+                <div className="flex items-center gap-2 mb-1">
+                  <Icon size={11} className={cn(emphasis ? "text-primary/50" : "text-muted-foreground/40")} />
                   <span className={cn(
                     "uppercase tracking-wider",
                     emphasis
-                      ? "text-[11px] font-semibold text-foreground/80"
-                      : "text-[10px] font-medium text-muted-foreground/70",
+                      ? "text-[10px] font-semibold text-foreground/60"
+                      : "text-[10px] font-medium text-muted-foreground/50",
                   )}>
                     {title}
                   </span>
@@ -122,7 +122,7 @@ export default function UpgradeModalNextUI({
                   {items.map((item) => (
                     <li key={item} className={cn(
                       "leading-snug",
-                      emphasis ? "text-sm text-foreground" : "text-[13px] text-muted-foreground",
+                      emphasis ? "text-[13px] text-foreground/80" : "text-[13px] text-muted-foreground/70",
                     )}>
                       {item}
                     </li>
@@ -141,15 +141,15 @@ export default function UpgradeModalNextUI({
               className={cn(
                 "rounded-xl border p-3 text-left transition-all",
                 !annual
-                  ? "ring-2 ring-primary/30 border-primary bg-primary/5"
-                  : "border-border/40 bg-muted/20",
+                  ? "ring-1.5 ring-primary/25 border-primary/60 bg-primary/[0.04]"
+                  : "border-border/25 bg-muted/10",
               )}
             >
-              <span className={cn("text-xs font-semibold", !annual ? "text-foreground" : "text-muted-foreground")}>Monthly</span>
-              <p className={cn("text-lg font-bold mt-1 leading-none", !annual ? "text-foreground" : "text-muted-foreground")}>
+              <span className={cn("text-xs font-medium", !annual ? "text-foreground/80" : "text-muted-foreground/60")}>Monthly</span>
+              <p className={cn("text-lg font-bold mt-1 leading-none", !annual ? "text-foreground/80" : "text-muted-foreground/50")}>
                 {MONTHLY_PRICE}
               </p>
-              <p className="text-[10px] text-muted-foreground/70 mt-0.5">per month</p>
+              <p className="text-[10px] text-muted-foreground/50 mt-0.5">per month</p>
             </button>
 
             {/* Annual */}
@@ -157,22 +157,22 @@ export default function UpgradeModalNextUI({
               type="button"
               onClick={() => setAnnual(true)}
               className={cn(
-                "rounded-xl border p-3.5 text-left transition-all relative",
+                "rounded-xl border p-4 text-left transition-all relative",
                 annual
-                  ? "ring-2 ring-primary/30 border-primary bg-primary/5"
-                  : "border-border/40 bg-muted/20",
+                  ? "ring-2 ring-primary/40 border-primary bg-primary/[0.06] shadow-sm shadow-primary/10"
+                  : "border-border/30 bg-muted/15",
               )}
             >
-              <div className="flex items-start justify-between gap-1 mb-1">
-                <span className="text-xs font-semibold text-foreground">Annual</span>
-                <span className="shrink-0 rounded-full bg-primary/15 text-primary px-1.5 py-0.5 text-[9px] font-semibold leading-none">
+              <div className="flex items-start justify-between gap-1 mb-1.5">
+                <span className={cn("text-xs font-semibold", annual ? "text-foreground" : "text-foreground/70")}>Annual</span>
+                <span className="shrink-0 rounded-full bg-primary/12 text-primary px-1.5 py-0.5 text-[9px] font-semibold leading-none">
                   Save {ANNUAL_SAVING_PCT}
                 </span>
               </div>
-              <p className="text-lg font-bold text-foreground leading-none">
+              <p className={cn("text-xl font-bold leading-none", annual ? "text-foreground" : "text-foreground/70")}>
                 {ANNUAL_PRICE}
               </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">
+              <p className="text-[10px] text-muted-foreground/60 mt-1">
                 {ANNUAL_MONTHLY_EQUIV}/mo billed annually
               </p>
             </button>
