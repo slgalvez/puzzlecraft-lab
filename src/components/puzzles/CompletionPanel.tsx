@@ -18,6 +18,7 @@ import { maybeRequestRating } from "@/lib/appRating";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import UpgradeModal from "@/components/account/UpgradeModal";
+import { buildSolveShareText } from "@/lib/shareText";
 
 interface Props {
   time: number;
