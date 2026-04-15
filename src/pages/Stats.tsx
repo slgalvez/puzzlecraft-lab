@@ -258,9 +258,10 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
     return { totalSolved, totalTime, averageTime: totalSolved > 0 ? Math.round(totalTime / totalSolved) : 0, bestTime };
   }, [dateFilter, categoryFilter, stats.recentCompletions]);
 
+  const recentMaxRows = isPlus ? RECENT_COLLAPSED_COUNT : RECENT_FREE_COUNT;
   const visibleCompletions = recentExpanded
     ? filteredCompletions
-    : filteredCompletions.slice(0, RECENT_COLLAPSED_COUNT);
+    : filteredCompletions.slice(0, recentMaxRows);
 
   const showGeneral = viewFilter === null;
   const showDaily   = viewFilter === null || viewFilter === "daily";
