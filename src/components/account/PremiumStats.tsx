@@ -226,34 +226,7 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
     : "Play more to track your average performance.";
 
 
-  // Precompute best times and recent averages for badges
-  const bestTimeByType: Record<string, number> = {};
-  const recentAvgByType: Record<string, number> = {};
-  for (const cat of ALL_CATEGORIES) {
-    const catRecords = records.filter((r) => r.puzzleType === cat);
-    if (catRecords.length > 0) {
-      bestTimeByType[cat] = Math.min(...catRecords.map((r) => r.solveTime));
-      const recentSlice = catRecords.slice(0, 10);
-      recentAvgByType[cat] = recentSlice.reduce((s, r) => s + r.solveTime, 0) / recentSlice.length;
-    }
-  }
 
-  function getSolveBadges(r: SolveRecord): { icon: typeof Star; label: string }[] {
-    const badges: { icon: typeof Star; label: string }[] = [];
-    if (bestTimeByType[r.puzzleType] === r.solveTime) {
-      badges.push({ icon: Trophy, label: "Personal Best" });
-    }
-    if (r.difficulty === "extreme" || r.difficulty === "insane") {
-      badges.push({ icon: Gauge, label: "High Difficulty" });
-    }
-    if (r.hintsUsed === 0 && trueMistakes(r) === 0 && !r.assisted) {
-      badges.push({ icon: Sparkles, label: "Clean Solve" });
-    }
-    if (recentAvgByType[r.puzzleType] && r.solveTime < recentAvgByType[r.puzzleType] * 0.9) {
-      badges.push({ icon: TrendingUp, label: "Faster than average" });
-    }
-    return badges.slice(0, 2);
-  }
 
   return (
     <TooltipProvider>
