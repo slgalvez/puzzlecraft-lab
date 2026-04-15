@@ -13,7 +13,7 @@ import { getEndlessStats } from "@/lib/endlessHistory";
 import {
   Trophy, Flame, Clock, Target, Calendar,
   Infinity, ArrowRight, TrendingUp, TrendingDown, Shield,
-  Zap, Info, ChevronRight, Play, Crown, ShieldCheck,
+  Zap, Info, ChevronRight, Play, Crown,
 } from "lucide-react";
 import { isNativeApp } from "@/lib/appMode";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -31,7 +31,7 @@ import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 
 import { getSolveRecords } from "@/lib/solveTracker";
 import { computePlayerRating, computeSolveScore, getSkillTier, getTierColor, getTierProgress, getPlayerRatingInfo, getTierCardStyle, getTierBadgeStyle, type SkillTier } from "@/lib/solveScoring";
-import { getBestInsight } from "@/lib/solveInsights";
+
 import { ProvisionalRatingCard } from "@/components/puzzles/ProvisionalRatingCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -356,12 +356,8 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
 
             {/* ── UNIFIED PLAYER PROFILE CARD ── */}
             {showGeneral && premiumAccess && localRating && (() => {
-              const solveRecs = isViewAs
-                ? getSolveRecordsFrom(viewAsUser!.solves).filter((r) => r.solveTime >= 10)
-                : getSolveRecords().filter((r) => r.solveTime >= 10);
-              const noHintCount = solveRecs.filter((r) => r.hintsUsed === 0 && !r.assisted).length;
-              const noHintRate = solveRecs.length > 0 ? Math.round((noHintCount / solveRecs.length) * 100) : 0;
-              const insight = solveRecs.length >= 3 ? getBestInsight(solveRecs) : null;
+
+
 
               return (
                 <div className={cn(
@@ -433,38 +429,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                         </div>
                       )}
                     </div>
-
-                    {/* Key metrics */}
-                    <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:w-auto w-full">
-                      <div className="rounded-lg border bg-secondary/30 p-2.5 text-center">
-                        <ShieldCheck size={13} className="mx-auto text-primary mb-0.5" />
-                        <p className="font-mono text-lg font-bold text-foreground">{noHintRate}%</p>
-                        <p className="text-[9px] text-muted-foreground">No-Hint</p>
-                      </div>
-                      <div className="rounded-lg border bg-secondary/30 p-2.5 text-center">
-                        <Target size={13} className="mx-auto text-primary mb-0.5" />
-                        <p className="font-mono text-lg font-bold text-foreground">{displayStats.totalSolved}</p>
-                        <p className="text-[9px] text-muted-foreground">Solves</p>
-                      </div>
-                      <div className="rounded-lg border bg-secondary/30 p-2.5 text-center">
-                        <Clock size={13} className="mx-auto text-primary mb-0.5" />
-                        <p className="font-mono text-lg font-bold text-foreground">{displayStats.totalSolved > 0 ? formatTime(displayStats.averageTime) : "—"}</p>
-                        <p className="text-[9px] text-muted-foreground">Avg Time</p>
-                      </div>
-                      <div className="rounded-lg border bg-secondary/30 p-2.5 text-center">
-                        <Flame size={13} className="mx-auto text-primary mb-0.5" />
-                        <p className="font-mono text-lg font-bold text-foreground">{stats.currentStreak}</p>
-                        <p className="text-[9px] text-muted-foreground">Streak</p>
-                      </div>
-                    </div>
                   </div>
-
-                  {/* Insight quote */}
-                  {insight && (
-                    <p className="text-sm text-muted-foreground italic leading-relaxed mt-4 border-t border-border/40 pt-3">
-                      "{insight}"
-                    </p>
-                  )}
                 </div>
               );
             })()}
@@ -472,6 +437,16 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
             {/* Premium upgrade teaser — hidden in view-as mode */}
             {showGeneral && showUpgrade && !premiumAccess && !isViewAs && (
               <StatsPremiumPreview onUpgrade={() => setUpgradeOpen(true)} />
+            )}
+
+            {/* Premium stats section */}
+            {showGeneral && premiumAccess && (
+              <>
+{account?.isAdmin && !isViewAs && (
+                  <PremiumStatsAdminControls onRefresh={() => setDataVersion((v) => v + 1)} />
+                )}
+                <PremiumStats key={dataVersion} hideAdminControls={isViewAs} overrideSolveRecords={isViewAs ? getSolveRecordsFrom(viewAsUser!.solves) : undefined} />
+              </>
             )}
 
             {/* Recent solves */}
@@ -539,16 +514,6 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                   </button>
                 )}
               </div>
-            )}
-
-            {/* Premium stats section */}
-            {showGeneral && premiumAccess && (
-              <>
-{account?.isAdmin && !isViewAs && (
-                  <PremiumStatsAdminControls onRefresh={() => setDataVersion((v) => v + 1)} />
-                )}
-                <PremiumStats key={dataVersion} hideAdminControls={isViewAs} overrideSolveRecords={isViewAs ? getSolveRecordsFrom(viewAsUser!.solves) : undefined} />
-              </>
             )}
 
           </div>

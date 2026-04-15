@@ -16,7 +16,7 @@ import {
   type SkillTier,
 } from "@/lib/solveScoring";
 import { getAllMilestones, getUncelebratedIds, markCelebrated, type MilestoneIcon, type MilestoneState } from "@/lib/milestones";
-import { Clock, Trophy, Target, BarChart3, Zap, CheckCircle, FlaskConical, Trash2, TrendingUp, TrendingDown, ChevronDown, ChevronUp, Award, Puzzle, Flame, Crown, Medal, Bolt, Star, Gauge, Sparkles } from "lucide-react";
+import { Trophy, Target, BarChart3, Zap, CheckCircle, FlaskConical, Trash2, TrendingUp, TrendingDown, Award, Puzzle, Flame, Crown, Medal, Bolt } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateDemoSolves, clearDemoSolves, hasDemoData, generateDemoLeaderboard, clearDemoLeaderboard, hasDemoLeaderboard } from "@/lib/demoStats";
 import { useUserAccount } from "@/contexts/UserAccountContext";
@@ -25,7 +25,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const MIN_SOLVES_FOR_AVG = 2;
-const HISTORY_PREVIEW = 5;
+
 
 const ALL_CATEGORIES: PuzzleCategory[] = [
   "crossword", "word-fill", "number-fill", "sudoku",
@@ -116,7 +116,7 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
     return (isAdmin && demoActive) ? getDemoSolveSummary() : getSolveSummary();
   }, [refreshKey, isAdmin, demoActive, hasOverride, overrideSolveRecords]);
   const demoLeaderboardActive = useMemo(() => hasDemoLeaderboard(), [refreshKey]);
-  const [historyExpanded, setHistoryExpanded] = useState(false);
+  
 
   const handleGenerate = useCallback(() => {
     generateDemoSolves(25);
@@ -217,45 +217,9 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
     }
   }
 
-  const bestInsight = bestByType.length >= 3
-    ? `You've set personal bests across ${bestByType.length} puzzle types.`
-    : "Keep solving to set more personal records.";
 
-  const avgInsight = avgByType.length > 0
-    ? `Your consistency is ${timeTrend.direction === "down" ? "improving" : timeTrend.direction === "up" ? "worth watching" : "holding steady"} over recent solves.`
-    : "Play more to track your average performance.";
 
-  const recent20 = records.slice(0, 20);
-  const historyVisible = historyExpanded ? recent20 : recent20.slice(0, HISTORY_PREVIEW);
 
-  // Precompute best times and recent averages for badges
-  const bestTimeByType: Record<string, number> = {};
-  const recentAvgByType: Record<string, number> = {};
-  for (const cat of ALL_CATEGORIES) {
-    const catRecords = records.filter((r) => r.puzzleType === cat);
-    if (catRecords.length > 0) {
-      bestTimeByType[cat] = Math.min(...catRecords.map((r) => r.solveTime));
-      const recentSlice = catRecords.slice(0, 10);
-      recentAvgByType[cat] = recentSlice.reduce((s, r) => s + r.solveTime, 0) / recentSlice.length;
-    }
-  }
-
-  function getSolveBadges(r: SolveRecord): { icon: typeof Star; label: string }[] {
-    const badges: { icon: typeof Star; label: string }[] = [];
-    if (bestTimeByType[r.puzzleType] === r.solveTime) {
-      badges.push({ icon: Trophy, label: "Personal Best" });
-    }
-    if (r.difficulty === "extreme" || r.difficulty === "insane") {
-      badges.push({ icon: Gauge, label: "High Difficulty" });
-    }
-    if (r.hintsUsed === 0 && trueMistakes(r) === 0 && !r.assisted) {
-      badges.push({ icon: Sparkles, label: "Clean Solve" });
-    }
-    if (recentAvgByType[r.puzzleType] && r.solveTime < recentAvgByType[r.puzzleType] * 0.9) {
-      badges.push({ icon: TrendingUp, label: "Faster than average" });
-    }
-    return badges.slice(0, 2);
-  }
 
   return (
     <TooltipProvider>
@@ -360,11 +324,11 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
           );
         })()}
 
-        {/* ── ACCURACY INSIGHTS (compact) ── */}
-        <div className="border-b border-border/40 pb-4">
-          <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+        {/* ── ACCURACY INSIGHTS ── */}
+        <div className="rounded-xl border bg-card p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <CheckCircle size={15} className="text-primary" />
-            Accuracy
+            Accuracy Insights
             <TrendBadge trend={accuracyTrend} invertColor label="Accuracy trend vs. recent solves" />
           </h3>
           <div className="grid grid-cols-4 gap-3 text-center">
@@ -387,6 +351,9 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
               <p className="text-[10px] text-muted-foreground">Avg Hints</p>
             </div>
           </div>
+          <p className="text-xs text-muted-foreground italic mt-3 pt-3 border-t border-border/40 leading-relaxed">
+            {accuracyInsight}
+          </p>
         </div>
 
         {/* ── PERFORMANCE BY PUZZLE TYPE (merged bests + averages) ── */}
@@ -429,86 +396,6 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
           </div>
         )}
 
-        {/* ── SOLVE HISTORY — collapsible table ── */}
-        <div className="rounded-xl border bg-card p-5">
-          <button
-            type="button"
-            onClick={() => setHistoryExpanded((p) => !p)}
-            className="w-full flex items-center justify-between"
-          >
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Clock size={15} className="text-primary" />
-              Solve History
-              <span className="text-xs text-muted-foreground font-normal">Last 20</span>
-            </h3>
-            {historyExpanded ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
-          </button>
-
-          <div className="overflow-x-auto mt-3">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-secondary/50">
-                  <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Time</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Difficulty</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Score</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground w-16"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {historyVisible.map((r) => {
-                  const info = CATEGORY_INFO[r.puzzleType];
-                  const score = computeSolveScore(r);
-                  const badges = getSolveBadges(r);
-                  return (
-                    <tr key={r.id} className="border-b last:border-0">
-                      <td className="px-3 py-2 text-foreground whitespace-nowrap">
-                        {info?.name ?? r.puzzleType}
-                      </td>
-                      <td className="px-3 py-2 font-mono font-medium text-foreground">{formatTime(r.solveTime)}</td>
-                      <td className="px-3 py-2 capitalize text-muted-foreground hidden sm:table-cell">
-                        {DIFFICULTY_LABELS[r.difficulty as keyof typeof DIFFICULTY_LABELS] ?? r.difficulty}
-                      </td>
-                      <td className="px-3 py-2 font-mono text-muted-foreground hidden sm:table-cell">
-                        {score}
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground text-xs">
-                        {new Date(r.completedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                      </td>
-                      <td className="px-3 py-2 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          {badges.map((b, i) => (
-                            <Tooltip key={i}>
-                              <TooltipTrigger asChild>
-                                <button type="button" className="p-1 -m-0.5 min-w-[28px] min-h-[28px] flex items-center justify-center touch-manipulation">
-                                  <b.icon size={13} className="text-primary/70" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="text-xs">
-                                {b.label}
-                              </TooltipContent>
-                            </Tooltip>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {recent20.length > HISTORY_PREVIEW && !historyExpanded && (
-            <button
-              type="button"
-              onClick={() => setHistoryExpanded(true)}
-              className="mt-2 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
-            >
-              Show all {recent20.length} solves
-            </button>
-          )}
-        </div>
       </div>
     </TooltipProvider>
   );
