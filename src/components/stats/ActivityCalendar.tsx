@@ -272,7 +272,7 @@ export function ActivityCalendar({ className }: ActivityCalendarProps) {
               <span
                 className={cn(
                   "absolute inset-0 flex items-center justify-center text-[10px] font-medium",
-                  day.isToday && "font-bold text-primary drop-shadow-[0_0_3px_hsl(var(--primary)/0.4)]",
+                  day.isToday && "font-bold text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.6)]",
                   !day.isToday && day.isInMonth && !day.isFuture && "text-foreground/80",
                   day.isFuture && "text-muted-foreground/30",
                   !day.isInMonth && "text-muted-foreground/30",
@@ -283,7 +283,7 @@ export function ActivityCalendar({ className }: ActivityCalendarProps) {
 
               {/* Today dot */}
               {day.isToday && (
-                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-[3px] w-[3px] rounded-full bg-primary shadow-[0_0_4px_hsl(var(--primary)/0.5)]" />
+                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-[3px] w-[3px] rounded-full bg-primary shadow-[0_0_6px_hsl(var(--primary)/0.7)]" />
               )}
             </button>
           );
