@@ -1,98 +1,80 @@
 
 
-# Tier-Aware Visual Styling for Rating Cards
+# Stats Page Refactor — Remove Redundancy, Clarify Hierarchy
 
-## Overview
-Visual-only enhancement to make each skill tier feel distinct and rewarding. No logic or calculation changes.
+## Current Problems
+- **Two rating cards**: Stats.tsx renders a "Your Rank" hero (lines 357-438), then PremiumStats renders another hero with rating/tier/insight (lines 283-327). Both show rating, tier, and progress.
+- **Three puzzle-type sections**: PremiumStats "Personal Bests", PremiumStats "Average Performance", and right-column "By Puzzle Type" all show per-category data.
+- **Standalone P+ header**: "Performance Breakdown" with a P+ badge sits mid-page as a section header.
+- **Accuracy Insights** is a full card competing visually with the hero.
 
-## Changes
+## Plan
 
-### 1. `src/components/puzzles/ProvisionalRatingCard.tsx`
+### 1. Create unified Player Profile card in Stats.tsx (replaces both rating heroes)
 
-**Expert max-rank handling (lines 311-317)**
-Replace the misleading 100% progress bar with a clean achievement message:
-```tsx
-{!nextTier && (
-  <div className="mt-4 flex items-center gap-2 text-sm">
-    <Crown size={14} className="text-amber-500" />
-    <span className="text-amber-500 font-medium">Top-tier solver</span>
-  </div>
-)}
-```
+Remove the inline rating hero block (lines 357-438) from Stats.tsx. Move PremiumStats hero section logic into a new unified card rendered directly in Stats.tsx's left column. This card contains:
 
-**Tier badge/pill (line 276 confirmed card, line 210 provisional card)**
-Replace plain text tier name with a styled badge pill using tier-specific background tints:
-```tsx
-<span className={cn(
-  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
-  tierBadgeStyles[tier]
-)}>
-  {tier}
-</span>
-```
+- Tier badge pill (using `getTierBadgeStyle`)
+- Rating number (mono, large) with trend badge
+- Leaderboard rank if available
+- Expert crown message OR progress-to-next bar
+- Key metrics row: no-hint %, total solves, avg time, streak
+- Insight quote (from `getBestInsight`)
+- Small P+ indicator badge in the header area
+- Peak rating if higher than current
 
-**Tier-specific card border and background**
-Add a helper mapping tiers to border/bg classes:
-```tsx
-const TIER_CARD_STYLES: Record<SkillTier, string> = {
-  Beginner:  "border-border bg-card",
-  Casual:    "border-sky-500/20 bg-sky-500/[0.02]",
-  Skilled:   "border-emerald-500/20 bg-emerald-500/[0.02]",
-  Advanced:  "border-primary/20 bg-primary/[0.03]",
-  Expert:    "border-amber-500/25 bg-amber-500/[0.03]",
-};
+This replaces both the Stats.tsx rating hero AND the PremiumStats hero section.
 
-const TIER_BADGE_STYLES: Record<SkillTier, string> = {
-  Beginner:  "bg-muted text-muted-foreground",
-  Casual:    "bg-sky-500/10 text-sky-500",
-  Skilled:   "bg-emerald-500/10 text-emerald-500",
-  Advanced:  "bg-primary/10 text-primary",
-  Expert:    "bg-amber-500/10 text-amber-500",
-};
-```
+### 2. Strip hero from PremiumStats
 
-Apply `TIER_CARD_STYLES[tier]` to the confirmed card wrapper (line 249) instead of the hardcoded `border-primary/20 bg-card`.
+Remove the hero section (lines 283-327) from PremiumStats.tsx entirely. PremiumStats now starts with Milestones, then Accuracy, then Solve History. The "Performance Breakdown" header with P+ badge is also removed — the parent handles that context.
 
-**Add tier messaging for Expert (confirmed card)**
-After the "Based on your recent X solves" text, add:
-```tsx
-{tier === "Expert" && (
-  <p className="text-xs font-medium text-amber-500/80 mt-1">
-    You've reached Expert level
-  </p>
-)}
-```
+### 3. Simplify Accuracy Insights in PremiumStats
 
-**Card elevation** — Add `shadow-sm` to confirmed card wrapper for subtle lift above milestone cards.
+Convert the full bordered card (lines 422-451) into a compact inline row:
+- Remove the card wrapper, use a lighter `border-b` separator style
+- Keep the 4-stat grid but reduce from `text-2xl` to `text-lg`
+- Remove the insight paragraph (it's now in the player card)
+- Result: visually subordinate to the player profile card
 
-### 2. `src/components/account/PremiumStats.tsx`
+### 4. Create "Performance by Puzzle Type" section in PremiumStats
 
-**Hero section tier badge (line 292)**
-Same badge pill treatment — replace plain `<p>` tier text with the styled badge using `TIER_BADGE_STYLES`.
+Replace "Personal Bests" (lines 453-476) and "Average Performance" (lines 478-499) with ONE section. Each puzzle type row shows:
+- Type name
+- Best time
+- Average time
+- Solve count
 
-**Hero Expert progress bar (lines 293-296)**
-Conditionally render: if Expert, show "Top-tier solver" message instead of "Progress to next rank" bar.
+Rendered as a compact list/table rather than two separate grids. This also absorbs the data from the right-column "By Puzzle Type".
 
-**Hero card border (line 281)**
-Apply tier-aware border tint to the hero card wrapper using the same `TIER_CARD_STYLES` map.
+### 5. Remove "By Puzzle Type" from right column in Stats.tsx
 
-### 3. Shared tier styles
-Extract `TIER_CARD_STYLES` and `TIER_BADGE_STYLES` into `src/lib/solveScoring.ts` alongside existing `getTierColor()` so both components import from one place. Add two new exports:
-```tsx
-export function getTierCardStyle(tier: SkillTier): string { ... }
-export function getTierBadgeStyle(tier: SkillTier): string { ... }
-```
+Delete lines 578-631 (the right-column puzzle type list). Keep Activity calendar, Daily Challenge, Endless Mode.
 
-## Files changed
+### 6. Remove standalone key stat cards grid
+
+The 4-card grid (Puzzles Solved, Streak, Avg Time, Fastest) at lines 447-477 is now redundant — these metrics are in the unified player card. Remove it.
+
+### 7. Hierarchy improvements
+
+- Player Profile card gets `shadow-sm` and tier-aware border (already exists via `getTierCardStyle`)
+- Milestones, Accuracy, Performance by Type, Solve History use plain `rounded-xl border bg-card` without shadow
+- Slightly more spacing before the player card (`mb-8` vs current `space-y-6`)
+
+## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/lib/solveScoring.ts` | Add `getTierCardStyle()` and `getTierBadgeStyle()` exports |
-| `src/components/puzzles/ProvisionalRatingCard.tsx` | Tier-aware card styling, badge pill, Expert crown message, remove misleading progress bar, add `shadow-sm` |
-| `src/components/account/PremiumStats.tsx` | Hero section: tier badge pill, tier-aware border, Expert progress replacement |
+| `src/pages/Stats.tsx` | Replace rating hero + stat cards with unified Player Profile card; remove right-column "By Puzzle Type"; remove standalone P+ section wrapper |
+| `src/components/account/PremiumStats.tsx` | Remove hero section; simplify Accuracy to compact row; merge Personal Bests + Average Performance into one "Performance by Puzzle Type" section |
 
 ## What does NOT change
-- Rating calculations, thresholds, tier logic — untouched
-- Provisional flow — unchanged (still uses neutral border)
-- Compact variant — unchanged
+- Rating calculations, solve tracking, data sources
+- View-as mode data flow
+- Right column: Activity, Daily, Endless
+- Recent Solves list
+- Milestones section
+- Solve History table
+- Social tab
+- Admin controls logic
 
