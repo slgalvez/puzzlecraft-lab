@@ -271,16 +271,14 @@ const DailyPuzzle = () => {
                 variant="outline"
                 size="sm"
                 onClick={async () => {
-                  const diffLabel = DIFFICULTY_LABELS[challenge.difficulty];
-                  const timeStr = formatTime(completion.time);
-                  const shareUrl = `${window.location.origin}/play?code=daily-${challenge.dateStr}`;
-                  const text = `Just solved today's Puzzlecraft challenge 🧠\n\n${info.name} • ${diffLabel} • ${timeStr}${streak.current > 1 ? `\n🔥 ${streak.current}-day streak` : ""}\n\nCan you beat this time?\n\nPlay: ${shareUrl}`;
-                  if (navigator.share) {
-                    try { await navigator.share({ text }); } catch { /* user cancelled */ }
-                  } else {
-                    await navigator.clipboard.writeText(text);
-                    toast({ title: "Results copied to clipboard!" });
-                  }
+                  const text = buildDailyShareText({
+                    typeName: info.name,
+                    difficulty: challenge.difficulty,
+                    time: completion.time,
+                    streak: streak.current,
+                    shareUrl: `${window.location.origin}/play?code=daily-${challenge.dateStr}`,
+                  });
+                  await shareOrCopy(text, toast);
                 }}
               >
                 <Share size={14} className="mr-1.5" />
