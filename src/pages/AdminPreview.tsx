@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { buildCraftShareText, buildSolveResultShareText } from "@/lib/craftShare";
+import { buildSolveResultShareText } from "@/lib/craftShare";
+import { buildCraftShareText as buildUnifiedCraftShareText, buildSolveShareText, buildDailyShareText } from "@/lib/shareText";
 import { MILESTONE_ICON_EMOJI } from "@/lib/milestones";
 import Layout from "@/components/layout/Layout";
 import CompletionPanel from "@/components/puzzles/CompletionPanel";
