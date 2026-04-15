@@ -18,6 +18,7 @@ import {
   Trophy, Medal, Shield, TrendingUp, TrendingDown,
   Zap, ArrowRight, Info, ChevronDown,
 } from "lucide-react";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
