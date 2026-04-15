@@ -13,7 +13,7 @@ import { getEndlessStats } from "@/lib/endlessHistory";
 import {
   Trophy, Flame, Clock, Target, Calendar,
   Infinity, ArrowRight, TrendingUp, TrendingDown, Shield,
-  Zap, Info, ChevronRight, Play,
+  Zap, Info, ChevronRight, Play, Crown, ShieldCheck,
 } from "lucide-react";
 import { isNativeApp } from "@/lib/appMode";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -30,7 +30,8 @@ import { usePremiumAccess } from "@/lib/premiumAccess";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 
 import { getSolveRecords } from "@/lib/solveTracker";
-import { computePlayerRating, computeSolveScore, getSkillTier, getTierColor, getTierProgress, getPlayerRatingInfo } from "@/lib/solveScoring";
+import { computePlayerRating, computeSolveScore, getSkillTier, getTierColor, getTierProgress, getPlayerRatingInfo, getTierCardStyle, getTierBadgeStyle, type SkillTier } from "@/lib/solveScoring";
+import { getBestInsight } from "@/lib/solveInsights";
 import { ProvisionalRatingCard } from "@/components/puzzles/ProvisionalRatingCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -353,127 +354,124 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
           {/* ── LEFT COLUMN ── */}
           <div className="min-w-0 flex-1 space-y-6">
 
-            {/* Rating hero (premium) — uploaded file's detailed inline layout */}
-            {showGeneral && premiumAccess && localRating && (
-              <div className={cn(
-                "rounded-2xl border bg-card p-5",
-                nearRank ? "border-primary/30" : "border-primary/20"
-              )}>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
+            {/* ── UNIFIED PLAYER PROFILE CARD ── */}
+            {showGeneral && premiumAccess && localRating && (() => {
+              const solveRecs = isViewAs
+                ? getSolveRecordsFrom(viewAsUser!.solves).filter((r) => r.solveTime >= 10)
+                : getSolveRecords().filter((r) => r.solveTime >= 10);
+              const noHintCount = solveRecs.filter((r) => r.hintsUsed === 0 && !r.assisted).length;
+              const noHintRate = solveRecs.length > 0 ? Math.round((noHintCount / solveRecs.length) * 100) : 0;
+              const insight = solveRecs.length >= 3 ? getBestInsight(solveRecs) : null;
+
+              return (
+                <div className={cn(
+                  "rounded-2xl border p-5 sm:p-6 shadow-sm mb-2",
+                  getTierCardStyle(localRating.tier as SkillTier)
+                )}>
+                  {/* Header row: label + P+ badge + leaderboard */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
                       <Zap size={14} className="text-primary" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Your Rank</span>
-                      {myLeaderboardEntry && (
-                        <span className="font-mono font-bold text-sm text-primary">#{myLeaderboardEntry.rank}</span>
-                      )}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button type="button" className="text-muted-foreground/40 hover:text-muted-foreground transition-colors p-1 -m-1 min-w-[28px] min-h-[28px] flex items-center justify-center">
-                            <Info size={12} />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-52 text-xs leading-relaxed">
-                          <p className="font-medium mb-1">Rating is based on:</p>
-                          <ul className="space-y-0.5 text-muted-foreground">
-                            <li>• Puzzle difficulty</li>
-                            <li>• Solve speed</li>
-                            <li>• Accuracy</li>
-                            <li>• Hint usage</li>
-                          </ul>
-                        </TooltipContent>
-                      </Tooltip>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Player Profile</span>
+                      <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-primary">P+</span>
                     </div>
-
-                    <p className={cn("text-base font-semibold", getTierColor(localRating.tier as any))}>
-                      {localRating.tier}
-                    </p>
-
-                    <div className="flex items-baseline gap-2 mt-0.5">
-                      <p className="font-mono text-4xl font-bold text-foreground leading-none">{localRating.rating}</p>
-                      <span className="text-xs text-muted-foreground">rating</span>
-                      {myLeaderboardEntry && myLeaderboardEntry.previous_rating > 0 && (() => {
-                        const diff = myLeaderboardEntry.rating - myLeaderboardEntry.previous_rating;
-                        if (diff === 0) return null;
-                        return (
-                          <span className={cn("text-xs font-semibold inline-flex items-center gap-0.5",
-                            diff > 0 ? "text-emerald-500" : "text-destructive")}>
-                            {diff > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                            {diff > 0 ? "+" : ""}{diff}
-                          </span>
-                        );
-                      })()}
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Based on your recent {localRating.solveCount} solves</p>
-                    {localRating.bestRating > localRating.rating && (
-                      <p className="text-[10px] text-muted-foreground/60 mt-0.5">Peak: {localRating.bestRating}</p>
-                    )}
-
-                    {nextTierInfo && (
-                      <div className="mt-4 max-w-xs">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[10px] text-muted-foreground">
-                            {nearRank
-                              ? <span className="text-primary font-semibold">Only {pointsToNext} pts to {nextTierInfo.name}!</span>
-                              : <>{pointsToNext} pts to {nextTierInfo.name}</>}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground/60 font-mono">
-                            {localRating.rating}/{nextTierInfo.threshold}
-                          </span>
-                        </div>
-                        <Progress value={tierProgressValue} className={cn("h-2", nearRank && "h-2.5")} />
-                        {nearRank && (
-                          <Link to="/daily" className="text-[10px] text-primary mt-1 font-medium hover:underline">
-                            Play a puzzle now to break through →
-                          </Link>
-                        )}
-                      </div>
-                    )}
+                    <Button asChild variant="outline" size="sm" className="h-7 text-xs gap-1">
+                      <Link to="/leaderboard"><Shield size={11} className="mr-0.5" /> Leaderboard</Link>
+                    </Button>
                   </div>
 
-                  <Button asChild variant="outline" size="sm" className="shrink-0 self-start">
-                    <Link to="/leaderboard"><Shield size={13} className="mr-1" /> Leaderboard</Link>
-                  </Button>
+                  {/* Tier badge + rating + rank */}
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-5">
+                    <div className="flex-1 min-w-0">
+                      <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold mb-2", getTierBadgeStyle(localRating.tier as SkillTier))}>
+                        {localRating.tier}
+                      </span>
+                      <div className="flex items-baseline gap-2">
+                        <p className="font-mono text-4xl font-bold text-foreground leading-none">{localRating.rating}</p>
+                        <span className="text-xs text-muted-foreground">rating</span>
+                        {myLeaderboardEntry && (
+                          <span className="font-mono font-bold text-sm text-primary">#{myLeaderboardEntry.rank}</span>
+                        )}
+                        {myLeaderboardEntry && myLeaderboardEntry.previous_rating > 0 && (() => {
+                          const diff = myLeaderboardEntry.rating - myLeaderboardEntry.previous_rating;
+                          if (diff === 0) return null;
+                          return (
+                            <span className={cn("text-xs font-semibold inline-flex items-center gap-0.5",
+                              diff > 0 ? "text-emerald-500" : "text-destructive")}>
+                              {diff > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                              {diff > 0 ? "+" : ""}{diff}
+                            </span>
+                          );
+                        })()}
+                      </div>
+                      {localRating.bestRating > localRating.rating && (
+                        <p className="text-[10px] text-muted-foreground/60 mt-1">Peak: {localRating.bestRating}</p>
+                      )}
+
+                      {/* Expert crown or progress */}
+                      {localRating.tier === "Expert" ? (
+                        <div className="mt-3 flex items-center gap-2 text-sm">
+                          <Crown size={14} className="text-amber-500" />
+                          <span className="text-amber-500 font-medium">Top-tier solver</span>
+                        </div>
+                      ) : nextTierInfo && (
+                        <div className="mt-3 max-w-xs">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[10px] text-muted-foreground">
+                              {nearRank
+                                ? <span className="text-primary font-semibold">Only {pointsToNext} pts to {nextTierInfo.name}!</span>
+                                : <>{pointsToNext} pts to {nextTierInfo.name}</>}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground/60 font-mono">{localRating.rating}/{nextTierInfo.threshold}</span>
+                          </div>
+                          <Progress value={tierProgressValue} className={cn("h-2", nearRank && "h-2.5")} />
+                          {nearRank && (
+                            <Link to="/daily" className="text-[10px] text-primary mt-1 font-medium hover:underline">
+                              Play a puzzle now to break through →
+                            </Link>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Key metrics */}
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:w-auto w-full">
+                      <div className="rounded-lg border bg-secondary/30 p-2.5 text-center">
+                        <ShieldCheck size={13} className="mx-auto text-primary mb-0.5" />
+                        <p className="font-mono text-lg font-bold text-foreground">{noHintRate}%</p>
+                        <p className="text-[9px] text-muted-foreground">No-Hint</p>
+                      </div>
+                      <div className="rounded-lg border bg-secondary/30 p-2.5 text-center">
+                        <Target size={13} className="mx-auto text-primary mb-0.5" />
+                        <p className="font-mono text-lg font-bold text-foreground">{displayStats.totalSolved}</p>
+                        <p className="text-[9px] text-muted-foreground">Solves</p>
+                      </div>
+                      <div className="rounded-lg border bg-secondary/30 p-2.5 text-center">
+                        <Clock size={13} className="mx-auto text-primary mb-0.5" />
+                        <p className="font-mono text-lg font-bold text-foreground">{displayStats.totalSolved > 0 ? formatTime(displayStats.averageTime) : "—"}</p>
+                        <p className="text-[9px] text-muted-foreground">Avg Time</p>
+                      </div>
+                      <div className="rounded-lg border bg-secondary/30 p-2.5 text-center">
+                        <Flame size={13} className="mx-auto text-primary mb-0.5" />
+                        <p className="font-mono text-lg font-bold text-foreground">{stats.currentStreak}</p>
+                        <p className="text-[9px] text-muted-foreground">Streak</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Insight quote */}
+                  {insight && (
+                    <p className="text-sm text-muted-foreground italic leading-relaxed mt-4 border-t border-border/40 pt-3">
+                      "{insight}"
+                    </p>
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Premium upgrade teaser — hidden in view-as mode */}
             {showGeneral && showUpgrade && !premiumAccess && !isViewAs && (
               <StatsPremiumPreview onUpgrade={() => setUpgradeOpen(true)} />
-            )}
-
-            {/* Key stat cards */}
-            {showGeneral && (
-              <div className={cn("grid gap-3",
-                !dateFilter ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-3")}>
-                <div className="rounded-xl border bg-card p-4 text-center">
-                  <Target className="mx-auto h-4 w-4 text-primary mb-2" />
-                  <p className="font-mono text-2xl font-bold text-foreground leading-none">{displayStats.totalSolved}</p>
-                  <p className="mt-1.5 text-[11px] text-muted-foreground">Puzzles Solved</p>
-                </div>
-                {!dateFilter && (
-                  <div className="rounded-xl border bg-card p-4 text-center">
-                    <Flame className="mx-auto h-4 w-4 text-primary mb-2" />
-                    <p className="font-mono text-2xl font-bold text-foreground leading-none">{stats.currentStreak}</p>
-                    <p className="mt-1.5 text-[11px] text-muted-foreground">Day Streak</p>
-                  </div>
-                )}
-                <div className="rounded-xl border bg-card p-4 text-center">
-                  <Clock className="mx-auto h-4 w-4 text-primary mb-2" />
-                  <p className="font-mono text-2xl font-bold text-foreground leading-none">
-                    {displayStats.totalSolved > 0 ? formatTime(displayStats.averageTime) : "—"}
-                  </p>
-                  <p className="mt-1.5 text-[11px] text-muted-foreground">Avg Time</p>
-                </div>
-                <div className="rounded-xl border bg-card p-4 text-center">
-                  <Trophy className="mx-auto h-4 w-4 text-primary mb-2" />
-                  <p className="font-mono text-2xl font-bold text-foreground leading-none">
-                    {displayStats.bestTime !== null ? formatTime(displayStats.bestTime) : "—"}
-                  </p>
-                  <p className="mt-1.5 text-[11px] text-muted-foreground">Fastest</p>
-                </div>
-              </div>
             )}
 
             {/* Recent solves */}
@@ -575,61 +573,6 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
               </div>
             )}
 
-            {/* By puzzle type */}
-            {showGeneral && (
-              <div className="rounded-2xl border bg-card overflow-hidden">
-                <div className="px-4 py-3 border-b border-border/60">
-                  <h2 className="font-display text-sm font-semibold text-foreground">By Puzzle Type</h2>
-                </div>
-                <div className="divide-y divide-border/40">
-                  {ALL_CATEGORIES.map((cat) => {
-                    const cs = stats.byCategory[cat];
-                    const isSel = categoryFilter === cat;
-                    return (
-                      <button key={cat} type="button"
-                        onClick={() => setCategoryFilter(isSel ? null : cat)}
-                        className={cn("w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors",
-                          isSel ? "bg-primary/5" : "hover:bg-secondary/50")}>
-                        <div className="flex-1 min-w-0">
-                          <p className={cn("text-xs font-semibold truncate", isSel ? "text-primary" : "text-foreground")}>
-                            {CATEGORY_INFO[cat]?.name}
-                          </p>
-                        </div>
-                        {cs ? (
-                          <div className="text-right shrink-0">
-                            <p className="font-mono text-xs font-semibold text-foreground">{formatTime(cs.bestTime)}</p>
-                            <p className="text-[9px] text-muted-foreground/60">{cs.solved} solve{cs.solved !== 1 ? "s" : ""}</p>
-                          </div>
-                        ) : (
-                          <span className="text-[10px] text-muted-foreground/40 shrink-0">No plays</span>
-                        )}
-                        <ChevronRight size={12} className={cn("shrink-0", isSel ? "text-primary" : "text-muted-foreground/30")} />
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {categoryFilter && stats.byCategory[categoryFilter] && (
-                  <div className="border-t border-border/60 px-4 py-3 bg-primary/5">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-primary mb-2">
-                      {CATEGORY_INFO[categoryFilter]?.name}
-                    </p>
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      {[
-                        { label: "Solved", val: String(stats.byCategory[categoryFilter].solved) },
-                        { label: "Best",   val: formatTime(stats.byCategory[categoryFilter].bestTime) },
-                        { label: "Avg",    val: formatTime(Math.round(stats.byCategory[categoryFilter].totalTime / stats.byCategory[categoryFilter].solved)) },
-                      ].map(({ label, val }) => (
-                        <div key={label}>
-                          <p className="font-mono text-lg font-bold text-foreground leading-none">{val}</p>
-                          <p className="text-[9px] text-muted-foreground mt-1">{label}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Daily challenge */}
             {showDaily && (
