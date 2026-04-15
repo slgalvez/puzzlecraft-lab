@@ -262,69 +262,13 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
 
   return (
     <TooltipProvider>
-      <div className="space-y-8">
+      <div className="space-y-6">
         {adminControls}
         {demoActive && (
           <p className="text-xs text-primary/60 italic">
             Viewing demo data — not from real solves
           </p>
         )}
-
-        {/* ── HEADER ── */}
-        <div className="flex items-center gap-2">
-          <h2 className="font-display text-xl font-semibold text-foreground">
-            Performance Breakdown
-          </h2>
-          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
-            Puzzlecraft+
-          </span>
-        </div>
-
-        {/* ── HERO SECTION ── */}
-        <div className={cn("rounded-2xl border p-6 sm:p-8 shadow-sm", getTierCardStyle(skillTier as SkillTier))}>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-            <div className="text-center sm:text-left">
-              <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
-                <Zap size={18} className="text-primary" />
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Player Rating</span>
-              </div>
-              <p className="font-mono text-5xl font-bold text-foreground leading-none">
-                {playerRating}
-                <TrendBadge trend={scoreTrend} label="Rating trend vs. recent solves" />
-              </p>
-              <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold mt-2", getTierBadgeStyle(skillTier as SkillTier))}>{skillTier}</span>
-              {skillTier === "Expert" ? (
-                <div className="mt-3 flex items-center gap-2 text-sm">
-                  <Crown size={14} className="text-amber-500" />
-                  <span className="text-amber-500 font-medium">Top-tier solver</span>
-                </div>
-              ) : (
-                <div className="mt-3 max-w-48">
-                  <Progress value={tierProgress} className="h-2" />
-                  <p className="mt-1 text-[10px] text-muted-foreground">Progress to next rank</p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex-1 space-y-4">
-              <p className="text-sm text-muted-foreground italic leading-relaxed">
-                "{insight}"
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg border bg-secondary/30 p-3 text-center">
-                  <ShieldCheck size={14} className="mx-auto text-primary mb-1" />
-                  <p className="font-mono text-lg font-bold text-foreground">{noHintRate}%</p>
-                  <p className="text-[10px] text-muted-foreground">No-Hint Rate</p>
-                </div>
-                <div className="rounded-lg border bg-secondary/30 p-3 text-center">
-                  <Target size={14} className="mx-auto text-primary mb-1" />
-                  <p className="font-mono text-lg font-bold text-foreground">{records.length}</p>
-                  <p className="text-[10px] text-muted-foreground">Total Solves</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* ── MILESTONES ── */}
         {(() => {
@@ -419,81 +363,71 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
           );
         })()}
 
-        {/* ── ACCURACY INSIGHTS ── */}
-        <div className="rounded-xl border bg-card p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
+        {/* ── ACCURACY INSIGHTS (compact) ── */}
+        <div className="border-b border-border/40 pb-4">
+          <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
             <CheckCircle size={15} className="text-primary" />
-            Accuracy Insights
+            Accuracy
             <TrendBadge trend={accuracyTrend} invertColor label="Accuracy trend vs. recent solves" />
           </h3>
-          <p className="text-xs text-muted-foreground mb-3">{accuracyInsight}</p>
-          {/* 4-stat 2×2 grid — matches Image 9 */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+          <div className="grid grid-cols-4 gap-3 text-center">
             <div>
-              <p className="font-mono text-2xl font-bold text-foreground">{avgMistakes}</p>
-              <p className="text-xs text-muted-foreground">Avg Mistakes</p>
+              <p className="font-mono text-lg font-bold text-foreground">{avgMistakes}</p>
+              <p className="text-[10px] text-muted-foreground">Avg Mistakes</p>
             </div>
             <div>
-              <p className="font-mono text-2xl font-bold text-foreground">{noHintPercent}%</p>
-              <p className="text-xs text-muted-foreground">No Hints Used</p>
+              <p className="font-mono text-lg font-bold text-foreground">{noHintPercent}%</p>
+              <p className="text-[10px] text-muted-foreground">No Hints</p>
             </div>
             <div>
-              <p className="font-mono text-2xl font-bold text-foreground">{unassistedPercent}%</p>
-              <p className="text-xs text-muted-foreground">Unassisted</p>
+              <p className="font-mono text-lg font-bold text-foreground">{unassistedPercent}%</p>
+              <p className="text-[10px] text-muted-foreground">Unassisted</p>
             </div>
             <div>
-              <p className="font-mono text-2xl font-bold text-foreground">
+              <p className="font-mono text-lg font-bold text-foreground">
                 {Math.round((summary.averageHints ?? 0) * 10) / 10}
               </p>
-              <p className="text-xs text-muted-foreground">Avg Hints</p>
+              <p className="text-[10px] text-muted-foreground">Avg Hints</p>
             </div>
           </div>
         </div>
 
-        {/* ── PERSONAL BESTS — 2-column grid with orange times + pts ── */}
+        {/* ── PERFORMANCE BY PUZZLE TYPE (merged bests + averages) ── */}
         {bestByType.length > 0 && (
           <div className="rounded-xl border bg-card p-5">
-            <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
-              <Trophy size={15} className="text-primary" />
-              Personal Bests
-            </h3>
-            <p className="text-xs text-muted-foreground mb-3">{bestInsight}</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {bestByType.map(({ type, time, difficulty, score }) => (
-                <div key={type} className="rounded-lg border bg-secondary/30 p-3 text-center">
-                  <span className="text-xs font-medium text-foreground">
-                    {CATEGORY_INFO[type]?.name}
-                  </span>
-                  <p className="font-mono text-lg font-bold text-primary mt-1">{formatTime(time)}</p>
-                  <p className="text-[10px] text-muted-foreground capitalize">
-                    {DIFFICULTY_LABELS[difficulty as keyof typeof DIFFICULTY_LABELS] ?? difficulty}
-                    {" · "}{score} pts
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── AVERAGE PERFORMANCE — 2-column grid with times + solve counts + avg pts ── */}
-        {avgByType.length > 0 && (
-          <div className="rounded-xl border bg-card p-5">
-            <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
               <BarChart3 size={15} className="text-primary" />
-              Average Performance
+              Performance by Puzzle Type
               <TrendBadge trend={timeTrend} invertColor label="Speed trend vs. recent solves" />
             </h3>
-            <p className="text-xs text-muted-foreground mb-3">{avgInsight}</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {avgByType.map(({ type, avg, count, avgScore }) => (
-                <div key={type} className="rounded-lg border bg-secondary/30 p-3 text-center">
-                  <span className="text-xs font-medium text-foreground">
-                    {CATEGORY_INFO[type]?.name}
-                  </span>
-                  <p className="font-mono text-lg font-bold text-foreground mt-1">{formatTime(avg)}</p>
-                  <p className="text-[10px] text-muted-foreground">{count} solves · {avgScore} avg pts</p>
-                </div>
-              ))}
+            <div className="divide-y divide-border/40">
+              {bestByType.map(({ type, time, difficulty, score }) => {
+                const avgEntry = avgByType.find((a) => a.type === type);
+                return (
+                  <div key={type} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-foreground">{CATEGORY_INFO[type]?.name}</p>
+                      <p className="text-[10px] text-muted-foreground capitalize mt-0.5">
+                        Best on {DIFFICULTY_LABELS[difficulty as keyof typeof DIFFICULTY_LABELS] ?? difficulty} · {score} pts
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0 grid grid-cols-3 gap-3 text-center min-w-[180px]">
+                      <div>
+                        <p className="font-mono text-sm font-bold text-primary">{formatTime(time)}</p>
+                        <p className="text-[9px] text-muted-foreground">Best</p>
+                      </div>
+                      <div>
+                        <p className="font-mono text-sm font-bold text-foreground">{avgEntry ? formatTime(avgEntry.avg) : "—"}</p>
+                        <p className="text-[9px] text-muted-foreground">Avg</p>
+                      </div>
+                      <div>
+                        <p className="font-mono text-sm font-bold text-foreground">{avgEntry?.count ?? 1}</p>
+                        <p className="text-[9px] text-muted-foreground">Solves</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
