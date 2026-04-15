@@ -120,7 +120,7 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
   if (!summary || records.length === 0) {
     return (
       <div className="space-y-3">
-        {adminControls}
+        
         <div className="rounded-xl border border-primary/20 bg-card p-6 text-center">
           <Target className="mx-auto h-6 w-6 text-primary mb-3" />
           <p className="text-sm text-muted-foreground">
@@ -178,7 +178,7 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {adminControls}
+        
         {demoActive && (
           <p className="text-xs text-primary/60 italic">
             Viewing demo data — not from real solves
