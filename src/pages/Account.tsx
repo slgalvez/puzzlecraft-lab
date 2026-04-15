@@ -63,7 +63,7 @@ export default function AccountPage() {
     const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
     if (recs.length < 10) return null;
     const rating = computePlayerRating(recs);
-    return { rating, tier: getSkillTier(rating) };
+    return { rating, tier: getSkillTier(rating, recs.length) };
   }, []);
 
   const handleSaveName = async () => {

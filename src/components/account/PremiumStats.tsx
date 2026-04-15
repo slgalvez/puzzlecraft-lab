@@ -133,7 +133,7 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
 
   // ── Scoring / Rating ──
   const playerRating = computePlayerRating(records);
-  const skillTier = getSkillTier(playerRating);
+  const skillTier = getSkillTier(playerRating, records.length);
   const tierProgress = getTierProgress(playerRating);
   const tierColor = getTierColor(skillTier);
   const scoreTrend = computeTrend(records, (r) => computeSolveScore(r));

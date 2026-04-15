@@ -147,7 +147,7 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
       // Snapshot tier BEFORE recording
       const recordsBefore = getSolveRecords();
       const ratingBefore = recordsBefore.length > 0 ? computePlayerRating(recordsBefore) : 0;
-      const tierBefore = recordsBefore.length > 0 ? getSkillTier(ratingBefore) : null;
+      const tierBefore = recordsBefore.length > 0 ? getSkillTier(ratingBefore, recordsBefore.length) : null;
 
       // Standardized solve record
       recordSolve({
@@ -166,7 +166,7 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
       if (tierBefore) {
         const recordsAfter = getSolveRecords();
         const ratingAfter = computePlayerRating(recordsAfter);
-        const tierAfter = getSkillTier(ratingAfter);
+        const tierAfter = getSkillTier(ratingAfter, recordsAfter.length);
         if (tierAfter !== tierBefore) {
           const event: TierUpEvent = {
             fromTier: tierBefore,

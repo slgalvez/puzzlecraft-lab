@@ -79,7 +79,7 @@ function useRatingDelta() {
     }
     if (latest.hintsUsed === 0) factors.push("No hints");
     if (latest.mistakesCount <= 1) factors.push("High accuracy");
-    return { delta, currentRating, tier: getSkillTier(currentRating), factors };
+    return { delta, currentRating, tier: getSkillTier(currentRating, records.length), factors };
   }, []);
 }
 

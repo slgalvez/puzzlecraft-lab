@@ -204,10 +204,10 @@ const DEMO_USERNAMES = [
 ];
 
 function tierForRating(r: number): string {
-  if (r >= 1200) return "Expert";
-  if (r >= 950)  return "Advanced";
-  if (r >= 700)  return "Skilled";
-  if (r >= 400)  return "Casual";
+  if (r >= 1650) return "Expert";
+  if (r >= 1300) return "Advanced";
+  if (r >= 850)  return "Skilled";
+  if (r >= 650)  return "Casual";
   return "Beginner";
 }
 
