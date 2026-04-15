@@ -217,13 +217,6 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
     }
   }
 
-  const bestInsight = bestByType.length >= 3
-    ? `You've set personal bests across ${bestByType.length} puzzle types.`
-    : "Keep solving to set more personal records.";
-
-  const avgInsight = avgByType.length > 0
-    ? `Your consistency is ${timeTrend.direction === "down" ? "improving" : timeTrend.direction === "up" ? "worth watching" : "holding steady"} over recent solves.`
-    : "Play more to track your average performance.";
 
 
 
