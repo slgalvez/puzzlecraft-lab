@@ -48,6 +48,7 @@ import {
 
 type ViewFilter = null | "daily";
 const RECENT_COLLAPSED_COUNT = 8;
+const RECENT_FREE_COUNT = 5;
 
 const ALL_CATEGORIES: PuzzleCategory[] = [
   "crossword", "word-fill", "number-fill", "sudoku",
