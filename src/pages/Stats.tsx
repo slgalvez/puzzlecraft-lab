@@ -434,37 +434,8 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                       )}
                     </div>
 
-                    {/* Key metrics */}
-                    <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:w-auto w-full">
-                      <div className="rounded-lg border bg-secondary/30 p-2.5 text-center">
-                        <ShieldCheck size={13} className="mx-auto text-primary mb-0.5" />
-                        <p className="font-mono text-lg font-bold text-foreground">{noHintRate}%</p>
-                        <p className="text-[9px] text-muted-foreground">No-Hint</p>
-                      </div>
-                      <div className="rounded-lg border bg-secondary/30 p-2.5 text-center">
-                        <Target size={13} className="mx-auto text-primary mb-0.5" />
-                        <p className="font-mono text-lg font-bold text-foreground">{displayStats.totalSolved}</p>
-                        <p className="text-[9px] text-muted-foreground">Solves</p>
-                      </div>
-                      <div className="rounded-lg border bg-secondary/30 p-2.5 text-center">
-                        <Clock size={13} className="mx-auto text-primary mb-0.5" />
-                        <p className="font-mono text-lg font-bold text-foreground">{displayStats.totalSolved > 0 ? formatTime(displayStats.averageTime) : "—"}</p>
-                        <p className="text-[9px] text-muted-foreground">Avg Time</p>
-                      </div>
-                      <div className="rounded-lg border bg-secondary/30 p-2.5 text-center">
-                        <Flame size={13} className="mx-auto text-primary mb-0.5" />
-                        <p className="font-mono text-lg font-bold text-foreground">{stats.currentStreak}</p>
-                        <p className="text-[9px] text-muted-foreground">Streak</p>
-                      </div>
                     </div>
                   </div>
-
-                  {/* Insight quote */}
-                  {insight && (
-                    <p className="text-sm text-muted-foreground italic leading-relaxed mt-4 border-t border-border/40 pt-3">
-                      "{insight}"
-                    </p>
-                  )}
                 </div>
               );
             })()}
@@ -472,6 +443,16 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
             {/* Premium upgrade teaser — hidden in view-as mode */}
             {showGeneral && showUpgrade && !premiumAccess && !isViewAs && (
               <StatsPremiumPreview onUpgrade={() => setUpgradeOpen(true)} />
+            )}
+
+            {/* Premium stats section */}
+            {showGeneral && premiumAccess && (
+              <>
+{account?.isAdmin && !isViewAs && (
+                  <PremiumStatsAdminControls onRefresh={() => setDataVersion((v) => v + 1)} />
+                )}
+                <PremiumStats key={dataVersion} hideAdminControls={isViewAs} overrideSolveRecords={isViewAs ? getSolveRecordsFrom(viewAsUser!.solves) : undefined} />
+              </>
             )}
 
             {/* Recent solves */}
@@ -539,16 +520,6 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                   </button>
                 )}
               </div>
-            )}
-
-            {/* Premium stats section */}
-            {showGeneral && premiumAccess && (
-              <>
-{account?.isAdmin && !isViewAs && (
-                  <PremiumStatsAdminControls onRefresh={() => setDataVersion((v) => v + 1)} />
-                )}
-                <PremiumStats key={dataVersion} hideAdminControls={isViewAs} overrideSolveRecords={isViewAs ? getSolveRecordsFrom(viewAsUser!.solves) : undefined} />
-              </>
             )}
 
           </div>
