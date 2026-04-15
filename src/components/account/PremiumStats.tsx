@@ -1,6 +1,6 @@
 /**
  * Puzzlecraft+ Advanced Stats — premium-only sections.
- * Hero → Milestones → Accuracy → Personal Bests → Average Performance → Solve History
+ * Milestones → Accuracy → Performance by Type → Solve History
  */
 import { useMemo, useState, useCallback } from "react";
 import { getSolveRecords, getSolveSummary, getAllSolveRecordsIncludingDemo, getDemoSolveSummary, type SolveRecord } from "@/lib/solveTracker";
@@ -12,14 +12,11 @@ import {
   getSkillTier,
   getTierColor,
   getTierProgress,
-  getTierCardStyle,
-  getTierBadgeStyle,
   trueMistakes,
   type SkillTier,
 } from "@/lib/solveScoring";
-import { getBestInsight } from "@/lib/solveInsights";
 import { getAllMilestones, getUncelebratedIds, markCelebrated, type MilestoneIcon, type MilestoneState } from "@/lib/milestones";
-import { Clock, Trophy, Target, BarChart3, Zap, CheckCircle, FlaskConical, Trash2, TrendingUp, TrendingDown, ShieldCheck, ChevronDown, ChevronUp, Award, Puzzle, Flame, Crown, Medal, Bolt, Star, Gauge, Sparkles } from "lucide-react";
+import { Clock, Trophy, Target, BarChart3, CheckCircle, FlaskConical, Trash2, TrendingUp, TrendingDown, ChevronDown, ChevronUp, Award, Puzzle, Flame, Crown, Medal, Bolt, Star, Gauge, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateDemoSolves, clearDemoSolves, hasDemoData, generateDemoLeaderboard, clearDemoLeaderboard, hasDemoLeaderboard } from "@/lib/demoStats";
 import { useUserAccount } from "@/contexts/UserAccountContext";
