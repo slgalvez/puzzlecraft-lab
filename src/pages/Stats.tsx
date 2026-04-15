@@ -120,7 +120,9 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
 
   // Peak rating — highest rolling-window rating across all recorded solves
   const peakRating = useMemo(() => {
-    const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
+    const recs = isViewAs
+      ? getSolveRecordsFrom(viewAsUser!.solves).filter((r) => r.solveTime >= 10)
+      : getSolveRecords().filter((r) => r.solveTime >= 10);
     if (recs.length < 5) return null;
     let peak = 0;
     for (let i = 0; i <= recs.length - 5; i++) {
@@ -129,16 +131,20 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
       peak = Math.max(peak, Math.round(avg));
     }
     return peak;
-  }, [dataVersion]);
+  }, [dataVersion, isViewAs, viewAsUser]);
+
+  // In view-as mode, fetch the target user's leaderboard entry instead
+  const viewAsUserId = isViewAs ? viewAsUser!.id : null;
 
   const { data: myLeaderboardEntry } = useQuery({
-    queryKey: ["my-leaderboard-entry", account?.id, dataVersion],
+    queryKey: ["my-leaderboard-entry", isViewAs ? viewAsUserId : account?.id, dataVersion],
     queryFn: async () => {
-      if (!account) return null;
+      const targetId = isViewAs ? viewAsUserId : account?.id;
+      if (!targetId) return null;
       const { data: entry } = await supabase
         .from("leaderboard_entries")
         .select("rating, previous_rating, skill_tier, solve_count")
-        .eq("user_id", account.id)
+        .eq("user_id", targetId)
         .maybeSingle();
       if (!entry) return null;
       const { count } = await supabase
@@ -147,7 +153,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
         .gt("rating", entry.rating);
       return { ...entry, rank: (count ?? 0) + 1 };
     },
-    enabled: !!account && premiumAccess,
+    enabled: isViewAs ? !!viewAsUserId : (!!account && premiumAccess),
     staleTime: 30_000,
   });
 
@@ -176,6 +182,16 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
 
   // Local rating for the inline rating card (uses uploaded file's layout style)
   const localRating = useMemo(() => {
+    // In view-as mode, always show rating data if available (ignore premium gate)
+    if (isViewAs) {
+      if (ratingInfo.hasNoData) return null;
+      return {
+        rating: ratingInfo.rating,
+        tier: ratingInfo.tier,
+        solveCount: ratingInfo.solveCount,
+        bestRating: peakRating ?? ratingInfo.rating,
+      };
+    }
     if (!premiumAccess || ratingInfo.hasNoData) return null;
     return {
       rating:     ratingInfo.rating,
@@ -183,7 +199,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
       solveCount: ratingInfo.solveCount,
       bestRating: peakRating ?? ratingInfo.rating,
     };
-  }, [premiumAccess, ratingInfo, peakRating]);
+  }, [premiumAccess, ratingInfo, peakRating, isViewAs]);
 
   const nextTierInfo = localRating ? (() => {
     const idx = TIER_ORDER_LIST.indexOf(localRating.tier);
@@ -192,12 +208,11 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
     return { name: next, threshold: TIER_THRESHOLDS[next] };
   })() : null;
 
+  // Skip sync in view-as mode
   useEffect(() => {
+    if (isViewAs) return;
     if (account) syncLeaderboardRating(account.id, account.displayName);
-    // NOTE: checkMilestones() intentionally removed here.
-    // MilestoneModalManager (mounted in App.tsx via PublicRoutes) fires after
-    // every solve. Calling it again on Stats navigation caused duplicate toasts.
-  }, [account, dataVersion]);
+  }, [account, dataVersion, isViewAs]);
 
   // Filters
   const [viewFilter,     setViewFilter]     = useState<ViewFilter>(null);
