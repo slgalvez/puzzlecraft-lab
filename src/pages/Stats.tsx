@@ -79,19 +79,24 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
 
   // Bump dataVersion on visibility change (user returns after solving) + on mount
   useEffect(() => {
+    if (viewAsMode) return;
     const handler = () => {
       if (document.visibilityState === "visible") setDataVersion((v) => v + 1);
     };
     document.addEventListener("visibilitychange", handler);
     return () => document.removeEventListener("visibilitychange", handler);
-  }, []);
+  }, [viewAsMode]);
 
-  useEffect(() => { setDataVersion((v) => v + 1); }, []);
+  useEffect(() => { if (!viewAsMode) setDataVersion((v) => v + 1); }, [viewAsMode]);
 
-  const stats          = useMemo(() => getProgressStats(),                [dataVersion]);
-  const dailyStreak    = useMemo(() => getDailyStreak(),                  [dataVersion]);
-  const dailyCompleted = useMemo(() => getTotalDailyCompleted(),          [dataVersion]);
-  const endlessStats   = useMemo(() => getEndlessStats(), [dataVersion]);
+  // View-as context
+  const { viewAsUser } = useViewAsUser();
+  const isViewAs = viewAsMode && !!viewAsUser;
+
+  const stats          = useMemo(() => isViewAs ? getProgressStatsFrom(viewAsUser!.completions) : getProgressStats(),                [dataVersion, isViewAs, viewAsUser]);
+  const dailyStreak    = useMemo(() => isViewAs ? getDailyStreakFrom(viewAsUser!.dailyData) : getDailyStreak(),                  [dataVersion, isViewAs, viewAsUser]);
+  const dailyCompleted = useMemo(() => isViewAs ? getTotalDailyCompletedFrom(viewAsUser!.dailyData) : getTotalDailyCompleted(),          [dataVersion, isViewAs, viewAsUser]);
+  const endlessStats   = useMemo(() => isViewAs ? getEndlessStatsFrom(viewAsUser!.endlessData) : getEndlessStats(), [dataVersion, isViewAs, viewAsUser]);
   const endlessSummary = endlessStats ?? {
     totalSessions: 0,
     totalSolved: 0,
@@ -107,9 +112,11 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
 
   // Unified rating info — handles provisional, confirmed, and no-data states
   const localRatingInfo = useMemo(() => {
-    const recs = getSolveRecords().filter((r) => r.solveTime >= 10);
+    const recs = isViewAs
+      ? getSolveRecordsFrom(viewAsUser!.solves).filter((r) => r.solveTime >= 10)
+      : getSolveRecords().filter((r) => r.solveTime >= 10);
     return getPlayerRatingInfo(recs);
-  }, [dataVersion]);
+  }, [dataVersion, isViewAs, viewAsUser]);
 
   // Peak rating — highest rolling-window rating across all recorded solves
   const peakRating = useMemo(() => {
