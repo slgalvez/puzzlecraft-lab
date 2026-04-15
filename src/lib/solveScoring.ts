@@ -123,6 +123,32 @@ export function getTierColor(tier: SkillTier): string {
   }
 }
 
+// ── Tier Visual Styles ────────────────────────────────────────────────────
+
+const TIER_CARD_STYLES: Record<SkillTier, string> = {
+  Beginner:  "border-border bg-card",
+  Casual:    "border-sky-500/20 bg-sky-500/[0.02]",
+  Skilled:   "border-emerald-500/20 bg-emerald-500/[0.02]",
+  Advanced:  "border-primary/20 bg-primary/[0.03]",
+  Expert:    "border-amber-500/25 bg-amber-500/[0.03]",
+};
+
+const TIER_BADGE_STYLES: Record<SkillTier, string> = {
+  Beginner:  "bg-muted text-muted-foreground",
+  Casual:    "bg-sky-500/10 text-sky-500",
+  Skilled:   "bg-emerald-500/10 text-emerald-500",
+  Advanced:  "bg-primary/10 text-primary",
+  Expert:    "bg-amber-500/10 text-amber-500",
+};
+
+export function getTierCardStyle(tier: SkillTier): string {
+  return TIER_CARD_STYLES[tier] ?? TIER_CARD_STYLES.Beginner;
+}
+
+export function getTierBadgeStyle(tier: SkillTier): string {
+  return TIER_BADGE_STYLES[tier] ?? TIER_BADGE_STYLES.Beginner;
+}
+
 export function getTierProgress(rating: number): number {
   const bands: [number, number][] = [
     [0, 400], [400, 700], [700, 950], [950, 1200], [1200, 1800],

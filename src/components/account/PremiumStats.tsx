@@ -278,7 +278,7 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
         </div>
 
         {/* ── HERO SECTION ── */}
-        <div className="rounded-2xl border bg-card p-6 sm:p-8">
+        <div className={cn("rounded-2xl border p-6 sm:p-8 shadow-sm", getTierCardStyle(skillTier as SkillTier))}>
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
             <div className="text-center sm:text-left">
               <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
@@ -289,11 +289,18 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
                 {playerRating}
                 <TrendBadge trend={scoreTrend} label="Rating trend vs. recent solves" />
               </p>
-              <p className={cn("mt-2 text-sm font-semibold", tierColor)}>{skillTier}</p>
-              <div className="mt-3 max-w-48">
-                <Progress value={tierProgress} className="h-2" />
-                <p className="mt-1 text-[10px] text-muted-foreground">Progress to next rank</p>
-              </div>
+              <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold mt-2", getTierBadgeStyle(skillTier as SkillTier))}>{skillTier}</span>
+              {skillTier === "Expert" ? (
+                <div className="mt-3 flex items-center gap-2 text-sm">
+                  <Crown size={14} className="text-amber-500" />
+                  <span className="text-amber-500 font-medium">Top-tier solver</span>
+                </div>
+              ) : (
+                <div className="mt-3 max-w-48">
+                  <Progress value={tierProgress} className="h-2" />
+                  <p className="mt-1 text-[10px] text-muted-foreground">Progress to next rank</p>
+                </div>
+              )}
             </div>
 
             <div className="flex-1 space-y-4">
