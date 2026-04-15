@@ -31,7 +31,7 @@ import { syncLeaderboardRating } from "@/lib/leaderboardSync";
 
 import { getSolveRecords } from "@/lib/solveTracker";
 import { computePlayerRating, computeSolveScore, getSkillTier, getTierColor, getTierProgress, getPlayerRatingInfo, getTierCardStyle, getTierBadgeStyle, type SkillTier } from "@/lib/solveScoring";
-import { getBestInsight } from "@/lib/solveInsights";
+
 import { ProvisionalRatingCard } from "@/components/puzzles/ProvisionalRatingCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -361,7 +361,6 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                 : getSolveRecords().filter((r) => r.solveTime >= 10);
               const noHintCount = solveRecs.filter((r) => r.hintsUsed === 0 && !r.assisted).length;
               const noHintRate = solveRecs.length > 0 ? Math.round((noHintCount / solveRecs.length) * 100) : 0;
-              const insight = solveRecs.length >= 3 ? getBestInsight(solveRecs) : null;
 
               return (
                 <div className={cn(
