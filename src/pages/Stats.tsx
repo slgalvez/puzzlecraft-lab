@@ -546,7 +546,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
             {/* Premium stats section */}
             {showGeneral && premiumAccess && (
               <>
-                {account?.isAdmin && (
+{account?.isAdmin && !isViewAs && (
                   <PremiumStatsAdminControls onRefresh={() => setDataVersion((v) => v + 1)} />
                 )}
                 <PremiumStats key={dataVersion} />
