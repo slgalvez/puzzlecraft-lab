@@ -16,8 +16,11 @@ import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { cn } from "@/lib/utils";
 import {
   Trophy, Medal, Shield, TrendingUp, TrendingDown,
-  Zap, ArrowRight, Info,
+  Zap, ArrowRight, Info, ChevronDown,
 } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -315,35 +318,34 @@ export default function Leaderboard() {
           </div>
         )}
 
-        {/* ── Puzzle type tabs ─────────────────────────────────────────── */}
-        <div className="mb-5">
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-            <button
-              onClick={() => setActiveTab("global")}
-              className={cn(
-                "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium border transition-colors",
-                isGlobal
-                  ? "bg-foreground text-background border-foreground"
-                  : "bg-card text-muted-foreground border-border hover:border-foreground/30 hover:text-foreground",
-              )}
-            >
-              Overall
-            </button>
-            {PUZZLE_TYPES.map((pt) => (
-              <button
-                key={pt}
-                onClick={() => setActiveTab(pt)}
-                className={cn(
-                  "shrink-0 rounded-full px-4 py-1.5 text-sm font-medium border transition-colors whitespace-nowrap",
-                  activeTab === pt
-                    ? "bg-foreground text-background border-foreground"
-                    : "bg-card text-muted-foreground border-border hover:border-foreground/30 hover:text-foreground",
-                )}
-              >
-                {CATEGORY_INFO[pt]?.name}
-              </button>
-            ))}
-          </div>
+        {/* ── Puzzle type nav ─────────────────────────────────────────── */}
+        <div className="flex items-center gap-2 mb-5">
+          <Button
+            variant={isGlobal ? "default" : "outline"}
+            size="sm"
+            onClick={() => setActiveTab("global")}
+          >
+            Overall
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant={!isGlobal ? "default" : "outline"} size="sm">
+                {isGlobal ? "Puzzle Type" : typeLabel}
+                <ChevronDown size={14} className="ml-1.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {PUZZLE_TYPES.map((pt) => (
+                <DropdownMenuItem
+                  key={pt}
+                  onClick={() => setActiveTab(pt)}
+                  className={cn(activeTab === pt && "font-semibold")}
+                >
+                  {CATEGORY_INFO[pt]?.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Time filter */}
