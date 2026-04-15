@@ -115,7 +115,7 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false }
     setRefreshKey((k) => k + 1);
   }, []);
 
-  const adminControls = isAdmin && (
+  const adminControls = isAdmin && !hideAdminControls && (
     <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-3 py-2">
       <FlaskConical size={14} className="text-primary" />
       <span className="text-xs font-medium text-primary">Admin</span>
