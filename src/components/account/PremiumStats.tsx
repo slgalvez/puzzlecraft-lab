@@ -25,7 +25,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const MIN_SOLVES_FOR_AVG = 2;
-const HISTORY_PREVIEW = 5;
+
 
 const ALL_CATEGORIES: PuzzleCategory[] = [
   "crossword", "word-fill", "number-fill", "sudoku",
@@ -116,7 +116,7 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
     return (isAdmin && demoActive) ? getDemoSolveSummary() : getSolveSummary();
   }, [refreshKey, isAdmin, demoActive, hasOverride, overrideSolveRecords]);
   const demoLeaderboardActive = useMemo(() => hasDemoLeaderboard(), [refreshKey]);
-  const [historyExpanded, setHistoryExpanded] = useState(false);
+  
 
   const handleGenerate = useCallback(() => {
     generateDemoSolves(25);
@@ -225,8 +225,6 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
     ? `Your consistency is ${timeTrend.direction === "down" ? "improving" : timeTrend.direction === "up" ? "worth watching" : "holding steady"} over recent solves.`
     : "Play more to track your average performance.";
 
-  const recent20 = records.slice(0, 20);
-  const historyVisible = historyExpanded ? recent20 : recent20.slice(0, HISTORY_PREVIEW);
 
   // Precompute best times and recent averages for badges
   const bestTimeByType: Record<string, number> = {};
