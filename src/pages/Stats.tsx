@@ -694,7 +694,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
         </Tabs>
       </div>
 
-      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+      {!isViewAs && <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />}
     </Layout>
   );
 };
