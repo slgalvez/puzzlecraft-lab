@@ -132,6 +132,24 @@ export function getPackPuzzleWordBank(
   }
 }
 
+// ── Numeric seed helpers ──────────────────────────────────────────────────────
+
+/** Knuth multiplicative hash → stable positive 32-bit integer */
+function packNumericSeed(year: number, week: number, index: number): number {
+  const base = year * 10000 + week * 100 + index;
+  return ((base >>> 0) * 2654435761) >>> 0;
+}
+
+/** FNV-1a hash of a string → stable positive 32-bit integer */
+function stringToNumericSeed(s: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
 // ── Themed puzzle builder ─────────────────────────────────────────────────────
 
 /**
