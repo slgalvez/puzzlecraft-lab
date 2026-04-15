@@ -83,13 +83,38 @@ const MILESTONE_ICONS: Record<MilestoneIcon, any> = {
   bolt: Bolt,
 };
 
-export default function PremiumStats({ onDataChange, hideAdminControls = false }: { onDataChange?: () => void; hideAdminControls?: boolean }) {
+export default function PremiumStats({ onDataChange, hideAdminControls = false, overrideSolveRecords }: { onDataChange?: () => void; hideAdminControls?: boolean; overrideSolveRecords?: SolveRecord[] }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const { account } = useUserAccount();
   const isAdmin = account?.isAdmin ?? false;
-  const demoActive = useMemo(() => hasDemoData(), [refreshKey]);
-  const records = useMemo(() => (isAdmin && demoActive) ? getAllSolveRecordsIncludingDemo() : getSolveRecords(), [refreshKey, isAdmin, demoActive]);
-  const summary = useMemo(() => (isAdmin && demoActive) ? getDemoSolveSummary() : getSolveSummary(), [refreshKey, isAdmin, demoActive]);
+  const hasOverride = overrideSolveRecords != null;
+  const demoActive = useMemo(() => hasOverride ? false : hasDemoData(), [refreshKey, hasOverride]);
+  const records = useMemo(() => {
+    if (hasOverride) return overrideSolveRecords;
+    return (isAdmin && demoActive) ? getAllSolveRecordsIncludingDemo() : getSolveRecords();
+  }, [refreshKey, isAdmin, demoActive, hasOverride, overrideSolveRecords]);
+  const summary = useMemo(() => {
+    if (hasOverride) {
+      if (overrideSolveRecords.length === 0) return null;
+      const totalTime = overrideSolveRecords.reduce((s, r) => s + r.solveTime, 0);
+      const bestTime = Math.min(...overrideSolveRecords.map((r) => r.solveTime));
+      const avgMistakes = overrideSolveRecords.reduce((s, r) => s + r.mistakesCount, 0) / overrideSolveRecords.length;
+      const avgHints = overrideSolveRecords.reduce((s, r) => s + r.hintsUsed, 0) / overrideSolveRecords.length;
+      const byType: Record<string, { count: number; bestTime: number; totalTime: number }> = {};
+      for (const r of overrideSolveRecords) {
+        if (!byType[r.puzzleType]) byType[r.puzzleType] = { count: 0, bestTime: Infinity, totalTime: 0 };
+        const e = byType[r.puzzleType]; e.count++; e.totalTime += r.solveTime; e.bestTime = Math.min(e.bestTime, r.solveTime);
+      }
+      return {
+        totalSolved: overrideSolveRecords.length,
+        unassistedCount: overrideSolveRecords.filter((r) => !r.assisted).length,
+        totalTime, averageTime: Math.round(totalTime / overrideSolveRecords.length), bestTime,
+        averageMistakes: Math.round(avgMistakes * 10) / 10, averageHints: Math.round(avgHints * 10) / 10,
+        byType, dailyChallengeCount: overrideSolveRecords.filter((r) => r.isDailyChallenge).length,
+      };
+    }
+    return (isAdmin && demoActive) ? getDemoSolveSummary() : getSolveSummary();
+  }, [refreshKey, isAdmin, demoActive, hasOverride, overrideSolveRecords]);
   const demoLeaderboardActive = useMemo(() => hasDemoLeaderboard(), [refreshKey]);
   const [historyExpanded, setHistoryExpanded] = useState(false);
 
