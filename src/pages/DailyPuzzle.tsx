@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { buildDailyShareText, shareOrCopy } from "@/lib/shareText";
 
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
 import WordSearchGrid from "@/components/puzzles/WordSearchGrid";
@@ -80,19 +81,19 @@ const DailyPuzzle = () => {
           ?? "Anonymous";
       }
 
-      // FIX: column is "date" not "date_str" — must match DailyLeaderboard query
+      // FIX: column is "date_str" — must match DailyLeaderboard query and DB schema
       await (supabase
-        .from("daily_scores" as any)
+        .from("daily_scores")
         .upsert(
           {
-            date: challenge.dateStr,
+            date_str: challenge.dateStr,
             user_id: user?.id ?? null,
             display_name: displayName,
             solve_time: solveTime,
             puzzle_type: challenge.category,
           },
           {
-            onConflict: "date,user_id",
+            onConflict: "date_str,user_id",
             ignoreDuplicates: false,
           }
         ) as any);
@@ -270,16 +271,14 @@ const DailyPuzzle = () => {
                 variant="outline"
                 size="sm"
                 onClick={async () => {
-                  const diffLabel = DIFFICULTY_LABELS[challenge.difficulty];
-                  const timeStr = formatTime(completion.time);
-                  const shareUrl = `${window.location.origin}/play?code=daily-${challenge.dateStr}`;
-                  const text = `Just solved today's Puzzlecraft challenge 🧠\n\n${info.name} • ${diffLabel} • ${timeStr}${streak.current > 1 ? `\n🔥 ${streak.current}-day streak` : ""}\n\nCan you beat this time?\n\nPlay: ${shareUrl}`;
-                  if (navigator.share) {
-                    try { await navigator.share({ text }); } catch { /* user cancelled */ }
-                  } else {
-                    await navigator.clipboard.writeText(text);
-                    toast({ title: "Results copied to clipboard!" });
-                  }
+                  const text = buildDailyShareText({
+                    typeName: info.name,
+                    difficulty: challenge.difficulty,
+                    time: completion.time,
+                    streak: streak.current,
+                    shareUrl: `${window.location.origin}/play?code=daily-${challenge.dateStr}`,
+                  });
+                  await shareOrCopy(text, toast);
                 }}
               >
                 <Share size={14} className="mr-1.5" />

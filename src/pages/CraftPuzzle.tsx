@@ -31,9 +31,10 @@ import {
 import {
   type CraftPayload,
   type CraftType,
-  buildCraftShareText,
   buildCraftShareUrl,
 } from "@/lib/craftShare";
+import { buildCraftShareText as buildUnifiedCraftShareText } from "@/lib/shareText";
+import { CraftSharePreview } from "@/components/craft/CraftSharePreview";
 import {
   type CraftDraft,
   generateDraftId,
@@ -448,13 +449,13 @@ const CraftPuzzle = () => {
   const handleCopyLink = async () => {
     if (limitReached) { setUpgradeOpen(true); return; }
     if (!shareUrl) return;
-    const fullText = buildCraftShareText(
-      puzzleTitle.trim() || undefined,
-      puzzleFrom.trim() || undefined,
-      shareUrl,
-      selectedType ?? undefined,
+    const fullText = buildUnifiedCraftShareText({
+      title: puzzleTitle.trim() || undefined,
+      from: puzzleFrom.trim() || undefined,
+      url: shareUrl,
+      type: selectedType ?? undefined,
       creatorSolveTime,
-    );
+    });
     try {
       await navigator.clipboard.writeText(fullText);
       recordSent();
@@ -472,13 +473,13 @@ const CraftPuzzle = () => {
     if (limitReached) { setUpgradeOpen(true); return; }
     if (!shareUrl || !generatedData || !selectedType) return;
 
-    const shareText = buildCraftShareText(
-      puzzleTitle.trim() || undefined,
-      puzzleFrom.trim() || undefined,
-      shareUrl,
-      selectedType ?? undefined,
+    const shareText = buildUnifiedCraftShareText({
+      title: puzzleTitle.trim() || undefined,
+      from: puzzleFrom.trim() || undefined,
+      url: shareUrl,
+      type: selectedType ?? undefined,
       creatorSolveTime,
-    );
+    });
 
     if (navigator.share) {
       try {
@@ -1000,6 +1001,14 @@ const CraftPuzzle = () => {
                     )}
                   </div>
                 )}
+
+                <CraftSharePreview
+                  title={puzzleTitle.trim() || undefined}
+                  from={puzzleFrom.trim() || undefined}
+                  url={shareUrl}
+                  type={selectedType ?? undefined}
+                  creatorSolveTime={creatorSolveTime}
+                />
 
                 <div className="relative space-y-3 p-5 rounded-xl border border-border bg-card overflow-hidden">
                   {shareSuccess && (

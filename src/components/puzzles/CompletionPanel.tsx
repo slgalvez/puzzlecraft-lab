@@ -18,6 +18,7 @@ import { maybeRequestRating } from "@/lib/appRating";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import UpgradeModal from "@/components/account/UpgradeModal";
+import { buildSolveShareText } from "@/lib/shareText";
 
 interface Props {
   time: number;
@@ -30,38 +31,6 @@ interface Props {
   dailyCode?: string;
   hintsUsed?: number;
   mistakesCount?: number;
-}
-
-function buildShareData(props: {
-  category?: PuzzleCategory;
-  seed?: number;
-  difficulty: Difficulty;
-  time: number;
-  isDaily: boolean;
-  dailyCode?: string;
-  prevBest?: number | null;
-}) {
-  const { category, seed, difficulty, time, isDaily, dailyCode, prevBest } = props;
-  if (!category || seed == null) return null;
-
-  const typeName = CATEGORY_INFO[category]?.name ?? category;
-  const diffLabel = DIFFICULTY_LABELS[difficulty];
-  const timeStr = formatTime(time);
-
-  const shareUrl = dailyCode
-    ? `${window.location.origin}/play?code=${dailyCode}`
-    : `${window.location.origin}/play?code=${category}-${seed}-${difficulty}`;
-  const displayCode = dailyCode ?? String(seed);
-
-  const headline = isDaily
-    ? "Just solved today's Puzzlecraft challenge 🧠"
-    : "Just tackled a Puzzlecraft puzzle 🧠";
-
-  const pbLine = prevBest ? `\nBeat my previous time of ${formatTime(prevBest)}!` : "";
-
-  const text = `${headline}\n\n${typeName} • ${diffLabel} • ${timeStr}${pbLine}\n\nCan you beat this time?\n\nPlay: ${shareUrl}\n\nPuzzle Code: ${displayCode}`;
-
-  return { text, url: shareUrl, displayCode };
 }
 
 function useRatingDelta() {
@@ -123,6 +92,7 @@ const CompletionPanel = ({
   const [copied, setCopied] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [shareFailedFallback, setShareFailedFallback] = useState(false);
   const native = isNativeApp();
 
   const { shouldShow: paywallOpen, dismiss: dismissPaywall, checkAfterSolve } = usePaywallTiming();
@@ -131,7 +101,6 @@ const CompletionPanel = ({
   const isDaily = origin === "daily";
   const ratingDelta = useRatingDelta();
   const personalBest = usePersonalBest(category, difficulty, time, assisted);
-  const shareData = buildShareData({ category, seed, difficulty, time, isDaily, dailyCode, prevBest: personalBest?.prev });
   const streak = useMemo(() => getDailyStreak(), []);
 
   const score = useMemo(() => {
@@ -141,17 +110,6 @@ const CompletionPanel = ({
   }, []);
 
   const isNewBest = personalBest?.isNewBest === true;
-
-  // Visual share card
-  const { shareWithCard, sharing } = useSolveShareCard({
-    puzzleType: category,
-    difficulty,
-    time,
-    isNewBest,
-    streakDays: streak.current,
-    isDaily,
-    shareUrl: shareData?.url,
-  });
 
   // Daily rank query
   const { data: dailyRank } = useQuery({
@@ -170,8 +128,39 @@ const CompletionPanel = ({
     staleTime: 30_000,
   });
 
+  // Build share data using unified shareText.ts (after dailyRank resolves)
+  const shareData = useMemo(() => {
+    if (!category || seed == null) return null;
+    return buildSolveShareText({
+      type: category,
+      difficulty,
+      time,
+      seed,
+      isDaily,
+      dailyCode,
+      isPB: isNewBest,
+      prevBest: personalBest?.prev,
+      improvement: personalBest?.improvement,
+      score,
+      tier: ratingDelta?.tier,
+      rank: dailyRank?.rank,
+      total: dailyRank?.total,
+      streak: streak.current,
+    });
+  }, [category, seed, difficulty, time, isDaily, dailyCode, isNewBest, personalBest, score, ratingDelta, dailyRank, streak.current]);
+
+  // Visual share card
+  const { shareWithCard, sharing } = useSolveShareCard({
+    puzzleType: category,
+    difficulty,
+    time,
+    isNewBest,
+    streakDays: streak.current,
+    isDaily,
+    shareUrl: shareData?.url,
+  });
+
   useEffect(() => {
-    // Conditional haptics
     if (isNewBest) {
       hapticPB();
     } else if (["hard", "extreme", "insane"].includes(difficulty)) {
@@ -187,7 +176,6 @@ const CompletionPanel = ({
       checkAfterSolve(difficulty);
     }
 
-    // App rating prompt (fire-and-forget)
     const records = getSolveRecords();
     maybeRequestRating({ solveCount: records.length, isNewBest, streakLength: streak.current });
 
@@ -201,14 +189,19 @@ const CompletionPanel = ({
 
   const handleShare = async () => {
     if (!shareData) return;
-    await shareWithCard(shareData.text);
-    // Show "copied" state if clipboard was used (sharing is false = no share sheet opened)
-    if (!sharing) {
-      setCopied(true);
-      toast({ title: "Copied to clipboard" });
-      setTimeout(() => setCopied(false), 2000);
+    try {
+      await shareWithCard(shareData.text);
+      if (!sharing) {
+        setCopied(true);
+        toast({ title: "Copied to clipboard" });
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch {
+      setShareFailedFallback(true);
     }
   };
+
+  const isProminent = isNewBest || isDaily;
 
   return (
     <>
@@ -393,13 +386,33 @@ const CompletionPanel = ({
 
         {/* Actions */}
         <div className="p-4 sm:p-5 pt-0 space-y-2">
+          {/* Prominent share button for PBs and daily solves */}
+          {isProminent && shareData && (
+            <Button
+              size="sm"
+              onClick={handleShare}
+              disabled={sharing}
+              className="w-full gap-1.5 mb-1"
+            >
+              {sharing
+                ? <RefreshCw size={13} className="animate-spin" />
+                : copied
+                ? <CheckCheck size={13} />
+                : native
+                ? <ImageIcon size={13} />
+                : <Share size={13} />
+              }
+              {sharing ? "Preparing…" : copied ? "Copied" : isNewBest ? "Share Your Record" : "Share Result"}
+            </Button>
+          )}
+
           <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={onPlayAgain} className="gap-1.5">
               <RefreshCw size={13} /> New Puzzle
             </Button>
 
-            {/* Share button — now generates a visual card on iOS */}
-            {shareData && (
+            {/* Inline share for non-prominent solves */}
+            {!isProminent && shareData && (
               <Button
                 size="sm"
                 variant="outline"
@@ -412,7 +425,7 @@ const CompletionPanel = ({
                   : copied
                   ? <CheckCheck size={13} />
                   : native
-                  ? <ImageIcon size={13} />    /* card icon on iOS — suggests image share */
+                  ? <ImageIcon size={13} />
                   : <Share size={13} />
                 }
                 {sharing ? "Preparing…" : copied ? "Copied" : "Share"}
@@ -430,7 +443,8 @@ const CompletionPanel = ({
             </Button>
           </div>
 
-          {shareData && (shareOpen || !isNewBest) && (
+          {/* URL fallback — only shown after share failure */}
+          {shareData && shareFailedFallback && (
             <div className={cn(
               "mt-3 rounded-lg bg-muted/50 px-3 py-2.5 space-y-1 transition-all duration-500",
               statsVisible ? "opacity-100" : "opacity-0",
