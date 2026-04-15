@@ -173,12 +173,18 @@ const CompletionPanel = ({
 
   const handleShare = async () => {
     if (!shareData) return;
-    await shareWithCard(shareData.text);
-    // Show "copied" state if clipboard was used (sharing is false = no share sheet opened)
-    if (!sharing) {
-      setCopied(true);
-      toast({ title: "Copied to clipboard" });
-      setTimeout(() => setCopied(false), 2000);
+    try {
+      await shareWithCard(shareData.text);
+      // Show "copied" state if clipboard was used
+      if (!sharing) {
+        setCopied(true);
+        toast({ title: "Copied to clipboard" });
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch {
+      // Share failed — show fallback URL block
+      setShareFailedFallback(true);
+    }
     }
   };
 
