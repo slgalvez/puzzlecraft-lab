@@ -438,8 +438,8 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
               </div>
             )}
 
-            {/* Premium upgrade teaser */}
-            {showGeneral && showUpgrade && !premiumAccess && (
+            {/* Premium upgrade teaser — hidden in view-as mode */}
+            {showGeneral && showUpgrade && !premiumAccess && !isViewAs && (
               <StatsPremiumPreview onUpgrade={() => setUpgradeOpen(true)} />
             )}
 
