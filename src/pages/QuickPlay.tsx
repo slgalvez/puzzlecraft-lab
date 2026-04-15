@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { getPackPuzzleWordBank } from "@/lib/weeklyPacks";
+import { getPackPuzzleWordBank, markPackPuzzleComplete } from "@/lib/weeklyPacks";
 import { goBackOrFallback } from "@/lib/navigation";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -268,7 +268,13 @@ const QuickPlay = () => {
 
   const activeType = currentType;
   const activeInfo = currentInfo;
-  const onSolveHandler = mode === "endless" ? handleEndlessSolve : undefined;
+  const isPack = !!(packId && packPuzzleId);
+
+  const handlePackSolve = useCallback((perf?: PuzzlePerformance) => {
+    if (isPack) markPackPuzzleComplete(packId!, packPuzzleId!);
+  }, [isPack, packId, packPuzzleId]);
+
+  const onSolveHandler = isPack ? handlePackSolve : mode === "endless" ? handleEndlessSolve : undefined;
   const isEndless = mode === "endless";
 
 

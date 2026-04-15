@@ -5,11 +5,13 @@ import { cn } from "@/lib/utils";
 import { hapticTap } from "@/lib/haptic";
 import { getCurrentWeeklyPack, getPackCompletionCount, fetchDbCustomPacks } from "@/lib/weeklyPacks";
 import { usePremiumAccess } from "@/lib/premiumAccess";
+import { useUserAccount } from "@/contexts/UserAccountContext";
 import UpgradeModal from "@/components/account/UpgradeModal";
 
 export function WeeklyPackCard() {
   const navigate = useNavigate();
   const { isPremium } = usePremiumAccess();
+  const { account } = useUserAccount();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [ready, setReady] = useState(false);
 
@@ -18,7 +20,10 @@ export function WeeklyPackCard() {
     fetchDbCustomPacks().then(() => setReady(true));
   }, []);
 
-  const pack = useMemo(() => getCurrentWeeklyPack(isPremium ? { subscribed: true } : null), [isPremium, ready]);
+  const pack = useMemo(
+    () => getCurrentWeeklyPack(account ? { subscribed: account.isPremium, isAdmin: account.isAdmin } : null),
+    [account, ready]
+  );
   const completed = getPackCompletionCount(pack.id);
   const progressPct = (completed / pack.puzzles.length) * 100;
 
@@ -31,25 +36,41 @@ export function WeeklyPackCard() {
     return Math.max(0, diff);
   }, [pack.releaseDate]);
 
-  const handlePlay = () => {
+  const anyAccessible = pack.puzzles.some(p => p.isAccessible);
+
+  const handlePlay = (puzzleIndex?: number) => {
     hapticTap();
-    if (!pack.isUnlocked) {
+    const target = puzzleIndex != null ? pack.puzzles[puzzleIndex] : null;
+
+    // If a specific locked puzzle was tapped
+    if (target && !target.isAccessible) {
       if (!isPremium) setUpgradeOpen(true);
       return;
     }
-    const firstIncomplete = pack.puzzles.find(
-      (p) => !JSON.parse(localStorage.getItem("puzzlecraft_pack_progress") ?? "{}")[pack.id]?.includes(p.id)
-    ) ?? pack.puzzles[0];
+
+    // If nothing is accessible yet
+    if (!anyAccessible) {
+      if (!isPremium) setUpgradeOpen(true);
+      return;
+    }
+
+    // Find first incomplete accessible puzzle, or the tapped one
+    const progress = JSON.parse(localStorage.getItem("puzzlecraft_pack_progress") ?? "{}");
+    const completedIds: string[] = progress[pack.id] ?? [];
+
+    const puzzle = target ?? pack.puzzles.find(
+      (p) => p.isAccessible && !completedIds.includes(p.id)
+    ) ?? pack.puzzles.find(p => p.isAccessible) ?? pack.puzzles[0];
 
     navigate(
-      `/quick-play/${firstIncomplete.type}?seed=${firstIncomplete.seed}&d=${firstIncomplete.difficulty}&pack=${pack.id}&packPuzzle=${firstIncomplete.id}`
+      `/quick-play/${puzzle.type}?seed=${puzzle.numericSeed}&d=${puzzle.difficulty}&pack=${pack.id}&packPuzzle=${puzzle.id}`
     );
   };
 
   return (
     <>
       <button
-        onClick={handlePlay}
+        onClick={() => handlePlay()}
         className={cn(
           "w-full rounded-2xl border bg-card overflow-hidden",
           "transition-all duration-150 active:scale-[0.98]",
@@ -77,7 +98,7 @@ export function WeeklyPackCard() {
             </div>
           </div>
 
-          {pack.isUnlocked
+          {anyAccessible
             ? <ChevronRight size={16} className="text-muted-foreground/60 shrink-0" />
             : <Lock size={14} className="text-muted-foreground/60 shrink-0" />
           }
@@ -88,23 +109,36 @@ export function WeeklyPackCard() {
         </p>
 
         <div className="flex gap-1.5 px-4 pb-3 flex-wrap">
-          {pack.puzzles.map((p, i) => (
-            <span
-              key={p.id}
-              className={cn(
-                "inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-medium border",
-                i < completed
-                  ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-400/40 text-emerald-700 dark:text-emerald-400"
-                  : "bg-muted/40 border-border/40 text-muted-foreground"
-              )}
-            >
-              {p.title}
-            </span>
-          ))}
+          {pack.puzzles.map((p, i) => {
+            const isCompleted = i < completed;
+            return (
+              <span
+                key={p.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePlay(i);
+                }}
+                className={cn(
+                  "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[9px] font-medium border cursor-pointer",
+                  isCompleted
+                    ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-400/40 text-emerald-700 dark:text-emerald-400"
+                    : p.isAccessible
+                    ? "bg-muted/40 border-border/40 text-muted-foreground hover:bg-muted/60"
+                    : "bg-muted/20 border-border/20 text-muted-foreground/50"
+                )}
+              >
+                {!p.isAccessible && <Lock size={7} className="shrink-0" />}
+                {p.title}
+                {p.isSample && !isPremium && p.isAccessible && (
+                  <span className="text-[8px] text-primary font-semibold ml-0.5">FREE</span>
+                )}
+              </span>
+            );
+          })}
         </div>
 
         <div className="border-t border-border/40 px-4 py-2.5">
-          {pack.isUnlocked ? (
+          {anyAccessible ? (
             <div className="space-y-1.5">
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-1.5 rounded-full bg-border/50 overflow-hidden">
@@ -117,6 +151,14 @@ export function WeeklyPackCard() {
                   {completed}/{pack.puzzles.length} done
                 </span>
               </div>
+              {!isPremium && pack.isFreeUnlocked && (
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground">
+                    {pack.freeCount} free puzzle · {pack.puzzles.length - pack.freeCount} more with Plus
+                  </span>
+                  <span className="text-[10px] font-medium text-primary">Upgrade →</span>
+                </div>
+              )}
               {daysRemaining != null && (
                 <div className="flex items-center gap-1">
                   {daysRemaining < 3 && (

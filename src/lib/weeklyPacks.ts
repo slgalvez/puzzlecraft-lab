@@ -33,11 +33,17 @@ export type PackPuzzle = {
   type:       "crossword" | "word-search" | "sudoku" | "cryptogram" | "word-fill";
   difficulty: "easy" | "medium" | "hard";
   seed:       string;
+  /** Stable numeric seed for puzzle generators / QuickPlay URL */
+  numericSeed: number;
   title:      string;
   /** Themed words for word-search and word-fill puzzles */
   wordBank?:  string[];
   /** Themed quote for cryptogram puzzles */
   quote?:     string;
+  /** True if this is the free sample puzzle (index 0) */
+  isSample?:  boolean;
+  /** True if the current user can play this puzzle */
+  isAccessible?: boolean;
 };
 
 export type WeeklyPack = {
@@ -52,6 +58,8 @@ export type WeeklyPack = {
   plusEarlyDate:  Date;
   isCurrentWeek:  boolean;
   isSpecialPack:  boolean;
+  /** Number of puzzles free users can access (always 1) */
+  freeCount:      number;
 };
 
 // ── Rotating theme list ───────────────────────────────────────────────────────
@@ -124,6 +132,24 @@ export function getPackPuzzleWordBank(
   }
 }
 
+// ── Numeric seed helpers ──────────────────────────────────────────────────────
+
+/** Knuth multiplicative hash → stable positive 32-bit integer */
+function packNumericSeed(year: number, week: number, index: number): number {
+  const base = year * 10000 + week * 100 + index;
+  return ((base >>> 0) * 2654435761) >>> 0;
+}
+
+/** FNV-1a hash of a string → stable positive 32-bit integer */
+function stringToNumericSeed(s: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
 // ── Themed puzzle builder ─────────────────────────────────────────────────────
 
 /**
@@ -151,7 +177,8 @@ function buildThemedPuzzle(
 ): PackPuzzle {
   const bank = getThemeWordBank(theme);
 
-  const base: PackPuzzle = { id, type, difficulty, seed, title };
+  const numericSeed = stringToNumericSeed(seed);
+  const base: PackPuzzle = { id, type, difficulty, seed, numericSeed, title };
 
   if (!bank) return base; // Unknown theme — fall back gracefully
 
@@ -275,7 +302,7 @@ function getDbOverride(date: Date, dbPacks: DbCustomPack[]): DbCustomPack | null
 
 export function getCurrentWeeklyPack(
   account: { subscribed?: boolean; isAdmin?: boolean } | null
-): WeeklyPack & { isUnlocked: boolean; unlocksIn: string | null } {
+): WeeklyPack & { isPlusUnlocked: boolean; isFreeUnlocked: boolean; unlocksIn: string | null } {
 
   const now = new Date();
   const { week, year } = getISOWeek(now);
@@ -345,12 +372,27 @@ export function getCurrentWeeklyPack(
 
   // ── Unlock state ────────────────────────────────────────────────────────────
   const isPremium = hasPremiumAccess({ subscribed: account?.subscribed ?? false, isAdmin: account?.isAdmin ?? false });
-  const isUnlocked = isPremium ? now >= plusEarlyDate : now >= releaseDate;
+  const isPlusUnlocked = now >= plusEarlyDate;
+  const isFreeUnlocked = now >= releaseDate;
+
+  // Determine per-puzzle accessibility
+  const FREE_SAMPLE_COUNT = 1;
+  for (let i = 0; i < puzzles.length; i++) {
+    puzzles[i].isSample = i < FREE_SAMPLE_COUNT;
+    if (isPremium && isPlusUnlocked) {
+      puzzles[i].isAccessible = true;
+    } else if (!isPremium && isFreeUnlocked) {
+      puzzles[i].isAccessible = i < FREE_SAMPLE_COUNT;
+    } else {
+      puzzles[i].isAccessible = false;
+    }
+  }
 
   let unlocksIn: string | null = null;
-  if (!isUnlocked) {
-    const unlockDate = isPremium ? plusEarlyDate : releaseDate;
-    const diff  = unlockDate.getTime() - now.getTime();
+  const userUnlockDate = isPremium ? plusEarlyDate : releaseDate;
+  const userUnlocked = isPremium ? isPlusUnlocked : isFreeUnlocked;
+  if (!userUnlocked) {
+    const diff  = userUnlockDate.getTime() - now.getTime();
     const hours = Math.floor(diff / 3600000);
     const days  = Math.floor(hours / 24);
     unlocksIn   = days > 0 ? `${days}d ${hours % 24}h` : `${hours}h`;
@@ -368,7 +410,9 @@ export function getCurrentWeeklyPack(
     plusEarlyDate,
     isCurrentWeek: true,
     isSpecialPack,
-    isUnlocked,
+    freeCount: FREE_SAMPLE_COUNT,
+    isPlusUnlocked,
+    isFreeUnlocked,
     unlocksIn,
   };
 }
