@@ -383,6 +383,135 @@ function LeaderboardPreview() {
   );
 }
 
+// ── Ranking Preview ────────────────────────────────────────────────────────
+
+const TIER_SAMPLES: { tier: SkillTier; rating: number; solveCount: number }[] = [
+  { tier: "Beginner", rating: 280, solveCount: 12 },
+  { tier: "Casual", rating: 520, solveCount: 18 },
+  { tier: "Skilled", rating: 780, solveCount: 30 },
+  { tier: "Advanced", rating: 1050, solveCount: 45 },
+  { tier: "Expert", rating: 1380, solveCount: 60 },
+];
+
+const TIER_UP_SAMPLES: { from: SkillTier; to: SkillTier; rating: number }[] = [
+  { from: "Beginner", to: "Casual", rating: 420 },
+  { from: "Casual", to: "Skilled", rating: 710 },
+  { from: "Skilled", to: "Advanced", rating: 960 },
+  { from: "Advanced", to: "Expert", rating: 1210 },
+];
+
+function makeMockRatingInfo(tier: SkillTier, rating: number, solveCount: number): PlayerRatingInfo {
+  const tierOrder: SkillTier[] = ["Beginner", "Casual", "Skilled", "Advanced", "Expert"];
+  const thresholds = [0, 400, 700, 950, 1200, 1800];
+  const idx = tierOrder.indexOf(tier);
+  const low = thresholds[idx];
+  const high = thresholds[idx + 1];
+  const progress = Math.round(((rating - low) / (high - low)) * 100);
+
+  return {
+    rating,
+    tier,
+    tierColor: {
+      Beginner: "text-muted-foreground",
+      Casual: "text-sky-500",
+      Skilled: "text-emerald-500",
+      Advanced: "text-primary",
+      Expert: "text-amber-500",
+    }[tier],
+    tierProgress: Math.min(100, progress),
+    isProvisional: false,
+    hasNoData: false,
+    solveCount,
+    solvesUntilConfirmed: 0,
+    solvesUntilLeaderboard: Math.max(0, 10 - solveCount),
+    onLeaderboard: solveCount >= 10,
+  };
+}
+
+function RankingPreview() {
+  const [celebrationTier, setCelebrationTier] = useState<typeof TIER_UP_SAMPLES[number] | null>(null);
+
+  return (
+    <div className="space-y-6">
+      {/* ── Tier Cards ── */}
+      <section className="space-y-3 rounded-xl border border-border/30 p-4">
+        <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Zap size={14} /> Tier Rating Cards
+        </h2>
+        <p className="text-xs text-muted-foreground">
+          Each skill tier has distinct visual styling — border, background tint, and badge color.
+        </p>
+        <div className="space-y-4">
+          {TIER_SAMPLES.map(({ tier, rating, solveCount }) => (
+            <ProvisionalRatingCard
+              key={tier}
+              info={makeMockRatingInfo(tier, rating, solveCount)}
+              peakRating={tier === "Expert" ? 1420 : rating + 50}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* ── Provisional States ── */}
+      <section className="space-y-3 rounded-xl border border-border/30 p-4">
+        <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Target size={14} /> Provisional & Empty States
+        </h2>
+        <div className="space-y-4">
+          <ProvisionalRatingCard
+            info={{
+              rating: 0, tier: "Beginner", tierColor: "text-muted-foreground",
+              tierProgress: 0, isProvisional: false, hasNoData: true,
+              solveCount: 0, solvesUntilConfirmed: 5, solvesUntilLeaderboard: 10, onLeaderboard: false,
+            }}
+          />
+          <ProvisionalRatingCard
+            info={{
+              rating: 620, tier: "Casual", tierColor: "text-sky-500",
+              tierProgress: 73, isProvisional: true, hasNoData: false,
+              solveCount: 3, solvesUntilConfirmed: 2, solvesUntilLeaderboard: 7, onLeaderboard: false,
+            }}
+          />
+        </div>
+      </section>
+
+      {/* ── Tier-Up Celebration ── */}
+      <section className="space-y-3 rounded-xl border border-border/30 p-4">
+        <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Sparkles size={14} /> Tier-Up Celebration
+        </h2>
+        <p className="text-xs text-muted-foreground">
+          Animated overlay shown when a player reaches a new skill tier after a solve.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {TIER_UP_SAMPLES.map(({ from, to, rating }) => (
+            <Button
+              key={to}
+              size="sm"
+              variant="outline"
+              className="text-xs h-8"
+              onClick={() => setCelebrationTier({ from, to, rating })}
+            >
+              <span className={cn("inline-block w-2 h-2 rounded-full mr-1.5", getTierBadgeStyle(to).split(" ")[0])} />
+              {from} → {to}
+            </Button>
+          ))}
+        </div>
+      </section>
+
+      {/* Celebration overlay */}
+      {celebrationTier && (
+        <TierUpCelebration
+          fromTier={celebrationTier.from}
+          toTier={celebrationTier.to}
+          rating={celebrationTier.rating}
+          onDismiss={() => setCelebrationTier(null)}
+        />
+      )}
+    </div>
+  );
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ══════════════════════════════════════════════════════════════════════════
