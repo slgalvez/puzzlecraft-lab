@@ -35,6 +35,12 @@ import { ProvisionalRatingCard } from "@/components/puzzles/ProvisionalRatingCar
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ActivityCalendar } from "@/components/stats/ActivityCalendar";
+import { useViewAsUser } from "@/contexts/ViewAsUserContext";
+import {
+  getProgressStatsFrom, getSolveRecordsFrom, getDailyStreakFrom,
+  getTotalDailyCompletedFrom, getEndlessStatsFrom, getPlayedDatesFrom,
+  getDailyCompletionFrom,
+} from "@/lib/viewAsOverrides";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -61,7 +67,11 @@ const DIFF_COLORS: Record<string, string> = {
 
 // ── Component ──────────────────────────────────────────────────────────────
 
-const Stats = () => {
+interface StatsProps {
+  viewAsMode?: boolean;
+}
+
+const Stats = ({ viewAsMode = false }: StatsProps) => {
   const navigate = useNavigate();
   const native   = isNativeApp();
   const { receivedCount } = useFriends();
