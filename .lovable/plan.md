@@ -1,30 +1,34 @@
 
 
-# Hide Admin Demo Controls in View-as Mode
+# Fix PremiumStats to Use View-as Data
 
 ## Problem
-When viewing stats as another user, the admin demo data controls ("Generate Stats Demo", "Clear Demo Data") and the demo data warning banner still appear. This should show exactly what the user sees — no admin tooling.
+`PremiumStats` always reads from `localStorage` via `getSolveRecords()` and `getSolveSummary()`. In view-as mode, it shows the admin's own data (or demo data) instead of the selected user's solve records. This causes a duplicate/conflicting rating card.
 
-## Change
+## Solution
+Pass the view-as user's solve records into `PremiumStats` as an optional prop. When provided, use those instead of reading from localStorage.
 
-### `src/pages/Stats.tsx` (line 549)
-Change the admin controls guard from:
+## Changes
+
+### 1. `src/components/account/PremiumStats.tsx`
+- Add optional prop `overrideSolveRecords?: SolveRecord[]`
+- When provided, use it instead of `getSolveRecords()` / `getAllSolveRecordsIncludingDemo()`
+- Build summary from the override records directly using `buildSummary`-style logic (or inline the same reduce)
+- Skip demo data checks (`hasDemoData`, `demoActive`) when override is present
+
+### 2. `src/pages/Stats.tsx` (line ~552)
+- When `isViewAs`, pass the view-as user's solves to PremiumStats:
 ```tsx
-{account?.isAdmin && (
-  <PremiumStatsAdminControls ... />
-)}
+<PremiumStats
+  key={dataVersion}
+  hideAdminControls={isViewAs}
+  overrideSolveRecords={isViewAs ? getSolveRecordsFrom(viewAsUser!.solves) : undefined}
+/>
 ```
-to:
-```tsx
-{account?.isAdmin && !isViewAs && (
-  <PremiumStatsAdminControls ... />
-)}
-```
-
-This single condition addition hides the demo data generation/clearing controls when in view-as mode, so the Stats page renders exactly as the target user would see it.
 
 ## Files changed
 | File | Change |
 |------|--------|
-| `src/pages/Stats.tsx` | Add `!isViewAs` guard to `PremiumStatsAdminControls` render |
+| `src/components/account/PremiumStats.tsx` | Accept `overrideSolveRecords` prop, use it when present |
+| `src/pages/Stats.tsx` | Pass view-as solves to PremiumStats |
 
