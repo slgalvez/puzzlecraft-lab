@@ -34,6 +34,7 @@ import {
   buildCraftShareUrl,
 } from "@/lib/craftShare";
 import { buildCraftShareText as buildUnifiedCraftShareText } from "@/lib/shareText";
+import { executeShare } from "@/lib/shareUtils";
 import { CraftSharePreview } from "@/components/craft/CraftSharePreview";
 import {
   type CraftDraft,
@@ -463,15 +464,15 @@ const CraftPuzzle = () => {
       type: selectedType ?? undefined,
       creatorSolveTime,
     });
-    try {
-      await navigator.clipboard.writeText(fullText);
+    const result = await executeShare(fullText);
+    if (result === "copied" || result === "shared") {
       recordSent();
       setCopied(true);
       setShareSuccess(true);
-      toast({ title: "Puzzle link copied" });
+      if (result === "copied") toast({ title: "Puzzle link copied" });
       setTimeout(() => setCopied(false), 2000);
       setTimeout(() => setShareSuccess(false), 1500);
-    } catch {
+    } else {
       toast({ title: "Failed to copy link" });
     }
   };
@@ -488,30 +489,16 @@ const CraftPuzzle = () => {
       creatorSolveTime,
     });
 
-    if (navigator.share) {
-      try {
-        await navigator.share({ text: shareText });
-        recordSent();
-        setShareSuccess(true);
-        setTimeout(() => setShareSuccess(false), 1500);
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name !== "AbortError") {
-          console.warn("Share failed:", err.message);
-        }
-      }
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(shareText);
+    const result = await executeShare(shareText);
+    if (result === "shared" || result === "copied") {
       recordSent();
-      setCopied(true);
       setShareSuccess(true);
-      toast({ title: "Puzzle link copied" });
-      setTimeout(() => setCopied(false), 2000);
+      if (result === "copied") {
+        setCopied(true);
+        toast({ title: "Puzzle link copied" });
+        setTimeout(() => setCopied(false), 2000);
+      }
       setTimeout(() => setShareSuccess(false), 1500);
-    } catch {
-      toast({ title: "Failed to copy link" });
     }
   };
 
@@ -1017,7 +1004,7 @@ const CraftPuzzle = () => {
                   creatorSolveTime={creatorSolveTime}
                 />
 
-                <div className="relative space-y-3 p-5 rounded-xl border border-border bg-card overflow-hidden">
+                <div className="relative space-y-3 p-5 rounded-xl border border-primary/20 bg-primary/5 overflow-hidden">
                   {shareSuccess && (
                     <div className="absolute inset-0 flex items-center justify-center bg-card/90 z-10 animate-in fade-in-0 duration-200">
                       <div className="flex flex-col items-center gap-2 animate-in zoom-in-75 duration-300">
@@ -1034,9 +1021,9 @@ const CraftPuzzle = () => {
                   </Button>
                   <button
                     onClick={handleCopyLink}
-                    className="w-full flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors py-1.5"
+                    className="w-full flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors py-1.5"
                   >
-                    {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                    {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                     {copied ? "Copied!" : "or copy link"}
                   </button>
                 </div>
