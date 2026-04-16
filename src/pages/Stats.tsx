@@ -127,7 +127,7 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }
   };
 
   const handleReplay = (day: ActivityDay) => {
-    if (!isPlus || day.dateStr === today) return;
+    if (isViewAs || !isPlus || day.dateStr === today) return;
     hapticTap();
     navigate(`/daily?date=${day.dateStr}`);
   };
