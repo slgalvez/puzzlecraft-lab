@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { buildSolveResultShareText } from "@/lib/craftShare";
 import { buildCraftShareText as buildUnifiedCraftShareText, buildSolveShareText, buildDailyShareText } from "@/lib/shareText";
+import { buildCompletionShareText } from "@/lib/shareUtils";
 import { MILESTONE_ICON_EMOJI } from "@/lib/milestones";
 import Layout from "@/components/layout/Layout";
 import CompletionPanel from "@/components/puzzles/CompletionPanel";
@@ -132,8 +133,40 @@ function NonogramMiniGrid({ solution }: { solution: boolean[][] }) {
 
 const SHARE_MESSAGES = [
   {
-    label: "Daily Challenge Result (unified)",
-    description: "Uses buildDailyShareText from shareText.ts",
+    label: "Completion — Daily PB",
+    description: "buildCompletionShareText (daily + PB + rank)",
+    text: buildCompletionShareText({
+      type: "crossword",
+      difficulty: "medium",
+      time: 272,
+      seed: 12345,
+      isDaily: true,
+      dailyCode: "daily-2026-04-16",
+      isPB: true,
+      prevBest: 310,
+      improvement: 38,
+      score: 1150,
+      tier: "Intermediate",
+      rank: 2,
+      total: 14,
+      streak: 7,
+    }).text,
+  },
+  {
+    label: "Completion — Normal Solve",
+    description: "buildCompletionShareText (no PB, no daily)",
+    text: buildCompletionShareText({
+      type: "sudoku",
+      difficulty: "hard",
+      time: 725,
+      seed: 307144639,
+      isDaily: false,
+      isPB: false,
+    }).text,
+  },
+  {
+    label: "Daily Banner Share",
+    description: "buildDailyShareText (banner after solve)",
     text: buildDailyShareText({
       typeName: "Crossword",
       difficulty: "medium",
@@ -141,44 +174,28 @@ const SHARE_MESSAGES = [
       streak: 7,
       rank: 2,
       total: 14,
-      shareUrl: "https://puzzlecraft-lab.lovable.app/play?code=daily-2026-04-03",
+      shareUrl: "https://puzzlecraft-lab.lovable.app/play?code=daily-2026-04-16",
     }),
   },
   {
-    label: "Puzzle Result — Personal Best (unified)",
-    description: "Uses buildSolveShareText with PB context",
-    text: buildSolveShareText({
-      type: "sudoku",
-      difficulty: "hard",
-      time: 725,
-      seed: 307144639,
-      isDaily: false,
-      isPB: true,
-      prevBest: 748,
-      improvement: 23,
-      score: 1280,
-      tier: "Advanced",
-    }).text,
+    label: "Craft — With Challenge Time",
+    description: "buildCraftShareText (title + challenge)",
+    text: buildUnifiedCraftShareText({ title: "Birthday Brain Teaser", from: "Alex", url: "https://puzzlecraft-lab.lovable.app/s/abc123", type: "crossword", creatorSolveTime: 202 }),
   },
   {
-    label: "Crafted Puzzle (with challenge time)",
-    description: "Uses buildCraftShareText from shareText.ts",
-    text: buildUnifiedCraftShareText({ title: "Birthday Brain Teaser", from: "Alex", url: "https://puzzlecraft-lab.lovable.app/s/abc123-craft-id", type: "crossword", creatorSolveTime: 202 }),
-  },
-  {
-    label: "Crafted Puzzle (no challenge)",
-    description: "Uses buildCraftShareText from shareText.ts",
-    text: buildUnifiedCraftShareText({ from: "Jordan", url: "https://puzzlecraft-lab.lovable.app/s/xyz789-craft-id", type: "word-search" }),
+    label: "Craft — No Challenge",
+    description: "buildCraftShareText (from only)",
+    text: buildUnifiedCraftShareText({ from: "Jordan", url: "https://puzzlecraft-lab.lovable.app/s/xyz789", type: "word-search" }),
   },
   {
     label: "Solve Result (beat creator)",
-    description: "Uses buildSolveResultShareText from craftShare.ts (backward compat)",
-    text: buildSolveResultShareText("Birthday Brain Teaser", "crossword", 185, 202, "https://puzzlecraft-lab.lovable.app/s/abc123-craft-id"),
+    description: "buildSolveResultShareText — craftShare.ts compat",
+    text: buildSolveResultShareText("Birthday Brain Teaser", "crossword", 185, 202, "https://puzzlecraft-lab.lovable.app/s/abc123"),
   },
   {
     label: "Solve Result (missed)",
-    description: "Uses buildSolveResultShareText from craftShare.ts (backward compat)",
-    text: buildSolveResultShareText("Weekend Challenge", "cryptogram", 310, 245, "https://puzzlecraft-lab.lovable.app/s/def456-craft-id"),
+    description: "buildSolveResultShareText — craftShare.ts compat",
+    text: buildSolveResultShareText("Weekend Challenge", "cryptogram", 310, 245, "https://puzzlecraft-lab.lovable.app/s/def456"),
   },
 ];
 
@@ -187,23 +204,35 @@ function ShareMessagePreviews() {
     <section className="space-y-3 rounded-xl border border-border/30 p-4">
       <h2 className="text-sm font-semibold text-foreground">Share Message Previews</h2>
       <p className="text-xs text-muted-foreground">
-        Sample messages as they appear when shared via iMessage, WhatsApp, etc.
+        All builders use shareUtils.ts helpers · 280-char target · CTA never trimmed
       </p>
       <div className="space-y-4">
-        {SHARE_MESSAGES.map((msg) => (
-          <div key={msg.label} className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-foreground">{msg.label}</span>
-              <span className="text-[10px] text-muted-foreground/60">{msg.description}</span>
-            </div>
-            <div className="max-w-sm ml-auto">
-              <div className="rounded-2xl rounded-br-md bg-[#007AFF] text-white px-4 py-2.5 text-sm whitespace-pre-line leading-relaxed shadow-sm">
-                {msg.text}
+        {SHARE_MESSAGES.map((msg) => {
+          const len = msg.text.length;
+          const over = len > 280;
+          return (
+            <div key={msg.label} className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-foreground">{msg.label}</span>
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    "text-[10px] font-mono tabular-nums",
+                    over ? "text-destructive font-semibold" : "text-muted-foreground/60",
+                  )}>
+                    {len}/280
+                  </span>
+                  <span className="text-[10px] text-muted-foreground/40">{msg.description}</span>
+                </div>
               </div>
-              <p className="text-[9px] text-muted-foreground/50 text-right mt-0.5 mr-1">iMessage</p>
+              <div className="max-w-sm ml-auto">
+                <div className="rounded-2xl rounded-br-md bg-[#007AFF] text-white px-4 py-2.5 text-sm whitespace-pre-line leading-relaxed shadow-sm">
+                  {msg.text}
+                </div>
+                <p className="text-[9px] text-muted-foreground/50 text-right mt-0.5 mr-1">iMessage</p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
