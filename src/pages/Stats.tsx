@@ -13,7 +13,7 @@ import { getEndlessStats } from "@/lib/endlessHistory";
 import {
   Trophy, Flame, Clock, Target, Calendar,
   Infinity, ArrowRight, TrendingUp, TrendingDown, Shield,
-  Zap, Info, ChevronRight, Play, Crown, Lock, RotateCcw,
+  Zap, Info, ChevronRight, ChevronLeft, Play, Crown, Lock, RotateCcw,
 } from "lucide-react";
 import { isNativeApp } from "@/lib/appMode";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -42,8 +42,8 @@ import {
   getTotalDailyCompletedFrom, getEndlessStatsFrom,
 } from "@/lib/viewAsOverrides";
 import {
-  getCalendarActivity, getCalendarActivityFrom, buildCalendarWeeks, DOW_LABELS,
-  localDateStr, type ActivityDay, type ActivityStatus,
+  getCalendarActivity, getCalendarActivityFrom, buildMonthGrid, getReplayBounds, DOW_LABELS,
+  localDateStr, type ActivityDay, type ActivityStatus, type MonthGrid,
 } from "@/lib/calendarActivity";
 import { hapticTap } from "@/lib/haptic";
 
