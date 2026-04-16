@@ -104,6 +104,71 @@ export function getCalendarActivity(days: number): ActivityMap {
   return map;
 }
 
+/* ── View-as aggregation (from provided data, no localStorage) ── */
+
+/**
+ * Build an ActivityMap from provided completion and daily data arrays.
+ * Used in admin view-as mode where localStorage is irrelevant.
+ * Craft count stays 0 (not synced to backend).
+ */
+export function getCalendarActivityFrom(
+  completions: Array<{ date: string }>,
+  dailyData: Record<string, { dateStr: string; time: number; category: string; difficulty: string }>,
+  days: number,
+): ActivityMap {
+  const map: ActivityMap = new Map();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // 1. Pre-fill every date in range with 'none'
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = localDateStr(d);
+    map.set(key, {
+      dateStr: key,
+      dailyCompletion: null,
+      puzzleCount: 0,
+      craftCount: 0,
+      status: "none",
+    });
+  }
+
+  // 2. Merge daily completions from dailyData object
+  for (const [dateStr, data] of Object.entries(dailyData)) {
+    const entry = map.get(dateStr);
+    if (entry && data) {
+      entry.dailyCompletion = {
+        dateStr: data.dateStr,
+        time: data.time,
+        category: data.category as any,
+        difficulty: data.difficulty as any,
+      };
+    }
+  }
+
+  // 3. Merge quick-play completions
+  for (const rec of completions) {
+    const key = localDateStr(new Date(rec.date));
+    const entry = map.get(key);
+    if (entry) {
+      entry.puzzleCount += 1;
+    }
+  }
+
+  // 4. Apply strict hierarchy (same as getCalendarActivity)
+  for (const entry of map.values()) {
+    if (entry.dailyCompletion) {
+      entry.status = "daily-complete";
+    } else if (entry.puzzleCount > 0) {
+      entry.status = "puzzle-played";
+    }
+    // craft stays 0, no craft-only possible
+  }
+
+  return map;
+}
+
 /* ── Week grid builder (Plus only) ── */
 
 /**

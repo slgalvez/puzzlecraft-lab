@@ -42,7 +42,7 @@ import {
   getTotalDailyCompletedFrom, getEndlessStatsFrom,
 } from "@/lib/viewAsOverrides";
 import {
-  getCalendarActivity, buildCalendarWeeks, DOW_LABELS,
+  getCalendarActivity, getCalendarActivityFrom, buildCalendarWeeks, DOW_LABELS,
   localDateStr, type ActivityDay, type ActivityStatus,
 } from "@/lib/calendarActivity";
 import { hapticTap } from "@/lib/haptic";
@@ -93,33 +93,27 @@ interface InlineCalendarProps {
   isPlus: boolean;
   dataVersion: number;
   onUpgrade: () => void;
+  viewAsUser?: { completions: Array<{ date: string }>; dailyData: Record<string, any> } | null;
 }
 
-function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade }: InlineCalendarProps) {
+function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }: InlineCalendarProps) {
   const navigate = useNavigate();
   const [selectedDay, setSelectedDay] = useState<ActivityDay | null>(null);
-  const calendarDays = isPlus ? 60 : 7;
+  // In view-as, always show 60-day grid
+  const calendarDays = (isViewAs || isPlus) ? 60 : 7;
+  const effectivePlus = isPlus || isViewAs;
 
-  const activityMap = useMemo(
-    () => isViewAs ? null : getCalendarActivity(calendarDays),
-    [dataVersion, isViewAs, calendarDays],
-  );
+  const activityMap = useMemo(() => {
+    if (isViewAs && viewAsUser) {
+      return getCalendarActivityFrom(viewAsUser.completions, viewAsUser.dailyData, calendarDays);
+    }
+    return getCalendarActivity(calendarDays);
+  }, [dataVersion, isViewAs, viewAsUser, calendarDays]);
 
   const calendarWeeks = useMemo(
-    () => (isPlus && activityMap) ? buildCalendarWeeks(activityMap, calendarDays) : null,
-    [isPlus, activityMap, calendarDays],
+    () => effectivePlus && activityMap ? buildCalendarWeeks(activityMap, calendarDays) : null,
+    [effectivePlus, activityMap, calendarDays],
   );
-
-  // View-as mode: show empty state
-  if (isViewAs) {
-    return (
-      <div className="flex items-center justify-center py-6 text-center">
-        <p className="text-xs text-muted-foreground">
-          Activity calendar unavailable in view-as mode.
-        </p>
-      </div>
-    );
-  }
 
   if (!activityMap) return null;
 
