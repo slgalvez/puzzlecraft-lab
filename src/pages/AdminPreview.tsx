@@ -2035,9 +2035,8 @@ export default function AdminPreview() {
                 <Clock size={14} /> Activity Calendar
               </h2>
               <p className="text-xs text-muted-foreground">
-                Monthly calendar from the Stats page — shows daily challenge completions.
+                Calendar is now inline in the Stats page with hierarchical activity visualization.
               </p>
-              <ActivityCalendar />
             </section>
 
             {/* ── Data Controls ── */}

@@ -71,6 +71,282 @@ const DIFF_COLORS: Record<string, string> = {
   insane:  "bg-violet-600",
 };
 
+/* ── Calendar cell styling ── */
+
+function getCellStyle(status: ActivityStatus): string {
+  switch (status) {
+    case "daily-complete": return "bg-primary/80";
+    case "puzzle-played":  return "bg-primary/15";
+    case "craft-only":     return "bg-transparent";
+    case "none":           return "bg-transparent";
+  }
+}
+
+function hasCraftDot(day: ActivityDay): boolean {
+  return day.craftCount > 0 && day.status !== "craft-only";
+}
+
+/* ── InlineCalendar ── */
+
+interface InlineCalendarProps {
+  isViewAs: boolean;
+  isPlus: boolean;
+  dataVersion: number;
+  onUpgrade: () => void;
+}
+
+function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade }: InlineCalendarProps) {
+  const navigate = useNavigate();
+  const [selectedDay, setSelectedDay] = useState<ActivityDay | null>(null);
+  const calendarDays = isPlus ? 60 : 7;
+
+  const activityMap = useMemo(
+    () => isViewAs ? null : getCalendarActivity(calendarDays),
+    [dataVersion, isViewAs, calendarDays],
+  );
+
+  const calendarWeeks = useMemo(
+    () => (isPlus && activityMap) ? buildCalendarWeeks(activityMap, calendarDays) : null,
+    [isPlus, activityMap, calendarDays],
+  );
+
+  // View-as mode: show empty state
+  if (isViewAs) {
+    return (
+      <div className="flex items-center justify-center py-6 text-center">
+        <p className="text-xs text-muted-foreground">
+          Activity calendar unavailable in view-as mode.
+        </p>
+      </div>
+    );
+  }
+
+  if (!activityMap) return null;
+
+  const today = localDateStr(new Date());
+  const anyActivity = (d: ActivityDay) => d.status !== "none";
+
+  const handleDayTap = (day: ActivityDay) => {
+    if (!isPlus) return;
+    hapticTap();
+    setSelectedDay((prev) => prev?.dateStr === day.dateStr ? null : day);
+  };
+
+  const handleReplay = (day: ActivityDay) => {
+    if (!isPlus || day.dateStr === today) return;
+    hapticTap();
+    navigate(`/daily?date=${day.dateStr}`);
+  };
+
+  // ── FREE: 7-day flat row ──
+  if (!isPlus) {
+    const days = Array.from(activityMap.values());
+    return (
+      <div className="space-y-3">
+        <div className="grid grid-cols-7 gap-1">
+          {days.map((day) => {
+            const isToday = day.dateStr === today;
+            return (
+              <div key={day.dateStr} className="flex flex-col items-center gap-1">
+                <span className="text-[8px] text-muted-foreground/50 uppercase">
+                  {DOW_LABELS[new Date(day.dateStr + "T12:00:00").getDay()]}
+                </span>
+                <div
+                  className={cn(
+                    "relative h-8 w-8 rounded-lg flex items-center justify-center",
+                    getCellStyle(day.status),
+                    day.status === "none" && "border border-border/30",
+                    isToday && "ring-1 ring-primary ring-offset-1 ring-offset-background",
+                  )}
+                >
+                  <span className={cn(
+                    "text-[10px] font-medium",
+                    day.status === "daily-complete" ? "text-primary-foreground" : "text-foreground/60",
+                    isToday && "font-bold text-primary",
+                  )}>
+                    {new Date(day.dateStr + "T12:00:00").getDate()}
+                  </span>
+                  {day.status === "craft-only" && (
+                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-[3px] w-[3px] rounded-full bg-amber-500" />
+                  )}
+                  {hasCraftDot(day) && (
+                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-[3px] w-[3px] rounded-full bg-amber-500" />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <button
+          onClick={onUpgrade}
+          className="w-full text-center text-[10px] text-muted-foreground/60 hover:text-primary transition-colors flex items-center justify-center gap-1"
+        >
+          <Lock size={9} /> See 60 days with Puzzlecraft+
+        </button>
+      </div>
+    );
+  }
+
+  // ── PLUS: 60-day Sun–Sat grid ──
+  if (!calendarWeeks) return null;
+
+  const firstDate = new Date(calendarWeeks[0].days[0].dateStr + "T12:00:00");
+  const lastDate = new Date(calendarWeeks[calendarWeeks.length - 1].days[6].dateStr + "T12:00:00");
+  const monthLabel = firstDate.getMonth() === lastDate.getMonth()
+    ? firstDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })
+    : `${firstDate.toLocaleDateString("en-US", { month: "short" })} – ${lastDate.toLocaleDateString("en-US", { month: "short", year: "numeric" })}`;
+
+  return (
+    <div className="space-y-2.5">
+      <p className="text-[10px] font-semibold text-foreground text-center">{monthLabel}</p>
+
+      {/* DOW headers */}
+      <div className="grid grid-cols-7 gap-0.5">
+        {DOW_LABELS.map((d) => (
+          <p key={d} className="text-center text-[8px] font-medium text-muted-foreground/50 uppercase tracking-wider">
+            {d}
+          </p>
+        ))}
+      </div>
+
+      {/* Week rows */}
+      <div className="space-y-0.5">
+        {calendarWeeks.map((week, wi) => (
+          <div key={wi} className="grid grid-cols-7 gap-0.5">
+            {week.days.map((day) => {
+              const isToday = day.dateStr === today;
+              const isFuture = day.dateStr > today;
+              const isSelected = selectedDay?.dateStr === day.dateStr;
+
+              return (
+                <button
+                  key={day.dateStr}
+                  onClick={() => !isFuture && handleDayTap(day)}
+                  disabled={isFuture}
+                  className={cn(
+                    "relative aspect-square flex items-center justify-center rounded-md transition-all duration-100",
+                    isFuture && "opacity-20 cursor-default",
+                    isSelected && "ring-1 ring-primary ring-offset-1 ring-offset-background scale-105 z-10",
+                    !isFuture && !isSelected && "hover:bg-muted/30 active:scale-95",
+                    getCellStyle(day.status),
+                    day.status === "none" && !isFuture && "border border-border/20",
+                  )}
+                >
+                  <span className={cn(
+                    "text-[9px] font-medium",
+                    day.status === "daily-complete" ? "text-primary-foreground" : "text-foreground/70",
+                    isFuture && "text-muted-foreground/30",
+                    isToday && "font-bold text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.6)]",
+                  )}>
+                    {new Date(day.dateStr + "T12:00:00").getDate()}
+                  </span>
+                  {(day.status === "craft-only" || hasCraftDot(day)) && (
+                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-[3px] w-[3px] rounded-full bg-amber-500" />
+                  )}
+                  {isToday && day.status !== "daily-complete" && (
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-[2px] rounded-full bg-primary shadow-[0_0_4px_hsl(var(--primary)/0.7)]" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center justify-center gap-4 pt-1">
+        {([
+          ["Daily", "bg-primary/80"],
+          ["Solved", "bg-primary/15 border border-primary/30"],
+          ["Created", "bg-amber-500"],
+        ] as const).map(([label, color]) => (
+          <div key={label} className="flex items-center gap-1">
+            <span className={cn("rounded-full", label === "Created" ? "h-[5px] w-[5px]" : "h-[8px] w-[8px]", color)} />
+            <span className="text-[9px] text-muted-foreground/70">{label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Day detail panel */}
+      {selectedDay && (
+        <DayDetail
+          day={selectedDay}
+          isPlus={isPlus}
+          isToday={selectedDay.dateStr === today}
+          onReplay={() => handleReplay(selectedDay)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ── DayDetail ── */
+
+function DayDetail({ day, isPlus, isToday, onReplay }: {
+  day: ActivityDay;
+  isPlus: boolean;
+  isToday: boolean;
+  onReplay: () => void;
+}) {
+  const dateLabel = new Date(day.dateStr + "T12:00:00").toLocaleDateString("en-US", {
+    weekday: "short", month: "short", day: "numeric",
+  });
+
+  const challenge = getChallengeForDate(new Date(day.dateStr + "T12:00:00"));
+  const canReplay = isPlus && !isToday && day.dailyCompletion;
+
+  return (
+    <div className="rounded-xl border border-border/60 bg-card overflow-hidden animate-in slide-in-from-top-1 duration-200">
+      <div className="px-3 py-2.5 space-y-1.5">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-foreground">{dateLabel}</p>
+          {canReplay && (
+            <button
+              onClick={onReplay}
+              className="flex items-center gap-1 rounded-lg bg-muted px-2.5 py-1.5 text-[10px] font-semibold text-muted-foreground hover:bg-muted/80 transition-all active:scale-[0.97]"
+            >
+              <RotateCcw size={10} /> Replay
+            </button>
+          )}
+          {!canReplay && isToday && !day.dailyCompletion && (
+            <Link
+              to="/daily"
+              className="flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-[10px] font-semibold text-primary-foreground transition-all active:scale-[0.97]"
+            >
+              <Play size={10} /> Play
+            </Link>
+          )}
+        </div>
+        <div className="flex items-center gap-3 text-[10px]">
+          {day.dailyCompletion && (
+            <div className="flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              <span className="text-foreground/70">
+                Daily · {CATEGORY_INFO[challenge.category]?.name} · {formatTime(day.dailyCompletion.time)}
+              </span>
+            </div>
+          )}
+          {day.puzzleCount > 0 && (
+            <div className="flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary/40" />
+              <span className="text-foreground/70">{day.puzzleCount} solved</span>
+            </div>
+          )}
+          {day.craftCount > 0 && (
+            <div className="flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+              <span className="text-foreground/70">{day.craftCount} created</span>
+            </div>
+          )}
+          {day.status === "none" && (
+            <span className="text-muted-foreground/40">No activity</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Component ──────────────────────────────────────────────────────────────
 
 interface StatsProps {
