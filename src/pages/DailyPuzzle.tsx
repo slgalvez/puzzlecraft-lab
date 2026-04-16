@@ -34,7 +34,8 @@ import { cn } from "@/lib/utils";
 import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { buildDailyShareText, shareOrCopy } from "@/lib/shareText";
+import { buildDailyShareText } from "@/lib/shareText";
+import { executeShare } from "@/lib/shareUtils";
 
 import SudokuGrid from "@/components/puzzles/SudokuGrid";
 import WordSearchGrid from "@/components/puzzles/WordSearchGrid";
@@ -278,7 +279,10 @@ const DailyPuzzle = () => {
                     streak: streak.current,
                     shareUrl: `${window.location.origin}/play?code=daily-${challenge.dateStr}`,
                   });
-                  await shareOrCopy(text, toast);
+                  const result = await executeShare(text);
+                  if (result === "copied") {
+                    toast({ title: "Copied to clipboard" });
+                  }
                 }}
               >
                 <Share size={14} className="mr-1.5" />
