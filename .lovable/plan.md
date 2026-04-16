@@ -1,95 +1,85 @@
 
 
-# Unified Share System — shareUtils as Single Source of Truth
+# Calendar Activity Audit — Final Implementation Plan
 
 ## Summary
-Create `src/lib/shareUtils.ts` as the single source of truth for all share text generation and execution. Reduce `shareText.ts` to a thin re-export wrapper. All formatting fragments live as internal helpers inside shareUtils — never duplicated across builders.
+Create `src/lib/calendarActivity.ts` as the single source of truth for calendar activity aggregation. Add `getAllDailyCompletions()` to `dailyChallenge.ts`. Replace `ActivityCalendar` component with inline calendar rendering in Stats. Enforce strict visual hierarchy, premium differentiation, and cleanup all dead references.
 
-## Implementation Constraints
+## Files
+
+### 1. ADD `getAllDailyCompletions()` to `src/lib/dailyChallenge.ts`
+- New export: `getAllDailyCompletions(): Record<string, DailyCompletion>` — single localStorage read, returns the full map
+- No other changes to this file
+
+### 2. CREATE `src/lib/calendarActivity.ts`
+Single source of truth for calendar data aggregation:
+- **Inputs** (read once per call):
+  - `getAllDailyCompletions()` from dailyChallenge.ts
+  - `getProgressStats().recentCompletions` from progressTracker.ts
+  - `loadSentItems()` from craftHistory.ts
+- **Output**: `ActivityMap = Map<string, ActivityDay>` where `ActivityDay = { dateStr, dailyCompletion?, puzzleCount, craftCount, status }`
+- **Status hierarchy** (strict): `'daily-complete'` > `'puzzle-played'` > `'craft-only'` > `'none'`
+- **Exports**:
+  - `getCalendarActivity(days: number): ActivityMap` — builds map for last N days, pre-filling every date in range with `{ status: 'none' }` before merging sources
+  - `buildCalendarWeeks(map: ActivityMap, days: number): CalendarWeek[]` — Sun–Sat grid for Plus users
+  - `DOW_LABELS: string[]` — `['Sun','Mon','Tue','Wed','Thu','Fri','Sat']`
+  - `ActivityDay`, `CalendarWeek` types
+
+### 3. REWRITE calendar section in `src/pages/Stats.tsx`
+- **Remove** `ActivityCalendar` import and all references
+- **Add** imports from `calendarActivity.ts`
+- **Memoize** activity data: `useMemo(() => getCalendarActivity(isPlus ? 60 : 7), [dataVersion, isPlus])`
+- **View-as mode**: Render calendar card shell with empty state: `"Activity calendar unavailable in view-as mode."` — no local data shown, section not hidden
+- **Free users (7 days)**: Flat horizontal row, no month nav, upgrade nudge
+- **Plus users (60 days)**: `buildCalendarWeeks()` → true Sun–Sat grid with DOW headers, month label, navigation
+- **Cell styling** via `getCellStyle(status)`:
+  - `daily-complete` → solid primary (dominant)
+  - `puzzle-played` → light primary/10 (secondary)
+  - `craft-only` → small amber dot (accent)
+  - Craft coexisting with higher status → tiny amber dot overlay
+- **Day detail panel** (tap cell, Plus only): date, daily result, quick-play count, craft count, replay CTA (Plus + past dates only)
+- **All other Stats content unchanged**: tier card, recent solves, premium stats, social tab, endless mode, view-as overrides for non-calendar sections
+
+### 4. UPDATE `src/pages/AdminPreview.tsx`
+- Remove `ActivityCalendar` import
+- Replace calendar preview section with placeholder note
+
+### 5. DELETE `src/components/stats/ActivityCalendar.tsx`
+
+### 6. CLEANUP VERIFICATION
+- Search for remaining `ActivityCalendar` imports/references → remove all
+- Remove `overridePlayedDates`, `overrideCraftedDates`, `overrideDailyFn` prop patterns
+
+## Constraints
+
+### Visual hierarchy (strict)
+- Daily completion = dominant visual state (solid primary)
+- Quick-play = secondary (light primary)
+- Craft = accent only (amber dot), never overpowers daily
+
+### Premium differentiation
+- Free: 7 days. Plus: 60 days in Sun–Sat grid
+- Replay: Plus-only, past dates only, today unaffected
+
+### Performance
+- Calendar data computed once per view via `useMemo`, no per-cell storage reads or async fetches
+
+### View-as mode
+- Show calendar shell with `"Activity calendar unavailable in view-as mode."` — do not show local data, do not hide section
 
 ### Helper safety
-- All internal helper functions (`diffLine`, `pbLine`, `streakLine`, `rankLine`, `challengeLine`, `ctaEnding`) return `null` when required data is missing
-- Builders collect lines into an array, filter out nulls, then join — no inline conditional string concatenation
+- All internal helpers return null if data missing; builders filter nulls before joining
 
-### Length constraint (280 char target)
-- After assembling all lines, if total length exceeds 280 characters, drop lines in this priority order:
-  1. `rankLine` (remove first)
-  2. `streakLine`
-  3. PB detail (shorten to e.g. "🏆 New PB!" — never remove entirely)
-- **CTA is sacred**: `trimToLimit` must never drop the final CTA/link line. It is excluded from the trimming candidates entirely.
-- Trimming loop runs after assembly, before final join
+### Missing day handling
+- `getCalendarActivity(days)` must pre-fill every date in the requested range into the `ActivityMap` with `{ status: 'none', puzzleCount: 0, craftCount: 0 }` before merging data sources
+- Calendar rendering must never check for missing keys — every cell renders deterministically from a guaranteed entry in the map
 
-### Line order (strict, all builders)
-Every share text follows this exact structure — no reordering per context:
-1. Header/title
-2. Puzzle line (type · difficulty · time)
-3. PB or challenge line
-4. Streak line (if present)
-5. Rank line (if present)
-6. CTA
-
-### executeShare contract
-- `executeShare(text: string, shareUrl?: string)` — the optional `shareUrl` parameter exists only for callers that need link-only sharing (e.g. craft "copy link" button). Default behavior remains text-only. This does not open a second share pathway — it's the same function, same return type (`"shared" | "copied" | "error"`), just optionally passing a URL to `navigator.share({ text, url })` when provided.
-
-## Architecture
-
-```text
-shareUtils.ts (NEW — single source of truth)
-├── Internal helpers (not exported, return null if data missing)
-│   ├── puzzleIcon(type)
-│   ├── puzzleLabel(type)
-│   ├── diffLine(difficulty, time)
-│   ├── pbLine(improvement, prev)
-│   ├── streakLine(count)
-│   ├── rankLine(rank, total)
-│   ├── ctaEnding(url)
-│   └── challengeLine(time)
-├── trimToLimit(lines, 280)        — drops rank → streak → shortens PB; NEVER drops CTA
-├── buildCompletionShareText()     — uses helpers, trimToLimit
-├── buildDailyShareText()          — uses helpers, trimToLimit
-├── buildCraftShareText()          — uses helpers, trimToLimit
-└── executeShare(text, shareUrl?)  — native share / clipboard, returns "shared"|"copied"|"error"
-
-shareText.ts (THIN WRAPPER — no formatting logic)
-├── re-exports with old signatures, maps params → shareUtils
-└── shareOrCopy → executeShare + toast handling
-```
-
-## File Changes
-
-### 1. CREATE `src/lib/shareUtils.ts`
-- Internal helpers all return `string | null`
-- `trimToLimit(lines: (string|null)[], limit = 280)` filters nulls, then drops rank → streak → shortens PB until under limit. CTA line (last position) is never a trim candidate.
-- Three builders compose helpers into ordered array: header, puzzle line, PB/challenge, streak, rank, CTA — then pass through `trimToLimit`
-- `executeShare(text, shareUrl?)` — native share / clipboard fallback, returns `"shared" | "copied" | "error"`. When `shareUrl` is provided, passes `{ text, url: shareUrl }` to `navigator.share`; otherwise text-only.
-
-### 2. REWRITE `src/lib/shareText.ts` — thin wrapper
-- Remove all formatting logic
-- Map old signatures to shareUtils functions
-- `shareOrCopy` → calls `executeShare` + handles toast
-
-### 3. UPDATE `src/components/puzzles/CompletionPanel.tsx`
-- Import `executeShare` from shareUtils
-- Share becomes primary full-width CTA for PB and daily
-- Auto-expand share section for daily completions (not just PBs)
-- Button state cycles via executeShare return value
-
-### 4. UPDATE `src/pages/DailyPuzzle.tsx`
-- Banner share: `executeShare()` replaces `shareOrCopy`
-- Button state: "Share result" → "Copied"/"Shared"
-
-### 5. PATCH `src/pages/CraftPuzzle.tsx` (4 edits)
-- `handleCopyLink` / `handleShare`: use `executeShare`
-- Share container: `border-primary/20 bg-primary/5` tint
-- Copy-link text: `text-sm` with hover
-
-### 6. `src/components/craft/CraftSharePreview.tsx` — no changes needed (wrapper preserves signatures)
-
-### 7. `src/pages/AdminPreview.tsx` — verify wrapper compat, minimal updates if needed
-
-## What stays the same
-- `craftShare.ts` types and `buildSolveResultShareText` (used by SharedCraftPuzzle)
-- `useSolveShareCard` hook
-- All puzzle grids, milestone/tracking logic, backend
-- Visual theme of CompletionPanel — no redesign
+### Date normalization
+- All date keys (`dateStr`) normalized to `YYYY-MM-DD` in **local time** using `new Date().toISOString().slice(0,10)` replacement: `const pad = (n: number) => String(n).padStart(2,'0'); const localDateStr = (d: Date) => \`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}\``
+- Applied uniformly across all three sources:
+  - Daily completions (already YYYY-MM-DD local — verify)
+  - Quick-play records (`CompletionRecord.date` — normalize on read)
+  - Craft history (`CraftSentItem.sentAt` epoch → local dateStr conversion)
+- No mixing of UTC and local dates. All map keys and comparisons use the same `localDateStr()` helper
+- This prevents off-by-one-day errors near midnight in non-UTC timezones
 
