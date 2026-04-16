@@ -1004,7 +1004,7 @@ const CraftPuzzle = () => {
                   creatorSolveTime={creatorSolveTime}
                 />
 
-                <div className="relative space-y-3 p-5 rounded-xl border border-border bg-card overflow-hidden">
+                <div className="relative space-y-3 p-5 rounded-xl border border-primary/20 bg-primary/5 overflow-hidden">
                   {shareSuccess && (
                     <div className="absolute inset-0 flex items-center justify-center bg-card/90 z-10 animate-in fade-in-0 duration-200">
                       <div className="flex flex-col items-center gap-2 animate-in zoom-in-75 duration-300">
@@ -1021,9 +1021,9 @@ const CraftPuzzle = () => {
                   </Button>
                   <button
                     onClick={handleCopyLink}
-                    className="w-full flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors py-1.5"
+                    className="w-full flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors py-1.5"
                   >
-                    {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                    {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                     {copied ? "Copied!" : "or copy link"}
                   </button>
                 </div>
