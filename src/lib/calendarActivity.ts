@@ -25,9 +25,6 @@ export interface ActivityDay {
 
 export type ActivityMap = Map<string, ActivityDay>;
 
-export interface CalendarWeek {
-  days: ActivityDay[]; // always length 7 (Sun–Sat)
-}
 
 /* ── Constants ── */
 
