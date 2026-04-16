@@ -51,7 +51,10 @@ import type { CrosswordPuzzle, FillInPuzzle } from "@/data/puzzles";
 const DailyPuzzle = () => {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
-  const dateOverride = searchParams.get("date") ?? undefined;
+  // Today guard: if dateOverride matches today, treat as normal daily
+  const rawDateOverride = searchParams.get("date") ?? undefined;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const dateOverride = rawDateOverride === todayStr ? undefined : rawDateOverride;
 
   const challenge = useMemo(() => getTodaysChallenge(dateOverride), [dateOverride]);
   const [completion, setCompletion] = useState(() => getDailyCompletion(challenge.dateStr));

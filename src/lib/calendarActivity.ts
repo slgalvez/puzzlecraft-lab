@@ -25,9 +25,6 @@ export interface ActivityDay {
 
 export type ActivityMap = Map<string, ActivityDay>;
 
-export interface CalendarWeek {
-  days: ActivityDay[]; // always length 7 (Sun–Sat)
-}
 
 /* ── Constants ── */
 
@@ -169,55 +166,58 @@ export function getCalendarActivityFrom(
   return map;
 }
 
-/* ── Week grid builder (Plus only) ── */
+/* ── Monthly grid builder (Plus only) ── */
+
+export interface MonthGrid {
+  year: number;
+  month: number; // 0-indexed
+  rows: (ActivityDay | null)[][];
+}
 
 /**
- * Build a Sun–Sat week grid from the ActivityMap.
- * Always produces complete 7-day weeks — pads the first and last week.
+ * Build a Sun–Sat monthly grid from the ActivityMap.
+ * Leading/trailing null cells for calendar alignment.
  */
-export function buildCalendarWeeks(map: ActivityMap, days: number): CalendarWeek[] {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+export function buildMonthGrid(map: ActivityMap, year: number, month: number): MonthGrid {
+  const firstDay = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startDow = firstDay.getDay(); // 0=Sun
 
-  // Compute the date range
-  const startDate = new Date(today);
-  startDate.setDate(startDate.getDate() - (days - 1));
+  const cells: (ActivityDay | null)[] = [];
 
-  // Pad start to previous Sunday
-  const startDow = startDate.getDay(); // 0=Sun
-  const gridStart = new Date(startDate);
-  gridStart.setDate(gridStart.getDate() - startDow);
+  // Leading nulls
+  for (let i = 0; i < startDow; i++) cells.push(null);
 
-  // Pad end to next Saturday
-  const endDate = new Date(today);
-  const endDow = endDate.getDay();
-  const gridEnd = new Date(endDate);
-  gridEnd.setDate(gridEnd.getDate() + (6 - endDow));
-
-  const weeks: CalendarWeek[] = [];
-  const cursor = new Date(gridStart);
-
-  while (cursor <= gridEnd) {
-    const week: ActivityDay[] = [];
-    for (let d = 0; d < 7; d++) {
-      const key = localDateStr(cursor);
-      const existing = map.get(key);
-      if (existing) {
-        week.push(existing);
-      } else {
-        // Padding day outside the requested range
-        week.push({
-          dateStr: key,
-          dailyCompletion: null,
-          puzzleCount: 0,
-          craftCount: 0,
-          status: "none",
-        });
-      }
-      cursor.setDate(cursor.getDate() + 1);
-    }
-    weeks.push({ days: week });
+  // Month days
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = localDateStr(new Date(year, month, d));
+    const existing = map.get(key);
+    cells.push(existing ?? {
+      dateStr: key,
+      dailyCompletion: null,
+      puzzleCount: 0,
+      craftCount: 0,
+      status: "none",
+    });
   }
 
-  return weeks;
+  // Trailing nulls to complete last row
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const rows: (ActivityDay | null)[][] = [];
+  for (let i = 0; i < cells.length; i += 7) {
+    rows.push(cells.slice(i, i + 7));
+  }
+
+  return { year, month, rows };
+}
+
+/**
+ * Get the earliest date string in the supported replay/history window.
+ */
+export function getReplayBounds(isPlus: boolean): { earliest: string } {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - (isPlus ? 59 : 0));
+  return { earliest: localDateStr(d) };
 }
