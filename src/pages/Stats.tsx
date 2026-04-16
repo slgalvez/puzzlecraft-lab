@@ -71,19 +71,27 @@ const DIFF_COLORS: Record<string, string> = {
   insane:  "bg-violet-600",
 };
 
-/* ── Calendar cell styling ── */
+/* ── Ring-based activity cell ── */
 
-function getCellStyle(status: ActivityStatus): string {
-  switch (status) {
-    case "daily-complete": return "bg-primary/80";
-    case "puzzle-played":  return "bg-primary/15";
-    case "craft-only":     return "bg-transparent";
-    case "none":           return "bg-transparent";
-  }
+const RING_SIZE = 28;
+const RING_R = 11;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_R;
+const RING_MIN_FRAC = 0.12; // ~43° minimum visible arc
+const RING_MAX_FRAC = 0.75; // ~270° cap — never equals daily full ring
+const RING_PUZZLE_CAP = 6;  // puzzleCount at which partial ring maxes out
+
+function getRingDash(puzzleCount: number): string {
+  if (puzzleCount <= 0) return "0 999";
+  const frac = Math.min(
+    RING_MAX_FRAC,
+    Math.max(RING_MIN_FRAC, puzzleCount / RING_PUZZLE_CAP * RING_MAX_FRAC),
+  );
+  const dash = frac * RING_CIRCUMFERENCE;
+  return `${dash} ${RING_CIRCUMFERENCE}`;
 }
 
 function hasCraftDot(day: ActivityDay): boolean {
-  return day.craftCount > 0 && day.status !== "craft-only";
+  return day.craftCount > 0;
 }
 
 /* ── InlineCalendar ── */
@@ -99,10 +107,13 @@ interface InlineCalendarProps {
 function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }: InlineCalendarProps) {
   const navigate = useNavigate();
   const [selectedDay, setSelectedDay] = useState<ActivityDay | null>(null);
-  // In view-as, always show 60-day grid
-  const calendarDays = (isViewAs || isPlus) ? 60 : 7;
   const effectivePlus = isPlus || isViewAs;
 
+  const now = new Date();
+  const [currentMonth, setCurrentMonth] = useState({ year: now.getFullYear(), month: now.getMonth() });
+
+  // Activity data — 60 days for Plus, 7 for free
+  const calendarDays = effectivePlus ? 60 : 7;
   const activityMap = useMemo(() => {
     if (isViewAs && viewAsUser) {
       return getCalendarActivityFrom(viewAsUser.completions, viewAsUser.dailyData, calendarDays);
@@ -110,26 +121,53 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }
     return getCalendarActivity(calendarDays);
   }, [dataVersion, isViewAs, viewAsUser, calendarDays]);
 
-  const calendarWeeks = useMemo(
-    () => effectivePlus && activityMap ? buildCalendarWeeks(activityMap, calendarDays) : null,
-    [effectivePlus, activityMap, calendarDays],
+  const monthGrid = useMemo(
+    () => effectivePlus ? buildMonthGrid(activityMap, currentMonth.year, currentMonth.month) : null,
+    [effectivePlus, activityMap, currentMonth.year, currentMonth.month],
   );
 
   if (!activityMap) return null;
 
   const today = localDateStr(new Date());
-  const anyActivity = (d: ActivityDay) => d.status !== "none";
+  const { earliest } = getReplayBounds(effectivePlus);
+
+  // Month navigation bounds
+  const canGoPrev = (() => {
+    if (!effectivePlus) return false;
+    const prevMonth = currentMonth.month === 0
+      ? { year: currentMonth.year - 1, month: 11 }
+      : { year: currentMonth.year, month: currentMonth.month - 1 };
+    const lastDayOfPrev = new Date(prevMonth.year, prevMonth.month + 1, 0);
+    return localDateStr(lastDayOfPrev) >= earliest;
+  })();
+  const canGoNext = (() => {
+    if (!effectivePlus) return false;
+    const n = new Date();
+    return currentMonth.year < n.getFullYear() || (currentMonth.year === n.getFullYear() && currentMonth.month < n.getMonth());
+  })();
 
   const handleDayTap = (day: ActivityDay) => {
-    if (!isPlus) return;
+    if (!effectivePlus) return;
     hapticTap();
     setSelectedDay((prev) => prev?.dateStr === day.dateStr ? null : day);
   };
 
   const handleReplay = (day: ActivityDay) => {
+    // Today guard — never allow replay for today
     if (isViewAs || !isPlus || day.dateStr === today) return;
     hapticTap();
     navigate(`/daily?date=${day.dateStr}`);
+  };
+
+  const goMonth = (delta: number) => {
+    setCurrentMonth((prev) => {
+      let m = prev.month + delta;
+      let y = prev.year;
+      if (m < 0) { m = 11; y--; }
+      if (m > 11) { m = 0; y++; }
+      return { year: y, month: m };
+    });
+    setSelectedDay(null);
   };
 
   // ── FREE: 7-day flat row ──
@@ -145,26 +183,33 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }
                 <span className="text-[8px] text-muted-foreground/50 uppercase">
                   {DOW_LABELS[new Date(day.dateStr + "T12:00:00").getDay()]}
                 </span>
-                <div
-                  className={cn(
-                    "relative h-8 w-8 rounded-lg flex items-center justify-center",
-                    getCellStyle(day.status),
-                    day.status === "none" && "border border-border/30",
-                    isToday && "ring-1 ring-primary ring-offset-1 ring-offset-background",
-                  )}
-                >
+                <div className="relative flex items-center justify-center" style={{ width: RING_SIZE, height: RING_SIZE }}>
+                  <svg width={RING_SIZE} height={RING_SIZE} className="absolute inset-0">
+                    <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R}
+                      fill="none" strokeWidth={1.5}
+                      className={day.status === "none" ? "stroke-border/30" : "stroke-transparent"} />
+                    {day.status === "daily-complete" && (
+                      <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R}
+                        fill="none" strokeWidth={2} className="stroke-primary"
+                        strokeDasharray={`${RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
+                        transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`} />
+                    )}
+                    {day.status === "puzzle-played" && (
+                      <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R}
+                        fill="none" strokeWidth={2} className="stroke-primary/60"
+                        strokeDasharray={getRingDash(day.puzzleCount)}
+                        strokeLinecap="round"
+                        transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`} />
+                    )}
+                  </svg>
                   <span className={cn(
-                    "text-[10px] font-medium",
-                    day.status === "daily-complete" ? "text-primary-foreground" : "text-foreground/60",
-                    isToday && "font-bold text-primary",
+                    "text-[10px] font-medium z-10",
+                    isToday ? "font-bold text-primary" : "text-foreground/60",
                   )}>
                     {new Date(day.dateStr + "T12:00:00").getDate()}
                   </span>
-                  {day.status === "craft-only" && (
-                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-[3px] w-[3px] rounded-full bg-amber-500" />
-                  )}
                   {hasCraftDot(day) && (
-                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-[3px] w-[3px] rounded-full bg-amber-500" />
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-[3px] rounded-full bg-amber-500 z-10" />
                   )}
                 </div>
               </div>
@@ -175,24 +220,33 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }
           onClick={onUpgrade}
           className="w-full text-center text-[10px] text-muted-foreground/60 hover:text-primary transition-colors flex items-center justify-center gap-1"
         >
-          <Lock size={9} /> See 60 days with Puzzlecraft+
+          <Lock size={9} /> Full calendar with Puzzlecraft+
         </button>
       </div>
     );
   }
 
-  // ── PLUS: 60-day Sun–Sat grid ──
-  if (!calendarWeeks) return null;
+  // ── PLUS: Monthly ring-based grid ──
+  if (!monthGrid) return null;
 
-  const firstDate = new Date(calendarWeeks[0].days[0].dateStr + "T12:00:00");
-  const lastDate = new Date(calendarWeeks[calendarWeeks.length - 1].days[6].dateStr + "T12:00:00");
-  const monthLabel = firstDate.getMonth() === lastDate.getMonth()
-    ? firstDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })
-    : `${firstDate.toLocaleDateString("en-US", { month: "short" })} – ${lastDate.toLocaleDateString("en-US", { month: "short", year: "numeric" })}`;
+  const monthLabel = new Date(currentMonth.year, currentMonth.month).toLocaleDateString("en-US", {
+    month: "long", year: "numeric",
+  });
 
   return (
     <div className="space-y-2.5">
-      <p className="text-[10px] font-semibold text-foreground text-center">{monthLabel}</p>
+      {/* Month header + nav */}
+      <div className="flex items-center justify-between px-1">
+        <button onClick={() => goMonth(-1)} disabled={!canGoPrev}
+          className={cn("p-1 rounded-md transition-colors", canGoPrev ? "hover:bg-muted/40 text-foreground" : "text-muted-foreground/20 cursor-default")}>
+          <ChevronLeft size={14} />
+        </button>
+        <p className="text-[11px] font-semibold text-foreground">{monthLabel}</p>
+        <button onClick={() => goMonth(1)} disabled={!canGoNext}
+          className={cn("p-1 rounded-md transition-colors", canGoNext ? "hover:bg-muted/40 text-foreground" : "text-muted-foreground/20 cursor-default")}>
+          <ChevronRight size={14} />
+        </button>
+      </div>
 
       {/* DOW headers */}
       <div className="grid grid-cols-7 gap-0.5">
@@ -203,42 +257,68 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }
         ))}
       </div>
 
-      {/* Week rows */}
+      {/* Month grid rows */}
       <div className="space-y-0.5">
-        {calendarWeeks.map((week, wi) => (
-          <div key={wi} className="grid grid-cols-7 gap-0.5">
-            {week.days.map((day) => {
+        {monthGrid.rows.map((row, ri) => (
+          <div key={ri} className="grid grid-cols-7 gap-0.5">
+            {row.map((day, ci) => {
+              if (!day) return <div key={`e-${ri}-${ci}`} />;
+
               const isToday = day.dateStr === today;
               const isFuture = day.dateStr > today;
+              const isOutOfRange = day.dateStr < earliest;
               const isSelected = selectedDay?.dateStr === day.dateStr;
+              const dimmed = isFuture || isOutOfRange;
 
               return (
                 <button
                   key={day.dateStr}
-                  onClick={() => !isFuture && handleDayTap(day)}
-                  disabled={isFuture}
+                  onClick={() => !dimmed && handleDayTap(day)}
+                  disabled={dimmed}
                   className={cn(
                     "relative aspect-square flex items-center justify-center rounded-md transition-all duration-100",
-                    isFuture && "opacity-20 cursor-default",
+                    dimmed && "opacity-20 cursor-default",
                     isSelected && "ring-1 ring-primary ring-offset-1 ring-offset-background scale-105 z-10",
-                    !isFuture && !isSelected && "hover:bg-muted/30 active:scale-95",
-                    getCellStyle(day.status),
-                    day.status === "none" && !isFuture && "border border-border/20",
+                    !dimmed && !isSelected && "hover:bg-muted/30 active:scale-95",
                   )}
                 >
+                  <svg width={RING_SIZE} height={RING_SIZE} className="absolute inset-0 m-auto">
+                    {/* Base circle */}
+                    <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R}
+                      fill="none" strokeWidth={1}
+                      className={day.status === "none" && !dimmed ? "stroke-border/20" : "stroke-transparent"} />
+                    {/* Full ring — daily complete */}
+                    {day.status === "daily-complete" && (
+                      <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R}
+                        fill="none" strokeWidth={2} className="stroke-primary"
+                        strokeDasharray={`${RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
+                        transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`} />
+                    )}
+                    {/* Partial ring — puzzle played */}
+                    {day.status === "puzzle-played" && (
+                      <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R}
+                        fill="none" strokeWidth={2} className="stroke-primary/60"
+                        strokeDasharray={getRingDash(day.puzzleCount)}
+                        strokeLinecap="round"
+                        transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`} />
+                    )}
+                  </svg>
+                  {/* Day number */}
                   <span className={cn(
-                    "text-[9px] font-medium",
-                    day.status === "daily-complete" ? "text-primary-foreground" : "text-foreground/70",
-                    isFuture && "text-muted-foreground/30",
+                    "text-[9px] font-medium z-10",
+                    day.status === "daily-complete" ? "text-primary font-semibold" : "text-foreground/70",
+                    dimmed && "text-muted-foreground/30",
                     isToday && "font-bold text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.6)]",
                   )}>
                     {new Date(day.dateStr + "T12:00:00").getDate()}
                   </span>
-                  {(day.status === "craft-only" || hasCraftDot(day)) && (
-                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-[3px] w-[3px] rounded-full bg-amber-500" />
+                  {/* Craft accent dot */}
+                  {hasCraftDot(day) && !dimmed && (
+                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-[3px] w-[3px] rounded-full bg-amber-500 z-10" />
                   )}
+                  {/* Today glow dot */}
                   {isToday && day.status !== "daily-complete" && (
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-[2px] rounded-full bg-primary shadow-[0_0_4px_hsl(var(--primary)/0.7)]" />
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-[2px] rounded-full bg-primary shadow-[0_0_4px_hsl(var(--primary)/0.7)] z-10" />
                   )}
                 </button>
               );
@@ -249,16 +329,18 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }
 
       {/* Legend */}
       <div className="flex items-center justify-center gap-4 pt-1">
-        {([
-          ["Daily", "bg-primary/80"],
-          ["Solved", "bg-primary/15 border border-primary/30"],
-          ["Created", "bg-amber-500"],
-        ] as const).map(([label, color]) => (
-          <div key={label} className="flex items-center gap-1">
-            <span className={cn("rounded-full", label === "Created" ? "h-[5px] w-[5px]" : "h-[8px] w-[8px]", color)} />
-            <span className="text-[9px] text-muted-foreground/70">{label}</span>
-          </div>
-        ))}
+        <div className="flex items-center gap-1.5">
+          <svg width={10} height={10}><circle cx={5} cy={5} r={4} fill="none" strokeWidth={1.5} className="stroke-primary" /></svg>
+          <span className="text-[9px] text-muted-foreground/70">Daily</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <svg width={10} height={10}><circle cx={5} cy={5} r={4} fill="none" strokeWidth={1.5} className="stroke-primary/50" strokeDasharray="12 999" strokeLinecap="round" transform="rotate(-90 5 5)" /></svg>
+          <span className="text-[9px] text-muted-foreground/70">Solved</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="h-[5px] w-[5px] rounded-full bg-amber-500" />
+          <span className="text-[9px] text-muted-foreground/70">Created</span>
+        </div>
       </div>
 
       {/* Day detail panel */}
