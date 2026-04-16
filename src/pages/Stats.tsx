@@ -8,12 +8,12 @@ import Layout from "@/components/layout/Layout";
 import { getProgressStats } from "@/lib/progressTracker";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
-import { getDailyStreak, getTotalDailyCompleted } from "@/lib/dailyChallenge";
+import { getDailyStreak, getTotalDailyCompleted, getChallengeForDate } from "@/lib/dailyChallenge";
 import { getEndlessStats } from "@/lib/endlessHistory";
 import {
   Trophy, Flame, Clock, Target, Calendar,
   Infinity, ArrowRight, TrendingUp, TrendingDown, Shield,
-  Zap, Info, ChevronRight, Play, Crown,
+  Zap, Info, ChevronRight, Play, Crown, Lock, RotateCcw,
 } from "lucide-react";
 import { isNativeApp } from "@/lib/appMode";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -36,13 +36,16 @@ import { hasDemoData } from "@/lib/demoStats";
 import { ProvisionalRatingCard } from "@/components/puzzles/ProvisionalRatingCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ActivityCalendar } from "@/components/stats/ActivityCalendar";
 import { useViewAsUser } from "@/contexts/ViewAsUserContext";
 import {
   getProgressStatsFrom, getSolveRecordsFrom, getDailyStreakFrom,
-  getTotalDailyCompletedFrom, getEndlessStatsFrom, getPlayedDatesFrom,
-  getDailyCompletionFrom,
+  getTotalDailyCompletedFrom, getEndlessStatsFrom,
 } from "@/lib/viewAsOverrides";
+import {
+  getCalendarActivity, buildCalendarWeeks, DOW_LABELS,
+  localDateStr, type ActivityDay, type ActivityStatus,
+} from "@/lib/calendarActivity";
+import { hapticTap } from "@/lib/haptic";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
