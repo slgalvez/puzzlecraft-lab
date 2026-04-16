@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { recordCompletion } from "@/lib/progressTracker";
-import { recordDailyCompletion, getTodaysChallenge } from "@/lib/dailyChallenge";
+import { recordDailyCompletion, getChallengeForDate } from "@/lib/dailyChallenge";
 import { recordSolve, getSolveRecords, type TierUpEvent } from "@/lib/solveTracker";
 import { checkMilestones } from "@/lib/milestones";
 import { computePlayerRating, getSkillTier } from "@/lib/solveScoring";
@@ -138,10 +138,17 @@ export function usePuzzleTimer(puzzleKey: string, options?: TimerOptions) {
     if (options?.category && options?.difficulty) {
       recordCompletion(puzzleKey, options.category, options.difficulty, state.elapsed, assisted);
       if (isDailyChallenge) {
-        const challenge = getTodaysChallenge();
-        if (puzzleKey === `daily-${challenge.dateStr}-${challenge.category}-${challenge.difficulty}`) {
-          recordDailyCompletion(challenge.dateStr, state.elapsed, challenge.category, challenge.difficulty);
+        // Robust date parsing: extract YYYY-MM-DD from puzzleKey "daily-YYYY-MM-DD-..."
+        const parts = puzzleKey.split("-");
+        const parsedDate = parts.length >= 4 ? `${parts[1]}-${parts[2]}-${parts[3]}` : null;
+        const dateValid = parsedDate && /^\d{4}-\d{2}-\d{2}$/.test(parsedDate) && !isNaN(new Date(parsedDate + "T12:00:00").getTime());
+        if (dateValid && parsedDate) {
+          const challenge = getChallengeForDate(new Date(parsedDate + "T12:00:00"));
+          if (puzzleKey === `daily-${challenge.dateStr}-${challenge.category}-${challenge.difficulty}`) {
+            recordDailyCompletion(challenge.dateStr, state.elapsed, challenge.category, challenge.difficulty);
+          }
         }
+        // If parsing fails, skip daily recording — non-daily logic continues below
       }
 
       // Snapshot tier BEFORE recording
