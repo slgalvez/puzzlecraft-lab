@@ -86,31 +86,33 @@ function ctaEnding(url?: string): string | null {
  * Lines are in strict order: header, puzzle, PB/challenge, streak, rank, CTA.
  * Indices: 0=header, 1=puzzle, 2=PB/challenge, 3=streak, 4=rank, 5=CTA.
  * Drop order: rank(4) → streak(3) → shorten PB(2).
+ * CTA (index 5) is sacred — never dropped.
  */
 function trimToLimit(lines: (string | null)[]): string {
   const active = lines.filter((l): l is string => l != null);
   let text = active.join("\n");
   if (text.length <= CHAR_LIMIT) return text;
 
-  // Drop rank (index 4 in original, but we work with filtered array)
-  // Re-filter from original with rank removed
-  const withoutRank = [...lines];
-  withoutRank[4] = null;
-  let filtered = withoutRank.filter((l): l is string => l != null);
+  // Work on a mutable copy; CTA (index 5) is never a trim candidate
+  const work = [...lines];
+
+  // 1. Drop rank (index 4)
+  work[4] = null;
+  let filtered = work.filter((l): l is string => l != null);
   text = filtered.join("\n");
   if (text.length <= CHAR_LIMIT) return text;
 
-  // Drop streak (index 3)
-  withoutRank[3] = null;
-  filtered = withoutRank.filter((l): l is string => l != null);
+  // 2. Drop streak (index 3)
+  work[3] = null;
+  filtered = work.filter((l): l is string => l != null);
   text = filtered.join("\n");
   if (text.length <= CHAR_LIMIT) return text;
 
-  // Shorten PB line (index 2) to just "🏆 New PB!"
-  if (withoutRank[2] && withoutRank[2].startsWith("🏆")) {
-    withoutRank[2] = pbLineShort();
+  // 3. Shorten PB line (index 2) — never remove entirely
+  if (work[2] && work[2].startsWith("🏆")) {
+    work[2] = pbLineShort();
   }
-  filtered = withoutRank.filter((l): l is string => l != null);
+  filtered = work.filter((l): l is string => l != null);
   text = filtered.join("\n");
   return text;
 }
@@ -235,10 +237,14 @@ export function buildCraftShareText(p: CraftShareParams): string {
 
 /* ── Share execution ────────────────────────────────────────────────── */
 
-export async function executeShare(text: string): Promise<"shared" | "copied" | "error"> {
+export async function executeShare(
+  text: string,
+  shareUrl?: string,
+): Promise<"shared" | "copied" | "error"> {
   if (navigator.share) {
     try {
-      await navigator.share({ text });
+      const shareData: ShareData = shareUrl ? { text, url: shareUrl } : { text };
+      await navigator.share(shareData);
       return "shared";
     } catch (e: unknown) {
       if (e instanceof Error && e.name === "AbortError") return "error";
@@ -246,7 +252,7 @@ export async function executeShare(text: string): Promise<"shared" | "copied" | 
     }
   }
   try {
-    await navigator.clipboard.writeText(text);
+    await navigator.clipboard.writeText(shareUrl ?? text);
     return "copied";
   } catch {
     return "error";
