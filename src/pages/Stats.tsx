@@ -133,7 +133,7 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }
   };
 
   // ── FREE: 7-day flat row ──
-  if (!isPlus) {
+  if (!effectivePlus) {
     const days = Array.from(activityMap.values());
     return (
       <div className="space-y-3">
@@ -903,6 +903,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                     isPlus={isPlus}
                     dataVersion={dataVersion}
                     onUpgrade={() => setUpgradeOpen(true)}
+                    viewAsUser={isViewAs ? viewAsUser : null}
                   />
                 </div>
               </div>
