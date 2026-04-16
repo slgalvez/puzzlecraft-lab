@@ -34,6 +34,7 @@ import {
   buildCraftShareUrl,
 } from "@/lib/craftShare";
 import { buildCraftShareText as buildUnifiedCraftShareText } from "@/lib/shareText";
+import { executeShare } from "@/lib/shareUtils";
 import { CraftSharePreview } from "@/components/craft/CraftSharePreview";
 import {
   type CraftDraft,
@@ -463,15 +464,15 @@ const CraftPuzzle = () => {
       type: selectedType ?? undefined,
       creatorSolveTime,
     });
-    try {
-      await navigator.clipboard.writeText(fullText);
+    const result = await executeShare(fullText);
+    if (result === "copied" || result === "shared") {
       recordSent();
       setCopied(true);
       setShareSuccess(true);
-      toast({ title: "Puzzle link copied" });
+      if (result === "copied") toast({ title: "Puzzle link copied" });
       setTimeout(() => setCopied(false), 2000);
       setTimeout(() => setShareSuccess(false), 1500);
-    } catch {
+    } else {
       toast({ title: "Failed to copy link" });
     }
   };
@@ -488,30 +489,16 @@ const CraftPuzzle = () => {
       creatorSolveTime,
     });
 
-    if (navigator.share) {
-      try {
-        await navigator.share({ text: shareText });
-        recordSent();
-        setShareSuccess(true);
-        setTimeout(() => setShareSuccess(false), 1500);
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name !== "AbortError") {
-          console.warn("Share failed:", err.message);
-        }
-      }
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(shareText);
+    const result = await executeShare(shareText);
+    if (result === "shared" || result === "copied") {
       recordSent();
-      setCopied(true);
       setShareSuccess(true);
-      toast({ title: "Puzzle link copied" });
-      setTimeout(() => setCopied(false), 2000);
+      if (result === "copied") {
+        setCopied(true);
+        toast({ title: "Puzzle link copied" });
+        setTimeout(() => setCopied(false), 2000);
+      }
       setTimeout(() => setShareSuccess(false), 1500);
-    } catch {
-      toast({ title: "Failed to copy link" });
     }
   };
 
