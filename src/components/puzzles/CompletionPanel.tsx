@@ -19,6 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import { buildSolveShareText } from "@/lib/shareText";
+import { executeShare } from "@/lib/shareUtils";
 
 interface Props {
   time: number;
@@ -179,17 +180,20 @@ const CompletionPanel = ({
     const records = getSolveRecords();
     maybeRequestRating({ solveCount: records.length, isNewBest, streakLength: streak.current });
 
-    if (isNewBest) {
+    if (isNewBest || isDaily) {
       setShareOpen(true);
+    }
+    if (isNewBest) {
       const t2 = setTimeout(() => setShowConfetti(true), 400);
       return () => { cancelAnimationFrame(id); clearTimeout(t1); clearTimeout(t2); };
     }
     return () => { cancelAnimationFrame(id); clearTimeout(t1); };
-  }, [isNewBest, difficulty, assisted, checkAfterSolve, streak.current]);
+  }, [isNewBest, isDaily, difficulty, assisted, checkAfterSolve, streak.current]);
 
   const handleShare = async () => {
     if (!shareData) return;
     try {
+      // Try visual share card first (native only)
       await shareWithCard(shareData.text);
       if (!sharing) {
         setCopied(true);
@@ -197,7 +201,15 @@ const CompletionPanel = ({
         setTimeout(() => setCopied(false), 2000);
       }
     } catch {
-      setShareFailedFallback(true);
+      // Fallback to text share via executeShare
+      const result = await executeShare(shareData.text);
+      if (result === "copied") {
+        setCopied(true);
+        toast({ title: "Copied to clipboard" });
+        setTimeout(() => setCopied(false), 2000);
+      } else if (result === "error") {
+        setShareFailedFallback(true);
+      }
     }
   };
 
