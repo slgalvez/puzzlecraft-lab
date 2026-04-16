@@ -1,34 +1,91 @@
 
 
-# Fix Premium Upgrade Modal
+# Unified Share System — shareUtils as Single Source of Truth
 
-## Problem
-Two issues from previous edits:
+## Summary
+Create `src/lib/shareUtils.ts` as the single source of truth for all share text generation and execution. Reduce `shareText.ts` to a thin re-export wrapper. All formatting fragments live as internal helpers inside shareUtils — never duplicated across builders.
 
-1. **`UpgradeModalNextUI.tsx`** (the bottom-sheet shown in screenshot) — benefit sections have barely visible borders (`border-border/20`), icons are tiny (11px), category headers are too small (10px), and `space-y-8` creates excessive gaps making it feel sparse and disconnected.
+## Implementation Constraints
 
-2. **`src/components/premium/UpgradeModal.tsx`** — this old Dialog-based modal has hardcoded wrong prices (`$4.99`, `$2.99`, `Save 42%`) instead of using the centralized `pricing.ts` constants (`$2.99`/mo, `$19.99`/yr, `Save 44%`). Used by `QuickPlay.tsx` and `Stats.tsx`.
+### Helper safety
+- All internal helper functions (`diffLine`, `pbLine`, `streakLine`, `rankLine`, `challengeLine`, `ctaEnding`) return `null` when required data is missing
+- Builders collect lines into an array, filter out nulls, then join — no inline conditional string concatenation
 
-## Changes
+### Length constraint (280 char target)
+- After assembling all lines, if total length exceeds 280 characters, drop lines in this priority order:
+  1. `rankLine` (remove first)
+  2. `streakLine`
+  3. PB detail (shorten to e.g. "🏆 New PB!" — never remove entirely)
+- Trimming loop runs after assembly, before final join
 
-### 1. Fix `UpgradeModalNextUI.tsx` — tighten layout and improve visibility
+### Line order (strict, all builders)
+Every share text follows this exact structure — no reordering per context:
+1. Header/title
+2. Puzzle line (type · difficulty · time)
+3. PB or challenge line
+4. Streak line (if present)
+5. Rank line (if present)
+6. CTA
 
-- Reduce outer spacing from `space-y-8` to `space-y-5`
-- Benefit section borders: `border-border/20` → `border-border/40` for visibility
-- Benefit section padding: `py-2.5` → `py-3`
-- Category icons: `size={11}` → `size={13}`
-- Category header text: `text-[10px]` → `text-[11px]`
-- Benefit item text: `text-[13px]` → `text-sm`
+## Architecture
 
-### 2. Fix `src/components/premium/UpgradeModal.tsx` — use centralized pricing
+```text
+shareUtils.ts (NEW — single source of truth)
+├── Internal helpers (not exported, return null if data missing)
+│   ├── puzzleIcon(type)
+│   ├── puzzleLabel(type)
+│   ├── diffLine(difficulty, time)
+│   ├── pbLine(improvement, prev)
+│   ├── streakLine(count)
+│   ├── rankLine(rank, total)
+│   ├── ctaEnding(url)
+│   └── challengeLine(time)
+├── trimToLimit(lines, 280)        — drops rank → streak → shortens PB
+├── buildCompletionShareText()     — uses helpers, trimToLimit
+├── buildDailyShareText()          — uses helpers, trimToLimit
+├── buildCraftShareText()          — uses helpers, trimToLimit
+└── executeShare()                 — native share / clipboard, returns "shared"|"copied"|"error"
 
-- Import `MONTHLY_PRICE`, `ANNUAL_PRICE`, `ANNUAL_SAVING_PCT`, `ANNUAL_MONTHLY_EQUIV` from `@/lib/pricing`
-- Replace all hardcoded `$4.99`, `$2.99`, `Save 42%` with the pricing constants
-- Annual card: show `$19.99` with `$1.67/mo billed annually`
-- Monthly card: show `$2.99` per month
-- CTA button text: use pricing constants instead of hardcoded values
+shareText.ts (THIN WRAPPER — no formatting logic)
+├── re-exports with old signatures, maps params → shareUtils
+└── shareOrCopy → executeShare + toast handling
+```
 
-### Files modified
-- `src/components/account/UpgradeModalNextUI.tsx`
-- `src/components/premium/UpgradeModal.tsx`
+## File Changes
+
+### 1. CREATE `src/lib/shareUtils.ts`
+- Internal helpers all return `string | null`
+- `trimToLimit(lines: (string|null)[], limit = 280)` filters nulls, then drops rank → streak → shortens PB until under limit
+- Three builders compose helpers into ordered array: header, puzzle line, PB/challenge, streak, rank, CTA — then pass through `trimToLimit`
+- `executeShare(text)` — native share / clipboard fallback, returns `"shared" | "copied" | "error"`
+
+### 2. REWRITE `src/lib/shareText.ts` — thin wrapper
+- Remove all formatting logic
+- Map old signatures to shareUtils functions
+- `shareOrCopy` → calls `executeShare` + handles toast
+
+### 3. UPDATE `src/components/puzzles/CompletionPanel.tsx`
+- Import `executeShare` from shareUtils
+- Share becomes primary full-width CTA for PB and daily
+- Auto-expand share section for daily completions (not just PBs)
+- Button state cycles via executeShare return value
+
+### 4. UPDATE `src/pages/DailyPuzzle.tsx`
+- Banner share: `executeShare()` replaces `shareOrCopy`
+- Button state: "Share result" → "Copied"/"Shared"
+
+### 5. PATCH `src/pages/CraftPuzzle.tsx` (4 edits)
+- `handleCopyLink` / `handleShare`: use `executeShare`
+- Share container: `border-primary/20 bg-primary/5` tint
+- Copy-link text: `text-sm` with hover
+
+### 6. `src/components/craft/CraftSharePreview.tsx` — no changes needed (wrapper preserves signatures)
+
+### 7. `src/pages/AdminPreview.tsx` — verify wrapper compat, minimal updates if needed
+
+## What stays the same
+- `craftShare.ts` types and `buildSolveResultShareText` (used by SharedCraftPuzzle)
+- `useSolveShareCard` hook
+- All puzzle grids, milestone/tracking logic, backend
+- Visual theme of CompletionPanel — no redesign
 
