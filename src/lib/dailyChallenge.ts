@@ -154,3 +154,8 @@ export function getDailyStreak(): { current: number; longest: number } {
 export function getTotalDailyCompleted(): number {
   return Object.keys(getCompletions()).length;
 }
+
+/** Bulk-read all daily completions in a single localStorage access. */
+export function getAllDailyCompletions(): Record<string, DailyCompletion> {
+  return getCompletions();
+}
