@@ -14,7 +14,7 @@ import UpgradeModalNextUI from "@/components/account/UpgradeModalNextUI";
 
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import CraftThemePicker from "@/components/craft/CraftThemePicker";
-import { ActivityCalendar } from "@/components/stats/ActivityCalendar";
+
 import { WeeklyPackCard } from "@/components/ios/WeeklyPackCard";
 import { DailyLeaderboard } from "@/components/ios/DailyLeaderboard";
 import { StreakShieldBanner } from "@/components/ios/StreakShieldBanner";
