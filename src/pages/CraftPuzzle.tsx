@@ -514,12 +514,12 @@ const CraftPuzzle = () => {
                   {(selectedType === "word-fill" || selectedType === "word-search") && (
                     <div className="space-y-2">
                       <label className="text-xs font-medium text-muted-foreground">
-                        Your words (one per line or comma-separated)
+                        Your words (names, memories, inside jokes)
                       </label>
                       <Textarea
                         value={wordInput}
                         onChange={e => setWordInput(e.target.value)}
-                        placeholder={selectedType === "word-search" ? "NASHVILLE\nBIRTHDAY\nCHUCKY" : "VACATION\nBEACH\nSUMMER"}
+                        placeholder={"birthday\nnashville\nbeach\ntravel\nsummer"}
                         rows={5}
                         className="resize-none"
                       />
