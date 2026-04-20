@@ -237,22 +237,62 @@ export function buildCraftShareText(p: CraftShareParams): string {
 
 /* ── Share execution ────────────────────────────────────────────────── */
 
+/**
+ * Detect a mobile-capable environment for the SMS fallback tier.
+ * Uses UA string + UA-CH `userAgentData.mobile` when available.
+ */
+function isMobile(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  if (/Android|iPhone|iPad|iPod|Mobile/i.test(ua)) return true;
+  const uaData = (navigator as { userAgentData?: { mobile?: boolean } }).userAgentData;
+  return uaData?.mobile === true;
+}
+
+/**
+ * 3-tier share cascade:
+ *   1. navigator.share — native share sheet (text + url kept separate)
+ *   2. sms:?&body=     — opens Messages composer on mobile
+ *   3. clipboard       — desktop fallback with combined text\nurl
+ *
+ * AbortError from Tier 1 is terminal (user canceled) — no fallback fires.
+ */
 export async function executeShare(
   text: string,
   shareUrl?: string,
 ): Promise<"shared" | "copied" | "error"> {
-  if (navigator.share) {
+  // Combined string used by SMS and clipboard tiers (avoid double-append)
+  const fullText =
+    shareUrl && !text.includes(shareUrl) ? `${text}\n${shareUrl}` : text;
+
+  // Tier 1: native share sheet — keep text and url separate
+  if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
     try {
-      const shareData: ShareData = shareUrl ? { text, url: shareUrl } : { text };
-      await navigator.share(shareData);
+      const payload: ShareData = shareUrl ? { text, url: shareUrl } : { text };
+      await navigator.share(payload);
       return "shared";
     } catch (e: unknown) {
       if (e instanceof Error && e.name === "AbortError") return "error";
-      // Fall through to clipboard
+      // Fall through to Tier 2
     }
   }
+
+  // Tier 2: SMS composer on mobile (no native share available)
+  if (isMobile()) {
+    try {
+      const body = encodeURIComponent(fullText);
+      window.location.href = `sms:?&body=${body}`;
+      // Allow navigation to commit before resolving so callers don't flash UI
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      return "shared";
+    } catch {
+      // Fall through to Tier 3
+    }
+  }
+
+  // Tier 3: clipboard
   try {
-    await navigator.clipboard.writeText(shareUrl ?? text);
+    await navigator.clipboard.writeText(fullText);
     return "copied";
   } catch {
     return "error";
