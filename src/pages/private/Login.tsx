@@ -20,7 +20,7 @@ export default function LoginPage() {
 
   if (!hasPrivateAccessGrant()) {
     return (
-      <div className="private-app flex items-center justify-center min-h-screen">
+      <div className="private-app flex items-center justify-center min-h-[100dvh]">
         <p className="text-sm text-muted-foreground">Session unavailable</p>
       </div>);
 
@@ -28,7 +28,7 @@ export default function LoginPage() {
 
   if (loading) {
     return (
-      <div className="private-app flex items-center justify-center min-h-screen">
+      <div className="private-app flex items-center justify-center min-h-[100dvh]">
         <div className="text-sm text-muted-foreground">Loading...</div>
       </div>);
 
@@ -83,7 +83,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="private-app flex items-center justify-center min-h-screen px-4">
+    <div className="private-app flex items-center justify-center min-h-[100dvh] px-4">
       <div className="w-full max-w-sm space-y-8">
         {/* Icon + Title + Subtext */}
         <div className="text-center space-y-4">
