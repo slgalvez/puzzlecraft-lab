@@ -185,9 +185,10 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }
                 </span>
                 <div className="relative flex items-center justify-center" style={{ width: RING_SIZE, height: RING_SIZE }}>
                   <svg width={RING_SIZE} height={RING_SIZE} className="absolute inset-0">
+                    {/* Track */}
                     <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R}
                       fill="none" strokeWidth={1.5}
-                      className={day.status === "none" ? "stroke-border/30" : "stroke-transparent"} />
+                      className={day.status === "none" ? "stroke-border/30" : "stroke-primary/15"} />
                     {day.status === "daily-complete" && (
                       <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R}
                         fill="none" strokeWidth={2} className="stroke-primary"
@@ -196,7 +197,7 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }
                     )}
                     {day.status === "puzzle-played" && (
                       <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R}
-                        fill="none" strokeWidth={2} className="stroke-primary/60"
+                        fill="none" strokeWidth={2} className="stroke-primary/45"
                         strokeDasharray={getRingDash(day.puzzleCount)}
                         strokeLinecap="round"
                         transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`} />
@@ -283,21 +284,27 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }
                   )}
                 >
                   <svg width={RING_SIZE} height={RING_SIZE} className="absolute inset-0 m-auto">
-                    {/* Base circle */}
+                    {/* Track — softened primary so active rings read against it */}
                     <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R}
                       fill="none" strokeWidth={1}
-                      className={day.status === "none" && !dimmed ? "stroke-border/20" : "stroke-transparent"} />
-                    {/* Full ring — daily complete */}
+                      className={
+                        day.status === "none" && !dimmed
+                          ? "stroke-border/20"
+                          : day.status !== "none" && !dimmed
+                            ? "stroke-primary/15"
+                            : "stroke-transparent"
+                      } />
+                    {/* Full ring — daily complete (primary, opacity 1) */}
                     {day.status === "daily-complete" && (
                       <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R}
                         fill="none" strokeWidth={2} className="stroke-primary"
                         strokeDasharray={`${RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
                         transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`} />
                     )}
-                    {/* Partial ring — puzzle played */}
+                    {/* Partial ring — puzzle played (softened primary, opacity 0.45) */}
                     {day.status === "puzzle-played" && (
                       <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R}
-                        fill="none" strokeWidth={2} className="stroke-primary/60"
+                        fill="none" strokeWidth={2} className="stroke-primary/45"
                         strokeDasharray={getRingDash(day.puzzleCount)}
                         strokeLinecap="round"
                         transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`} />
@@ -334,7 +341,7 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }
           <span className="text-[9px] text-muted-foreground/70">Daily</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <svg width={10} height={10}><circle cx={5} cy={5} r={4} fill="none" strokeWidth={1.5} className="stroke-primary/50" strokeDasharray="12 999" strokeLinecap="round" transform="rotate(-90 5 5)" /></svg>
+          <svg width={10} height={10}><circle cx={5} cy={5} r={4} fill="none" strokeWidth={1.5} className="stroke-primary/45" strokeDasharray="12 999" strokeLinecap="round" transform="rotate(-90 5 5)" /></svg>
           <span className="text-[9px] text-muted-foreground/70">Solved</span>
         </div>
         <div className="flex items-center gap-1">
