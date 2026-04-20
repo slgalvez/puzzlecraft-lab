@@ -144,6 +144,63 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
     [effectivePlus, activityMap, currentMonth.year, currentMonth.month],
   );
 
+  /**
+   * Streak metadata for daily-complete days:
+   *  - segmentByDate: each daily-complete date maps to its run length and
+   *    whether it connects to the previous/next day in the same run.
+   *  - activeStreakEndDate: last day of the streak that includes today or
+   *    yesterday (the live streak the user is currently extending).
+   */
+  const streakInfo = useMemo(() => {
+    const dailyDates = Array.from(activityMap.values())
+      .filter((d) => d.status === "daily-complete")
+      .map((d) => d.dateStr)
+      .sort();
+
+    type Seg = { length: number; prev: boolean; next: boolean; runEndDate: string };
+    const segmentByDate = new Map<string, Seg>();
+
+    let runStart = 0;
+    for (let i = 0; i < dailyDates.length; i++) {
+      const isLast = i === dailyDates.length - 1;
+      const nextConsec = !isLast && (() => {
+        const a = new Date(dailyDates[i] + "T12:00:00");
+        const b = new Date(dailyDates[i + 1] + "T12:00:00");
+        return Math.round((b.getTime() - a.getTime()) / 86_400_000) === 1;
+      })();
+
+      if (!nextConsec) {
+        const runEndDate = dailyDates[i];
+        const length = i - runStart + 1;
+        for (let j = runStart; j <= i; j++) {
+          segmentByDate.set(dailyDates[j], {
+            length,
+            prev: j > runStart,
+            next: j < i,
+            runEndDate,
+          });
+        }
+        runStart = i + 1;
+      }
+    }
+
+    // Active streak = run whose last day is today or yesterday (length ≥ 2)
+    const todayKey = localDateStr(new Date());
+    const yest = new Date(); yest.setDate(yest.getDate() - 1);
+    const yestKey = localDateStr(yest);
+    let activeStreakEndDate: string | null = null;
+    let activeStreakLength = 0;
+    for (const seg of segmentByDate.values()) {
+      if ((seg.runEndDate === todayKey || seg.runEndDate === yestKey) && seg.length >= 2) {
+        activeStreakEndDate = seg.runEndDate;
+        activeStreakLength = seg.length;
+        break;
+      }
+    }
+
+    return { segmentByDate, activeStreakEndDate, activeStreakLength };
+  }, [activityMap]);
+
   if (!activityMap) return null;
 
   const today = localDateStr(new Date());
@@ -196,12 +253,22 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
         <div className="grid grid-cols-7 gap-1">
           {days.map((day) => {
             const isToday = day.dateStr === today;
+            const seg = streakInfo.segmentByDate.get(day.dateStr);
+            const isActiveStreakEnd = day.dateStr === streakInfo.activeStreakEndDate;
             return (
               <div key={day.dateStr} className="flex flex-col items-center gap-1">
                 <span className="text-[8px] text-muted-foreground/50 uppercase">
                   {DOW_LABELS[new Date(day.dateStr + "T12:00:00").getDay()]}
                 </span>
                 <div className="relative flex items-center justify-center" style={{ width: RING_SIZE, height: RING_SIZE }}>
+                  {/* Streak connector — left half */}
+                  {seg?.prev && (
+                    <span aria-hidden className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 h-[2px] w-1/2 bg-primary/30 rounded-full z-0" />
+                  )}
+                  {/* Streak connector — right half */}
+                  {seg?.next && (
+                    <span aria-hidden className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 h-[2px] w-1/2 bg-primary/30 rounded-full z-0" />
+                  )}
                   <svg width={RING_SIZE} height={RING_SIZE} className="absolute inset-0">
                     {/* Track */}
                     <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R}
@@ -230,11 +297,22 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
                   {hasCraftDot(day) && (
                     <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-[3px] rounded-full bg-amber-500 z-10" />
                   )}
+                  {/* Flame badge on active streak end */}
+                  {isActiveStreakEnd && (
+                    <span className="absolute -top-1 -right-1 z-20 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                      <Flame size={7} strokeWidth={2.5} />
+                    </span>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
+        {streakInfo.activeStreakLength >= 2 && (
+          <p className="text-center text-[10px] text-primary/80 font-medium flex items-center justify-center gap-1">
+            <Flame size={10} /> {streakInfo.activeStreakLength}-day daily streak
+          </p>
+        )}
         <button
           onClick={onUpgrade}
           className="w-full text-center text-[10px] text-muted-foreground/60 hover:text-primary transition-colors flex items-center justify-center gap-1"
@@ -295,6 +373,10 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
               const tooltipDate = new Date(day.dateStr + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
               const hasActivity = !!(dailyLabel || solvedLabel || craftLabel);
 
+              const seg = streakInfo.segmentByDate.get(day.dateStr);
+              const isActiveStreakEnd = day.dateStr === streakInfo.activeStreakEndDate;
+              const streakLabel = seg && seg.length >= 2 ? `Day ${seg.length} of streak` : null;
+
               const cellButton = (
                 <button
                   key={day.dateStr}
@@ -307,6 +389,14 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
                     !dimmed && !isSelected && "hover:bg-muted/30 active:scale-95",
                   )}
                 >
+                  {/* Streak connector — left half (extends through gap to prev cell) */}
+                  {seg?.prev && !dimmed && (
+                    <span aria-hidden className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 h-[2px] w-1/2 bg-primary/30 rounded-full z-0" />
+                  )}
+                  {/* Streak connector — right half */}
+                  {seg?.next && !dimmed && (
+                    <span aria-hidden className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 h-[2px] w-1/2 bg-primary/30 rounded-full z-0" />
+                  )}
                   <svg width={RING_SIZE} height={RING_SIZE} className="absolute inset-0 m-auto">
                     {/* Track — softened primary so active rings read against it */}
                     <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R}
@@ -351,6 +441,12 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
                   {isToday && day.status !== "daily-complete" && (
                     <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-[2px] rounded-full bg-primary shadow-[0_0_4px_hsl(var(--primary)/0.7)] z-10" />
                   )}
+                  {/* Active streak end — flame badge */}
+                  {isActiveStreakEnd && !dimmed && (
+                    <span className="absolute -top-0.5 -right-0.5 z-20 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                      <Flame size={7} strokeWidth={2.5} />
+                    </span>
+                  )}
                 </button>
               );
 
@@ -366,6 +462,11 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
                         {dailyLabel && <p>{dailyLabel}</p>}
                         {solvedLabel && <p>{solvedLabel}</p>}
                         {craftLabel && <p>{craftLabel}</p>}
+                        {streakLabel && (
+                          <p className="text-primary/80 flex items-center gap-1">
+                            <Flame size={9} /> {streakLabel}
+                          </p>
+                        )}
                       </div>
                     ) : (
                       <p className="mt-0.5 text-muted-foreground">No activity</p>
@@ -378,8 +479,8 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
         ))}
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center justify-center gap-4 pt-1">
+      {/* Legend + active streak */}
+      <div className="flex items-center justify-center gap-4 pt-1 flex-wrap">
         <div className="flex items-center gap-1.5">
           <svg width={10} height={10}><circle cx={5} cy={5} r={4} fill="none" strokeWidth={1.5} className="stroke-primary" /></svg>
           <span className="text-[9px] text-muted-foreground/70">Daily</span>
@@ -392,6 +493,12 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
           <span className="h-[5px] w-[5px] rounded-full bg-amber-500" />
           <span className="text-[9px] text-muted-foreground/70">Created</span>
         </div>
+        {streakInfo.activeStreakLength >= 2 && (
+          <div className="flex items-center gap-1 text-primary/90 font-medium">
+            <Flame size={10} />
+            <span className="text-[9px]">{streakInfo.activeStreakLength}-day streak</span>
+          </div>
+        )}
       </div>
 
       {/* Day detail panel */}
