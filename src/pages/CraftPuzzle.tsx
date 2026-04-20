@@ -594,7 +594,7 @@ const CraftPuzzle = () => {
                       <Palette className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-sm font-medium text-foreground">Personalize</span>
                       <span className="text-[11px] text-muted-foreground">
-                        title · reveal message · difficulty
+                        title · reveal message · theme · color · difficulty
                       </span>
                     </div>
                     {personalizationOpen
