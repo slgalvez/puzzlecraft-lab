@@ -1,135 +1,112 @@
 
 
-# Share Behavior Standardization — Native / SMS / Clipboard Cascade
+# Open iMessage automatically on macOS
 
-## Summary
+## Problem
 
-Upgrade `executeShare()` in `src/lib/shareUtils.ts` to a three-tier cascade. Native share gets clean separation of `text` and `url`; SMS and clipboard get a combined string. SMS path waits ~120ms before resolving so the navigation can commit.
+On a MacBook running Chrome / Firefox / Edge, `navigator.share` is undefined, so the cascade falls all the way through to clipboard. iMessage never opens. Only Safari on macOS gets Tier 1 (and even there the user must pick Messages from the share sheet).
 
-## The cascade
+The `sms:` URL scheme is handled by **Messages.app on macOS** the same way it is on iOS — but our Tier 2 check (`isMobile()`) excludes desktop, so we never try it.
+
+## Fix — extend Tier 2 to fire on macOS too
+
+Cascade becomes:
 
 ```text
 executeShare(text, shareUrl?)
-  ├─ Tier 1: navigator.share({ text, url? })   ← desktop Safari, iOS, Android, PWA
-  │     • text passed AS-IS (no URL appended)
-  │     • shareUrl passed separately as `url`
-  │     • AbortError → return "error" (terminal, no fallback)
-  │     • other throw / unsupported → fall to Tier 2
-  ├─ Tier 2: sms: deep link (mobile only)
-  │     • body = text + "\n" + shareUrl (if shareUrl not already in text)
-  │     • window.location.href = `sms:?&body=<encoded>`
-  │     • await ~120ms before returning "shared"
-  └─ Tier 3: navigator.clipboard.writeText(fullText)
-        • success → "copied"
-        • failure → "error"
+  ├─ Tier 1: navigator.share({ text, url? })          ← Safari macOS, iOS, Android, PWAs
+  ├─ Tier 2: sms:&body=… via hidden <a> click         ← any mobile OR macOS desktop
+  │     • macOS: opens Messages.app with body pre-filled
+  │     • mobile: opens Messages / iMessage composer
+  │     • awaits ~150ms before resolving "shared"
+  └─ Tier 3: navigator.clipboard.writeText(fullText)  ← Windows / Linux / unknown
 ```
 
-Mobile detection helper:
-```ts
-const isMobile = () =>
-  /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
-  (navigator as { userAgentData?: { mobile?: boolean } }).userAgentData?.mobile === true;
-```
+## Changes — `src/lib/shareUtils.ts`
 
-## Changes
-
-### 1. `src/lib/shareUtils.ts` — rewrite `executeShare`
+### 1. Add a macOS detector + a combined "Messages-capable" check
 
 ```ts
-function isMobile(): boolean {
+function isMacDesktop(): boolean {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent || "";
-  if (/Android|iPhone|iPad|iPod|Mobile/i.test(ua)) return true;
-  const uaData = (navigator as { userAgentData?: { mobile?: boolean } }).userAgentData;
-  return uaData?.mobile === true;
+  // Exclude iPadOS 13+ which also uses "Macintosh" but has touch
+  const touch = (navigator.maxTouchPoints ?? 0) > 1;
+  return /Macintosh/.test(ua) && !touch;
 }
 
-export async function executeShare(
-  text: string,
-  shareUrl?: string,
-): Promise<"shared" | "copied" | "error"> {
-  // Combined string for SMS/clipboard (avoid double-append if caller already inlined the URL)
-  const fullText =
-    shareUrl && !text.includes(shareUrl) ? `${text}\n${shareUrl}` : text;
+function canOpenMessagesApp(): boolean {
+  return isMobile() || isMacDesktop();
+}
+```
 
-  // Tier 1: native share sheet — keep text and url separate
-  if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-    try {
-      const payload: ShareData = shareUrl ? { text, url: shareUrl } : { text };
-      await navigator.share(payload);
-      return "shared";
-    } catch (e) {
-      if (e instanceof Error && e.name === "AbortError") return "error";
-      // fall through to Tier 2
-    }
-  }
+### 2. Replace `window.location.href = "sms:…"` with a hidden anchor click
 
-  // Tier 2: SMS composer on mobile
-  if (isMobile()) {
-    try {
-      const body = encodeURIComponent(fullText);
-      window.location.href = `sms:?&body=${body}`;
-      // Give the navigation a moment to commit before resolving
-      await new Promise((resolve) => setTimeout(resolve, 120));
-      return "shared";
-    } catch {
-      // fall through to Tier 3
-    }
-  }
+`location.href` assignment is sometimes blocked by Chrome's popup heuristics for non-user-gesture-bound protocol handlers, and it visibly navigates the page. A synthetic anchor click inside the original click handler is the standard pattern for `sms:` / `mailto:` / `tel:` and behaves identically across Safari/Chrome/Firefox on macOS:
 
-  // Tier 3: clipboard
+```ts
+function openSmsComposer(body: string): void {
+  const a = document.createElement("a");
+  a.href = `sms:?&body=${encodeURIComponent(body)}`;
+  // Keep it out of the layout but still clickable
+  a.style.position = "fixed";
+  a.style.opacity = "0";
+  a.style.pointerEvents = "none";
+  document.body.appendChild(a);
+  a.click();
+  // Clean up next tick
+  setTimeout(() => a.remove(), 0);
+}
+```
+
+### 3. Update Tier 2 in `executeShare`
+
+```ts
+// Tier 2: Messages composer on any device with a Messages app
+if (canOpenMessagesApp()) {
   try {
-    await navigator.clipboard.writeText(fullText);
-    return "copied";
+    openSmsComposer(fullText);
+    // Allow Messages.app / iOS Messages to surface before resolving
+    await new Promise((r) => setTimeout(r, 150));
+    return "shared";
   } catch {
-    return "error";
+    // fall through to Tier 3
   }
 }
 ```
 
-### 2. Admin Preview — no changes needed
-
-`QASharePreviews.tsx`, `AdminPreview.tsx`, and `PreviewModeContext.tsx` do not gate share. Once Tier 2/3 land, every preview button automatically gets the cascade.
-
-### 3. Callers — already routed through `executeShare`
-
-No further refactors. All callers from the previous standardization pass keep working unchanged.
-
-### 4. Memory update
-
-Append to `mem://features/share-system.md`:
-> `executeShare` is a 3-tier cascade: native share → `sms:?&body=` on mobile → clipboard.
-> - Native share keeps `text` and `url` separate (no URL inlined into text).
-> - SMS/clipboard use a combined `text\nurl` string.
-> - SMS path awaits ~120ms after assigning `location.href` before resolving.
-> - AbortError from native share is terminal — no fallback fires.
-> - Admin Preview uses the same pipeline; no preview-specific branch.
-
-## Edge cases
+## Behavior matrix after fix
 
 | Environment | Tier | Result |
 |---|---|---|
-| Desktop Chrome/Firefox | 3 | Clipboard with full `text\nurl` |
-| Desktop Safari (macOS 13+) | 1 | Native sheet, text + url separate |
-| iOS Safari / PWA | 1 | iOS share sheet (Messages, Mail, AirDrop) |
+| **Safari macOS** | 1 | Native share sheet (Messages, Mail, AirDrop) |
+| **Chrome / Firefox / Edge on macOS** | **2 (new)** | **Messages.app opens with body pre-filled** |
+| iOS Safari / PWA | 1 | iOS share sheet → user picks iMessage |
 | Android Chrome / PWA | 1 | Android share sheet |
-| Mobile webview without `navigator.share` | 2 | SMS composer pre-filled with `text\nurl` |
-| User cancels native sheet | 1 (AbortError) | Returns `"error"`, no fallback |
-| Admin Preview, any device | Same as above | Real share fires with mock text |
+| Mobile browser without `navigator.share` | 2 | SMS composer |
+| Windows / Linux desktop | 3 | Clipboard with `text\nurl` |
+| User cancels native sheet | 1 (AbortError) | `"error"`, no fallback |
+
+## First-time prompt
+
+The first time a Mac browser opens `sms:`, macOS asks: *"Do you want to allow this page to open 'Messages'?"* This is the standard, expected protocol-handler prompt. Once accepted (with "Always allow"), it never reappears for the same origin. We don't try to suppress it — that's the OS's job.
+
+## Memory update
+
+Append to `mem://features/share-system.md`:
+> Tier 2 (`sms:?&body=`) fires on **mobile OR macOS desktop** (`Macintosh` UA + no touch). On macOS this opens Messages.app with the body pre-filled. Implementation uses a hidden `<a>` click (not `location.href`) for protocol-handler compatibility across Chrome/Firefox/Edge on macOS. iPadOS 13+ is excluded from `isMacDesktop` via `maxTouchPoints > 1` so it still hits Tier 1 (native share).
 
 ## Out of scope
 
-- `useSolveShareCard.ts` and `MilestoneShareCard.tsx` (image-blob `navigator.share({ files })`, unchanged).
-- Toast strings/labels in callers.
-- Analytics on which tier fired.
-- URL shortening.
+- Windows/Linux desktop "open Messages-equivalent" (no equivalent universal protocol).
+- Preselecting a recipient (`sms:+1555…?&body=…`) — recipient is left blank so Messages opens to the contact picker.
+- Image/file sharing pathways (`MilestoneShareCard`, `useSolveShareCard`) — unchanged.
 
 ## Verification
 
-1. Desktop Chrome on `/admin-preview` → clipboard receives `text + "\n" + url`.
-2. iOS Safari → native sheet shows separate preview/url; iMessage shows nice link card.
-3. Android Chrome PWA → native sheet.
-4. Hypothetical mobile browser without `navigator.share` → SMS composer opens; caller's "shared" toast does not flash before navigation.
-5. User cancels native sheet → no fallback toast, no SMS opened.
-6. Admin Preview share buttons fire the real cascade.
+1. **Chrome on MacBook** at `/admin-preview` → click any Share Preview → Messages.app opens with body pre-filled (after one-time permission prompt).
+2. **Safari on MacBook** → still opens native share sheet (Tier 1 unchanged).
+3. **iOS Safari** → still opens iOS share sheet.
+4. **Windows Chrome** → still copies to clipboard.
+5. **iPad Safari** → still opens native share sheet (excluded from `isMacDesktop` via touch detection).
 
