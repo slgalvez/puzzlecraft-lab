@@ -1,120 +1,116 @@
 
 
-# Global Admin Preview / QA Mode — Refined
+# Mobile Web + PWA Compatibility Audit
 
 ## Summary
-Build a unified admin-only QA layer for inspecting all major Puzzlecraft states (calendars, messaging, shares, leaderboards, milestones) without real gameplay. Now with strict read isolation, inline preview labels, and a one-click reset.
+Surgical fixes for layout, tap targets, viewport-height behavior, sheets, and PWA standalone polish. No redesign — existing visual language preserved.
 
-## Architecture
+## The single biggest bug
 
-### 1. Preview Mode Provider — `src/contexts/PreviewModeContext.tsx` (new)
-Admin-gated context holding an in-memory preview profile. Never touches localStorage or DB.
-
-```ts
-type PreviewProfile = {
-  active: boolean;
-  isPlus: boolean;
-  scenario: "none" | "partial" | "full" | "daily-only" | "quickplay-only" | "craft-only" | "mixed";
-  completions: CompletionRecord[];
-  solves: SolveRecord[];
-  dailyData: Record<string, DailyCompletion>;
-  craftDates: string[];
-  friends: MockFriend[];
-};
+`src/App.css` still contains the stock Vite scaffold:
+```css
+#root { max-width: 1280px; margin: 0 auto; padding: 2rem; text-align: center; }
 ```
+This caps every page width and adds **32px global padding on mobile**, fighting Tailwind's `container`, creating phantom side-padding, and helping cause horizontal-scroll edge cases. The private app already overrides it via `body:has(.private-app) #root { max-width: none; padding: 0; ... }`, but the public app inherits the broken defaults. Fix: replace `App.css` with a minimal stylesheet (or delete its contents) so the Tailwind container fully controls layout.
 
-API: `enterPreview(scenario)`, `exitPreview()`, `togglePlus()`, `setScenario(s)`, **`resetPreview()`** (clears all injected data, sets scenario to `"none"`, keeps `active: true`).
+## Files to fix
 
-Sticky banner across top whenever active (matches `ViewAsUserContext` style):  
-`QA Preview · Plus · Mixed activity · [Reset] · [Exit]`
+### 1. `src/App.css` — REPLACE
+Strip Vite scaffold:
+```css
+#root { width: 100%; min-height: 100dvh; }
+```
+Remove `.logo`, `.card`, `.read-the-docs`, and the spin animation (unused).
 
-### 2. Mock data factory — `src/lib/previewFixtures.ts` (new)
-Deterministic seeded fixture builders:
-- `buildCalendarFixture(scenario)` → completions + dailyData + craftDates spanning current + last month
-- `buildFriendsFixture(variant)` → populated / tie / small / empty
-- `buildMessagingFixture()` → sent, received, challenge, reveal, completion, milestone bubbles
-- `buildMilestoneFixture(id)` → MilestoneToShow
+### 2. `index.html` — viewport meta
+Restore pinch-zoom (accessibility) while keeping safe-area + keyboard behavior:
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+```
+Remove `maximum-scale=1.0, user-scalable=no`. Puzzle grids that need to disable double-tap zoom already use `touch-action: manipulation` per-cell (verified in `index.css`).
 
-All records tagged `__preview: true`.
+### 3. `src/components/layout/Layout.tsx` — dvh + safe area
+Replace `min-h-screen` with `min-h-[100dvh]` so PWA standalone mode and mobile browser chrome don't push the footer below the fold or cause layout jumps when the URL bar collapses. Add `pb-[env(safe-area-inset-bottom)]` on the wrapper so the footer respects the home-indicator on installed PWA.
 
-### 3. Read isolation (strict)
-**Rule: when `preview.active`, components read EXCLUSIVELY from `previewProfile`. No merging.**
+### 4. `src/index.css` — global PWA polish
+Add (under existing PWA block):
+```css
+/* PWA standalone: dvh fallback for older Safari */
+@supports not (height: 100dvh) {
+  .min-h-dvh { min-height: 100vh; }
+}
 
-Affected sites:
-- **`src/pages/Stats.tsx`** — three mutually exclusive branches: `if (preview.active) → preview source` / `else if (isViewAs) → viewAs source` / `else → real localStorage source`. No fallback merging. When preview active, `isPlus` is forced from `preview.isPlus`, ignoring real entitlement.
-- **`InlineCalendar`** — same three-branch pattern; calendar data comes from one source only.
-- **`SocialTab` / friend leaderboard** — when preview active, render fixture rows only; Supabase queries are skipped entirely (not merged).
-- **Share & messaging previews in AdminPreview** — always pull from fixtures regardless, but get the inline label only when `preview.active`.
+/* Bounce-suppress only at the body level — already done for private app, extend to standalone main app */
+@media all and (display-mode: standalone) {
+  html, body { overscroll-behavior-y: none; }
+}
+```
+Keep `html, body { overflow-x: hidden; max-width: 100vw }` (already present and correct).
 
-Real-data hooks (`getProgressStats`, `getDailyStreak`, etc.) are not called at all when preview is active in those components.
+### 5. `src/components/layout/Header.tsx` — mobile menu polish
+- Mobile menu button is 36×36; bump to `p-2.5` (40×40) and add explicit `min-h-[44px] min-w-[44px]` for accessibility.
+- Mobile nav links: bump `py-2.5` → `py-3` to hit 44px.
+- Add `max-h-[calc(100dvh-4rem)] overflow-y-auto` to the open mobile nav so it scrolls on short screens (landscape phones).
+- Header already has `pwa-safe-top`. Confirm: it does.
 
-### 4. Inline preview labels
-Subtle "Preview Data" / "Mock State" pill rendered inside key components when `preview.active`:
-- **Calendar** (Stats page) — small `Preview Data` pill in the calendar card header, right-aligned, `text-[10px]` muted with subtle primary tint
-- **Friend leaderboard** (Social tab) — same pill in section header
-- **Messaging preview section** (AdminPreview) — pill above the bubble stack
-- **Share preview cards** (AdminPreview) — pill in the card header
+### 6. `src/components/account/UpgradeModal.tsx` — sheet sizing
+- Both bottom-sheets (Coming-Soon + Success) currently use no max-height in the Coming-Soon branch and `max-h-[92vh]` in the Stripe-not-configured branch. Switch to `max-h-[92dvh]` and ensure both have `overflow-y-auto`.
+- Close button (32×32) → 44×44: `h-11 w-11` and reposition `top-3 right-3`.
+- Add `tap-highlight-color: transparent` already global; nothing to change there.
 
-Label component: shared `<PreviewLabel />` in `src/components/admin/PreviewLabel.tsx` (new) — single source of truth for styling. Renders nothing when preview inactive.
+### 7. `src/components/puzzles/CompletionSheet.tsx` — dvh
+Change `max-h-[92vh]` → `max-h-[92dvh]`. Sheet already has `pb-[env(safe-area-inset-bottom)]`.
 
-Sticky top banner (always shown when active) is the global indicator; inline labels are component-level confirmation that what you're looking at is mock data — critical for screenshots and QA reports where the banner might be cropped.
+### 8. `src/pages/DailyPuzzle.tsx` — header wrap
+- Replace `flex items-center gap-4` for streak + completion chip with `flex flex-wrap items-center gap-3` so neither truncates on narrow widths.
+- Completion banner buttons (`Share`, `Play More`): wrap parent in `flex-wrap` + give buttons `min-h-[40px]`.
 
-### 5. Reset control
-- `resetPreview()` exposed via context
-- **In sticky banner**: "Reset" button between scenario name and Exit
-- **In QA Hub**: prominent "Reset Preview State" button at top of scenario switcher
-- Behavior: clears `completions`, `solves`, `dailyData`, `craftDates`, `friends`; sets `scenario: "none"`; keeps `active: true` and current `isPlus` toggle. Components immediately re-render to empty/baseline state without exiting preview.
+### 9. `src/pages/Stats.tsx` — small-screen polish
+- `TabsList` (`h-10`) is fine; tabs already `flex-1`.
+- Right-column calendar card on widths 768–860px gets cramped. Change `md:w-[320px] lg:w-[360px]` → `md:w-full lg:w-[360px]` so it stacks to full-width up to lg, then sticky sidebar at lg+. Preserves desktop behavior unchanged.
 
-### 6. Admin Preview Hub — `src/pages/AdminPreview.tsx` (extend)
-New "QA Mode" tab as first tab:
-- **Scenario switcher** (radio): None / Partial / Full / Daily-only / Quick-play-only / Craft-only / Mixed
-- **Plus toggle**
-- **Reset Preview State** button (with confirmation if non-default scenario active)
-- **Quick-jump buttons** (set scenario + navigate):
-  - Stats Calendar (Free) / (Plus) / Replay-eligible day / Daily complete / Quick-play-only / Craft-only / Empty
-- **Easy-complete simulators**: open existing `CompletionPanel`, `DailyPostSolve`, craft completion sheet, `MilestoneModal` with mock data — no DB writes
-- **Share previews** — all 5 builders side-by-side with copy-to-clipboard, each with `<PreviewLabel />`
-- **Messaging previews** — live `MessageBubble` instances with fixtures, with `<PreviewLabel />`
-- **Friend leaderboard previews** — 4 fixture variants (populated, tie, small, empty), each with `<PreviewLabel />`
+### 10. `src/components/social/SocialTab.tsx` — tap targets
+- Accept/decline circles in `PendingRequestsPanel` are 32×32 (`h-8 w-8`). Bump to `h-11 w-11` (44×44) for finger-safe taps.
+- `AddFriendsPanel` "Add" button is `h-8` — bump to `h-9` (36px) and add `px-3` (still tap-safe with the row padding).
 
-### 7. Discoverability
-- "QA Preview" entry card in `AdminAnalytics` linking to `/admin-preview`
-- Sticky preview banner includes "Open QA Hub" button
+### 11. `src/pages/Index.tsx` — hero stack
+Right-side daily challenge card has `mt-10 md:mt-14` while the left column has none. On mobile the right card is fine (it stacks below), but the spacing is a touch large on small phones. Reduce to `mt-6 md:mt-14`. No layout shift on desktop.
 
-### 8. Safety
-- Context state only — no localStorage, no DB writes
-- All preview records carry `__preview: true`
-- Provider is admin-gated (non-admins get noop context)
-- Auto-exits preview on logout / admin flag loss
-- Real-write functions (`recordSolve`, `recordDailyCompletion`, `upsert_leaderboard_entry`) never invoked from preview pathways
+### 12. `src/pages/CraftPuzzle.tsx` — limit indicator
+Two stacked `text-[10px]` / `text-[11px]` rows with `-mt-1 mb-0` create awkward overlap on small screens. Convert both into a single conditional row (limit OR at-limit, not both) and use `text-xs` consistently. Tap target on the `Unlimited with Plus` button → wrap in `<button>` with `min-h-[36px] px-2`.
 
-## Files
-
-| File | Action |
-|------|--------|
-| `src/contexts/PreviewModeContext.tsx` | new — provider, hook, sticky banner with Reset/Exit |
-| `src/lib/previewFixtures.ts` | new — deterministic fixture builders |
-| `src/components/admin/PreviewLabel.tsx` | new — shared inline "Preview Data" pill |
-| `src/App.tsx` | wrap `PublicRoutes` with `PreviewModeProvider` |
-| `src/pages/Stats.tsx` | strict 3-branch source selection (preview / viewAs / real); inline label in calendar header |
-| `src/pages/AdminPreview.tsx` | new "QA Mode" tab with scenario switcher, reset, quick-jumps, share/messaging/leaderboard preview sections (each labeled) |
-| `src/pages/AdminAnalytics.tsx` | QA Preview entry card |
-| `src/components/social/SocialTab.tsx` | preview branch with fixtures + inline label; skip Supabase entirely when active |
+### 13. Replace remaining `min-h-screen` with `min-h-[100dvh]`
+Files: `src/pages/NotFound.tsx`, `src/components/private/PrivateRoute.tsx`, `src/pages/private/Login.tsx` (3 occurrences). The private-app variant already targets `100dvh` in its container; these inner spinners can match.
 
 ## Constraints
 
 | Rule | Enforcement |
 |------|-------------|
-| Read isolation | Strict if/else branches — preview OR viewAs OR real, never merged |
-| Inline labels | `<PreviewLabel />` in calendar, leaderboard, messaging, share preview headers when active |
-| Reset | Clears injected data, scenario → `"none"`, stays in preview mode |
-| Persistence | None — context state only, session-scoped |
-| Real writes | Blocked from all preview pathways |
-| Admin gating | Non-admins cannot enter preview |
-| Visual indicator | Sticky top banner + per-component inline label (defense in depth for screenshots) |
+| Visual language | Unchanged — same colors, fonts, motion |
+| Desktop behavior | Preserved (sidebar columns reappear at `lg:`, container queries identical) |
+| Tap targets | All interactive controls ≥ 40px short-edge, primary actions ≥ 44px |
+| Viewport units | `dvh` everywhere a fixed-height container exists; `vh` fallback via `@supports not` |
+| Pinch-zoom | Re-enabled (accessibility); per-cell `touch-action: manipulation` keeps puzzle grids zoom-stable |
+| iOS-native specifics | Out of scope per request |
+| Horizontal scroll | Eliminated by removing `App.css` Vite defaults and keeping `body { overflow-x: hidden }` |
+| Sheets | All bottom sheets use `max-h-[92dvh]` + `pb-[env(safe-area-inset-bottom)]` + `overflow-y-auto` |
+
+## Verification checklist (post-implementation)
+
+1. No horizontal scrollbar on Home, Daily, Play, Library, Craft, Stats, Social at 360px width
+2. Footer reachable at bottom of every page on 360×640 mobile
+3. Mobile nav menu scrolls when open in landscape
+4. UpgradeModal close button + Stripe action buttons all ≥ 44px
+5. CompletionSheet doesn't clip when opened on a 360×640 screen with browser chrome
+6. Daily completion banner buttons wrap cleanly at 320px width
+7. Stats right column: full-width on mobile, sticky sidebar at lg+
+8. PWA standalone (`display-mode: standalone`): no overscroll bounce, footer sits above home-indicator, header below status bar
+9. Pinch-zoom works on text-heavy pages (Privacy, Terms, Help, About)
+10. SocialTab accept/decline circles are easy to tap on mobile
 
 ## Out of scope
-- Persisting preview state across reloads (intentionally session-only)
-- Mocking Stripe / push / call signaling
-- Replacing `ViewAsUserContext` (kept — different purpose: real user data)
+- iOS-native (Capacitor) tab bar, splash, notch — covered by existing `IOSTabBar` and `pwa-safe-top` rules
+- Adding a service worker / true offline support
+- Redesigning any existing layouts
+- Admin-only QA preview surfaces (unless reused in normal user UI)
 
