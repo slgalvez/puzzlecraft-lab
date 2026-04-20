@@ -196,7 +196,7 @@ function AddFriendsPanel({
                 {status === "sent"     && <span className="text-xs text-muted-foreground">Sent</span>}
                 {status === "received" && <span className="text-xs text-primary font-medium">Respond ↑</span>}
                 {status === "none" && (
-                  <Button size="sm" variant="outline" className="gap-1 h-8 shrink-0"
+                  <Button size="sm" variant="outline" className="gap-1 h-9 px-3 shrink-0"
                     onClick={() => handleSend(user.id, user.displayName)}
                     disabled={sendRequest.isPending}>
                     <UserPlus size={12} /> Add
@@ -241,14 +241,14 @@ function PendingRequestsPanel({ requests }: { requests: PendingRequest[] }) {
               <button onClick={async () => {
                 await declineRequest.mutateAsync(req.requestId);
                 toast({ title: "Request declined" });
-              }} className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-destructive hover:border-destructive/30 transition-colors">
-                <X size={14} />
+              }} aria-label="Decline" className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-destructive hover:border-destructive/30 transition-colors">
+                <X size={16} />
               </button>
               <button onClick={async () => {
                 await acceptRequest.mutateAsync(req.requestId);
                 toast({ title: `${req.sender.displayName} added!` });
-              }} className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <Check size={14} />
+              }} aria-label="Accept" className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <Check size={16} />
               </button>
             </div>
           </div>

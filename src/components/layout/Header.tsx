@@ -55,7 +55,7 @@ const Header = () => {
         <div className="ml-auto flex items-center gap-2 md:ml-2">
           <AccountHeaderButton />
           <button
-            className="inline-flex items-center justify-center rounded-md p-2 text-foreground md:hidden"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md p-2.5 text-foreground md:hidden"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
           >
@@ -66,14 +66,14 @@ const Header = () => {
 
       {/* Mobile nav */}
       {mobileOpen && (
-        <nav className="border-t bg-surface-elevated px-4 pt-2 pb-4 md:hidden">
+        <nav className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t bg-surface-elevated px-4 pt-2 pb-4 md:hidden">
           {navLinks.map((link) => (
             <Link
               key={link.to}
               to={link.to}
               onClick={() => setMobileOpen(false)}
               className={cn(
-                "block rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                "block rounded-md px-3 py-3 text-sm font-medium transition-colors",
                 isActive(link.to)
                   ? "bg-secondary text-foreground"
                   : "text-muted-foreground hover:text-foreground"

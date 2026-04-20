@@ -403,7 +403,7 @@ const Index = () => {
             </div>
 
             {/* Right: Daily challenge card */}
-            <div className="mt-10 md:mt-14">
+            <div className="mt-6 md:mt-14">
               <Link
                 to="/daily"
                 className={cn(

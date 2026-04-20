@@ -622,30 +622,31 @@ const CraftPuzzle = () => {
           setView(v);
         }} draftCount={draftCount} />
 
-        {/* Limit indicator — compact, non-intrusive */}
+        {/* Limit indicator — compact, single conditional row */}
         {!isPremium && view === "create" && (
-          <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground/50 -mt-1 mb-0">
-            <span>{limitStatus.remaining}/{limitStatus.limit} free</span>
-            <span>·</span>
-            <button
-              onClick={() => setUpgradeOpen(true)}
-              className="text-primary/70 hover:text-primary font-medium hover:underline transition-colors"
-            >
-              Unlimited with Plus
-            </button>
-          </div>
-        )}
-        {!isPremium && view === "create" && limitStatus.atLimit && (
-          <div className="flex items-center justify-center gap-2 text-[11px] text-destructive font-medium -mt-0.5 mb-1">
-            <span>Monthly limit reached</span>
-            <span>·</span>
-            <button
-              onClick={() => setUpgradeOpen(true)}
-              className="underline"
-            >
-              Upgrade to continue
-            </button>
-          </div>
+          limitStatus.atLimit ? (
+            <div className="mt-1 mb-2 flex flex-wrap items-center justify-center gap-2 text-xs text-destructive font-medium">
+              <span>Monthly limit reached</span>
+              <span aria-hidden>·</span>
+              <button
+                onClick={() => setUpgradeOpen(true)}
+                className="min-h-[36px] px-2 underline"
+              >
+                Upgrade to continue
+              </button>
+            </div>
+          ) : (
+            <div className="mt-1 mb-2 flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
+              <span>{limitStatus.remaining}/{limitStatus.limit} free this month</span>
+              <span aria-hidden>·</span>
+              <button
+                onClick={() => setUpgradeOpen(true)}
+                className="min-h-[36px] px-2 text-primary hover:text-primary/80 font-medium hover:underline transition-colors"
+              >
+                Unlimited with Plus
+              </button>
+            </div>
+          )
         )}
 
         {/* ─── Inbox View ─── */}

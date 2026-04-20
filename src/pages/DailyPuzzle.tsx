@@ -237,7 +237,7 @@ const DailyPuzzle = () => {
               </p>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3">
               {streak.current > 0 && (
                 <div className="flex items-center gap-1.5 text-sm">
                   <Flame size={16} className="text-primary" />
@@ -272,10 +272,11 @@ const DailyPuzzle = () => {
                 </p>
               </div>
             </div>
-            <div className="flex gap-2 flex-shrink-0">
+            <div className="flex flex-wrap gap-2 flex-shrink-0">
               <Button
                 variant="outline"
                 size="sm"
+                className="min-h-[40px]"
                 onClick={async () => {
                   const text = buildDailyShareText({
                     typeName: info.name,
@@ -294,7 +295,7 @@ const DailyPuzzle = () => {
                 Share
               </Button>
               {/* FIX: was /generate/${category} — now uses the correct quick-play route */}
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="outline" size="sm" className="min-h-[40px]">
                 <Link to={`/quick-play/${challenge.category}?mode=endless`}>
                   Play More {info.name} <ArrowRight size={14} />
                 </Link>
