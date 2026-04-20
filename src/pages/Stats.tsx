@@ -373,6 +373,10 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
               const tooltipDate = new Date(day.dateStr + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
               const hasActivity = !!(dailyLabel || solvedLabel || craftLabel);
 
+              const seg = streakInfo.segmentByDate.get(day.dateStr);
+              const isActiveStreakEnd = day.dateStr === streakInfo.activeStreakEndDate;
+              const streakLabel = seg && seg.length >= 2 ? `Day ${seg.length} of streak` : null;
+
               const cellButton = (
                 <button
                   key={day.dateStr}
@@ -385,6 +389,14 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
                     !dimmed && !isSelected && "hover:bg-muted/30 active:scale-95",
                   )}
                 >
+                  {/* Streak connector — left half (extends through gap to prev cell) */}
+                  {seg?.prev && !dimmed && (
+                    <span aria-hidden className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 h-[2px] w-1/2 bg-primary/30 rounded-full z-0" />
+                  )}
+                  {/* Streak connector — right half */}
+                  {seg?.next && !dimmed && (
+                    <span aria-hidden className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 h-[2px] w-1/2 bg-primary/30 rounded-full z-0" />
+                  )}
                   <svg width={RING_SIZE} height={RING_SIZE} className="absolute inset-0 m-auto">
                     {/* Track — softened primary so active rings read against it */}
                     <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R}
@@ -429,6 +441,12 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
                   {isToday && day.status !== "daily-complete" && (
                     <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-[2px] rounded-full bg-primary shadow-[0_0_4px_hsl(var(--primary)/0.7)] z-10" />
                   )}
+                  {/* Active streak end — flame badge */}
+                  {isActiveStreakEnd && !dimmed && (
+                    <span className="absolute -top-0.5 -right-0.5 z-20 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                      <Flame size={7} strokeWidth={2.5} />
+                    </span>
+                  )}
                 </button>
               );
 
@@ -444,6 +462,11 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
                         {dailyLabel && <p>{dailyLabel}</p>}
                         {solvedLabel && <p>{solvedLabel}</p>}
                         {craftLabel && <p>{craftLabel}</p>}
+                        {streakLabel && (
+                          <p className="text-primary/80 flex items-center gap-1">
+                            <Flame size={9} /> {streakLabel}
+                          </p>
+                        )}
                       </div>
                     ) : (
                       <p className="mt-0.5 text-muted-foreground">No activity</p>
