@@ -1,91 +1,49 @@
 
 
-# Calendar + Daily Replay Audit and Refactor
+# Calendar Ring Color Hierarchy + Date Parsing Safety
 
 ## Summary
-Refactor the Stats activity calendar to a monthly ring-based view, fix the replay recording bug in `usePuzzleTimer.ts` with robust key parsing, and enforce strict navigation/replay constraints including a today guard.
-
-## Replay Audit Findings
-
-**Working correctly:**
-- `/daily?date=YYYY-MM-DD` loads the correct historical puzzle deterministically
-- `writeDailyScore` in `DailyPuzzle.tsx` writes to the correct past `date_str` in DB
-- Plus gating enforced in `handleReplay` — line 130 checks `isViewAs`, `isPlus`, and `day.dateStr === today`
-- Today's daily flow is unaffected by replays
-
-**Bug — `usePuzzleTimer.ts` line 141:**
-Calls `getTodaysChallenge()` (always today), so replay keys like `daily-2026-04-10-sudoku-medium` never match. `recordDailyCompletion` is silently skipped for past dates. DB score IS saved, but localStorage daily history misses replays.
+Restore color-based visual hierarchy in the Stats calendar rings (daily = primary, solved = softened primary, craft = amber dot) and enforce safe local-midday date parsing for replay resolution. No layout changes.
 
 ## Files
 
-### 1. `src/hooks/usePuzzleTimer.ts` — Replay recording fix
-- When `puzzleKey` starts with `daily-`, extract the `YYYY-MM-DD` segment (indices 1–3 after splitting on `-`)
-- **Validate** the parsed date: check it produces a valid `Date` object and matches `YYYY-MM-DD` format. If parsing fails, skip daily recording entirely and fall through to the existing non-daily logic
-- Call `getChallengeForDate(new Date(parsedDateStr + "T12:00:00"))` to resolve the expected challenge — same deterministic logic used by `DailyPuzzle.tsx`
-- Compare `puzzleKey` against the resolved challenge key, not today's
-- Call `recordDailyCompletion(parsedDateStr, ...)` with the correct historical date
+### 1. `src/pages/Stats.tsx` — Ring color refinement
+In the SVG cell renderer (`InlineCalendar`'s day cell):
 
-### 2. `src/lib/calendarActivity.ts` — Monthly grid builder
-- **Replace** `buildCalendarWeeks(map, days)` with `buildMonthGrid(map, year, month): MonthGrid`
-- `MonthGrid = { year, month, rows: (ActivityDay | null)[][] }` — rows of 7 cells, leading/trailing nulls for Sun–Sat alignment
-- **Add** helper `getReplayBounds(isPlus): { earliest: string }` — returns the earliest date in the supported 60-day window
-- Keep `getCalendarActivity`, `getCalendarActivityFrom`, `localDateStr`, all types unchanged
-- Remove `CalendarWeek` type
+- **`daily-complete`**: Full 360° ring, `stroke="hsl(var(--primary))"`, `stroke-width="2"`, `opacity="1"` — strongest visual
+- **`puzzle-played`**: Partial ring, same `hsl(var(--primary))` stroke but with `opacity="0.45"` (softened/desaturated effect using opacity, no new color tokens)
+  - Keep existing 12% floor / 75% (270°) cap on `stroke-dasharray`
+  - Stroke weight stays at 2px to keep aesthetic consistent
+- **`craft-only`**: No ring, existing small amber dot only — unchanged
+- **Craft + higher status**: Amber dot preserved alongside the ring — unchanged
+- **`none`**: No ring, subtle border — unchanged
+- Today indicator and selected highlight states — unchanged
 
-### 3. `src/pages/Stats.tsx` — Monthly ring-based calendar
+Contrast adjustment:
+- Background "track" circle (rendered behind activity ring for cells with any ring) gets `opacity="0.15"` so the active ring reads more clearly against it
+- No changes to cell size, spacing, grid columns, or month nav layout
 
-**Month navigation state:**
-- `{ year, month }` defaulting to current month
-- Prev/next month chevron buttons
-- **Plus users**: nav bounded to months intersecting the 60-day window — disable prev if the prior month has zero days in range; disable next if already at current month
-- **Free users**: locked to current month, nav buttons hidden
+### 2. `src/hooks/usePuzzleTimer.ts` — Verify midday parsing
+Already implemented per prior plan — confirm `getChallengeForDate(new Date(parsedDate + "T12:00:00"))` is in place. No changes needed if already present.
 
-**Monthly grid:**
-- Single month at a time with month/year header
-- Sun–Sat column headers
-- Leading/trailing empty cells via `buildMonthGrid` nulls
+### 3. `src/pages/DailyPuzzle.tsx` — Replay date parsing safety
+Audit the `dateOverride` consumption path:
+- Wherever `dateOverride` (the URL `?date=` param) is converted to a `Date` for `getTodaysChallenge` / `getChallengeForDate` resolution, ensure it uses `new Date(dateOverride + "T12:00:00")` — never bare `new Date(dateOverride)` (which parses as UTC midnight and can shift one day in negative-offset timezones)
+- Apply the same midday convention to the today-normalization guard
 
-**Ring-based cells (SVG, replacing filled squares):**
-- Each cell: ~28×28 SVG with a background circle, optional activity ring, centered day number
-- `daily-complete` → full ring (360°), 2px solid primary stroke — strongest visual
-- `puzzle-played` → partial ring via `stroke-dasharray`, proportional to puzzle count:
-  - Minimum visible threshold: ~10–15% (~36–54° arc) so even 1 solve is perceptible
-  - Capped at ~270° (75%) so partial ring never equals a full daily ring
-- `craft-only` → no ring, small amber accent dot only
-- Craft + higher status → accent dot preserved alongside the ring
-- `none` → no ring, subtle border
-- Today → inner glow dot
-- Selected → scale + ring-offset highlight
-
-**Day detail panel:** Unchanged content (date, daily result, quick-play count, craft count)
-
-**Replay CTA rules:**
-- Shown only when: Plus user AND selected day is strictly in the past AND that date has a daily completion
-- **Today guard (logic + UI)**: In `handleReplay`, block navigation if `day.dateStr === today`. In `DayDetail`, hide Replay button for today. This is defense-in-depth — even if someone constructs a direct URL, the existing `DailyPuzzle.tsx` already handles today correctly via `getTodaysChallenge()`, but the Stats UI will never suggest it.
-
-**View-as mode:** Unchanged — uses `getCalendarActivityFrom`, 60-day grid, no replay CTA
-
-### 4. `src/pages/DailyPuzzle.tsx` — Today guard (programmatic)
-- Add a check: if `dateOverride` equals today's date string, clear it (treat as normal daily). This prevents `/daily?date=2026-04-16` from being treated as a "replay" when it's actually today.
-
-### 5. Cleanup
-- Remove `buildCalendarWeeks`, `CalendarWeek` exports from `calendarActivity.ts`
-- Remove old 60-day rolling grid code, `getCellStyle` function from Stats
-- Remove dead month-range label logic
+### 4. `src/lib/calendarActivity.ts` — Audit only
+- `localDateStr` already uses local components (no UTC) — no change
+- No date construction from string happens here (dates come from `Date` objects already)
 
 ## Constraints Summary
 
 | Rule | Enforcement |
 |------|-------------|
-| PuzzleKey parsing | Validate YYYY-MM-DD segment; fall back to non-daily on failure |
-| Replay recording | Resolve via `getChallengeForDate`, never compare against today |
-| Ring min/max | 10–15% floor, 270° cap; daily = full 360° only |
-| Today guard (UI) | Hide Replay CTA when `isToday` |
-| Today guard (logic) | `handleReplay` blocks navigation for today; `DailyPuzzle.tsx` normalizes today's date param |
-| Month nav (Plus) | Disable into months with zero days in 60-day window |
-| Month nav (Free) | Locked to current month |
-| Visual hierarchy | daily (full ring) > puzzle (partial ring) > craft (amber dot only) |
-| Performance | Memoized aggregation, no per-cell reads |
-| Date normalization | All keys via `localDateStr()` in local time |
-| Missing days | Pre-filled `{ status: 'none' }`, deterministic rendering |
+| Daily ring | Full 360°, primary color, opacity 1 |
+| Solved ring | Partial (12%–75%), primary color, opacity 0.45 |
+| Craft | Amber dot only, no ring |
+| Color palette | Primary + softened primary (via opacity) + amber — no new tokens |
+| Date parsing | Always `+ "T12:00:00"` for YYYY-MM-DD → Date |
+| Layout | Unchanged — no spacing, grid, or sizing edits |
+| Ring caps | 12% floor, 270° cap preserved |
 
