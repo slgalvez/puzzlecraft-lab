@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useMemo } from "react";
-import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Share2 } from "lucide-react";
+import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ShareButton } from "@/components/ui/ShareButton";
 import { cn } from "@/lib/utils";
 import { hapticSuccess } from "@/lib/haptic";
 import type { MilestoneIcon } from "@/lib/milestones";
@@ -220,23 +221,19 @@ const MilestoneModal = ({ milestones, onDismiss }: Props) => {
           {/* Actions */}
           <div className="mt-6 space-y-2 ms-action">
             <div className="flex gap-2">
-              <button
-                onClick={() => generateAndShare({
+              <ShareButton
+                variant="outline"
+                label="Share"
+                busy={sharing}
+                iconSize={15}
+                onShare={() => generateAndShare({
                   id: current.id,
                   label: current.label,
                   description: getFlavorText(current.icon),
                   icon: current.icon,
                 })}
-                disabled={sharing}
-                className={cn(
-                  "flex items-center gap-2 rounded-2xl border border-border px-4 py-3",
-                  "text-sm font-medium text-foreground transition-all active:scale-[0.97]",
-                  sharing && "opacity-50 cursor-not-allowed"
-                )}
-              >
-                <Share2 size={15} />
-                {sharing ? "..." : "Share"}
-              </button>
+                className="rounded-2xl px-4 py-3 h-auto active:scale-[0.97] transition-transform"
+              />
 
               <Button
                 size="lg"

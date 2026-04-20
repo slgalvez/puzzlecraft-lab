@@ -16,10 +16,12 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
-  ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share, Copy,
+  ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Copy,
   Check, Loader2, Save, Trophy, AlertCircle, Inbox,
   Type, Paintbrush, Settings, Heart, ChevronRight,
 } from "lucide-react";
+import { ShareButton } from "@/components/ui/ShareButton";
+import { executeShare } from "@/lib/shareUtils";
 
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { usePremiumAccess } from "@/lib/premiumAccess";
@@ -382,18 +384,19 @@ export default function CraftPreviewPage() {
     if (limitReached) { setUpgradeOpen(true); return; }
     if (!shareUrl || !generatedData || !selectedType) return;
     const shareText = buildCraftShareText(puzzleTitle.trim() || undefined, puzzleFrom.trim() || undefined, shareUrl, selectedType ?? undefined, creatorSolveTime);
-    if (navigator.share) {
-      try { await navigator.share({ text: shareText }); recordSent(); setShareSuccess(true); setTimeout(() => setShareSuccess(false), 1500); }
-      catch (err: unknown) { if (err instanceof Error && err.name !== "AbortError") console.warn("Share failed:", err.message); }
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(shareText);
-      recordSent(); setCopied(true); setShareSuccess(true);
-      toast({ title: "Puzzle link copied" });
-      setTimeout(() => setCopied(false), 2000);
+    const result = await executeShare(shareText);
+    if (result === "shared" || result === "copied") {
+      recordSent();
+      setShareSuccess(true);
+      if (result === "copied") {
+        setCopied(true);
+        toast({ title: "Puzzle link copied" });
+        setTimeout(() => setCopied(false), 2000);
+      }
       setTimeout(() => setShareSuccess(false), 1500);
-    } catch { toast({ title: "Failed to copy link" }); }
+    } else {
+      toast({ title: "Failed to copy link" });
+    }
   };
 
   const handleStartOver = () => {
@@ -755,7 +758,7 @@ export default function CraftPreviewPage() {
                         </div>
                       </div>
                     )}
-                    <Button onClick={handleShare} className="w-full gap-2"><Share className="h-4 w-4" /> Send Puzzle</Button>
+                    <ShareButton onShare={handleShare} label="Send Puzzle" iconSize={16} className="w-full" />
                     <button onClick={handleCopyLink} className="w-full flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors py-1.5">
                       {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                       {copied ? "Copied!" : "or copy link"}

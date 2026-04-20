@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share, Copy, Check, Loader2, Save, Trophy, AlertCircle, Palette } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Copy, Check, Loader2, Save, Trophy, AlertCircle, Palette } from "lucide-react";
+import { ShareButton } from "@/components/ui/ShareButton";
 
 
 import { usePremiumAccess } from "@/lib/premiumAccess";
@@ -1017,9 +1018,12 @@ const CraftPuzzle = () => {
                     </div>
                   )}
 
-                  <Button onClick={handleShare} className="w-full gap-2">
-                    <Share className="h-4 w-4" /> Send Puzzle
-                  </Button>
+                  <ShareButton
+                    onShare={handleShare}
+                    label="Send Puzzle"
+                    iconSize={16}
+                    className="w-full"
+                  />
                   <button
                     onClick={handleCopyLink}
                     className="w-full flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors py-1.5"

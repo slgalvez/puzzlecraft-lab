@@ -6,6 +6,7 @@
 import { useMemo, useState } from "react";
 import { Share2, Copy, Check, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ShareButton } from "@/components/ui/ShareButton";
 import { PreviewLabel } from "@/components/admin/PreviewLabel";
 import { cn } from "@/lib/utils";
 import {
@@ -95,10 +96,14 @@ export default function QASharePreviews({ onSendToMessages }: Props) {
                   onClick={() => handleCopy(v.id, text)}>
                   {copied ? <Check size={10} /> : <Copy size={10} />} {copied ? "Copied" : "Copy"}
                 </Button>
-                <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px] gap-1 flex-1"
-                  onClick={() => handleShare(text)}>
-                  <Share2 size={10} /> Share
-                </Button>
+                <ShareButton
+                  variant="ghost"
+                  size="sm"
+                  label="Share"
+                  iconSize={12}
+                  onShare={() => handleShare(text)}
+                  className="h-7 px-2 text-[10px] flex-1"
+                />
                 {onSendToMessages && (
                   <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px] gap-1 flex-1"
                     onClick={() => onSendToMessages(text)}

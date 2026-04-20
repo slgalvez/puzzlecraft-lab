@@ -2,7 +2,9 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, Trophy, Clock, Share, CheckCheck, RefreshCw, Palette } from "lucide-react";
+import { ArrowLeft, Loader2, Trophy, Clock, RefreshCw, Palette } from "lucide-react";
+import { ShareButton } from "@/components/ui/ShareButton";
+import { executeShare } from "@/lib/shareUtils";
 import { supabase } from "@/integrations/supabase/client";
 import {
   GridSolver,
@@ -235,19 +237,12 @@ const SharedCraftPuzzle = () => {
       id ? `${window.location.origin}/s/${id}` : undefined
     );
 
-    if (navigator.share) {
-      try {
-        await navigator.share({ text });
-        return;
-      } catch { /* fall through to clipboard */ }
-    }
-
-    try {
-      await navigator.clipboard.writeText(text);
+    const result = await executeShare(text);
+    if (result === "copied") {
       setCopied(true);
       toast({ title: "Result copied!" });
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } else if (result === "error") {
       toast({ title: "Failed to copy", variant: "destructive" });
     }
   }, [payload, creatorSolveTime, id, toast]);
@@ -577,13 +572,13 @@ const SharedCraftPuzzle = () => {
                 {/* Action buttons */}
                 <div className="space-y-2.5">
                   {/* Share result */}
-                  <Button
-                    onClick={handleShareResult}
-                    className="w-full gap-2 rounded-xl h-12 font-semibold active:scale-[0.97] transition-transform"
-                  >
-                    {copied ? <CheckCheck size={16} /> : <Share size={16} />}
-                    {copied ? "Copied!" : "Share Your Result"}
-                  </Button>
+                  <ShareButton
+                    onShare={handleShareResult}
+                    label={copied ? "Copied!" : "Share Your Result"}
+                    copied={copied}
+                    iconSize={16}
+                    className="w-full rounded-xl h-12 font-semibold active:scale-[0.97] transition-transform"
+                  />
 
                   {/* Send one back */}
                   <Button

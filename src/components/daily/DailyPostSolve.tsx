@@ -9,9 +9,11 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  Trophy, Flame, Clock, Share, ArrowRight,
+  Trophy, Flame, Clock, ArrowRight,
   CheckCircle2, BarChart3, Users, Star,
 } from "lucide-react";
+import { ShareButton } from "@/components/ui/ShareButton";
+import { executeShare } from "@/lib/shareUtils";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { supabase } from "@/integrations/supabase/client";
@@ -195,13 +197,10 @@ export default function DailyPostSolve({
       `${window.location.origin}/daily`,
     ].filter((l, i) => l !== "" || i === 4).join("\n");
 
-    if (navigator.share) {
-      try { await navigator.share({ text }); return; } catch {}
-    }
-    try {
-      await navigator.clipboard.writeText(text);
+    const result = await executeShare(text);
+    if (result === "copied") {
       toast({ title: "Copied to clipboard!" });
-    } catch {
+    } else if (result === "error") {
       toast({ title: "Couldn't copy", variant: "destructive" });
     }
   }, [rank, percentile, streakCount, displayDate, info.name, difficulty, solveTime, toast]);
@@ -303,10 +302,13 @@ export default function DailyPostSolve({
 
           {/* CTA row */}
           <div className="flex flex-wrap items-center gap-2 mb-5">
-            <Button onClick={handleShare} variant="outline" size="sm" className="gap-1.5">
-              <Share size={13} />
-              Share result
-            </Button>
+            <ShareButton
+              onShare={handleShare}
+              variant="outline"
+              size="sm"
+              label="Share result"
+              iconSize={13}
+            />
             <Button asChild variant="outline" size="sm" className="gap-1.5">
               <Link to={`/puzzles`}>
                 Play more <ArrowRight size={13} />
