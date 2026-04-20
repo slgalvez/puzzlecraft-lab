@@ -253,12 +253,22 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
         <div className="grid grid-cols-7 gap-1">
           {days.map((day) => {
             const isToday = day.dateStr === today;
+            const seg = streakInfo.segmentByDate.get(day.dateStr);
+            const isActiveStreakEnd = day.dateStr === streakInfo.activeStreakEndDate;
             return (
               <div key={day.dateStr} className="flex flex-col items-center gap-1">
                 <span className="text-[8px] text-muted-foreground/50 uppercase">
                   {DOW_LABELS[new Date(day.dateStr + "T12:00:00").getDay()]}
                 </span>
                 <div className="relative flex items-center justify-center" style={{ width: RING_SIZE, height: RING_SIZE }}>
+                  {/* Streak connector — left half */}
+                  {seg?.prev && (
+                    <span aria-hidden className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 h-[2px] w-1/2 bg-primary/30 rounded-full z-0" />
+                  )}
+                  {/* Streak connector — right half */}
+                  {seg?.next && (
+                    <span aria-hidden className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 h-[2px] w-1/2 bg-primary/30 rounded-full z-0" />
+                  )}
                   <svg width={RING_SIZE} height={RING_SIZE} className="absolute inset-0">
                     {/* Track */}
                     <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R}
@@ -287,11 +297,22 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
                   {hasCraftDot(day) && (
                     <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[3px] w-[3px] rounded-full bg-amber-500 z-10" />
                   )}
+                  {/* Flame badge on active streak end */}
+                  {isActiveStreakEnd && (
+                    <span className="absolute -top-1 -right-1 z-20 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                      <Flame size={7} strokeWidth={2.5} />
+                    </span>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
+        {streakInfo.activeStreakLength >= 2 && (
+          <p className="text-center text-[10px] text-primary/80 font-medium flex items-center justify-center gap-1">
+            <Flame size={10} /> {streakInfo.activeStreakLength}-day daily streak
+          </p>
+        )}
         <button
           onClick={onUpgrade}
           className="w-full text-center text-[10px] text-muted-foreground/60 hover:text-primary transition-colors flex items-center justify-center gap-1"
