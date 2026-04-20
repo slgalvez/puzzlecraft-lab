@@ -267,7 +267,7 @@ const CraftPuzzle = () => {
     } finally {
       setSaving(false);
     }
-  }, [selectedType, buildPuzzleData, revealMessage, puzzleTitle, puzzleFrom, craftSettings, selectedTheme, toast]);
+  }, [selectedType, buildPuzzleData, revealMessage, puzzleTitle, puzzleFrom, craftSettings, selectedTheme, attachPaletteToPayload, toast]);
 
   const handleRegenerate = useCallback(async () => {
     if (!selectedType) return;
