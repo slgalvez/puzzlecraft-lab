@@ -177,6 +177,9 @@ export default function AdminAnalytics() {
             <p className="text-sm text-muted-foreground mt-0.5">Admin only — not visible to users</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button asChild variant="outline" size="sm" className="gap-1.5">
+              <Link to="/admin-preview"><Eye size={13} /> QA Preview</Link>
+            </Button>
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => downloadCSV(filtered)} disabled={loading || filtered.length === 0}>
               <Download size={13} /> Export CSV
             </Button>

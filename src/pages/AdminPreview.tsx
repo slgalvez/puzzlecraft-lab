@@ -22,6 +22,7 @@ import { PremiumGate, PremiumBadge, PremiumLockRow } from "@/components/premium/
 import type { MilestoneIcon } from "@/lib/milestones";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import QAModePanel from "@/components/admin/QAModePanel";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Clock, Users, Bell, Smartphone, Eye, Shield, Sparkles, X, ChevronRight, Play } from "lucide-react";
@@ -1775,8 +1776,9 @@ export default function AdminPreview() {
           </p>
         </div>
 
-        <Tabs defaultValue="core" className="w-full">
+        <Tabs defaultValue="qa" className="w-full">
           <TabsList className="w-full flex overflow-x-auto gap-1 bg-muted/50 p-1 rounded-xl">
+            <TabsTrigger value="qa" className="text-xs flex-1 min-w-0">QA Mode</TabsTrigger>
             <TabsTrigger value="core" className="text-xs flex-1 min-w-0">Core UI</TabsTrigger>
             <TabsTrigger value="premium" className="text-xs flex-1 min-w-0">Premium</TabsTrigger>
             <TabsTrigger value="ios" className="text-xs flex-1 min-w-0">iOS App</TabsTrigger>
@@ -1787,6 +1789,10 @@ export default function AdminPreview() {
             <TabsTrigger value="weeklypacks" className="text-xs flex-1 min-w-0">Weekly Packs</TabsTrigger>
             <TabsTrigger value="ranking" className="text-xs flex-1 min-w-0">Ranking</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="qa" className="space-y-6 mt-4">
+            <QAModePanel />
+          </TabsContent>
 
           {/* ══════════════════════════════════════════════════════════════ */}
           {/* TAB 1: CORE UI                                                */}
