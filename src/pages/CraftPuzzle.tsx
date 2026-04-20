@@ -5,14 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Copy, Check, Loader2, Save, Trophy, AlertCircle, Palette } from "lucide-react";
-import { ShareButton } from "@/components/ui/ShareButton";
-
-
+import { toast as sonnerToast } from "sonner";
+import {
+  ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share2, Copy,
+  Check, Loader2, Trophy, AlertCircle, Palette, ChevronDown, ChevronUp,
+} from "lucide-react";
+import { CraftSolveFirst } from "@/components/craft/CraftSolveFirst";
 import { usePremiumAccess } from "@/lib/premiumAccess";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import { cn } from "@/lib/utils";
-import CraftStepper from "@/components/craft/CraftStepper";
 import CraftTypeCards, { TYPE_OPTIONS } from "@/components/craft/CraftTypeCards";
 import CraftPreviewGrid from "@/components/craft/CraftPreviewGrid";
 import CraftNav, { type CraftView } from "@/components/craft/CraftNav";
@@ -20,7 +21,6 @@ import CraftInbox from "@/components/craft/CraftInbox";
 import CraftSettingsPanel, { type CraftSettings, DEFAULT_CRAFT_SETTINGS } from "@/components/craft/CraftSettingsPanel";
 import CraftLivePreview from "@/components/craft/CraftLivePreview";
 import CraftThemePicker from "@/components/craft/CraftThemePicker";
-import { CraftColorPicker, CRAFT_PALETTES, applyPalette } from "@/components/craft/CraftColorPicker";
 import { getTheme } from "@/lib/craftThemes";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -33,16 +33,16 @@ import {
   type CraftPayload,
   type CraftType,
   buildCraftShareUrl,
+  buildCraftShareText,
 } from "@/lib/craftShare";
-import { buildCraftShareText as buildUnifiedCraftShareText } from "@/lib/shareText";
 import { executeShare } from "@/lib/shareUtils";
-import { CraftSharePreview } from "@/components/craft/CraftSharePreview";
 import {
   type CraftDraft,
   generateDraftId,
   saveDraft,
   deleteDraft,
   loadDrafts,
+  loadReceivedItems,
   addSentItem,
 } from "@/lib/craftHistory";
 
@@ -51,122 +51,86 @@ type Step = "type" | "content" | "preview";
 function generateShortId(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
-  for (let i = 0; i < 8; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
+  for (let i = 0; i < 8; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
   return result;
 }
 
 const CraftPuzzle = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate  = useNavigate();
+  const location  = useLocation();
   const { toast } = useToast();
   const inboxTabFromState = (location.state as { inboxTab?: string } | null)?.inboxTab;
+
   const { isPremium, craftStatus, recordCraftSent } = usePremiumAccess();
   const limitReached = !isPremium && craftStatus.isAtLimit;
-  const limitStatus = {
-    used: craftStatus.used,
-    limit: craftStatus.limit,
+  const limitStatus  = {
+    used:      craftStatus.used,
+    limit:     craftStatus.limit,
     remaining: craftStatus.remaining,
-    atLimit: craftStatus.isAtLimit,
-    label: craftStatus.isAtLimit
+    atLimit:   craftStatus.isAtLimit,
+    label:     craftStatus.isAtLimit
       ? `${craftStatus.limit}/${craftStatus.limit} used this month`
       : `${craftStatus.used}/${craftStatus.limit} used this month`,
   };
-  const [view, setView] = useState<CraftView>(inboxTabFromState ? "inbox" : "create");
-  const [step, setStep] = useState<Step>("type");
-  const [selectedType, setSelectedType] = useState<CraftType | null>(null);
-  const [wordInput, setWordInput] = useState("");
-  const [phraseInput, setPhraseInput] = useState("");
-  const [clueEntries, setClueEntries] = useState<{ answer: string; clue: string }[]>([
-    { answer: "", clue: "" },
-    { answer: "", clue: "" },
-    { answer: "", clue: "" },
+
+  const [view,          setView]         = useState<CraftView>(inboxTabFromState ? "inbox" : "create");
+  const [step,          setStep]         = useState<Step>("type");
+  const [selectedType,  setSelectedType] = useState<CraftType | null>(null);
+
+  // Content fields
+  const [wordInput,     setWordInput]    = useState("");
+  const [phraseInput,   setPhraseInput]  = useState("");
+  const [clueEntries,   setClueEntries]  = useState<{ answer: string; clue: string }[]>([
+    { answer: "", clue: "" }, { answer: "", clue: "" }, { answer: "", clue: "" },
   ]);
-  const [revealMessage, setRevealMessage] = useState("");
-  const [puzzleTitle, setPuzzleTitle] = useState("");
-  const [puzzleFrom, setPuzzleFrom] = useState("");
-  const [generatedData, setGeneratedData] = useState<Record<string, unknown> | null>(null);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [shareSuccess, setShareSuccess] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [craftSettings, setCraftSettings] = useState<CraftSettings>(DEFAULT_CRAFT_SETTINGS);
-  const [draftCount, setDraftCount] = useState(() => loadDrafts().length);
-  const [draftSaved, setDraftSaved] = useState(false);
-  const [draftDirty, setDraftDirty] = useState(true);
-  const [enteredFromDraft, setEnteredFromDraft] = useState(false);
-  const [selectedTheme, setSelectedTheme] = useState<string>("none");
-  const [colorPalette, setColorPalette] = useState("default");
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [revealMessage,  setRevealMessage]  = useState("");
+  const [puzzleTitle,    setPuzzleTitle]    = useState("");
+  const [puzzleFrom,     setPuzzleFrom]     = useState("");
+  const [selectedTheme,  setSelectedTheme]  = useState<string>("none");
+  const [craftSettings,  setCraftSettings]  = useState<CraftSettings>(DEFAULT_CRAFT_SETTINGS);
 
-  const handleColorPaletteSelect = (id: string) => {
-    setColorPalette(id);
-    const palette = CRAFT_PALETTES.find((p) => p.id === id);
-    if (palette) {
-      applyPalette(palette);
-    } else {
-      applyPalette({ id: "default", label: "Default", cell: "", active: "", highlight: "", correct: "", border: "", text: "" });
-    }
-  };
-  
-  const sentRecorded = useRef(false);
+  // Optional fields disclosure (collapsed by default — reduces content step overwhelm)
+  const [personalizationOpen, setPersonalizationOpen] = useState(false);
 
-  // Challenge mode state
+  // Preview/share state
+  const [generatedData, setGeneratedData]     = useState<Record<string, unknown> | null>(null);
+  const [shareUrl,      setShareUrl]          = useState<string | null>(null);
+  const [shareState,    setShareState]        = useState<"idle" | "sent" | "copied">("idle");
+  const [copyLinkState, setCopyLinkState]     = useState<"idle" | "copied">("idle");
+  const [saving,        setSaving]            = useState(false);
+
+  // Challenge
   const [creatorSolveTime, setCreatorSolveTime] = useState<number | null>(null);
-  const [challengeTimerRunning, setChallengeTimerRunning] = useState(false);
-  const [challengeElapsed, setChallengeElapsed] = useState(0);
-  const challengeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const challengeStartRef = useRef<number | null>(null);
 
-  // Active draft ID for auto-save
+  // Draft
+  const [enteredFromDraft, setEnteredFromDraft] = useState(false);
   const activeDraftId = useRef<string | null>(null);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sentRecorded  = useRef(false);
 
-  const refreshDraftCount = useCallback(() => setDraftCount(loadDrafts().length), []);
+  // Unread received count — drives the Inbox badge (not draft count)
+  const [unreadCount, setUnreadCount] = useState(
+    () => loadReceivedItems().filter((r) => r.status === "not_started").length
+  );
+
+  const refreshUnreadCount = useCallback(
+    () => setUnreadCount(loadReceivedItems().filter((r) => r.status === "not_started").length),
+    [],
+  );
+
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   // Accept pre-filled state from "Send one back" flow
   useEffect(() => {
-    const state = location.state as { prefillTitle?: string; startAtContent?: boolean } | null;
-    if (state?.prefillTitle) {
-      setPuzzleTitle(state.prefillTitle);
-    }
-    if (state) {
-      window.history.replaceState({}, "");
-    }
+    const state = location.state as { prefillTitle?: string } | null;
+    if (state?.prefillTitle) setPuzzleTitle(state.prefillTitle);
+    if (state) window.history.replaceState({}, "");
   }, [location.state]);
 
-  // Challenge timer cleanup
-  useEffect(() => {
-    return () => {
-      if (challengeTimerRef.current) clearInterval(challengeTimerRef.current);
-    };
-  }, []);
-
-  // Reset color palette on unmount so it doesn't leak to other pages
-  useEffect(() => {
-    return () => {
-      applyPalette({ id: "default", label: "Default", cell: "", active: "", highlight: "", correct: "", border: "", text: "" });
-    };
-  }, []);
-
-  /* ── Mark dirty on any content change ── */
-  useEffect(() => {
-    if (step === "content" || step === "preview") {
-      setDraftDirty(true);
-      setDraftSaved(false);
-    }
-  }, [wordInput, phraseInput, clueEntries, revealMessage, puzzleTitle, puzzleFrom, craftSettings]);
-
-  /* ── Auto-save draft ── */
+  // Auto-save draft (no manual button — auto-save is canonical)
   useEffect(() => {
     if (step !== "content" || !selectedType) return;
-
-    // Create draft ID if entering content fresh
-    if (!activeDraftId.current) {
-      activeDraftId.current = generateDraftId();
-    }
-
+    if (!activeDraftId.current) activeDraftId.current = generateDraftId();
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       if (!activeDraftId.current || !selectedType) return;
@@ -183,48 +147,11 @@ const CraftPuzzle = () => {
         updatedAt: Date.now(),
       };
       saveDraft(draft);
-      refreshDraftCount();
     }, 2000);
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, [step, selectedType, puzzleTitle, puzzleFrom, wordInput, phraseInput, clueEntries, revealMessage, craftSettings]);
 
-    return () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-    };
-  }, [step, selectedType, puzzleTitle, puzzleFrom, wordInput, phraseInput, clueEntries, revealMessage, craftSettings, refreshDraftCount]);
-
-  /** Manual save draft — works on both content and preview steps */
-  const handleSaveDraft = useCallback(() => {
-    if (!selectedType) return;
-    if (!activeDraftId.current) {
-      activeDraftId.current = generateDraftId();
-    }
-    // Clear any pending auto-save
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-
-    const draft: CraftDraft = {
-      id: activeDraftId.current,
-      type: selectedType,
-      title: puzzleTitle,
-      from: puzzleFrom,
-      wordInput,
-      phraseInput,
-      clueEntries,
-      revealMessage,
-      settings: craftSettings,
-      updatedAt: Date.now(),
-    };
-    saveDraft(draft);
-    refreshDraftCount();
-    setDraftSaved(true);
-    setDraftDirty(false);
-    setTimeout(() => setDraftSaved(false), 2000);
-  }, [selectedType, puzzleTitle, puzzleFrom, wordInput, phraseInput, clueEntries, revealMessage, craftSettings, refreshDraftCount]);
-
-  const handleSelectType = (type: CraftType) => {
-    setSelectedType(type);
-    setStep("content");
-  };
-
-  /** Pure generation — builds puzzle data without any DB/share/sent logic */
+  /** Pure generation — builds puzzle data without DB/share logic */
   const buildPuzzleData = useCallback((): (Record<string, unknown> & { droppedWords?: string[] }) | null => {
     if (!selectedType) return null;
     switch (selectedType) {
@@ -243,24 +170,19 @@ const CraftPuzzle = () => {
         return generateCustomCryptogram(phraseInput.trim(), craftSettings.difficulty) as unknown as Record<string, unknown>;
       }
       case "crossword": {
-        const valid = clueEntries.filter((entry) => entry.answer.trim() && entry.clue.trim());
+        const valid = clueEntries.filter((e) => e.answer.trim() && e.clue.trim());
         if (valid.length < 2) { toast({ title: "Enter at least 2 answer/clue pairs" }); return null; }
         return generateCustomCrossword(valid, craftSettings.difficulty) as unknown as Record<string, unknown>;
       }
     }
   }, [selectedType, wordInput, phraseInput, clueEntries, craftSettings.difficulty, toast]);
 
-
-  /** Generate + save to DB + create share URL (first time only) */
   const handleGenerate = useCallback(async () => {
     if (!selectedType) return;
     try {
       const data = buildPuzzleData();
       if (!data) return;
 
-      setGeneratedData(data);
-
-      // Use the droppedWords field returned by the generator
       const droppedWords: string[] = (data as any).droppedWords ?? [];
       if (droppedWords.length > 0) {
         const count = droppedWords.length;
@@ -273,42 +195,35 @@ const CraftPuzzle = () => {
             : `${wordList}${more} — try removing long words or reducing the total count.`,
           variant: "destructive",
         });
-        setSaving(false);
         return;
       }
 
+      setGeneratedData(data);
       const payload: CraftPayload = {
         type: selectedType,
         puzzleData: data,
         revealMessage,
         settings: {
-          difficulty: craftSettings.difficulty,
-          hintsEnabled: craftSettings.hintsEnabled,
+          difficulty:    craftSettings.difficulty,
+          hintsEnabled:  craftSettings.hintsEnabled,
           revealEnabled: craftSettings.revealEnabled,
-          checkEnabled: craftSettings.checkEnabled,
+          checkEnabled:  craftSettings.checkEnabled,
         },
       };
       if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
-      if (puzzleFrom.trim()) payload.from = puzzleFrom.trim();
+      if (puzzleFrom.trim())  payload.from  = puzzleFrom.trim();
       if (selectedTheme && selectedTheme !== "none") payload.theme = selectedTheme;
-      if (colorPalette !== "default") (payload as any).colorPalette = colorPalette;
 
       setSaving(true);
       const shortId = generateShortId();
       const { error: dbErr } = await supabase
         .from("shared_puzzles" as any)
         .insert({ id: shortId, payload } as any);
-
-      if (dbErr) {
-        toast({ title: "Failed to save puzzle", description: "Please try again" });
-        return;
-      }
-
+      if (dbErr) { toast({ title: "Failed to save puzzle", description: "Please try again" }); return; }
 
       const url = buildCraftShareUrl(shortId);
       setShareUrl(url);
       sentRecorded.current = false;
-
       toast({ title: "Puzzle ready ✨" });
       setStep("preview");
     } catch (err) {
@@ -316,89 +231,56 @@ const CraftPuzzle = () => {
     } finally {
       setSaving(false);
     }
-  }, [selectedType, buildPuzzleData, revealMessage, puzzleTitle, puzzleFrom, craftSettings, toast]);
+  }, [selectedType, buildPuzzleData, revealMessage, puzzleTitle, puzzleFrom, craftSettings, selectedTheme, toast]);
 
-  /** Regenerate — only refreshes puzzle data + updates DB, stays in draft */
   const handleRegenerate = useCallback(async () => {
     if (!selectedType) return;
     try {
       const data = buildPuzzleData();
       if (!data) return;
-
       setGeneratedData(data);
-
-      // Update the existing share record with new puzzle data
       if (shareUrl) {
         const shareId = shareUrl.split("/s/")[1] || shareUrl;
         const payload: CraftPayload = {
-          type: selectedType,
-          puzzleData: data,
-          revealMessage,
+          type: selectedType, puzzleData: data, revealMessage,
           settings: {
-            difficulty: craftSettings.difficulty,
-            hintsEnabled: craftSettings.hintsEnabled,
+            difficulty:    craftSettings.difficulty,
+            hintsEnabled:  craftSettings.hintsEnabled,
             revealEnabled: craftSettings.revealEnabled,
-            checkEnabled: craftSettings.checkEnabled,
+            checkEnabled:  craftSettings.checkEnabled,
           },
         };
         if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
-        if (puzzleFrom.trim()) payload.from = puzzleFrom.trim();
+        if (puzzleFrom.trim())  payload.from  = puzzleFrom.trim();
         if (selectedTheme && selectedTheme !== "none") payload.theme = selectedTheme;
-        if (colorPalette !== "default") (payload as any).colorPalette = colorPalette;
-
-        await supabase
-          .from("shared_puzzles" as any)
-          .update({ payload } as any)
-          .eq("id", shareId);
+        await supabase.from("shared_puzzles" as any).update({ payload } as any).eq("id", shareId);
       }
-
-      // FIX: reset sentRecorded so the regenerated puzzle can be recorded as a
-      // new send when the creator shares it. Without this, sharing after a
-      // regenerate silently skips the craft history + monthly limit tracking.
+      // Reset sentRecorded so the regenerated puzzle can be tracked as a new send
       sentRecorded.current = false;
-
       toast({ title: "Puzzle refreshed" });
     } catch (err) {
       toast({ title: "Regeneration failed", description: err instanceof Error ? err.message : "Please try different input" });
     }
-  }, [selectedType, buildPuzzleData, shareUrl, revealMessage, puzzleTitle, puzzleFrom, craftSettings, toast]);
+  }, [selectedType, buildPuzzleData, shareUrl, revealMessage, puzzleTitle, puzzleFrom, craftSettings, selectedTheme, toast]);
 
-  /** Record the puzzle as "Sent" exactly once, on actual share/copy */
   const recordSent = useCallback(() => {
     if (sentRecorded.current || !shareUrl || !selectedType) return;
     sentRecorded.current = true;
-
-    // Extract shareId from url
     const shareId = shareUrl.split("/s/")[1] || shareUrl;
-
     if (activeDraftId.current) {
       deleteDraft(activeDraftId.current);
       activeDraftId.current = null;
     }
-
-    addSentItem({
-      id: shareId,
-      shareId,
-      type: selectedType,
-      title: puzzleTitle.trim(),
-      from: puzzleFrom.trim(),
-      revealMessage,
-      shareUrl,
-      sentAt: Date.now(),
-    });
+    addSentItem({ id: shareId, shareId, type: selectedType, title: puzzleTitle.trim(), from: puzzleFrom.trim(), revealMessage, shareUrl, sentAt: Date.now() });
     recordCraftSent(shareId);
-    refreshDraftCount();
-  }, [shareUrl, selectedType, puzzleTitle, puzzleFrom, revealMessage, refreshDraftCount, recordCraftSent]);
+  }, [shareUrl, selectedType, puzzleTitle, puzzleFrom, revealMessage, recordCraftSent]);
 
   const handleSolveFirst = useCallback(() => {
     if (!shareUrl) return;
-    const shareId = shareUrl.includes("/s/")
-      ? shareUrl.split("/s/")[1].split("?")[0]
-      : shareUrl;
+    const shareId = shareUrl.includes("/s/") ? shareUrl.split("/s/")[1].split("?")[0] : shareUrl;
     navigate(`/s/${shareId}?creator=1`);
   }, [shareUrl, navigate]);
 
-  // Read creator_time back from URL when returning from solving
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const returnedTime = params.get("creator_time");
@@ -407,152 +289,83 @@ const CraftPuzzle = () => {
       if (!isNaN(seconds) && seconds > 0) {
         setCreatorSolveTime(seconds);
         window.history.replaceState({}, "", window.location.pathname);
-
         if (shareUrl) {
-          const shareId = shareUrl.includes("/s/")
-            ? shareUrl.split("/s/")[1].split("?")[0]
-            : shareUrl;
-          supabase
-            .from("shared_puzzles" as any)
-            .update({
-              creator_solve_time: seconds,
-              creator_solved_at: new Date().toISOString(),
-            } as any)
-            .eq("id", shareId)
-            .then();
+          const shareId = shareUrl.includes("/s/") ? shareUrl.split("/s/")[1].split("?")[0] : shareUrl;
+          supabase.from("shared_puzzles" as any).update({ creator_solve_time: seconds, creator_solved_at: new Date().toISOString() } as any).eq("id", shareId).then();
         }
       }
     }
   }, [shareUrl]);
 
-  const handleStartChallenge = useCallback(() => {
-    if (!shareUrl || !selectedType) return;
-    challengeStartRef.current = Date.now();
-    setChallengeTimerRunning(true);
-    setChallengeElapsed(0);
-    challengeTimerRef.current = setInterval(() => {
-      setChallengeElapsed(Math.floor((Date.now() - challengeStartRef.current!) / 1000));
-    }, 1000);
-    const shareId = shareUrl.split("/s/")[1] || shareUrl;
-    window.open(`/s/${shareId}`, "_blank");
-  }, [shareUrl, selectedType]);
-
-  const handleCreatorSolved = useCallback((time: number) => {
-    if (challengeTimerRef.current) clearInterval(challengeTimerRef.current);
-    setChallengeTimerRunning(false);
-    setCreatorSolveTime(time);
-    if (shareUrl) {
-      const shareId = shareUrl.split("/s/")[1] || shareUrl;
-      supabase
-        .from("shared_puzzles" as any)
-        .update({
-          creator_solve_time: time,
-          creator_solved_at: new Date().toISOString(),
-        } as any)
-        .eq("id", shareId)
-        .then();
-    }
-    toast({ title: `Challenge set! Your time: ${Math.floor(time / 60)}:${(time % 60).toString().padStart(2, "0")}` });
-  }, [shareUrl, toast]);
-
-  const handleCopyLink = async () => {
-    if (limitReached) { setUpgradeOpen(true); return; }
-    if (!shareUrl) return;
-    const fullText = buildUnifiedCraftShareText({
-      title: puzzleTitle.trim() || undefined,
-      from: puzzleFrom.trim() || undefined,
-      url: shareUrl,
-      type: selectedType ?? undefined,
-      creatorSolveTime,
-    });
-    const result = await executeShare(fullText);
-    if (result === "copied" || result === "shared") {
-      recordSent();
-      setCopied(true);
-      setShareSuccess(true);
-      if (result === "copied") toast({ title: "Puzzle link copied" });
-      setTimeout(() => setCopied(false), 2000);
-      setTimeout(() => setShareSuccess(false), 1500);
-    } else {
-      toast({ title: "Failed to copy link" });
-    }
-  };
+  // ── Share + copy: use unified executeShare cascade with subtle confirmation ──
 
   const handleShare = async () => {
     if (limitReached) { setUpgradeOpen(true); return; }
     if (!shareUrl || !generatedData || !selectedType) return;
 
-    const shareText = buildUnifiedCraftShareText({
-      title: puzzleTitle.trim() || undefined,
-      from: puzzleFrom.trim() || undefined,
-      url: shareUrl,
-      type: selectedType ?? undefined,
+    const text = buildCraftShareText(
+      puzzleTitle.trim() || undefined,
+      puzzleFrom.trim() || undefined,
+      undefined, // url passed separately so native sheet keeps text/url separate
+      selectedType,
       creatorSolveTime,
-    });
+    );
+    const result = await executeShare(text, shareUrl);
 
-    const result = await executeShare(shareText);
-    if (result === "shared" || result === "copied") {
+    if (result === "shared") {
       recordSent();
-      setShareSuccess(true);
-      if (result === "copied") {
-        setCopied(true);
-        toast({ title: "Puzzle link copied" });
-        setTimeout(() => setCopied(false), 2000);
-      }
-      setTimeout(() => setShareSuccess(false), 1500);
+      setShareState("sent");
+      sonnerToast.success("Sent ✓");
+      setTimeout(() => setShareState("idle"), 2000);
+    } else if (result === "copied") {
+      recordSent();
+      setShareState("copied");
+      sonnerToast.success("Link copied");
+      setTimeout(() => setShareState("idle"), 2000);
+    } else if (result === "error") {
+      sonnerToast.error("Couldn't share — try again");
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (limitReached) { setUpgradeOpen(true); return; }
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      recordSent();
+      setCopyLinkState("copied");
+      sonnerToast.success("Link copied");
+      setTimeout(() => setCopyLinkState("idle"), 2000);
+    } catch {
+      sonnerToast.error("Couldn't copy link");
     }
   };
 
   const handleBack = () => {
     if (step === "preview") setStep("content");
     else if (step === "content") {
-      if (enteredFromDraft) {
-        setEnteredFromDraft(false);
-        setView("inbox");
-        return;
-      }
-    sentRecorded.current = false;
-    setStep("type");
+      if (enteredFromDraft) { setEnteredFromDraft(false); setView("inbox"); return; }
+      sentRecorded.current = false;
+      setStep("type");
       setSelectedType(null);
     }
   };
 
   const handleStartOver = () => {
-    applyPalette({ id: "default", label: "Default", cell: "", active: "", highlight: "", correct: "", border: "", text: "" });
-    // Delete active draft
-    if (activeDraftId.current) {
-      deleteDraft(activeDraftId.current);
-      activeDraftId.current = null;
-      refreshDraftCount();
-    }
-    setStep("type");
-    setSelectedType(null);
-    setWordInput("");
-    setPhraseInput("");
+    if (activeDraftId.current) { deleteDraft(activeDraftId.current); activeDraftId.current = null; }
+    setStep("type"); setSelectedType(null); setWordInput(""); setPhraseInput("");
     setClueEntries([{ answer: "", clue: "" }, { answer: "", clue: "" }, { answer: "", clue: "" }]);
-    setRevealMessage("");
-    setPuzzleTitle("");
-    setPuzzleFrom("");
-    setCraftSettings(DEFAULT_CRAFT_SETTINGS);
-    setGeneratedData(null);
-    setShareUrl(null);
-    setCopied(false);
-    setShareSuccess(false);
-    setSelectedTheme("none");
+    setRevealMessage(""); setPuzzleTitle(""); setPuzzleFrom(""); setCraftSettings(DEFAULT_CRAFT_SETTINGS);
+    setGeneratedData(null); setShareUrl(null); setShareState("idle"); setCopyLinkState("idle");
+    setSelectedTheme("none"); setPersonalizationOpen(false);
+    setCreatorSolveTime(null);
   };
 
   const handleResumeDraft = useCallback((draft: CraftDraft) => {
     activeDraftId.current = draft.id;
-    setSelectedType(draft.type);
-    setPuzzleTitle(draft.title);
-    setPuzzleFrom(draft.from);
-    setWordInput(draft.wordInput);
-    setPhraseInput(draft.phraseInput);
-    setClueEntries(
-      draft.clueEntries.length >= 2
-        ? draft.clueEntries
-        : [{ answer: "", clue: "" }, { answer: "", clue: "" }, { answer: "", clue: "" }]
-    );
+    setSelectedType(draft.type); setPuzzleTitle(draft.title); setPuzzleFrom(draft.from);
+    setWordInput(draft.wordInput); setPhraseInput(draft.phraseInput);
+    setClueEntries(draft.clueEntries.length >= 2 ? draft.clueEntries : [{ answer: "", clue: "" }, { answer: "", clue: "" }, { answer: "", clue: "" }]);
     setRevealMessage(draft.revealMessage);
     if (draft.settings) {
       const restoredDifficulty = draft.settings.difficulty;
@@ -568,105 +381,81 @@ const CraftPuzzle = () => {
     } else {
       setCraftSettings(DEFAULT_CRAFT_SETTINGS);
     }
-    setGeneratedData(null);
-    setShareUrl(null);
-    setStep("content");
-    setView("create");
-    setEnteredFromDraft(true);
+    setGeneratedData(null); setShareUrl(null);
+    setStep("content"); setView("create"); setEnteredFromDraft(true);
   }, []);
 
-  const handleWordSuggestions = (words: string) => {
-    if (!words.includes("\n")) {
-      setWordInput((prev) => {
-        const existing = prev.trim();
-        if (!existing) return words;
-        if (existing.includes(words)) return prev;
-        return existing + "\n" + words;
-      });
-    } else {
-      setWordInput(words);
-    }
+  const resetToCreate = () => {
+    activeDraftId.current = null;
+    setStep("type"); setSelectedType(null); setWordInput(""); setPhraseInput("");
+    setClueEntries([{ answer: "", clue: "" }, { answer: "", clue: "" }, { answer: "", clue: "" }]);
+    setRevealMessage(""); setPuzzleTitle(""); setPuzzleFrom(""); setCraftSettings(DEFAULT_CRAFT_SETTINGS);
+    setGeneratedData(null); setShareUrl(null); setShareState("idle"); setCopyLinkState("idle");
+    setEnteredFromDraft(false); setSelectedTheme("none"); setPersonalizationOpen(false);
+    sentRecorded.current = false;
+    setCreatorSolveTime(null);
   };
+
+  // Share button label/icon based on success state
+  const shareButtonLabel =
+    shareState === "sent"   ? "Sent ✓" :
+    shareState === "copied" ? "Link copied ✓" :
+    "Send Puzzle";
+  const ShareIcon = shareState === "idle" ? Share2 : Check;
 
   return (
     <Layout>
       <div className="container py-6 md:py-10 max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="mb-2 text-center">
+
+        {/* Header — single clean title, no subtitle clutter */}
+        <div className="mb-4 text-center">
           <h1 className="font-display text-2xl font-bold text-foreground">Create a Puzzle</h1>
-          <p className="text-sm text-muted-foreground mt-1">Make something personal — send it to anyone</p>
         </div>
 
-        {/* View Nav */}
-        <CraftNav view={view} onViewChange={(v) => {
-          if (v === "create") {
-            // Reset to fresh type-selection step
-            activeDraftId.current = null;
-            setStep("type");
-            setSelectedType(null);
-            setWordInput("");
-            setPhraseInput("");
-            setClueEntries([{ answer: "", clue: "" }, { answer: "", clue: "" }, { answer: "", clue: "" }]);
-            setRevealMessage("");
-            setPuzzleTitle("");
-            setPuzzleFrom("");
-            
-            setCraftSettings(DEFAULT_CRAFT_SETTINGS);
-            setGeneratedData(null);
-            setShareUrl(null);
-            setCopied(false);
-            setShareSuccess(false);
-            setEnteredFromDraft(false);
-            setSelectedTheme("none");
-            sentRecorded.current = false;
-          }
-          setView(v);
-        }} draftCount={draftCount} />
+        {/* Nav: Create / Inbox — badge shows UNREAD RECEIVED, not draft count */}
+        <CraftNav
+          view={view}
+          onViewChange={(v) => {
+            if (v === "create") resetToCreate();
+            else refreshUnreadCount();
+            setView(v);
+          }}
+          unreadCount={unreadCount}
+        />
 
-        {/* Limit indicator — compact, single conditional row */}
+        {/* Free user credit counter — only shown in Create view */}
         {!isPremium && view === "create" && (
-          limitStatus.atLimit ? (
-            <div className="mt-1 mb-2 flex flex-wrap items-center justify-center gap-2 text-xs text-destructive font-medium">
-              <span>Monthly limit reached</span>
-              <span aria-hidden>·</span>
-              <button
-                onClick={() => setUpgradeOpen(true)}
-                className="min-h-[36px] px-2 underline"
-              >
-                Upgrade to continue
-              </button>
-            </div>
-          ) : (
-            <div className="mt-1 mb-2 flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
-              <span>{limitStatus.remaining}/{limitStatus.limit} free this month</span>
-              <span aria-hidden>·</span>
-              <button
-                onClick={() => setUpgradeOpen(true)}
-                className="min-h-[36px] px-2 text-primary hover:text-primary/80 font-medium hover:underline transition-colors"
-              >
-                Unlimited with Plus
-              </button>
-            </div>
-          )
+          <div className="flex items-center justify-between text-[11px] -mt-1 mb-4 px-0.5">
+            <span className={cn("font-medium", limitStatus.atLimit ? "text-destructive" : "text-muted-foreground/60")}>
+              {limitStatus.atLimit
+                ? "No free puzzles left this month"
+                : `${limitStatus.remaining} free craft puzzle${limitStatus.remaining === 1 ? "" : "s"} remaining`
+              }
+            </span>
+            <button onClick={() => setUpgradeOpen(true)} className="text-primary text-[11px] font-medium hover:underline">
+              Get unlimited →
+            </button>
+          </div>
         )}
 
         {/* ─── Inbox View ─── */}
         {view === "inbox" && (
-          <CraftInbox onResumeDraft={handleResumeDraft} onDataChange={refreshDraftCount} initialTab={inboxTabFromState || undefined} />
+          <CraftInbox
+            onResumeDraft={handleResumeDraft}
+            onDataChange={refreshUnreadCount}
+            initialTab={inboxTabFromState || undefined}
+          />
         )}
 
         {/* ─── Create View ─── */}
         {view === "create" && (
           <>
-            {/* Progress Stepper */}
-            <CraftStepper current={step} />
-
-            {/* Step 1: Type Selection */}
+            {/* ── Step 1: Type selection ── */}
             {step === "type" && (
-              <CraftTypeCards onSelect={handleSelectType} />
+              <CraftTypeCards onSelect={(type) => { setSelectedType(type); setStep("content"); }} />
             )}
 
-            {/* Step 2: Content Entry */}
+            {/* ── Step 2: Content entry ── */}
             {step === "content" && selectedType && (
               <div className="animate-in fade-in-0 slide-in-from-right-4 duration-300 space-y-5">
                 <button onClick={handleBack} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
@@ -679,87 +468,28 @@ const CraftPuzzle = () => {
                   </h2>
                 </div>
 
+                {/* ── PRIMARY INPUT — the only required surface ── */}
                 <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Puzzle title (optional)</label>
-                    <Input
-                      value={puzzleTitle}
-                      onChange={e => setPuzzleTitle(e.target.value)}
-                      placeholder="Just for You"
-                      maxLength={100}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">From (optional)</label>
-                    <Input
-                      value={puzzleFrom}
-                      onChange={e => setPuzzleFrom(e.target.value)}
-                      placeholder="Mariah"
-                      maxLength={100}
-                    />
-                  </div>
-                </div>
-
-                <CraftThemePicker
-                  selected={selectedTheme}
-                  onSelect={(id) => {
-                    setSelectedTheme(id);
-                    const theme = getTheme(id);
-                    if (!revealMessage.trim() && theme.revealTemplates.length > 0) {
-                      setRevealMessage(theme.revealTemplates[0]);
-                    }
-                  }}
-                  onRevealTemplate={(tmpl) => setRevealMessage(tmpl)}
-                  onPrefillWords={(words) => {
-                    if (!words.includes("\n")) {
-                      setWordInput((prev) => {
-                        const existing = prev.trim();
-                        if (!existing) return words;
-                        if (existing.includes(words)) return prev;
-                        return existing + "\n" + words;
-                      });
-                    } else {
-                      setWordInput(words);
-                    }
-                    if (selectedType === "crossword") {
-                      const wordList = words.split("\n").filter(Boolean);
-                      if (wordList.length > 0) {
-                        setClueEntries(wordList.map((w) => ({ answer: w, clue: "" })));
-                      }
-                    }
-                  }}
-                  currentRevealMessage={revealMessage}
-                  showWordSection={selectedType === "word-fill" || selectedType === "word-search"}
-                />
-
-                <CraftColorPicker selected={colorPalette} onSelect={handleColorPaletteSelect} />
-
-{(selectedType === "word-fill" || selectedType === "word-search") && (
-                  <div className="space-y-3">
+                  {(selectedType === "word-fill" || selectedType === "word-search") && (
                     <div className="space-y-2">
-                      <label className="text-xs font-medium text-muted-foreground">Enter words (one per line or comma-separated)</label>
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Your words (one per line or comma-separated)
+                      </label>
                       <Textarea
                         value={wordInput}
                         onChange={e => setWordInput(e.target.value)}
-                        placeholder={"CHUCKY\nBEACH\nBIRTHDAY\nVACATION\nNASHVILLE"}
+                        placeholder={selectedType === "word-search" ? "NASHVILLE\nBIRTHDAY\nCHUCKY" : "VACATION\nBEACH\nSUMMER"}
                         rows={5}
                         className="resize-none"
                       />
                     </div>
-                    <CraftLivePreview
-                      type={selectedType}
-                      wordInput={wordInput}
-                      phraseInput=""
-                      clueEntries={[]}
-                      difficulty={craftSettings.difficulty}
-                    />
-                  </div>
-                )}
+                  )}
 
-{selectedType === "cryptogram" && (
-                  <div className="space-y-3">
+                  {selectedType === "cryptogram" && (
                     <div className="space-y-2">
-                      <label className="text-xs font-medium text-muted-foreground">Enter a phrase or message to encode</label>
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Your message or phrase
+                      </label>
                       <Textarea
                         value={phraseInput}
                         onChange={e => setPhraseInput(e.target.value)}
@@ -768,108 +498,151 @@ const CraftPuzzle = () => {
                         className="resize-none"
                       />
                     </div>
-                    <CraftLivePreview
-                      type="cryptogram"
-                      wordInput=""
-                      phraseInput={phraseInput}
-                      clueEntries={[]}
-                      difficulty={craftSettings.difficulty}
-                    />
-                  </div>
-                )}
+                  )}
 
-                {selectedType === "crossword" && (
-                  <div className="space-y-3">
-                    <label className="text-xs font-medium text-muted-foreground">Enter answer + clue pairs</label>
-                    {clueEntries.map((entry, i) => (
-                      <div key={i} className="flex gap-2">
-                        <Input
-                          value={entry.answer}
-                          onChange={e => {
-                            const updated = [...clueEntries];
-                            updated[i] = { ...entry, answer: e.target.value };
-                            setClueEntries(updated);
-                          }}
-                          placeholder="Answer"
-                          className="flex-1"
-                        />
-                        <Input
-                          value={entry.clue}
-                          onChange={e => {
-                            const updated = [...clueEntries];
-                            updated[i] = { ...entry, clue: e.target.value };
-                            setClueEntries(updated);
-                          }}
-                          placeholder="Clue"
-                          className="flex-[2]"
-                        />
-                        {clueEntries.length > 2 && (
-                          <Button variant="ghost" size="icon" onClick={() => setClueEntries(clueEntries.filter((_, j) => j !== i))}>
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                    <Button variant="outline" size="sm" onClick={() => setClueEntries([...clueEntries, { answer: "", clue: "" }])}>
-                      <Plus className="h-3 w-3 mr-1" /> Add entry
-                    </Button>
-                    <CraftLivePreview
-                      type="crossword"
-                      wordInput=""
-                      phraseInput=""
-                      clueEntries={clueEntries}
-                      difficulty={craftSettings.difficulty}
-                    />
-                  </div>
-                )}
+                  {selectedType === "crossword" && (
+                    <div className="space-y-3">
+                      <label className="text-xs font-medium text-muted-foreground">Answer + clue pairs</label>
+                      {clueEntries.map((entry, i) => (
+                        <div key={i} className="flex gap-2">
+                          <Input
+                            value={entry.answer}
+                            onChange={e => { const u = [...clueEntries]; u[i] = { ...entry, answer: e.target.value }; setClueEntries(u); }}
+                            placeholder="Answer"
+                            className="flex-1"
+                          />
+                          <Input
+                            value={entry.clue}
+                            onChange={e => { const u = [...clueEntries]; u[i] = { ...entry, clue: e.target.value }; setClueEntries(u); }}
+                            placeholder="Clue"
+                            className="flex-[2]"
+                          />
+                          {clueEntries.length > 2 && (
+                            <Button variant="ghost" size="icon" onClick={() => setClueEntries(clueEntries.filter((_, j) => j !== i))}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                      <Button variant="outline" size="sm" onClick={() => setClueEntries([...clueEntries, { answer: "", clue: "" }])}>
+                        <Plus className="h-3 w-3 mr-1" /> Add entry
+                      </Button>
+                    </div>
+                  )}
 
-                {/* Creator settings */}
-                <CraftSettingsPanel value={craftSettings} onChange={setCraftSettings} />
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Message revealed after solving (optional)</label>
-                  <Input
-                    value={revealMessage}
-                    onChange={e => setRevealMessage(e.target.value)}
-                    placeholder="Congratulations! You cracked it 🎉"
-                    maxLength={500}
+                  {/* Live preview */}
+                  <CraftLivePreview
+                    type={selectedType}
+                    wordInput={wordInput}
+                    phraseInput={phraseInput}
+                    clueEntries={clueEntries}
+                    difficulty={craftSettings.difficulty}
                   />
                 </div>
 
+                {/* ── PERSONALIZE — collapsed by default ──────────────────────
+                    Optional: title, from, reveal message, theme, settings.
+                    Drops the visible form surface from ~8 elements to ~2. */}
+                <div className="rounded-xl border border-border/50 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setPersonalizationOpen(v => !v)}
+                    className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-secondary/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Palette className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">Personalize</span>
+                      <span className="text-[11px] text-muted-foreground">
+                        title · reveal message · difficulty
+                      </span>
+                    </div>
+                    {personalizationOpen
+                      ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                      : <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    }
+                  </button>
+
+                  {personalizationOpen && (
+                    <div className="px-4 pb-4 pt-1 space-y-4 border-t border-border/50 bg-muted/20">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-medium text-muted-foreground">Title</label>
+                          <Input value={puzzleTitle} onChange={e => setPuzzleTitle(e.target.value)} placeholder="Just for You" maxLength={100} />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-medium text-muted-foreground">From</label>
+                          <Input value={puzzleFrom} onChange={e => setPuzzleFrom(e.target.value)} placeholder="Mariah" maxLength={100} />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-muted-foreground">Message revealed after solving</label>
+                        <Input
+                          value={revealMessage}
+                          onChange={e => setRevealMessage(e.target.value)}
+                          placeholder="Congratulations! You cracked it 🎉"
+                          maxLength={500}
+                        />
+                      </div>
+
+                      <CraftThemePicker
+                        selected={selectedTheme}
+                        onSelect={(id) => {
+                          setSelectedTheme(id);
+                          const theme = getTheme(id);
+                          if (!revealMessage.trim() && theme.revealTemplates.length > 0) {
+                            setRevealMessage(theme.revealTemplates[0]);
+                          }
+                        }}
+                        onRevealTemplate={(tmpl) => setRevealMessage(tmpl)}
+                        onPrefillWords={(words) => {
+                          if (!words.includes("\n")) {
+                            setWordInput((prev) => {
+                              const existing = prev.trim();
+                              if (!existing) return words;
+                              if (existing.includes(words)) return prev;
+                              return existing + "\n" + words;
+                            });
+                          } else {
+                            setWordInput(words);
+                          }
+                          if (selectedType === "crossword") {
+                            const wordList = words.split("\n").filter(Boolean);
+                            if (wordList.length > 0) {
+                              setClueEntries(wordList.map((w) => ({ answer: w, clue: "" })));
+                            }
+                          }
+                        }}
+                        currentRevealMessage={revealMessage}
+                        showWordSection={selectedType === "word-fill" || selectedType === "word-search"}
+                      />
+
+                      <CraftSettingsPanel value={craftSettings} onChange={setCraftSettings} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Generate CTA */}
                 <Button onClick={handleGenerate} disabled={saving} className="w-full gap-2">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  {saving ? "Saving…" : "Preview Puzzle"}
+                  {saving ? "Building your puzzle…" : "Preview Puzzle"}
                 </Button>
-                <div className="flex items-center justify-between">
-                  <button
-                    onClick={handleSaveDraft}
-                    className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {draftSaved && !draftDirty ? (
-                      <>
-                        <Check className="h-3 w-3 text-primary" />
-                        <span className="text-primary">Saved</span>
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-3 w-3" />
-                        <span>Save draft</span>
-                      </>
-                    )}
-                  </button>
-                  <p className="text-[10px] text-muted-foreground">
-                    No account needed
-                  </p>
-                </div>
+
+                {/* Auto-save indicator only — no manual button */}
+                <p className="text-center text-[10px] text-muted-foreground/40">
+                  Draft saved automatically
+                </p>
               </div>
             )}
 
-            {/* Step 3: Preview & Share */}
+            {/* ── Step 3: Preview & Share ── */}
             {step === "preview" && generatedData && selectedType && (
               <div className="animate-in fade-in-0 slide-in-from-right-4 duration-300 space-y-5">
+
+                {/* Nav row */}
                 <div className="grid grid-cols-[1fr_auto_1fr] items-center">
                   <button onClick={handleBack} className="justify-self-start flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                    <ArrowLeft size={13} /> Edit content
+                    <ArrowLeft size={13} /> Edit
                   </button>
                   <p className="justify-self-center text-[10px] uppercase tracking-[0.15em] text-muted-foreground/60 font-medium">
                     Preview
@@ -879,84 +652,67 @@ const CraftPuzzle = () => {
                   </button>
                 </div>
 
-                <div className="text-center space-y-2">
-                  <h2 className="text-base font-semibold leading-tight text-foreground">
-                    Your puzzle is ready to send
-                  </h2>
-                  <p className="text-xs text-muted-foreground/70">
-                    This is exactly what they'll see
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-xl border border-border bg-card space-y-4">
-                  {/* Title centered, From as subtle bottom-right note */}
+                {/* ── PUZZLE PREVIEW HERO ── */}
+                <div className="rounded-2xl border border-primary/15 bg-card shadow-sm overflow-hidden">
                   {puzzleTitle.trim() && (
-                    <div className="text-center pb-3 border-b border-border">
+                    <div className="text-center px-5 pt-5 pb-3 border-b border-border/40">
                       <h3 className="text-base font-display font-semibold text-foreground">{puzzleTitle.trim()}</h3>
                     </div>
                   )}
 
-                  <CraftPreviewGrid data={generatedData} puzzleType={selectedType} />
+                  <div className="px-5 py-4">
+                    <CraftPreviewGrid data={generatedData} puzzleType={selectedType} />
+                  </div>
 
                   {puzzleFrom.trim() && (
-                    <p className="text-[11px] text-muted-foreground/60 text-right italic">
-                      {puzzleFrom.trim()}
-                    </p>
+                    <div className="px-5 pb-4 text-right">
+                      <span className="text-[11px] text-muted-foreground/60 italic">{puzzleFrom.trim()}</span>
+                    </div>
                   )}
                 </div>
 
+                {/* ── SHARE — second visible element, no scroll required ── */}
+                <div className="space-y-2.5 p-5 rounded-2xl border border-primary/20 bg-primary/[0.03]">
+                  <Button onClick={handleShare} className="w-full gap-2 h-11">
+                    <ShareIcon className="h-4 w-4" />
+                    {shareButtonLabel}
+                  </Button>
+
+                  <button
+                    onClick={handleCopyLink}
+                    className="w-full flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors py-1.5 rounded-lg hover:bg-card/50"
+                  >
+                    {copyLinkState === "copied"
+                      ? <Check className="h-3.5 w-3.5 text-primary" />
+                      : <Copy className="h-3.5 w-3.5" />
+                    }
+                    <span className={cn(copyLinkState === "copied" && "text-primary font-medium")}>
+                      {copyLinkState === "copied" ? "Link copied ✓" : "Copy link instead"}
+                    </span>
+                  </button>
+                </div>
+
+                {/* ── CHALLENGE TIME ── */}
+                <CraftSolveFirst
+                  creatorSolveTime={creatorSolveTime}
+                  onSolveFirst={handleSolveFirst}
+                  onSkip={() => {}}
+                  puzzleTypeLabel={
+                    selectedType === "word-search" ? "Word Search" :
+                    selectedType === "crossword"   ? "Crossword"   :
+                    selectedType === "cryptogram"  ? "Cryptogram"  : "Word Fill-In"
+                  }
+                />
+
+                {/* Reveal message preview */}
                 {revealMessage && (
-                  <div className="p-4 rounded-xl bg-muted/50 border border-border space-y-1.5">
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Reveal Message (Preview)</p>
+                  <div className="px-4 py-3 rounded-xl bg-muted/50 border border-border space-y-1">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Reveal message</p>
                     <p className="text-sm italic text-foreground/80">{revealMessage}</p>
                   </div>
                 )}
 
-                {!creatorSolveTime ? (
-                  <div className="rounded-2xl border-2 border-primary/25 bg-primary/5 p-5">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 mt-0.5">
-                        <Trophy size={18} className="text-primary" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-foreground text-sm mb-0.5">
-                          Solve it yourself first (recommended)
-                        </p>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          Sets a challenge time for your recipient to beat. Makes it competitive and way more fun.
-                        </p>
-                        <div className="flex gap-2 mt-3">
-                          <Button onClick={handleSolveFirst} size="sm" className="gap-1.5">
-                            <Trophy size={13} /> Solve &amp; set challenge time
-                          </Button>
-                          <Button
-                            onClick={() => {}}
-                            size="sm"
-                            variant="ghost"
-                            className="text-muted-foreground text-xs"
-                          >
-                            Skip, just share
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15">
-                      <Trophy size={16} className="text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-foreground">
-                        Challenge time set: {Math.floor(creatorSolveTime / 60)}:{(creatorSolveTime % 60).toString().padStart(2, "0")}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Your recipient will see this as their target to beat
-                      </p>
-                    </div>
-                  </div>
-                )}
-
+                {/* Free user limit — at the bottom */}
                 {!isPremium && (
                   <div className={cn(
                     "flex items-center justify-between rounded-xl px-4 py-3 border",
@@ -964,94 +720,29 @@ const CraftPuzzle = () => {
                       ? "bg-destructive/5 border-destructive/20"
                       : limitStatus.remaining === 1
                         ? "bg-amber-500/5 border-amber-500/20"
-                        : "bg-secondary/50 border-border"
+                        : "bg-secondary/50 border-border",
                   )}>
                     <div className="flex items-center gap-2">
-                      {limitStatus.atLimit ? (
-                        <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
-                      ) : (
-                        <Palette className="h-4 w-4 text-muted-foreground shrink-0" />
-                      )}
+                      {limitStatus.atLimit && <AlertCircle className="h-4 w-4 text-destructive shrink-0" />}
                       <div>
-                        <p className={cn(
-                          "text-xs font-semibold",
-                          limitStatus.atLimit ? "text-destructive" : "text-foreground"
-                        )}>
-                          {limitStatus.atLimit
-                            ? "Monthly limit reached"
-                            : `${limitStatus.remaining} puzzle${limitStatus.remaining === 1 ? "" : "s"} left this month`
-                          }
+                        <p className={cn("text-xs font-semibold", limitStatus.atLimit ? "text-destructive" : "text-foreground")}>
+                          {limitStatus.atLimit ? "Monthly limit reached" : `${limitStatus.remaining} puzzle${limitStatus.remaining === 1 ? "" : "s"} left this month`}
                         </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {limitStatus.label}
-                        </p>
+                        <p className="text-[10px] text-muted-foreground">{limitStatus.label}</p>
                       </div>
                     </div>
                     {limitStatus.atLimit && (
-                      <button
-                        onClick={() => setUpgradeOpen(true)}
-                        className="text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors whitespace-nowrap ml-3"
-                      >
+                      <button onClick={() => setUpgradeOpen(true)} className="text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors whitespace-nowrap ml-3">
                         Upgrade →
                       </button>
                     )}
                   </div>
                 )}
 
-                <CraftSharePreview
-                  title={puzzleTitle.trim() || undefined}
-                  from={puzzleFrom.trim() || undefined}
-                  url={shareUrl}
-                  type={selectedType ?? undefined}
-                  creatorSolveTime={creatorSolveTime}
-                />
-
-                <div className="relative space-y-3 p-5 rounded-xl border border-primary/20 bg-primary/5 overflow-hidden">
-                  {shareSuccess && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-card/90 z-10 animate-in fade-in-0 duration-200">
-                      <div className="flex flex-col items-center gap-2 animate-in zoom-in-75 duration-300">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-primary">
-                          <Check size={24} strokeWidth={2.5} />
-                        </div>
-                        <span className="text-sm font-medium text-foreground">Sent!</span>
-                      </div>
-                    </div>
-                  )}
-
-                  <ShareButton
-                    onShare={handleShare}
-                    label="Send Puzzle"
-                    iconSize={16}
-                    className="w-full"
-                  />
-                  <button
-                    onClick={handleCopyLink}
-                    className="w-full flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors py-1.5"
-                  >
-                    {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                    {copied ? "Copied!" : "or copy link"}
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <button
-                    onClick={handleSaveDraft}
-                    className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {draftSaved && !draftDirty ? (
-                      <>
-                        <Check className="h-3 w-3 text-primary" />
-                        <span className="text-primary">Saved</span>
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-3 w-3" />
-                        <span>Save draft</span>
-                      </>
-                    )}
-                  </button>
-                  <Button onClick={handleRegenerate} variant="ghost" size="sm" className="gap-1.5 text-muted-foreground h-auto py-1 px-2">
-                    <RefreshCw className="h-3 w-3" /> Regenerate
+                {/* Regenerate — visible outline button, not ghost */}
+                <div className="flex justify-center">
+                  <Button onClick={handleRegenerate} variant="outline" size="sm" className="gap-1.5 text-muted-foreground">
+                    <RefreshCw className="h-3 w-3" /> Regenerate puzzle
                   </Button>
                 </div>
               </div>

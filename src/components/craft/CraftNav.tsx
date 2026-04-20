@@ -5,10 +5,11 @@ export type CraftView = "create" | "inbox";
 interface CraftNavProps {
   view: CraftView;
   onViewChange: (v: CraftView) => void;
-  draftCount: number;
+  /** Number of received puzzles not yet started — drives the badge */
+  unreadCount: number;
 }
 
-export default function CraftNav({ view, onViewChange, draftCount }: CraftNavProps) {
+export default function CraftNav({ view, onViewChange, unreadCount }: CraftNavProps) {
   return (
     <div className="flex justify-center mb-5">
       <div className="inline-flex rounded-full border border-border bg-muted/40 p-0.5">
@@ -18,7 +19,7 @@ export default function CraftNav({ view, onViewChange, draftCount }: CraftNavPro
             "px-5 py-1.5 rounded-full text-xs font-medium transition-colors",
             view === "create"
               ? "bg-primary/10 text-primary"
-              : "text-muted-foreground hover:text-foreground"
+              : "text-muted-foreground hover:text-foreground",
           )}
         >
           Create
@@ -29,13 +30,14 @@ export default function CraftNav({ view, onViewChange, draftCount }: CraftNavPro
             "px-5 py-1.5 rounded-full text-xs font-medium transition-colors relative",
             view === "inbox"
               ? "bg-primary/10 text-primary"
-              : "text-muted-foreground hover:text-foreground"
+              : "text-muted-foreground hover:text-foreground",
           )}
         >
           Inbox
-          {draftCount > 0 && (
+          {/* Badge: unread RECEIVED items only — not drafts */}
+          {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">
-              {draftCount}
+              {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
         </button>
