@@ -395,6 +395,8 @@ const CraftPuzzle = () => {
     setRevealMessage(""); setPuzzleTitle(""); setPuzzleFrom(""); setCraftSettings(DEFAULT_CRAFT_SETTINGS);
     setGeneratedData(null); setShareUrl(null); setShareState("idle"); setCopyLinkState("idle");
     setSelectedTheme("none"); setPersonalizationOpen(false);
+    restoreDefaultPalette();
+    setColorPalette("default");
     setCreatorSolveTime(null);
   };
 
