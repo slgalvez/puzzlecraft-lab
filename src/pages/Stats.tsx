@@ -46,6 +46,8 @@ import {
   localDateStr, type ActivityDay, type ActivityStatus, type MonthGrid,
 } from "@/lib/calendarActivity";
 import { hapticTap } from "@/lib/haptic";
+import { usePreviewMode } from "@/contexts/PreviewModeContext";
+import { PreviewLabel } from "@/components/admin/PreviewLabel";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -102,12 +104,14 @@ interface InlineCalendarProps {
   dataVersion: number;
   onUpgrade: () => void;
   viewAsUser?: { completions: Array<{ date: string }>; dailyData: Record<string, any> } | null;
+  /** When set, calendar reads EXCLUSIVELY from this source. */
+  previewSource?: { completions: Array<{ date: string }>; dailyData: Record<string, any>; craftDates: string[] } | null;
 }
 
-function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }: InlineCalendarProps) {
+function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, previewSource }: InlineCalendarProps) {
   const navigate = useNavigate();
   const [selectedDay, setSelectedDay] = useState<ActivityDay | null>(null);
-  const effectivePlus = isPlus || isViewAs;
+  const effectivePlus = isPlus || isViewAs || !!previewSource;
 
   const now = new Date();
   const [currentMonth, setCurrentMonth] = useState({ year: now.getFullYear(), month: now.getMonth() });
@@ -115,11 +119,25 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }
   // Activity data — 60 days for Plus, 7 for free
   const calendarDays = effectivePlus ? 60 : 7;
   const activityMap = useMemo(() => {
+    // STRICT ISOLATION — preview > viewAs > real (never merged)
+    if (previewSource) {
+      const map = getCalendarActivityFrom(previewSource.completions, previewSource.dailyData, calendarDays);
+      // Merge craft dates from preview source (real flow has loadSentItems)
+      for (const iso of previewSource.craftDates) {
+        const key = localDateStr(new Date(iso));
+        const entry = map.get(key);
+        if (entry) {
+          entry.craftCount += 1;
+          if (entry.status === "none") entry.status = "craft-only";
+        }
+      }
+      return map;
+    }
     if (isViewAs && viewAsUser) {
       return getCalendarActivityFrom(viewAsUser.completions, viewAsUser.dailyData, calendarDays);
     }
     return getCalendarActivity(calendarDays);
-  }, [dataVersion, isViewAs, viewAsUser, calendarDays]);
+  }, [dataVersion, isViewAs, viewAsUser, previewSource, calendarDays]);
 
   const monthGrid = useMemo(
     () => effectivePlus ? buildMonthGrid(activityMap, currentMonth.year, currentMonth.month) : null,
