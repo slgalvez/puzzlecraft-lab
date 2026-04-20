@@ -59,7 +59,7 @@ function validateWords(raw: string, type: "word-fill" | "word-search"): Validati
     return { valid: true, count, feedback: `${count} words — add a few more for a better puzzle`, hint: "5–15 words gives the best results", color: "amber" };
   }
   if (count <= 8) {
-    return { valid: true, count, feedback: `${count} words — good`, hint: "Perfect for a satisfying puzzle", color: "green" };
+    return { valid: true, count, feedback: `${count} words — good`, hint: "Nice balance — fun to solve", color: "green" };
   }
   if (count <= 15) {
     return { valid: true, count, feedback: `${count} words — great`, hint: "This will make a full, varied puzzle", color: "green" };
@@ -396,8 +396,8 @@ export default function CraftLivePreview({ type, wordInput, phraseInput, clueEnt
       {(generating || preview || genError) && (
         <div className="rounded-xl border border-border/60 bg-secondary/30 p-3">
           <div className="flex items-center gap-2 mb-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Live Preview
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+              This is what they'll see
             </p>
             {generating && <Loader2 size={10} className="text-muted-foreground animate-spin" />}
           </div>

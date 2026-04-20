@@ -21,6 +21,7 @@ import CraftInbox from "@/components/craft/CraftInbox";
 import CraftSettingsPanel, { type CraftSettings, DEFAULT_CRAFT_SETTINGS } from "@/components/craft/CraftSettingsPanel";
 import CraftLivePreview from "@/components/craft/CraftLivePreview";
 import CraftThemePicker from "@/components/craft/CraftThemePicker";
+import { CraftColorPicker, CRAFT_PALETTES, applyPalette } from "@/components/craft/CraftColorPicker";
 import { getTheme } from "@/lib/craftThemes";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -88,6 +89,7 @@ const CraftPuzzle = () => {
   const [puzzleFrom,     setPuzzleFrom]     = useState("");
   const [selectedTheme,  setSelectedTheme]  = useState<string>("none");
   const [craftSettings,  setCraftSettings]  = useState<CraftSettings>(DEFAULT_CRAFT_SETTINGS);
+  const [colorPalette,   setColorPalette]   = useState<string>("default");
 
   // Optional fields disclosure (collapsed by default — reduces content step overwhelm)
   const [personalizationOpen, setPersonalizationOpen] = useState(false);
@@ -119,6 +121,39 @@ const CraftPuzzle = () => {
   );
 
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  // Palette ref — used by guarded cleanup so we don't write the DOM unnecessarily
+  const colorPaletteRef = useRef(colorPalette);
+  useEffect(() => { colorPaletteRef.current = colorPalette; }, [colorPalette]);
+
+  // Restore default palette on unmount, but ONLY if the user actually changed it
+  useEffect(() => {
+    return () => {
+      if (typeof document === "undefined") return;
+      if (colorPaletteRef.current !== "default") {
+        applyPalette(CRAFT_PALETTES[0]);
+      }
+    };
+  }, []);
+
+  // Shared helper — single source of truth for attaching palette to payload
+  const attachPaletteToPayload = useCallback(
+    <T extends Record<string, unknown>>(payload: T): T => {
+      if (colorPalette && colorPalette !== "default") {
+        (payload as Record<string, unknown>).colorPalette = colorPalette;
+      }
+      return payload;
+    },
+    [colorPalette],
+  );
+
+  // Guarded restore — used by start-over / reset paths
+  const restoreDefaultPalette = useCallback(() => {
+    if (typeof document === "undefined") return;
+    if (colorPaletteRef.current !== "default") {
+      applyPalette(CRAFT_PALETTES[0]);
+    }
+  }, []);
 
   // Accept pre-filled state from "Send one back" flow
   useEffect(() => {
@@ -213,6 +248,7 @@ const CraftPuzzle = () => {
       if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
       if (puzzleFrom.trim())  payload.from  = puzzleFrom.trim();
       if (selectedTheme && selectedTheme !== "none") payload.theme = selectedTheme;
+      attachPaletteToPayload(payload as unknown as Record<string, unknown>);
 
       setSaving(true);
       const shortId = generateShortId();
@@ -231,7 +267,7 @@ const CraftPuzzle = () => {
     } finally {
       setSaving(false);
     }
-  }, [selectedType, buildPuzzleData, revealMessage, puzzleTitle, puzzleFrom, craftSettings, selectedTheme, toast]);
+  }, [selectedType, buildPuzzleData, revealMessage, puzzleTitle, puzzleFrom, craftSettings, selectedTheme, attachPaletteToPayload, toast]);
 
   const handleRegenerate = useCallback(async () => {
     if (!selectedType) return;
@@ -253,6 +289,7 @@ const CraftPuzzle = () => {
         if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
         if (puzzleFrom.trim())  payload.from  = puzzleFrom.trim();
         if (selectedTheme && selectedTheme !== "none") payload.theme = selectedTheme;
+        attachPaletteToPayload(payload as unknown as Record<string, unknown>);
         await supabase.from("shared_puzzles" as any).update({ payload } as any).eq("id", shareId);
       }
       // Reset sentRecorded so the regenerated puzzle can be tracked as a new send
@@ -261,7 +298,7 @@ const CraftPuzzle = () => {
     } catch (err) {
       toast({ title: "Regeneration failed", description: err instanceof Error ? err.message : "Please try different input" });
     }
-  }, [selectedType, buildPuzzleData, shareUrl, revealMessage, puzzleTitle, puzzleFrom, craftSettings, selectedTheme, toast]);
+  }, [selectedType, buildPuzzleData, shareUrl, revealMessage, puzzleTitle, puzzleFrom, craftSettings, selectedTheme, attachPaletteToPayload, toast]);
 
   const recordSent = useCallback(() => {
     if (sentRecorded.current || !shareUrl || !selectedType) return;
@@ -358,6 +395,8 @@ const CraftPuzzle = () => {
     setRevealMessage(""); setPuzzleTitle(""); setPuzzleFrom(""); setCraftSettings(DEFAULT_CRAFT_SETTINGS);
     setGeneratedData(null); setShareUrl(null); setShareState("idle"); setCopyLinkState("idle");
     setSelectedTheme("none"); setPersonalizationOpen(false);
+    restoreDefaultPalette();
+    setColorPalette("default");
     setCreatorSolveTime(null);
   };
 
@@ -392,6 +431,8 @@ const CraftPuzzle = () => {
     setRevealMessage(""); setPuzzleTitle(""); setPuzzleFrom(""); setCraftSettings(DEFAULT_CRAFT_SETTINGS);
     setGeneratedData(null); setShareUrl(null); setShareState("idle"); setCopyLinkState("idle");
     setEnteredFromDraft(false); setSelectedTheme("none"); setPersonalizationOpen(false);
+    restoreDefaultPalette();
+    setColorPalette("default");
     sentRecorded.current = false;
     setCreatorSolveTime(null);
   };
@@ -473,12 +514,12 @@ const CraftPuzzle = () => {
                   {(selectedType === "word-fill" || selectedType === "word-search") && (
                     <div className="space-y-2">
                       <label className="text-xs font-medium text-muted-foreground">
-                        Your words (one per line or comma-separated)
+                        Your words (names, memories, inside jokes)
                       </label>
                       <Textarea
                         value={wordInput}
                         onChange={e => setWordInput(e.target.value)}
-                        placeholder={selectedType === "word-search" ? "NASHVILLE\nBIRTHDAY\nCHUCKY" : "VACATION\nBEACH\nSUMMER"}
+                        placeholder={"birthday\nnashville\nbeach\ntravel\nsummer"}
                         rows={5}
                         className="resize-none"
                       />
@@ -553,7 +594,7 @@ const CraftPuzzle = () => {
                       <Palette className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-sm font-medium text-foreground">Personalize</span>
                       <span className="text-[11px] text-muted-foreground">
-                        title · reveal message · difficulty
+                        title · reveal message · theme · color · difficulty
                       </span>
                     </div>
                     {personalizationOpen
@@ -618,6 +659,17 @@ const CraftPuzzle = () => {
                       />
 
                       <CraftSettingsPanel value={craftSettings} onChange={setCraftSettings} />
+
+                      <CraftColorPicker
+                        selected={colorPalette}
+                        onSelect={(id) => {
+                          setColorPalette(id);
+                          if (typeof document !== "undefined") {
+                            const palette = CRAFT_PALETTES.find((p) => p.id === id) ?? CRAFT_PALETTES[0];
+                            applyPalette(palette);
+                          }
+                        }}
+                      />
                     </div>
                   )}
                 </div>
@@ -625,7 +677,7 @@ const CraftPuzzle = () => {
                 {/* Generate CTA */}
                 <Button onClick={handleGenerate} disabled={saving} className="w-full gap-2">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  {saving ? "Building your puzzle…" : "Preview Puzzle"}
+                  {saving ? "Building your puzzle…" : "Continue"}
                 </Button>
 
                 {/* Auto-save indicator only — no manual button */}
