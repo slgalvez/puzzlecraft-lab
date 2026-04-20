@@ -1,17 +1,21 @@
 /**
- * QA Mode panel — admin-only scenario switcher, reset, and quick-jumps.
- * Lives inside AdminPreview as the first tab.
+ * QA Mode panel — admin-only scenario switcher, reset, quick-jumps,
+ * easy-complete simulators, share previews, friend leaderboard,
+ * and live messaging-component previews.
  */
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePreviewMode } from "@/contexts/PreviewModeContext";
 import { PreviewLabel } from "@/components/admin/PreviewLabel";
+import QASimulators from "@/components/admin/QASimulators";
+import QASharePreviews from "@/components/admin/QASharePreviews";
+import QAMessagingPreview from "@/components/admin/QAMessagingPreview";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
-  Eye, RotateCcw, Crown, Calendar, Users, MessageSquare, Share2, Zap,
+  Eye, RotateCcw, Crown, Users, Zap,
 } from "lucide-react";
-import type { PreviewScenario, FriendsVariant, MockMessage } from "@/lib/previewFixtures";
-import { buildMessagingFixture } from "@/lib/previewFixtures";
+import type { PreviewScenario, FriendsVariant } from "@/lib/previewFixtures";
 
 const SCENARIOS: { id: PreviewScenario; label: string }[] = [
   { id: "none",            label: "None" },
@@ -38,7 +42,10 @@ export default function QAModePanel() {
     setScenario, setFriendsVariant, resetPreview, profile,
   } = usePreviewMode();
 
-  const messages = buildMessagingFixture();
+  /** Share-text bubbles mirrored into the messaging preview */
+  const [injectedMessages, setInjectedMessages] = useState<{ id: string; body: string }[]>([]);
+  const sendToMessages = (text: string) =>
+    setInjectedMessages((prev) => [...prev, { id: `injected-${Date.now()}-${prev.length}`, body: text }]);
 
   const goWith = (s: PreviewScenario, plus: boolean, variant: FriendsVariant = "populated") => {
     if (!active) enterPreview(s);
@@ -153,6 +160,12 @@ export default function QAModePanel() {
         </div>
       </section>
 
+      {/* Easy-complete simulators */}
+      <QASimulators />
+
+      {/* Share previews — can mirror into messaging below */}
+      <QASharePreviews onSendToMessages={sendToMessages} />
+
       {/* Friend leaderboard preview */}
       <section className="rounded-xl border border-border/40 p-4 space-y-3">
         <div className="flex items-center justify-between">
@@ -184,30 +197,12 @@ export default function QAModePanel() {
         </div>
       </section>
 
-      {/* Messaging preview */}
-      <section className="rounded-xl border border-border/40 p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-            <MessageSquare size={11} className="text-primary" /> Messaging
-          </h3>
-          <PreviewLabel alwaysShow label="Mock State" />
-        </div>
-        <div className="space-y-2">
-          {messages.map((m: MockMessage) => (
-            <div key={m.id} className={cn("flex", m.isMine ? "justify-end" : "justify-start")}>
-              <div className={cn(
-                "max-w-[75%] rounded-2xl px-3 py-2 text-sm",
-                m.isMine ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground",
-                m.kind === "challenge" && "border border-primary/30",
-                m.kind === "milestone" && "ring-2 ring-primary/40",
-              )}>
-                <p>{m.body}</p>
-                <p className={cn("text-[9px] mt-0.5 opacity-60 capitalize")}>{m.kind}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* Live messaging-component previews */}
+      <QAMessagingPreview
+        injectedMessages={injectedMessages}
+        onClearInjected={() => setInjectedMessages([])}
+      />
     </div>
   );
 }
+
