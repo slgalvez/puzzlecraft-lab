@@ -26,6 +26,8 @@ import { useUserAccount } from "@/contexts/UserAccountContext";
 import { getTierColor } from "@/lib/solveScoring";
 import { useToast } from "@/hooks/use-toast";
 import { hapticTap } from "@/lib/haptic";
+import { usePreviewMode } from "@/contexts/PreviewModeContext";
+import { PreviewLabel } from "@/components/admin/PreviewLabel";
 
 // ── Format helpers ────────────────────────────────────────────────────────
 
@@ -559,7 +561,21 @@ interface SocialTabProps {
 
 export function SocialTab({ myRating }: SocialTabProps) {
   const { account } = useUserAccount();
-  const { myFriendCode, friends, friendsLoading, pendingRequests, pendingLoading } = useFriends();
+  const preview = usePreviewMode();
+  const previewActive = preview.active;
+
+  // STRICT ISOLATION — when preview active, skip Supabase entirely and render fixtures only
+  const realFriends = useFriends();
+  const myFriendCode = previewActive ? "PREVIEW" : realFriends.myFriendCode;
+  const friends = previewActive
+    ? preview.profile.friends.friends.map((f) => ({
+        id: f.id, displayName: f.displayName, rating: f.rating,
+        skillTier: f.skillTier, solveCount: f.solveCount,
+      })) as any
+    : realFriends.friends;
+  const friendsLoading = previewActive ? false : realFriends.friendsLoading;
+  const pendingRequests = previewActive ? [] : realFriends.pendingRequests;
+  const pendingLoading = previewActive ? false : realFriends.pendingLoading;
   const [showAddFriends, setShowAddFriends] = useState(false);
   const { toast } = useToast();
 
