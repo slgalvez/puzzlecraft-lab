@@ -23,13 +23,13 @@ interface Props {
 function renderVariation(v: ShareVariation): string {
   try {
     if (v.builder === "completion") {
-      return buildCompletionShareText(v.params as Parameters<typeof buildCompletionShareText>[0]).text;
+      return buildCompletionShareText(v.params as unknown as Parameters<typeof buildCompletionShareText>[0]).text;
     }
     if (v.builder === "daily") {
-      return buildDailyShareText(v.params as Parameters<typeof buildDailyShareText>[0]);
+      return buildDailyShareText(v.params as unknown as Parameters<typeof buildDailyShareText>[0]);
     }
     if (v.builder === "craft") {
-      return buildCraftShareText(v.params as Parameters<typeof buildCraftShareText>[0]);
+      return buildCraftShareText(v.params as unknown as Parameters<typeof buildCraftShareText>[0]);
     }
     if (v.builder === "solve-result") {
       const p = v.params as { title?: string; type?: string; solveTime?: number; creatorSolveTime?: number | null; url?: string };
