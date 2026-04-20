@@ -479,8 +479,8 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
         ))}
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center justify-center gap-4 pt-1">
+      {/* Legend + active streak */}
+      <div className="flex items-center justify-center gap-4 pt-1 flex-wrap">
         <div className="flex items-center gap-1.5">
           <svg width={10} height={10}><circle cx={5} cy={5} r={4} fill="none" strokeWidth={1.5} className="stroke-primary" /></svg>
           <span className="text-[9px] text-muted-foreground/70">Daily</span>
@@ -493,6 +493,12 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
           <span className="h-[5px] w-[5px] rounded-full bg-amber-500" />
           <span className="text-[9px] text-muted-foreground/70">Created</span>
         </div>
+        {streakInfo.activeStreakLength >= 2 && (
+          <div className="flex items-center gap-1 text-primary/90 font-medium">
+            <Flame size={10} />
+            <span className="text-[9px]">{streakInfo.activeStreakLength}-day streak</span>
+          </div>
+        )}
       </div>
 
       {/* Day detail panel */}
