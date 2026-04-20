@@ -289,6 +289,7 @@ const CraftPuzzle = () => {
         if (puzzleTitle.trim()) payload.title = puzzleTitle.trim();
         if (puzzleFrom.trim())  payload.from  = puzzleFrom.trim();
         if (selectedTheme && selectedTheme !== "none") payload.theme = selectedTheme;
+        attachPaletteToPayload(payload as unknown as Record<string, unknown>);
         await supabase.from("shared_puzzles" as any).update({ payload } as any).eq("id", shareId);
       }
       // Reset sentRecorded so the regenerated puzzle can be tracked as a new send
@@ -297,7 +298,7 @@ const CraftPuzzle = () => {
     } catch (err) {
       toast({ title: "Regeneration failed", description: err instanceof Error ? err.message : "Please try different input" });
     }
-  }, [selectedType, buildPuzzleData, shareUrl, revealMessage, puzzleTitle, puzzleFrom, craftSettings, selectedTheme, toast]);
+  }, [selectedType, buildPuzzleData, shareUrl, revealMessage, puzzleTitle, puzzleFrom, craftSettings, selectedTheme, attachPaletteToPayload, toast]);
 
   const recordSent = useCallback(() => {
     if (sentRecorded.current || !shareUrl || !selectedType) return;
