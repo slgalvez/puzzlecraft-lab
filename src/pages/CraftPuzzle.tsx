@@ -89,6 +89,7 @@ const CraftPuzzle = () => {
   const [puzzleFrom,     setPuzzleFrom]     = useState("");
   const [selectedTheme,  setSelectedTheme]  = useState<string>("none");
   const [craftSettings,  setCraftSettings]  = useState<CraftSettings>(DEFAULT_CRAFT_SETTINGS);
+  const [colorPalette,   setColorPalette]   = useState<string>("default");
 
   // Optional fields disclosure (collapsed by default — reduces content step overwhelm)
   const [personalizationOpen, setPersonalizationOpen] = useState(false);
