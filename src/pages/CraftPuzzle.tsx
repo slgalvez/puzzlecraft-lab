@@ -122,6 +122,39 @@ const CraftPuzzle = () => {
 
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
+  // Palette ref — used by guarded cleanup so we don't write the DOM unnecessarily
+  const colorPaletteRef = useRef(colorPalette);
+  useEffect(() => { colorPaletteRef.current = colorPalette; }, [colorPalette]);
+
+  // Restore default palette on unmount, but ONLY if the user actually changed it
+  useEffect(() => {
+    return () => {
+      if (typeof document === "undefined") return;
+      if (colorPaletteRef.current !== "default") {
+        applyPalette(CRAFT_PALETTES[0]);
+      }
+    };
+  }, []);
+
+  // Shared helper — single source of truth for attaching palette to payload
+  const attachPaletteToPayload = useCallback(
+    <T extends Record<string, unknown>>(payload: T): T => {
+      if (colorPalette && colorPalette !== "default") {
+        (payload as Record<string, unknown>).colorPalette = colorPalette;
+      }
+      return payload;
+    },
+    [colorPalette],
+  );
+
+  // Guarded restore — used by start-over / reset paths
+  const restoreDefaultPalette = useCallback(() => {
+    if (typeof document === "undefined") return;
+    if (colorPaletteRef.current !== "default") {
+      applyPalette(CRAFT_PALETTES[0]);
+    }
+  }, []);
+
   // Accept pre-filled state from "Send one back" flow
   useEffect(() => {
     const state = location.state as { prefillTitle?: string } | null;
