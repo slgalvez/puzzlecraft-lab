@@ -1,49 +1,120 @@
 
 
-# Calendar Ring Color Hierarchy + Date Parsing Safety
+# Global Admin Preview / QA Mode — Refined
 
 ## Summary
-Restore color-based visual hierarchy in the Stats calendar rings (daily = primary, solved = softened primary, craft = amber dot) and enforce safe local-midday date parsing for replay resolution. No layout changes.
+Build a unified admin-only QA layer for inspecting all major Puzzlecraft states (calendars, messaging, shares, leaderboards, milestones) without real gameplay. Now with strict read isolation, inline preview labels, and a one-click reset.
+
+## Architecture
+
+### 1. Preview Mode Provider — `src/contexts/PreviewModeContext.tsx` (new)
+Admin-gated context holding an in-memory preview profile. Never touches localStorage or DB.
+
+```ts
+type PreviewProfile = {
+  active: boolean;
+  isPlus: boolean;
+  scenario: "none" | "partial" | "full" | "daily-only" | "quickplay-only" | "craft-only" | "mixed";
+  completions: CompletionRecord[];
+  solves: SolveRecord[];
+  dailyData: Record<string, DailyCompletion>;
+  craftDates: string[];
+  friends: MockFriend[];
+};
+```
+
+API: `enterPreview(scenario)`, `exitPreview()`, `togglePlus()`, `setScenario(s)`, **`resetPreview()`** (clears all injected data, sets scenario to `"none"`, keeps `active: true`).
+
+Sticky banner across top whenever active (matches `ViewAsUserContext` style):  
+`QA Preview · Plus · Mixed activity · [Reset] · [Exit]`
+
+### 2. Mock data factory — `src/lib/previewFixtures.ts` (new)
+Deterministic seeded fixture builders:
+- `buildCalendarFixture(scenario)` → completions + dailyData + craftDates spanning current + last month
+- `buildFriendsFixture(variant)` → populated / tie / small / empty
+- `buildMessagingFixture()` → sent, received, challenge, reveal, completion, milestone bubbles
+- `buildMilestoneFixture(id)` → MilestoneToShow
+
+All records tagged `__preview: true`.
+
+### 3. Read isolation (strict)
+**Rule: when `preview.active`, components read EXCLUSIVELY from `previewProfile`. No merging.**
+
+Affected sites:
+- **`src/pages/Stats.tsx`** — three mutually exclusive branches: `if (preview.active) → preview source` / `else if (isViewAs) → viewAs source` / `else → real localStorage source`. No fallback merging. When preview active, `isPlus` is forced from `preview.isPlus`, ignoring real entitlement.
+- **`InlineCalendar`** — same three-branch pattern; calendar data comes from one source only.
+- **`SocialTab` / friend leaderboard** — when preview active, render fixture rows only; Supabase queries are skipped entirely (not merged).
+- **Share & messaging previews in AdminPreview** — always pull from fixtures regardless, but get the inline label only when `preview.active`.
+
+Real-data hooks (`getProgressStats`, `getDailyStreak`, etc.) are not called at all when preview is active in those components.
+
+### 4. Inline preview labels
+Subtle "Preview Data" / "Mock State" pill rendered inside key components when `preview.active`:
+- **Calendar** (Stats page) — small `Preview Data` pill in the calendar card header, right-aligned, `text-[10px]` muted with subtle primary tint
+- **Friend leaderboard** (Social tab) — same pill in section header
+- **Messaging preview section** (AdminPreview) — pill above the bubble stack
+- **Share preview cards** (AdminPreview) — pill in the card header
+
+Label component: shared `<PreviewLabel />` in `src/components/admin/PreviewLabel.tsx` (new) — single source of truth for styling. Renders nothing when preview inactive.
+
+Sticky top banner (always shown when active) is the global indicator; inline labels are component-level confirmation that what you're looking at is mock data — critical for screenshots and QA reports where the banner might be cropped.
+
+### 5. Reset control
+- `resetPreview()` exposed via context
+- **In sticky banner**: "Reset" button between scenario name and Exit
+- **In QA Hub**: prominent "Reset Preview State" button at top of scenario switcher
+- Behavior: clears `completions`, `solves`, `dailyData`, `craftDates`, `friends`; sets `scenario: "none"`; keeps `active: true` and current `isPlus` toggle. Components immediately re-render to empty/baseline state without exiting preview.
+
+### 6. Admin Preview Hub — `src/pages/AdminPreview.tsx` (extend)
+New "QA Mode" tab as first tab:
+- **Scenario switcher** (radio): None / Partial / Full / Daily-only / Quick-play-only / Craft-only / Mixed
+- **Plus toggle**
+- **Reset Preview State** button (with confirmation if non-default scenario active)
+- **Quick-jump buttons** (set scenario + navigate):
+  - Stats Calendar (Free) / (Plus) / Replay-eligible day / Daily complete / Quick-play-only / Craft-only / Empty
+- **Easy-complete simulators**: open existing `CompletionPanel`, `DailyPostSolve`, craft completion sheet, `MilestoneModal` with mock data — no DB writes
+- **Share previews** — all 5 builders side-by-side with copy-to-clipboard, each with `<PreviewLabel />`
+- **Messaging previews** — live `MessageBubble` instances with fixtures, with `<PreviewLabel />`
+- **Friend leaderboard previews** — 4 fixture variants (populated, tie, small, empty), each with `<PreviewLabel />`
+
+### 7. Discoverability
+- "QA Preview" entry card in `AdminAnalytics` linking to `/admin-preview`
+- Sticky preview banner includes "Open QA Hub" button
+
+### 8. Safety
+- Context state only — no localStorage, no DB writes
+- All preview records carry `__preview: true`
+- Provider is admin-gated (non-admins get noop context)
+- Auto-exits preview on logout / admin flag loss
+- Real-write functions (`recordSolve`, `recordDailyCompletion`, `upsert_leaderboard_entry`) never invoked from preview pathways
 
 ## Files
 
-### 1. `src/pages/Stats.tsx` — Ring color refinement
-In the SVG cell renderer (`InlineCalendar`'s day cell):
+| File | Action |
+|------|--------|
+| `src/contexts/PreviewModeContext.tsx` | new — provider, hook, sticky banner with Reset/Exit |
+| `src/lib/previewFixtures.ts` | new — deterministic fixture builders |
+| `src/components/admin/PreviewLabel.tsx` | new — shared inline "Preview Data" pill |
+| `src/App.tsx` | wrap `PublicRoutes` with `PreviewModeProvider` |
+| `src/pages/Stats.tsx` | strict 3-branch source selection (preview / viewAs / real); inline label in calendar header |
+| `src/pages/AdminPreview.tsx` | new "QA Mode" tab with scenario switcher, reset, quick-jumps, share/messaging/leaderboard preview sections (each labeled) |
+| `src/pages/AdminAnalytics.tsx` | QA Preview entry card |
+| `src/components/social/SocialTab.tsx` | preview branch with fixtures + inline label; skip Supabase entirely when active |
 
-- **`daily-complete`**: Full 360° ring, `stroke="hsl(var(--primary))"`, `stroke-width="2"`, `opacity="1"` — strongest visual
-- **`puzzle-played`**: Partial ring, same `hsl(var(--primary))` stroke but with `opacity="0.45"` (softened/desaturated effect using opacity, no new color tokens)
-  - Keep existing 12% floor / 75% (270°) cap on `stroke-dasharray`
-  - Stroke weight stays at 2px to keep aesthetic consistent
-- **`craft-only`**: No ring, existing small amber dot only — unchanged
-- **Craft + higher status**: Amber dot preserved alongside the ring — unchanged
-- **`none`**: No ring, subtle border — unchanged
-- Today indicator and selected highlight states — unchanged
-
-Contrast adjustment:
-- Background "track" circle (rendered behind activity ring for cells with any ring) gets `opacity="0.15"` so the active ring reads more clearly against it
-- No changes to cell size, spacing, grid columns, or month nav layout
-
-### 2. `src/hooks/usePuzzleTimer.ts` — Verify midday parsing
-Already implemented per prior plan — confirm `getChallengeForDate(new Date(parsedDate + "T12:00:00"))` is in place. No changes needed if already present.
-
-### 3. `src/pages/DailyPuzzle.tsx` — Replay date parsing safety
-Audit the `dateOverride` consumption path:
-- Wherever `dateOverride` (the URL `?date=` param) is converted to a `Date` for `getTodaysChallenge` / `getChallengeForDate` resolution, ensure it uses `new Date(dateOverride + "T12:00:00")` — never bare `new Date(dateOverride)` (which parses as UTC midnight and can shift one day in negative-offset timezones)
-- Apply the same midday convention to the today-normalization guard
-
-### 4. `src/lib/calendarActivity.ts` — Audit only
-- `localDateStr` already uses local components (no UTC) — no change
-- No date construction from string happens here (dates come from `Date` objects already)
-
-## Constraints Summary
+## Constraints
 
 | Rule | Enforcement |
 |------|-------------|
-| Daily ring | Full 360°, primary color, opacity 1 |
-| Solved ring | Partial (12%–75%), primary color, opacity 0.45 |
-| Craft | Amber dot only, no ring |
-| Color palette | Primary + softened primary (via opacity) + amber — no new tokens |
-| Date parsing | Always `+ "T12:00:00"` for YYYY-MM-DD → Date |
-| Layout | Unchanged — no spacing, grid, or sizing edits |
-| Ring caps | 12% floor, 270° cap preserved |
+| Read isolation | Strict if/else branches — preview OR viewAs OR real, never merged |
+| Inline labels | `<PreviewLabel />` in calendar, leaderboard, messaging, share preview headers when active |
+| Reset | Clears injected data, scenario → `"none"`, stays in preview mode |
+| Persistence | None — context state only, session-scoped |
+| Real writes | Blocked from all preview pathways |
+| Admin gating | Non-admins cannot enter preview |
+| Visual indicator | Sticky top banner + per-component inline label (defense in depth for screenshots) |
+
+## Out of scope
+- Persisting preview state across reloads (intentionally session-only)
+- Mocking Stripe / push / call signaling
+- Replacing `ViewAsUserContext` (kept — different purpose: real user data)
 
