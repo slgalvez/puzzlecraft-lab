@@ -250,6 +250,39 @@ function isMobile(): boolean {
 }
 
 /**
+ * Detect macOS desktop (excluding iPadOS 13+, which also reports "Macintosh"
+ * but has touch capability). Used to allow Messages.app via `sms:` on Mac.
+ */
+function isMacDesktop(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  const touch = (navigator.maxTouchPoints ?? 0) > 1;
+  return /Macintosh/.test(ua) && !touch;
+}
+
+/** Any device that can open a Messages app via the `sms:` URL scheme. */
+function canOpenMessagesApp(): boolean {
+  return isMobile() || isMacDesktop();
+}
+
+/**
+ * Open the Messages composer via a synthetic anchor click. This is more
+ * reliable than `window.location.href = "sms:..."` because Chrome/Firefox/Edge
+ * on macOS gate protocol-handler navigations behind a user-gesture-bound
+ * anchor click and avoid visibly navigating the page.
+ */
+function openSmsComposer(body: string): void {
+  const a = document.createElement("a");
+  a.href = `sms:?&body=${encodeURIComponent(body)}`;
+  a.style.position = "fixed";
+  a.style.opacity = "0";
+  a.style.pointerEvents = "none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => a.remove(), 0);
+}
+
+/**
  * 3-tier share cascade:
  *   1. navigator.share — native share sheet (text + url kept separate)
  *   2. sms:?&body=     — opens Messages composer on mobile
