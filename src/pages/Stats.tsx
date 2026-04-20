@@ -608,12 +608,13 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
         .gt("rating", entry.rating);
       return { ...entry, rank: (count ?? 0) + 1 };
     },
-    enabled: isViewAs ? !!viewAsUserId : (!!account && premiumAccess),
+    enabled: previewActive ? false : (isViewAs ? !!viewAsUserId : (!!account && premiumAccess)),
     staleTime: 30_000,
   });
 
-  // Merge: use local data when available, fall back to DB leaderboard entry
+  // Strict: in preview mode, never merge with DB leaderboard
   const ratingInfo = useMemo((): ReturnType<typeof getPlayerRatingInfo> => {
+    if (previewActive) return localRatingInfo;
     if (!localRatingInfo.hasNoData) return localRatingInfo;
     if (myLeaderboardEntry) {
       const dbRating = myLeaderboardEntry.rating;
@@ -633,7 +634,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
       };
     }
     return localRatingInfo;
-  }, [localRatingInfo, myLeaderboardEntry]);
+  }, [previewActive, localRatingInfo, myLeaderboardEntry]);
 
   // Local rating for the inline rating card (uses uploaded file's layout style)
   const localRating = useMemo(() => {
