@@ -310,13 +310,13 @@ export async function executeShare(
     }
   }
 
-  // Tier 2: SMS composer on mobile (no native share available)
-  if (isMobile()) {
+  // Tier 2: Messages composer on any device with a Messages app
+  // (mobile OR macOS desktop). On macOS this opens Messages.app.
+  if (canOpenMessagesApp()) {
     try {
-      const body = encodeURIComponent(fullText);
-      window.location.href = `sms:?&body=${body}`;
-      // Allow navigation to commit before resolving so callers don't flash UI
-      await new Promise((resolve) => setTimeout(resolve, 120));
+      openSmsComposer(fullText);
+      // Allow Messages.app / iOS Messages to surface before resolving
+      await new Promise((resolve) => setTimeout(resolve, 150));
       return "shared";
     } catch {
       // Fall through to Tier 3
