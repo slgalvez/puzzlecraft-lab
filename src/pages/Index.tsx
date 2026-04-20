@@ -612,7 +612,7 @@ const Index = () => {
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Create</p>
               <h2 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
-                Make a puzzle.<br />Challenge someone.
+                Create a puzzle.<br />Challenge someone.
               </h2>
               <p className="mt-4 text-muted-foreground leading-relaxed">
                 Use your own words — inside jokes, shared memories, names they'll recognize. Send the link. They get a personalized puzzle. You get to see exactly how fast they solve it.
@@ -633,7 +633,7 @@ const Index = () => {
               </ul>
               <div className="mt-8">
                 <Button asChild size="lg" className="gap-2">
-                  <Link to="/craft">Make a puzzle <ArrowRight size={15} /></Link>
+                  <Link to="/craft">Create a puzzle <ArrowRight size={15} /></Link>
                 </Button>
               </div>
             </div>
