@@ -125,6 +125,7 @@ export function buildCalendarFixture(scenario: PreviewScenario): CalendarFixture
         });
         solves.push({
           id: `__preview-solve-${i}-${j}`,
+          puzzleId: `__preview-puzzle-${i}-${j}`,
           puzzleType: category,
           difficulty,
           solveTime: time,
@@ -132,9 +133,9 @@ export function buildCalendarFixture(scenario: PreviewScenario): CalendarFixture
           hintsUsed: rng() < 0.7 ? 0 : Math.floor(rng() * 3),
           mistakesCount: rng() < 0.6 ? 0 : Math.floor(rng() * 2),
           isDailyChallenge: false,
-          // @ts-expect-error preview marker
+          assisted: false,
           __preview: true,
-        } as SolveRecord);
+        } as SolveRecord & { __preview: boolean });
       }
     }
 
