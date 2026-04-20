@@ -659,6 +659,17 @@ const CraftPuzzle = () => {
                       />
 
                       <CraftSettingsPanel value={craftSettings} onChange={setCraftSettings} />
+
+                      <CraftColorPicker
+                        selected={colorPalette}
+                        onSelect={(id) => {
+                          setColorPalette(id);
+                          if (typeof document !== "undefined") {
+                            const palette = CRAFT_PALETTES.find((p) => p.id === id) ?? CRAFT_PALETTES[0];
+                            applyPalette(palette);
+                          }
+                        }}
+                      />
                     </div>
                   )}
                 </div>
