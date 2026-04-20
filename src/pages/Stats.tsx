@@ -46,6 +46,8 @@ import {
   localDateStr, type ActivityDay, type ActivityStatus, type MonthGrid,
 } from "@/lib/calendarActivity";
 import { hapticTap } from "@/lib/haptic";
+import { usePreviewMode } from "@/contexts/PreviewModeContext";
+import { PreviewLabel } from "@/components/admin/PreviewLabel";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -102,12 +104,14 @@ interface InlineCalendarProps {
   dataVersion: number;
   onUpgrade: () => void;
   viewAsUser?: { completions: Array<{ date: string }>; dailyData: Record<string, any> } | null;
+  /** When set, calendar reads EXCLUSIVELY from this source. */
+  previewSource?: { completions: Array<{ date: string }>; dailyData: Record<string, any>; craftDates: string[] } | null;
 }
 
-function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }: InlineCalendarProps) {
+function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, previewSource }: InlineCalendarProps) {
   const navigate = useNavigate();
   const [selectedDay, setSelectedDay] = useState<ActivityDay | null>(null);
-  const effectivePlus = isPlus || isViewAs;
+  const effectivePlus = isPlus || isViewAs || !!previewSource;
 
   const now = new Date();
   const [currentMonth, setCurrentMonth] = useState({ year: now.getFullYear(), month: now.getMonth() });
@@ -115,11 +119,25 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }
   // Activity data — 60 days for Plus, 7 for free
   const calendarDays = effectivePlus ? 60 : 7;
   const activityMap = useMemo(() => {
+    // STRICT ISOLATION — preview > viewAs > real (never merged)
+    if (previewSource) {
+      const map = getCalendarActivityFrom(previewSource.completions, previewSource.dailyData, calendarDays);
+      // Merge craft dates from preview source (real flow has loadSentItems)
+      for (const iso of previewSource.craftDates) {
+        const key = localDateStr(new Date(iso));
+        const entry = map.get(key);
+        if (entry) {
+          entry.craftCount += 1;
+          if (entry.status === "none") entry.status = "craft-only";
+        }
+      }
+      return map;
+    }
     if (isViewAs && viewAsUser) {
       return getCalendarActivityFrom(viewAsUser.completions, viewAsUser.dailyData, calendarDays);
     }
     return getCalendarActivity(calendarDays);
-  }, [dataVersion, isViewAs, viewAsUser, calendarDays]);
+  }, [dataVersion, isViewAs, viewAsUser, previewSource, calendarDays]);
 
   const monthGrid = useMemo(
     () => effectivePlus ? buildMonthGrid(activityMap, currentMonth.year, currentMonth.month) : null,
@@ -484,29 +502,56 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
   const { viewAsUser } = useViewAsUser();
   const isViewAs = viewAsMode && !!viewAsUser;
 
+  // QA preview context — strict isolation from real data when active
+  const preview = usePreviewMode();
+  const previewActive = preview.active && !isViewAs;
+
   const { isPremium: premiumAccess, showUpgradeCTA: showUpgrade } = usePremiumAccess();
-  const isPlus = premiumAccess;
+  // Preview overrides Plus entitlement when active (read-only — never persisted)
+  const isPlus = previewActive ? preview.isPlus : premiumAccess;
   const { account } = useUserAccount();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
-  const demoActive = !!(account?.isAdmin && hasDemoData());
+  const demoActive = !!(account?.isAdmin && hasDemoData() && !previewActive);
 
-  const stats          = useMemo(() => isViewAs ? getProgressStatsFrom(viewAsUser!.completions) : getProgressStats(demoActive),                [dataVersion, isViewAs, viewAsUser, demoActive]);
-  const dailyStreak    = useMemo(() => isViewAs ? getDailyStreakFrom(viewAsUser!.dailyData) : getDailyStreak(),                  [dataVersion, isViewAs, viewAsUser]);
-  const dailyCompleted = useMemo(() => isViewAs ? getTotalDailyCompletedFrom(viewAsUser!.dailyData) : getTotalDailyCompleted(),          [dataVersion, isViewAs, viewAsUser]);
-  const endlessStats   = useMemo(() => isViewAs ? getEndlessStatsFrom(viewAsUser!.endlessData) : getEndlessStats(), [dataVersion, isViewAs, viewAsUser]);
+  // STRICT 3-BRANCH SOURCE SELECTION — preview > viewAs > real (never merged)
+  const stats = useMemo(() => {
+    if (previewActive)            return getProgressStatsFrom(preview.profile.calendar.completions);
+    if (isViewAs)                 return getProgressStatsFrom(viewAsUser!.completions);
+    return getProgressStats(demoActive);
+  }, [dataVersion, previewActive, preview.profile.calendar.completions, isViewAs, viewAsUser, demoActive]);
+
+  const dailyStreak = useMemo(() => {
+    if (previewActive)            return getDailyStreakFrom(preview.profile.calendar.dailyData);
+    if (isViewAs)                 return getDailyStreakFrom(viewAsUser!.dailyData);
+    return getDailyStreak();
+  }, [dataVersion, previewActive, preview.profile.calendar.dailyData, isViewAs, viewAsUser]);
+
+  const dailyCompleted = useMemo(() => {
+    if (previewActive)            return getTotalDailyCompletedFrom(preview.profile.calendar.dailyData);
+    if (isViewAs)                 return getTotalDailyCompletedFrom(viewAsUser!.dailyData);
+    return getTotalDailyCompleted();
+  }, [dataVersion, previewActive, preview.profile.calendar.dailyData, isViewAs, viewAsUser]);
+
+  const endlessStats = useMemo(() => {
+    if (previewActive)            return null; // preview doesn't fixture endless
+    if (isViewAs)                 return getEndlessStatsFrom(viewAsUser!.endlessData);
+    return getEndlessStats();
+  }, [dataVersion, previewActive, isViewAs, viewAsUser]);
 
   // Build solve record lookup for matching completions to scores/badges
   const solveRecordMap = useMemo(() => {
-    const recs = isViewAs
-      ? getSolveRecordsFrom(viewAsUser!.solves)
-      : demoActive ? getAllSolveRecordsIncludingDemo() : getSolveRecords();
+    const recs = previewActive
+      ? preview.profile.calendar.solves
+      : isViewAs
+        ? getSolveRecordsFrom(viewAsUser!.solves)
+        : demoActive ? getAllSolveRecordsIncludingDemo() : getSolveRecords();
     const map = new Map<string, SolveRecord>();
     for (const r of recs) {
       map.set(`${r.puzzleType}-${r.completedAt.slice(0, 16)}`, r);
     }
     return map;
-  }, [dataVersion, isViewAs, viewAsUser, demoActive]);
+  }, [dataVersion, previewActive, preview.profile.calendar.solves, isViewAs, viewAsUser, demoActive]);
   const endlessSummary = endlessStats ?? {
     totalSessions: 0,
     totalSolved: 0,
@@ -518,17 +563,21 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
 
   // Unified rating info — handles provisional, confirmed, and no-data states
   const localRatingInfo = useMemo(() => {
-    const recs = isViewAs
-      ? getSolveRecordsFrom(viewAsUser!.solves).filter((r) => r.solveTime >= 10)
-      : (demoActive ? getAllSolveRecordsIncludingDemo() : getSolveRecords()).filter((r) => r.solveTime >= 10);
+    const recs = previewActive
+      ? preview.profile.calendar.solves.filter((r) => r.solveTime >= 10)
+      : isViewAs
+        ? getSolveRecordsFrom(viewAsUser!.solves).filter((r) => r.solveTime >= 10)
+        : (demoActive ? getAllSolveRecordsIncludingDemo() : getSolveRecords()).filter((r) => r.solveTime >= 10);
     return getPlayerRatingInfo(recs);
-  }, [dataVersion, isViewAs, viewAsUser]);
+  }, [dataVersion, previewActive, preview.profile.calendar.solves, isViewAs, viewAsUser, demoActive]);
 
   // Peak rating — highest rolling-window rating across all recorded solves
   const peakRating = useMemo(() => {
-    const recs = isViewAs
-      ? getSolveRecordsFrom(viewAsUser!.solves).filter((r) => r.solveTime >= 10)
-      : (demoActive ? getAllSolveRecordsIncludingDemo() : getSolveRecords()).filter((r) => r.solveTime >= 10);
+    const recs = previewActive
+      ? preview.profile.calendar.solves.filter((r) => r.solveTime >= 10)
+      : isViewAs
+        ? getSolveRecordsFrom(viewAsUser!.solves).filter((r) => r.solveTime >= 10)
+        : (demoActive ? getAllSolveRecordsIncludingDemo() : getSolveRecords()).filter((r) => r.solveTime >= 10);
     if (recs.length < 5) return null;
     let peak = 0;
     for (let i = 0; i <= recs.length - 5; i++) {
@@ -537,7 +586,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
       peak = Math.max(peak, Math.round(avg));
     }
     return peak;
-  }, [dataVersion, isViewAs, viewAsUser]);
+  }, [dataVersion, previewActive, preview.profile.calendar.solves, isViewAs, viewAsUser, demoActive]);
 
   // In view-as mode, fetch the target user's leaderboard entry instead
   const viewAsUserId = isViewAs ? viewAsUser!.id : null;
@@ -559,12 +608,13 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
         .gt("rating", entry.rating);
       return { ...entry, rank: (count ?? 0) + 1 };
     },
-    enabled: isViewAs ? !!viewAsUserId : (!!account && premiumAccess),
+    enabled: previewActive ? false : (isViewAs ? !!viewAsUserId : (!!account && premiumAccess)),
     staleTime: 30_000,
   });
 
-  // Merge: use local data when available, fall back to DB leaderboard entry
+  // Strict: in preview mode, never merge with DB leaderboard
   const ratingInfo = useMemo((): ReturnType<typeof getPlayerRatingInfo> => {
+    if (previewActive) return localRatingInfo;
     if (!localRatingInfo.hasNoData) return localRatingInfo;
     if (myLeaderboardEntry) {
       const dbRating = myLeaderboardEntry.rating;
@@ -584,7 +634,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
       };
     }
     return localRatingInfo;
-  }, [localRatingInfo, myLeaderboardEntry]);
+  }, [previewActive, localRatingInfo, myLeaderboardEntry]);
 
   // Local rating for the inline rating card (uses uploaded file's layout style)
   const localRating = useMemo(() => {
@@ -614,11 +664,11 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
     return { name: next, threshold: TIER_THRESHOLDS[next] };
   })() : null;
 
-  // Skip sync in view-as mode
+  // Skip sync in view-as or preview mode
   useEffect(() => {
-    if (isViewAs) return;
+    if (isViewAs || previewActive) return;
     if (account) syncLeaderboardRating(account.id, account.displayName);
-  }, [account, dataVersion, isViewAs]);
+  }, [account, dataVersion, isViewAs, previewActive]);
 
   // Filters
   const [viewFilter,     setViewFilter]     = useState<ViewFilter>(null);
@@ -1008,9 +1058,12 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
             {/* Activity calendar */}
             {showGeneral && (
               <div className="rounded-2xl border bg-card overflow-hidden">
-                <div className="px-4 py-3 border-b border-border/60 flex items-center gap-2">
-                  <Calendar size={13} className="text-primary" />
-                  <h2 className="font-display text-sm font-semibold text-foreground">Activity</h2>
+                <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={13} className="text-primary" />
+                    <h2 className="font-display text-sm font-semibold text-foreground">Activity</h2>
+                  </div>
+                  <PreviewLabel />
                 </div>
                 <div className="px-3 py-3">
                   <InlineCalendar
@@ -1019,6 +1072,11 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                     dataVersion={dataVersion}
                     onUpgrade={() => setUpgradeOpen(true)}
                     viewAsUser={isViewAs ? viewAsUser : null}
+                    previewSource={previewActive ? {
+                      completions: preview.profile.calendar.completions,
+                      dailyData: preview.profile.calendar.dailyData,
+                      craftDates: preview.profile.calendar.craftDates,
+                    } : null}
                   />
                 </div>
               </div>

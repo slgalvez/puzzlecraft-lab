@@ -26,6 +26,8 @@ import { useUserAccount } from "@/contexts/UserAccountContext";
 import { getTierColor } from "@/lib/solveScoring";
 import { useToast } from "@/hooks/use-toast";
 import { hapticTap } from "@/lib/haptic";
+import { usePreviewMode } from "@/contexts/PreviewModeContext";
+import { PreviewLabel } from "@/components/admin/PreviewLabel";
 
 // ── Format helpers ────────────────────────────────────────────────────────
 
@@ -559,12 +561,26 @@ interface SocialTabProps {
 
 export function SocialTab({ myRating }: SocialTabProps) {
   const { account } = useUserAccount();
-  const { myFriendCode, friends, friendsLoading, pendingRequests, pendingLoading } = useFriends();
+  const preview = usePreviewMode();
+  const previewActive = preview.active;
+
+  // STRICT ISOLATION — when preview active, skip Supabase entirely and render fixtures only
+  const realFriends = useFriends();
+  const myFriendCode = previewActive ? "PREVIEW" : realFriends.myFriendCode;
+  const friends = previewActive
+    ? preview.profile.friends.friends.map((f) => ({
+        id: f.id, displayName: f.displayName, rating: f.rating,
+        skillTier: f.skillTier, solveCount: f.solveCount,
+      })) as any
+    : realFriends.friends;
+  const friendsLoading = previewActive ? false : realFriends.friendsLoading;
+  const pendingRequests = previewActive ? [] : realFriends.pendingRequests;
+  const pendingLoading = previewActive ? false : realFriends.pendingLoading;
   const [showAddFriends, setShowAddFriends] = useState(false);
   const { toast } = useToast();
 
-  // Not signed in
-  if (!account) {
+  // Not signed in — but allow preview mode through
+  if (!account && !previewActive) {
     return (
       <div className="flex flex-col items-center justify-center py-14 px-4 text-center">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary mb-4">
@@ -617,9 +633,12 @@ export function SocialTab({ myRating }: SocialTabProps) {
         <>
           {/* 1. Today's daily leaderboard — most immediate, time-sensitive */}
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5">
-              Today vs Friends
-            </p>
+            <div className="flex items-center justify-between mb-2.5">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Today vs Friends
+              </p>
+              <PreviewLabel />
+            </div>
             <FriendsDailyLeaderboard />
           </div>
 
