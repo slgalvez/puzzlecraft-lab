@@ -396,8 +396,8 @@ export default function CraftLivePreview({ type, wordInput, phraseInput, clueEnt
       {(generating || preview || genError) && (
         <div className="rounded-xl border border-border/60 bg-secondary/30 p-3">
           <div className="flex items-center gap-2 mb-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Live Preview
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+              This is what they'll see
             </p>
             {generating && <Loader2 size={10} className="text-muted-foreground animate-spin" />}
           </div>
