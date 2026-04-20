@@ -261,14 +261,6 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
                   {DOW_LABELS[new Date(day.dateStr + "T12:00:00").getDay()]}
                 </span>
                 <div className="relative flex items-center justify-center" style={{ width: RING_SIZE, height: RING_SIZE }}>
-                  {/* Streak connector — left half */}
-                  {seg?.prev && (
-                    <span aria-hidden className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 h-[2px] w-1/2 bg-primary/30 rounded-full z-0" />
-                  )}
-                  {/* Streak connector — right half */}
-                  {seg?.next && (
-                    <span aria-hidden className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 h-[2px] w-1/2 bg-primary/30 rounded-full z-0" />
-                  )}
                   <svg width={RING_SIZE} height={RING_SIZE} className="absolute inset-0">
                     {/* Track */}
                     <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R}
@@ -389,14 +381,6 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
                     !dimmed && !isSelected && "hover:bg-muted/30 active:scale-95",
                   )}
                 >
-                  {/* Streak connector — left half (extends through gap to prev cell) */}
-                  {seg?.prev && !dimmed && (
-                    <span aria-hidden className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 h-[2px] w-1/2 bg-primary/30 rounded-full z-0" />
-                  )}
-                  {/* Streak connector — right half */}
-                  {seg?.next && !dimmed && (
-                    <span aria-hidden className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 h-[2px] w-1/2 bg-primary/30 rounded-full z-0" />
-                  )}
                   <svg width={RING_SIZE} height={RING_SIZE} className="absolute inset-0 m-auto">
                     {/* Track — softened primary so active rings read against it */}
                     <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R}
