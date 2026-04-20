@@ -1,7 +1,6 @@
 import { useState } from "react";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
-import { ArrowRight } from "lucide-react";
 
 type CraftType = "word-fill" | "cryptogram" | "crossword" | "word-search";
 
@@ -10,10 +9,7 @@ type CraftType = "word-fill" | "cryptogram" | "crossword" | "word-search";
 interface TypeOption {
   value: CraftType;
   label: string;
-  tagline: string;        // one punchy line shown large
-  youDo: string;          // what the creator does
-  theyGet: string;        // what the recipient experiences
-  exampleWords: string[]; // shown as small word chips
+  tagline: string;        // short description shown under the title
   difficulty: "Easy" | "Medium" | "Tricky";
   accentClass: string;    // border/bg accent on hover
   iconBg: string;
@@ -24,9 +20,6 @@ const TYPE_OPTIONS: TypeOption[] = [
     value: "word-search",
     label: "Word Search",
     tagline: "Hide words in a grid",
-    youDo: "Enter words from your life",
-    theyGet: "Hunt for every one",
-    exampleWords: ["NASHVILLE", "BIRTHDAY", "CHUCKY"],
     difficulty: "Easy",
     accentClass: "hover:border-sky-400/40 hover:bg-sky-400/[0.03]",
     iconBg: "bg-sky-400/10 text-sky-500",
@@ -35,9 +28,6 @@ const TYPE_OPTIONS: TypeOption[] = [
     value: "word-fill",
     label: "Word Fill-In",
     tagline: "Build a grid from your words",
-    youDo: "Give the words, set the grid",
-    theyGet: "Place every word perfectly",
-    exampleWords: ["VACATION", "BEACH", "SUMMER"],
     difficulty: "Medium",
     accentClass: "hover:border-emerald-400/40 hover:bg-emerald-400/[0.03]",
     iconBg: "bg-emerald-400/10 text-emerald-500",
@@ -46,9 +36,6 @@ const TYPE_OPTIONS: TypeOption[] = [
     value: "crossword",
     label: "Crossword",
     tagline: "Write the clues, set the trap",
-    youDo: "Write answers + clever clues",
-    theyGet: "Decode every clue",
-    exampleWords: ["LONDON", "PASSPORT", "AIRPORT"],
     difficulty: "Tricky",
     accentClass: "hover:border-primary/40 hover:bg-primary/[0.03]",
     iconBg: "bg-primary/10 text-primary",
@@ -57,9 +44,6 @@ const TYPE_OPTIONS: TypeOption[] = [
     value: "cryptogram",
     label: "Cryptogram",
     tagline: "Turn a message into a cipher",
-    youDo: "Write any phrase or message",
-    theyGet: "Decode it letter by letter",
-    exampleWords: ["MEET ME AT MIDNIGHT"],
     difficulty: "Tricky",
     accentClass: "hover:border-violet-400/40 hover:bg-violet-400/[0.03]",
     iconBg: "bg-violet-400/10 text-violet-500",
@@ -105,8 +89,8 @@ export default function CraftTypeCards({ onSelect }: { onSelect: (type: CraftTyp
                 animationFillMode: "backwards",
               }}
             >
-              {/* Top section: icon + label + difficulty */}
-              <div className="px-4 pt-4 pb-3 flex items-start gap-3">
+              {/* Single vertically-centered content row */}
+              <div className="flex items-center gap-3 px-4 py-4 min-h-[80px]">
                 {/* Icon in accent background */}
                 <div className={cn(
                   "h-11 w-11 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200",
@@ -128,54 +112,16 @@ export default function CraftTypeCards({ onSelect }: { onSelect: (type: CraftTyp
                       {opt.difficulty}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground leading-snug">
+                  <p className="text-[13px] text-muted-foreground leading-snug truncate">
                     {opt.tagline}
                   </p>
                 </div>
               </div>
 
-              {/* Divider */}
-              <div className="mx-4 h-px bg-border/60" />
-
-              {/* Bottom section: you do / they get */}
-              <div className="px-4 py-3 space-y-1.5">
-                <div className="flex items-start gap-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 w-14 shrink-0 mt-px">
-                    You
-                  </span>
-                  <span className="text-[12px] text-foreground/80 leading-snug">
-                    {opt.youDo}
-                  </span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 w-14 shrink-0 mt-px">
-                    They
-                  </span>
-                  <span className="text-[12px] text-foreground/80 leading-snug">
-                    {opt.theyGet}
-                  </span>
-                </div>
-              </div>
-
-              {/* Example words */}
-              <div className="px-4 pb-4 flex items-center gap-1.5 flex-wrap">
-                {opt.exampleWords.map((word) => (
-                  <span
-                    key={word}
-                    className="text-[10px] font-mono px-2 py-0.5 rounded bg-secondary text-muted-foreground"
-                  >
-                    {word}
-                  </span>
-                ))}
-                <span className="text-[10px] text-muted-foreground/40 ml-auto flex items-center gap-0.5">
-                  Choose <ArrowRight size={10} />
-                </span>
-              </div>
-
               {/* Subtle bottom accent line on hover */}
               <div className={cn(
                 "absolute bottom-0 left-0 right-0 h-0.5 transition-opacity duration-200",
-                isHovered ? "opacity-100" : "opacity-0"
+                isHovered ? "opacity-60" : "opacity-0"
               )}
                 style={{
                   background: opt.value === "word-search" ? "hsl(200 80% 60%)" :
