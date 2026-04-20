@@ -144,6 +144,63 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser, 
     [effectivePlus, activityMap, currentMonth.year, currentMonth.month],
   );
 
+  /**
+   * Streak metadata for daily-complete days:
+   *  - segmentByDate: each daily-complete date maps to its run length and
+   *    whether it connects to the previous/next day in the same run.
+   *  - activeStreakEndDate: last day of the streak that includes today or
+   *    yesterday (the live streak the user is currently extending).
+   */
+  const streakInfo = useMemo(() => {
+    const dailyDates = Array.from(activityMap.values())
+      .filter((d) => d.status === "daily-complete")
+      .map((d) => d.dateStr)
+      .sort();
+
+    type Seg = { length: number; prev: boolean; next: boolean; runEndDate: string };
+    const segmentByDate = new Map<string, Seg>();
+
+    let runStart = 0;
+    for (let i = 0; i < dailyDates.length; i++) {
+      const isLast = i === dailyDates.length - 1;
+      const nextConsec = !isLast && (() => {
+        const a = new Date(dailyDates[i] + "T12:00:00");
+        const b = new Date(dailyDates[i + 1] + "T12:00:00");
+        return Math.round((b.getTime() - a.getTime()) / 86_400_000) === 1;
+      })();
+
+      if (!nextConsec) {
+        const runEndDate = dailyDates[i];
+        const length = i - runStart + 1;
+        for (let j = runStart; j <= i; j++) {
+          segmentByDate.set(dailyDates[j], {
+            length,
+            prev: j > runStart,
+            next: j < i,
+            runEndDate,
+          });
+        }
+        runStart = i + 1;
+      }
+    }
+
+    // Active streak = run whose last day is today or yesterday (length ≥ 2)
+    const todayKey = localDateStr(new Date());
+    const yest = new Date(); yest.setDate(yest.getDate() - 1);
+    const yestKey = localDateStr(yest);
+    let activeStreakEndDate: string | null = null;
+    let activeStreakLength = 0;
+    for (const seg of segmentByDate.values()) {
+      if ((seg.runEndDate === todayKey || seg.runEndDate === yestKey) && seg.length >= 2) {
+        activeStreakEndDate = seg.runEndDate;
+        activeStreakLength = seg.length;
+        break;
+      }
+    }
+
+    return { segmentByDate, activeStreakEndDate, activeStreakLength };
+  }, [activityMap]);
+
   if (!activityMap) return null;
 
   const today = localDateStr(new Date());
