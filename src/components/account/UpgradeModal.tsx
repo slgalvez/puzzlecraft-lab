@@ -59,7 +59,7 @@ export default function UpgradeModal({ open, onClose, trigger = "generic" }: Upg
     return (
       <>
         <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose} aria-hidden />
-        <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-background pb-[env(safe-area-inset-bottom)]">
+        <div className="fixed bottom-0 left-0 right-0 z-50 max-h-[92dvh] overflow-y-auto rounded-t-3xl bg-background pb-[env(safe-area-inset-bottom)]">
           <div className="flex justify-center pt-3 pb-1">
             <div className="w-10 h-1 rounded-full bg-border/60" />
           </div>
@@ -83,15 +83,16 @@ export default function UpgradeModal({ open, onClose, trigger = "generic" }: Upg
     return (
       <>
         <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose} aria-hidden />
-        <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-background pb-[env(safe-area-inset-bottom)] max-h-[92vh] overflow-y-auto">
+        <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-background pb-[env(safe-area-inset-bottom)] max-h-[92dvh] overflow-y-auto">
           <div className="flex justify-center pt-3 pb-1">
             <div className="w-10 h-1 rounded-full bg-border/60" />
           </div>
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-muted/60"
+            className="absolute top-3 right-3 flex h-11 w-11 items-center justify-center rounded-full bg-muted/60"
+            aria-label="Close"
           >
-            <X size={15} className="text-muted-foreground" />
+            <X size={16} className="text-muted-foreground" />
           </button>
 
           <div className="px-6 pt-2 pb-6 space-y-5">
@@ -165,7 +166,7 @@ export default function UpgradeModal({ open, onClose, trigger = "generic" }: Upg
     return (
       <>
         <div className="fixed inset-0 z-50 bg-black/50" aria-hidden />
-        <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-background pb-[env(safe-area-inset-bottom)]">
+        <div className="fixed bottom-0 left-0 right-0 z-50 max-h-[92dvh] overflow-y-auto rounded-t-3xl bg-background pb-[env(safe-area-inset-bottom)]">
           <div className="px-6 pb-8 pt-8 text-center space-y-4">
             <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
               <Check size={28} className="text-emerald-600" />

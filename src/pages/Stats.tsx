@@ -1160,7 +1160,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
           {/* ── end LEFT COLUMN ── */}
 
           {/* ── RIGHT COLUMN ── */}
-          <div className="w-full space-y-5 md:sticky md:top-24 md:w-[320px] md:shrink-0 lg:w-[360px]">
+          <div className="w-full space-y-5 lg:sticky lg:top-24 md:w-full lg:w-[360px] lg:shrink-0">
 
             {/* Activity calendar */}
             {showGeneral && (
