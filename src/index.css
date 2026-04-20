@@ -15,6 +15,16 @@ html {
   .private-app [data-sidebar="sidebar"] {
     padding-top: env(safe-area-inset-top, 0px);
   }
+
+  /* Suppress overscroll bounce so installed PWA feels native */
+  html, body {
+    overscroll-behavior-y: none;
+  }
+}
+
+/* dvh fallback for older browsers without dynamic viewport units */
+@supports not (height: 100dvh) {
+  .min-h-dvh { min-height: 100vh; }
 }
 
 @tailwind base;

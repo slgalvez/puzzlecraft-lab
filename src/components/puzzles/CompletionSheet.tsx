@@ -100,7 +100,7 @@ export function CompletionSheet({
           "fixed bottom-0 left-0 right-0 z-50",
           "rounded-t-3xl bg-background shadow-2xl",
           "transition-transform duration-[320ms] ease-out",
-          "max-h-[92vh] overflow-y-auto",
+          "max-h-[92dvh] overflow-y-auto",
           "pb-[env(safe-area-inset-bottom)]",
           animateIn ? "translate-y-0" : "translate-y-full"
         )}

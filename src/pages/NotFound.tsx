@@ -12,7 +12,7 @@ const NotFound = () => {
   // If attempting to access /p/* routes without auth, show a generic denial
   if (location.pathname.startsWith("/p")) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-background">
         <p className="text-sm text-muted-foreground">Page not available</p>
       </div>
     );

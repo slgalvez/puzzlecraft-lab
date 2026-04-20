@@ -43,7 +43,7 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
 
   if (loading) {
     return (
-      <div className="private-app flex items-center justify-center min-h-screen">
+      <div className="private-app flex items-center justify-center min-h-[100dvh]">
         <div className="text-sm text-muted-foreground">Loading...</div>
       </div>
     );
