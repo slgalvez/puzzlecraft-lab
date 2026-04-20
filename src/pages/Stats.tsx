@@ -1058,9 +1058,12 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
             {/* Activity calendar */}
             {showGeneral && (
               <div className="rounded-2xl border bg-card overflow-hidden">
-                <div className="px-4 py-3 border-b border-border/60 flex items-center gap-2">
-                  <Calendar size={13} className="text-primary" />
-                  <h2 className="font-display text-sm font-semibold text-foreground">Activity</h2>
+                <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={13} className="text-primary" />
+                    <h2 className="font-display text-sm font-semibold text-foreground">Activity</h2>
+                  </div>
+                  <PreviewLabel />
                 </div>
                 <div className="px-3 py-3">
                   <InlineCalendar
@@ -1069,6 +1072,11 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                     dataVersion={dataVersion}
                     onUpgrade={() => setUpgradeOpen(true)}
                     viewAsUser={isViewAs ? viewAsUser : null}
+                    previewSource={previewActive ? {
+                      completions: preview.profile.calendar.completions,
+                      dailyData: preview.profile.calendar.dailyData,
+                      craftDates: preview.profile.calendar.craftDates,
+                    } : null}
                   />
                 </div>
               </div>
