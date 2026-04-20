@@ -502,29 +502,56 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
   const { viewAsUser } = useViewAsUser();
   const isViewAs = viewAsMode && !!viewAsUser;
 
+  // QA preview context — strict isolation from real data when active
+  const preview = usePreviewMode();
+  const previewActive = preview.active && !isViewAs;
+
   const { isPremium: premiumAccess, showUpgradeCTA: showUpgrade } = usePremiumAccess();
-  const isPlus = premiumAccess;
+  // Preview overrides Plus entitlement when active (read-only — never persisted)
+  const isPlus = previewActive ? preview.isPlus : premiumAccess;
   const { account } = useUserAccount();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
-  const demoActive = !!(account?.isAdmin && hasDemoData());
+  const demoActive = !!(account?.isAdmin && hasDemoData() && !previewActive);
 
-  const stats          = useMemo(() => isViewAs ? getProgressStatsFrom(viewAsUser!.completions) : getProgressStats(demoActive),                [dataVersion, isViewAs, viewAsUser, demoActive]);
-  const dailyStreak    = useMemo(() => isViewAs ? getDailyStreakFrom(viewAsUser!.dailyData) : getDailyStreak(),                  [dataVersion, isViewAs, viewAsUser]);
-  const dailyCompleted = useMemo(() => isViewAs ? getTotalDailyCompletedFrom(viewAsUser!.dailyData) : getTotalDailyCompleted(),          [dataVersion, isViewAs, viewAsUser]);
-  const endlessStats   = useMemo(() => isViewAs ? getEndlessStatsFrom(viewAsUser!.endlessData) : getEndlessStats(), [dataVersion, isViewAs, viewAsUser]);
+  // STRICT 3-BRANCH SOURCE SELECTION — preview > viewAs > real (never merged)
+  const stats = useMemo(() => {
+    if (previewActive)            return getProgressStatsFrom(preview.profile.calendar.completions);
+    if (isViewAs)                 return getProgressStatsFrom(viewAsUser!.completions);
+    return getProgressStats(demoActive);
+  }, [dataVersion, previewActive, preview.profile.calendar.completions, isViewAs, viewAsUser, demoActive]);
+
+  const dailyStreak = useMemo(() => {
+    if (previewActive)            return getDailyStreakFrom(preview.profile.calendar.dailyData);
+    if (isViewAs)                 return getDailyStreakFrom(viewAsUser!.dailyData);
+    return getDailyStreak();
+  }, [dataVersion, previewActive, preview.profile.calendar.dailyData, isViewAs, viewAsUser]);
+
+  const dailyCompleted = useMemo(() => {
+    if (previewActive)            return getTotalDailyCompletedFrom(preview.profile.calendar.dailyData);
+    if (isViewAs)                 return getTotalDailyCompletedFrom(viewAsUser!.dailyData);
+    return getTotalDailyCompleted();
+  }, [dataVersion, previewActive, preview.profile.calendar.dailyData, isViewAs, viewAsUser]);
+
+  const endlessStats = useMemo(() => {
+    if (previewActive)            return null; // preview doesn't fixture endless
+    if (isViewAs)                 return getEndlessStatsFrom(viewAsUser!.endlessData);
+    return getEndlessStats();
+  }, [dataVersion, previewActive, isViewAs, viewAsUser]);
 
   // Build solve record lookup for matching completions to scores/badges
   const solveRecordMap = useMemo(() => {
-    const recs = isViewAs
-      ? getSolveRecordsFrom(viewAsUser!.solves)
-      : demoActive ? getAllSolveRecordsIncludingDemo() : getSolveRecords();
+    const recs = previewActive
+      ? preview.profile.calendar.solves
+      : isViewAs
+        ? getSolveRecordsFrom(viewAsUser!.solves)
+        : demoActive ? getAllSolveRecordsIncludingDemo() : getSolveRecords();
     const map = new Map<string, SolveRecord>();
     for (const r of recs) {
       map.set(`${r.puzzleType}-${r.completedAt.slice(0, 16)}`, r);
     }
     return map;
-  }, [dataVersion, isViewAs, viewAsUser, demoActive]);
+  }, [dataVersion, previewActive, preview.profile.calendar.solves, isViewAs, viewAsUser, demoActive]);
   const endlessSummary = endlessStats ?? {
     totalSessions: 0,
     totalSolved: 0,
@@ -536,17 +563,21 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
 
   // Unified rating info — handles provisional, confirmed, and no-data states
   const localRatingInfo = useMemo(() => {
-    const recs = isViewAs
-      ? getSolveRecordsFrom(viewAsUser!.solves).filter((r) => r.solveTime >= 10)
-      : (demoActive ? getAllSolveRecordsIncludingDemo() : getSolveRecords()).filter((r) => r.solveTime >= 10);
+    const recs = previewActive
+      ? preview.profile.calendar.solves.filter((r) => r.solveTime >= 10)
+      : isViewAs
+        ? getSolveRecordsFrom(viewAsUser!.solves).filter((r) => r.solveTime >= 10)
+        : (demoActive ? getAllSolveRecordsIncludingDemo() : getSolveRecords()).filter((r) => r.solveTime >= 10);
     return getPlayerRatingInfo(recs);
-  }, [dataVersion, isViewAs, viewAsUser]);
+  }, [dataVersion, previewActive, preview.profile.calendar.solves, isViewAs, viewAsUser, demoActive]);
 
   // Peak rating — highest rolling-window rating across all recorded solves
   const peakRating = useMemo(() => {
-    const recs = isViewAs
-      ? getSolveRecordsFrom(viewAsUser!.solves).filter((r) => r.solveTime >= 10)
-      : (demoActive ? getAllSolveRecordsIncludingDemo() : getSolveRecords()).filter((r) => r.solveTime >= 10);
+    const recs = previewActive
+      ? preview.profile.calendar.solves.filter((r) => r.solveTime >= 10)
+      : isViewAs
+        ? getSolveRecordsFrom(viewAsUser!.solves).filter((r) => r.solveTime >= 10)
+        : (demoActive ? getAllSolveRecordsIncludingDemo() : getSolveRecords()).filter((r) => r.solveTime >= 10);
     if (recs.length < 5) return null;
     let peak = 0;
     for (let i = 0; i <= recs.length - 5; i++) {
@@ -555,7 +586,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
       peak = Math.max(peak, Math.round(avg));
     }
     return peak;
-  }, [dataVersion, isViewAs, viewAsUser]);
+  }, [dataVersion, previewActive, preview.profile.calendar.solves, isViewAs, viewAsUser, demoActive]);
 
   // In view-as mode, fetch the target user's leaderboard entry instead
   const viewAsUserId = isViewAs ? viewAsUser!.id : null;
