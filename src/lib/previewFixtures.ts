@@ -237,18 +237,22 @@ export interface MockMessage {
   body: string;
   isMine: boolean;
   createdAt: string;
-  kind: "text" | "challenge" | "reveal" | "completion" | "milestone";
+  /** "puzzle-sent" / "puzzle-solved" render via PuzzleMessageBubble */
+  kind: "text" | "challenge" | "reveal" | "completion" | "milestone" | "puzzle-sent" | "puzzle-solved";
 }
 
 export function buildMessagingFixture(): MockMessage[] {
   const now = Date.now();
   return [
-    { id: "m1", body: "Hey! Want to try this one?", isMine: false, createdAt: new Date(now - 600_000).toISOString(), kind: "text" },
-    { id: "m2", body: "Sure, send it over 👀", isMine: true, createdAt: new Date(now - 540_000).toISOString(), kind: "text" },
-    { id: "m3", body: "🧩 Crossword challenge — beat 3:42", isMine: false, createdAt: new Date(now - 480_000).toISOString(), kind: "challenge" },
-    { id: "m4", body: "Solved! 3:21 ⏱️", isMine: true, createdAt: new Date(now - 300_000).toISOString(), kind: "completion" },
-    { id: "m5", body: "🎉 Reveal: \"Coffee Run\"", isMine: false, createdAt: new Date(now - 240_000).toISOString(), kind: "reveal" },
-    { id: "m6", body: "🏆 You hit a 7-day streak!", isMine: true, createdAt: new Date(now - 60_000).toISOString(), kind: "milestone" },
+    { id: "m1", body: "Hey! Want to try this one?", isMine: false, createdAt: new Date(now - 720_000).toISOString(), kind: "text" },
+    { id: "m2", body: "Sure, send it over 👀", isMine: true, createdAt: new Date(now - 660_000).toISOString(), kind: "text" },
+    { id: "m3", body: "__PUZZLE_SENT__:abc123:crossword:Crossword", isMine: false, createdAt: new Date(now - 600_000).toISOString(), kind: "puzzle-sent" },
+    { id: "m4", body: "🧩 Crossword challenge — beat 3:42", isMine: false, createdAt: new Date(now - 540_000).toISOString(), kind: "challenge" },
+    { id: "m5", body: "On it! 🔥", isMine: true, createdAt: new Date(now - 420_000).toISOString(), kind: "text" },
+    { id: "m6", body: "__PUZZLE_SOLVED__:abc123:crossword:Crossword", isMine: true, createdAt: new Date(now - 300_000).toISOString(), kind: "puzzle-solved" },
+    { id: "m7", body: "Solved! 3:21 ⏱️", isMine: true, createdAt: new Date(now - 280_000).toISOString(), kind: "completion" },
+    { id: "m8", body: "🎉 Reveal: \"Coffee Run\"", isMine: false, createdAt: new Date(now - 240_000).toISOString(), kind: "reveal" },
+    { id: "m9", body: "🏆 You hit a 7-day streak!", isMine: true, createdAt: new Date(now - 60_000).toISOString(), kind: "milestone" },
   ];
 }
 
@@ -256,4 +260,97 @@ export function buildMessagingFixture(): MockMessage[] {
 
 export function buildMilestoneFixture(id = "streak-7") {
   return { id, label: "7-Day Streak", icon: "flame" as const };
+}
+
+/* ── Share variations fixture ── */
+
+export type ShareVariation = {
+  id: string;
+  label: string;
+  description: string;
+  builder: "completion" | "daily" | "craft" | "solve-result";
+  params: Record<string, unknown>;
+};
+
+export function buildShareVariations(): ShareVariation[] {
+  return [
+    {
+      id: "completion-pb",
+      label: "Completion · Personal Best",
+      description: "Quick-play solve with new PB",
+      builder: "completion",
+      params: {
+        type: "crossword", difficulty: "medium", time: 184, seed: 42, isDaily: false,
+        isPB: true, prevBest: 221, improvement: 37,
+      },
+    },
+    {
+      id: "completion-regular",
+      label: "Completion · Regular",
+      description: "Quick-play solve, no PB",
+      builder: "completion",
+      params: {
+        type: "sudoku", difficulty: "hard", time: 312, seed: 99, isDaily: false, isPB: false,
+      },
+    },
+    {
+      id: "daily-streak-rank",
+      label: "Daily · Streak + Rank",
+      description: "Today's daily with 7-day streak and top-10 rank",
+      builder: "daily",
+      params: {
+        typeName: "Crossword", difficulty: "medium", time: 201, streak: 7,
+        rank: 8, total: 412, shareUrl: "https://puzzlecrft.com/daily",
+      },
+    },
+    {
+      id: "daily-streakless",
+      label: "Daily · No streak",
+      description: "Today's daily, first day, no rank",
+      builder: "daily",
+      params: {
+        typeName: "Sudoku", difficulty: "easy", time: 95, streak: 0,
+        rank: null, total: null, shareUrl: "https://puzzlecrft.com/daily",
+      },
+    },
+    {
+      id: "craft-with-time",
+      label: "Craft · With creator time",
+      description: "Crafted puzzle with challenge time",
+      builder: "craft",
+      params: {
+        title: "Coffee Run", from: "Avery", url: "https://puzzlecrft.com/s/abc123",
+        type: "crossword", creatorSolveTime: 222,
+      },
+    },
+    {
+      id: "craft-no-title",
+      label: "Craft · No title",
+      description: "Crafted puzzle, no title, no time",
+      builder: "craft",
+      params: {
+        from: "Bjorn", url: "https://puzzlecrft.com/s/xyz789", type: "word-search",
+      },
+    },
+    {
+      id: "solve-result-faster",
+      label: "Solve result · Beat creator",
+      description: "Recipient solved faster than creator",
+      builder: "solve-result",
+      params: {
+        title: "Coffee Run", type: "crossword", solveTime: 180,
+        creatorSolveTime: 222, url: "https://puzzlecrft.com/s/abc123",
+      },
+    },
+    {
+      id: "solve-result-slower",
+      label: "Solve result · Try again",
+      description: "Recipient slower than creator",
+      builder: "solve-result",
+      params: {
+        title: "Coffee Run", type: "crossword", solveTime: 260,
+        creatorSolveTime: 222, url: "https://puzzlecrft.com/s/abc123",
+      },
+    },
+  ];
 }
