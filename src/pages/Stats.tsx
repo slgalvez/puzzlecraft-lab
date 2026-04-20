@@ -271,7 +271,13 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }
               const isSelected = selectedDay?.dateStr === day.dateStr;
               const dimmed = isFuture || isOutOfRange;
 
-              return (
+              const dailyLabel = day.dailyCompletion ? `Daily solved · ${formatTime(day.dailyCompletion.time)}` : null;
+              const solvedLabel = day.puzzleCount > 0 ? `${day.puzzleCount} puzzle${day.puzzleCount === 1 ? "" : "s"} solved` : null;
+              const craftLabel = day.craftCount > 0 ? `${day.craftCount} craft${day.craftCount === 1 ? "" : "s"} sent` : null;
+              const tooltipDate = new Date(day.dateStr + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+              const hasActivity = !!(dailyLabel || solvedLabel || craftLabel);
+
+              const cellButton = (
                 <button
                   key={day.dateStr}
                   onClick={() => !dimmed && handleDayTap(day)}
@@ -328,6 +334,26 @@ function InlineCalendar({ isViewAs, isPlus, dataVersion, onUpgrade, viewAsUser }
                     <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-[2px] rounded-full bg-primary shadow-[0_0_4px_hsl(var(--primary)/0.7)] z-10" />
                   )}
                 </button>
+              );
+
+              if (dimmed) return cellButton;
+
+              return (
+                <Tooltip key={day.dateStr} delayDuration={200}>
+                  <TooltipTrigger asChild>{cellButton}</TooltipTrigger>
+                  <TooltipContent side="top" className="text-[10px] py-1.5 px-2">
+                    <p className="font-semibold text-foreground">{tooltipDate}{isToday ? " · Today" : ""}</p>
+                    {hasActivity ? (
+                      <div className="mt-0.5 space-y-0.5 text-muted-foreground">
+                        {dailyLabel && <p>{dailyLabel}</p>}
+                        {solvedLabel && <p>{solvedLabel}</p>}
+                        {craftLabel && <p>{craftLabel}</p>}
+                      </div>
+                    ) : (
+                      <p className="mt-0.5 text-muted-foreground">No activity</p>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
               );
             })}
           </div>
