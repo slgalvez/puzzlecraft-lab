@@ -1,75 +1,71 @@
 
 
-# Craft Audit Refactor — apply the 5-file overhaul
+# Refine Craft content step
 
-Apply the user's deep audit. Use the uploaded files as the design intent, but reconcile against current project APIs (no `CraftTemplateSelector`, current `CraftThemePicker` props, unified `executeShare` cascade). Plus two refinements: drop the chevron from type cards, and add subtle share confirmation.
+Tighten copy, add color palette inside Personalize, and add subtle preview framing. No layout/flow changes.
 
-## Files
+## File: `src/pages/CraftPuzzle.tsx`
 
-### 1. `src/components/craft/CraftTypeCards.tsx` — replace
-Single-row cards with icon + label + difficulty badge + tagline.
-- **No chevron icon.** The card is already the tap surface.
-- Hover accent line (bottom 0.5px colored bar, opacity-60 on hover) is the only hover affordance besides icon scale + card shadow.
-- Vertically centered content, `min-h-[80px]`, generous tap target.
-- `TYPE_OPTIONS` export preserved.
+### 1. Primary CTA
+`"Preview Puzzle"` → `"Continue"`. Loading label unchanged.
 
-### 2. `src/components/craft/CraftSolveFirst.tsx` — replace
-- "Solve it first" + "Skip for now" as co-equal side-by-side `Button`s.
-- Solved state: compact emerald row showing "Your time: m:ss · Can they beat you?".
-- Drop the chevron-footer skip path.
+### 2. Input label + placeholder examples
+- Label: `"Your words (one per line or comma-separated)"` → `"Your words (names, memories, inside jokes)"`.
+- Placeholders for word-search and word-fill: `"birthday\nnashville\nbeach\ntravel\nsummer"`.
 
-### 3. `src/components/craft/CraftNav.tsx` — replace
-- Prop renamed `draftCount` → `unreadCount`.
-- Badge clamps to `9+`.
+### 3. Reintroduce color palette inside Personalize
+Add imports:
+```tsx
+import { CraftColorPicker, CRAFT_PALETTES, applyPalette } from "@/components/craft/CraftColorPicker";
+```
+Add state:
+```tsx
+const [colorPalette, setColorPalette] = useState<string>("default");
+```
+Render `<CraftColorPicker selected={colorPalette} onSelect={...} />` inside the Personalize panel, below `CraftSettingsPanel`.
 
-### 4. `src/components/craft/CraftInbox.tsx` — replace
-- Smart default tab (`useMemo`): `received` if unread > 0, else `sent` if any, else `drafts`.
-- Newly-solved sent items render an emerald banner: "🎉 They solved it! In m:ss".
-- Received tab: "Title — from {name}" inline; primary CTA on `not_started`.
-- Pass `onNavigate={() => {}}` to `EmptyCraftDrafts` (current optional prop).
+**Palette application safety**:
+- The picker's `onSelect` handler only runs in response to a user click (already client-only), and calls `applyPalette` from the click handler — never inside render.
+- Wrap the document mutation in a `typeof document !== "undefined"` guard inside the `onSelect` handler before calling `applyPalette`.
+- Cleanup `useEffect` on unmount restores the default palette, but **guarded**: only call `applyPalette(CRAFT_PALETTES[0])` if `colorPalette !== "default"` at unmount time (read via ref to avoid stale closure). This prevents redundant DOM writes during rapid step transitions and avoids flicker when the user never changed the palette.
+- `handleStartOver` and `resetToCreate` reset state to `"default"` and call the guarded restore (only if currently non-default).
 
-### 5. `src/pages/CraftPuzzle.tsx` — replace
+**Payload consistency — shared helper**:
+Add a single helper used by both generate and regenerate:
+```tsx
+const attachPaletteToPayload = (payload: Record<string, unknown>) => {
+  if (colorPalette && colorPalette !== "default") {
+    (payload as Record<string, unknown>).colorPalette = colorPalette;
+  }
+  return payload;
+};
+```
+Both `handleGenerate` and `handleRegenerate` call `attachPaletteToPayload(payload)` immediately before persisting to Supabase, so the two paths cannot diverge.
 
-**Removed**:
-- `CraftStepper` import + render.
-- Page subtitle.
-- Manual `Save draft` button + `draftSaved`/`draftDirty` state.
-- "No account needed" copy.
-- `CraftColorPicker` usage + palette state + reset effect.
+### 4. Personalize summary copy — accuracy check
+Difficulty IS rendered inside the Personalize panel today (via `CraftSettingsPanel`). With color now added, summary line 556 becomes:
+`"title · reveal message · theme · color · difficulty"`.
 
-**Restructured**:
-- Single h1 "Create a Puzzle", no subtitle.
-- `CraftNav` receives `unreadCount` from `loadReceivedItems().filter(r => r.status === "not_started").length`.
-- **Step 2 (content)**: primary input (words/phrase/clues) + Generate visible; everything else inside collapsed `Personalize` disclosure (`Palette` icon, ChevronDown/Up).
-- **Step 3 (preview)** order: nav row → puzzle hero card → **Send Puzzle + Copy link block** → `CraftSolveFirst` → reveal preview → free-tier limit → Regenerate (outline button with `RefreshCw` icon).
+## File: `src/components/craft/CraftLivePreview.tsx`
 
-**Reconciliation with current project APIs**:
-- Drop `CraftTemplateSelector` (deleted from codebase). Use `CraftThemePicker` with current props: `onPrefillWords` and `showWordSection`.
-- Use the project's share cascade: `executeShare(text, shareUrl)` from `@/lib/shareUtils`; build text via `buildCraftShareText(title, from, url, type, creatorSolveTime)` from `@/lib/craftShare` (positional args).
-- `handleCopyLink` keeps direct clipboard (link only, no surrounding text).
+### 5. Preview framing label
+Replace `"Live Preview"` header label with `"This is what they'll see"`. Keep `text-[10px] font-semibold uppercase tracking-wider` and use `text-muted-foreground/70` for subtlety. Loader spinner stays.
 
-**Share confirmation (NEW refinement)**:
-- After `executeShare` returns:
-  - `"shared"` → `toast.success("Sent ✓")` + briefly set `shareSuccess = "shared"` for 2s; button label flips to "Sent ✓" with `Check` icon during that window.
-  - `"copied"` → `toast.success("Link copied")` + `shareSuccess = "copied"` for 2s; button label flips to "Copied ✓".
-  - `"error"` → `toast.error("Couldn't share — try again")`.
-- After `handleCopyLink` (the explicit copy-link button): `toast.success("Link copied")` + the copy button briefly shows `Check` icon + "Copied" for 2s.
-- Use `sonner` `toast` (already mounted). Confirmation is non-blocking, no modal, no flow interruption. `recordSent()` still fires on `shared`/`copied`.
+### 6. Helper feedback copy
+In `validateWords`, the 5–8 words case message: `"Perfect for a satisfying puzzle"` → `"Nice balance — fun to solve"`.
 
 ## Out of scope
-- `CraftSettingsPanel`, `CraftLivePreview`, `CraftThemePicker`, `CraftPreviewGrid` internals.
-- `shareUtils.ts` cascade implementation.
-- Empty-state components.
-- Routes, Layout, premium hooks.
+- Step flow, header, nav, share/inbox/preview steps.
+- `CraftColorPicker` swatch UI (already swatch-style).
+- `CraftThemePicker`, `CraftSettingsPanel` internals.
 
 ## Verification
-1. `/craft` step 1 — 4 single-row type cards, **no chevron**, hover shows only the bottom accent line + icon scale.
-2. Step 2 — only primary input + Generate visible; "Personalize" expands to title/from/reveal/theme/settings.
-3. Step 3 — Send Puzzle is the second visible element; Regenerate is a visible outline button.
-4. Tap Send Puzzle on macOS Chrome → Messages.app opens AND a "Sent ✓" toast appears AND the button briefly shows "Sent ✓" with check icon.
-5. Tap Send Puzzle on Windows → clipboard fallback fires AND a "Link copied" toast appears AND button briefly shows "Copied ✓".
-6. Tap Copy link → "Link copied" toast + button briefly shows check icon.
-7. Inbox defaults to Received when unread exists, Sent when not, Drafts as last fallback.
-8. Newly-solved sent item shows emerald "They solved it!" banner.
-9. Tab badge reflects unread received count.
+1. `/craft` → pick type → Step 2.
+2. Input label reads "Your words (names, memories, inside jokes)"; placeholder shows the new examples.
+3. Live preview header reads "This is what they'll see" (subtle).
+4. Entering 5–8 words shows "Nice balance — fun to solve".
+5. Personalize → expand → swatch color picker visible; selecting Ocean instantly recolors the live preview grid; collapsed summary reads "title · reveal message · theme · color · difficulty".
+6. Primary CTA reads "Continue".
+7. Generate → recipient page renders chosen palette; Regenerate preserves the same palette (shared helper path).
+8. Start over / unmount with default palette → no DOM mutation (no flicker); start over with non-default → palette resets cleanly.
 
