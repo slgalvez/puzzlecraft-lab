@@ -4,7 +4,6 @@
  * conversations render (text, system messages, share-text mirrors).
  */
 import { useMemo } from "react";
-import { MemoryRouter } from "react-router-dom";
 import { MessageSquare, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PreviewLabel } from "@/components/admin/PreviewLabel";
@@ -59,46 +58,43 @@ export default function QAMessagingPreview({ injectedMessages = [], onClearInjec
         “Send” action above.
       </p>
 
-      {/* MemoryRouter so PuzzleMessageBubble's useNavigate() works in isolation */}
-      <MemoryRouter>
-        <div className="rounded-xl border border-border/40 bg-muted/20 p-3 space-y-1 max-h-[480px] overflow-y-auto">
-          {messages.map((m) => {
-            // System messages → PuzzleMessageBubble
-            if (isPuzzleMessage(m.body)) {
-              return (
-                <PuzzleMessageBubble
-                  key={m.id}
-                  body={m.body}
-                  isMine={m.isMine}
-                  formatTime={formatTime}
-                  createdAt={m.createdAt}
-                />
-              );
-            }
-
-            // Regular bubbles → MessageBubble
+      <div className="rounded-xl border border-border/40 bg-muted/20 p-3 space-y-1 max-h-[480px] overflow-y-auto">
+        {messages.map((m) => {
+          // System messages → PuzzleMessageBubble
+          if (isPuzzleMessage(m.body)) {
             return (
-              <div key={m.id} className={cn("flex", m.isMine ? "justify-end" : "justify-start")}>
-                <MessageBubble
-                  id={m.id}
-                  body={m.body}
-                  isMine={m.isMine}
-                  createdAt={m.createdAt}
-                  readAt={m.isMine ? m.createdAt : null}
-                  isDisappearing={false}
-                  expiresAt={null}
-                  reactions={{}}
-                  currentUserId={MOCK_USER}
-                  formatTime={formatTime}
-                  showTimestamp
-                  groupPosition="single"
-                  senderChanged
-                />
-              </div>
+              <PuzzleMessageBubble
+                key={m.id}
+                body={m.body}
+                isMine={m.isMine}
+                formatTime={formatTime}
+                createdAt={m.createdAt}
+              />
             );
-          })}
-        </div>
-      </MemoryRouter>
+          }
+
+          // Regular bubbles → MessageBubble
+          return (
+            <div key={m.id} className={cn("flex", m.isMine ? "justify-end" : "justify-start")}>
+              <MessageBubble
+                id={m.id}
+                body={m.body}
+                isMine={m.isMine}
+                createdAt={m.createdAt}
+                readAt={m.isMine ? m.createdAt : null}
+                isDisappearing={false}
+                expiresAt={null}
+                reactions={{}}
+                currentUserId={MOCK_USER}
+                formatTime={formatTime}
+                showTimestamp
+                groupPosition="single"
+                senderChanged
+              />
+            </div>
+          );
+        })}
+      </div>
 
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
