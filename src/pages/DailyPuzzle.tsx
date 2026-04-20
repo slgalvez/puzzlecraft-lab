@@ -51,9 +51,11 @@ import type { CrosswordPuzzle, FillInPuzzle } from "@/data/puzzles";
 const DailyPuzzle = () => {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
-  // Today guard: if dateOverride matches today, treat as normal daily
+  // Today guard: if dateOverride matches today (in local time), treat as normal daily.
+  // Use local-midday formatting to avoid UTC date shifts in negative-offset timezones.
   const rawDateOverride = searchParams.get("date") ?? undefined;
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const dateOverride = rawDateOverride === todayStr ? undefined : rawDateOverride;
 
   const challenge = useMemo(() => getTodaysChallenge(dateOverride), [dateOverride]);

@@ -46,7 +46,8 @@ export interface DailyChallenge {
 }
 
 export function getTodaysChallenge(dateOverride?: string): DailyChallenge {
-  const date = dateOverride ? new Date(dateOverride) : new Date();
+  // Always parse YYYY-MM-DD at local midday to avoid UTC/DST date shifts
+  const date = dateOverride ? new Date(dateOverride + "T12:00:00") : new Date();
   return getChallengeForDate(date);
 }
 
