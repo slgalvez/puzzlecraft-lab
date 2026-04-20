@@ -677,7 +677,7 @@ const CraftPuzzle = () => {
                 {/* Generate CTA */}
                 <Button onClick={handleGenerate} disabled={saving} className="w-full gap-2">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  {saving ? "Building your puzzle…" : "Preview Puzzle"}
+                  {saving ? "Building your puzzle…" : "Continue"}
                 </Button>
 
                 {/* Auto-save indicator only — no manual button */}
