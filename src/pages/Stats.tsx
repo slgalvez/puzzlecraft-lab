@@ -664,11 +664,11 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
     return { name: next, threshold: TIER_THRESHOLDS[next] };
   })() : null;
 
-  // Skip sync in view-as mode
+  // Skip sync in view-as or preview mode
   useEffect(() => {
-    if (isViewAs) return;
+    if (isViewAs || previewActive) return;
     if (account) syncLeaderboardRating(account.id, account.displayName);
-  }, [account, dataVersion, isViewAs]);
+  }, [account, dataVersion, isViewAs, previewActive]);
 
   // Filters
   const [viewFilter,     setViewFilter]     = useState<ViewFilter>(null);
