@@ -29,7 +29,8 @@ import {
   getDailyStreak,
   type DailyChallenge,
 } from "@/lib/dailyChallenge";
-import { Calendar, CheckCircle2, Clock, Flame, Trophy, ArrowRight, ArrowLeft, Share } from "lucide-react";
+import { Calendar, CheckCircle2, Clock, Flame, Trophy, ArrowRight, ArrowLeft } from "lucide-react";
+import { ShareButton } from "@/components/ui/ShareButton";
 import { cn } from "@/lib/utils";
 import { setPuzzleOrigin } from "@/lib/puzzleOrigin";
 import { supabase } from "@/integrations/supabase/client";
@@ -115,6 +116,21 @@ const DailyPuzzle = () => {
       writeDailyScore(comp.time);
     }
   }, [challenge.dateStr, writeDailyScore]);
+
+  const handleShareCompletion = useCallback(async () => {
+    if (!completion) return;
+    const text = buildDailyShareText({
+      typeName: info.name,
+      difficulty: challenge.difficulty,
+      time: completion.time,
+      streak: streak.current,
+      shareUrl: `${window.location.origin}/play?code=daily-${challenge.dateStr}`,
+    });
+    const result = await executeShare(text);
+    if (result === "copied") {
+      toast({ title: "Copied to clipboard" });
+    }
+  }, [completion, info.name, challenge.difficulty, challenge.dateStr, streak, toast]);
 
   // ── Puzzle generation (memoized — prevents mobile Safari re-render crash) ──
   const generatedPuzzle = useMemo(() => {
@@ -273,27 +289,14 @@ const DailyPuzzle = () => {
               </div>
             </div>
             <div className="flex flex-wrap gap-2 flex-shrink-0">
-              <Button
+              <ShareButton
                 variant="outline"
                 size="sm"
+                label="Share"
+                onShare={handleShareCompletion}
+                iconSize={14}
                 className="min-h-[40px]"
-                onClick={async () => {
-                  const text = buildDailyShareText({
-                    typeName: info.name,
-                    difficulty: challenge.difficulty,
-                    time: completion.time,
-                    streak: streak.current,
-                    shareUrl: `${window.location.origin}/play?code=daily-${challenge.dateStr}`,
-                  });
-                  const result = await executeShare(text);
-                  if (result === "copied") {
-                    toast({ title: "Copied to clipboard" });
-                  }
-                }}
-              >
-                <Share size={14} className="mr-1.5" />
-                Share
-              </Button>
+              />
               {/* FIX: was /generate/${category} — now uses the correct quick-play route */}
               <Button asChild variant="outline" size="sm" className="min-h-[40px]">
                 <Link to={`/quick-play/${challenge.category}?mode=endless`}>

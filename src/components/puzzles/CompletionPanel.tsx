@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, ArrowLeft, RefreshCw, Share, CheckCheck, TrendingUp, TrendingDown, Trophy, Flame, ImageIcon } from "lucide-react";
+import { Check, ArrowLeft, RefreshCw, TrendingUp, TrendingDown, Trophy, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ShareButton } from "@/components/ui/ShareButton";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type Difficulty, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { getPuzzleOrigin, getBackPath, getBackLabel } from "@/lib/puzzleOrigin";
@@ -400,22 +401,15 @@ const CompletionPanel = ({
         <div className="p-4 sm:p-5 pt-0 space-y-2">
           {/* Prominent share button for PBs and daily solves */}
           {isProminent && shareData && (
-            <Button
+            <ShareButton
               size="sm"
-              onClick={handleShare}
-              disabled={sharing}
-              className="w-full gap-1.5 mb-1"
-            >
-              {sharing
-                ? <RefreshCw size={13} className="animate-spin" />
-                : copied
-                ? <CheckCheck size={13} />
-                : native
-                ? <ImageIcon size={13} />
-                : <Share size={13} />
-              }
-              {sharing ? "Preparing…" : copied ? "Copied" : isNewBest ? "Share Your Record" : "Share Result"}
-            </Button>
+              label={isNewBest ? "Share Your Record" : "Share Result"}
+              busy={sharing}
+              copied={copied}
+              onShare={handleShare}
+              iconSize={14}
+              className="w-full mb-1"
+            />
           )}
 
           <div className="flex flex-wrap gap-2">
@@ -425,23 +419,15 @@ const CompletionPanel = ({
 
             {/* Inline share for non-prominent solves */}
             {!isProminent && shareData && (
-              <Button
+              <ShareButton
                 size="sm"
                 variant="outline"
-                onClick={handleShare}
-                disabled={sharing}
-                className="gap-1.5"
-              >
-                {sharing
-                  ? <RefreshCw size={13} className="animate-spin" />
-                  : copied
-                  ? <CheckCheck size={13} />
-                  : native
-                  ? <ImageIcon size={13} />
-                  : <Share size={13} />
-                }
-                {sharing ? "Preparing…" : copied ? "Copied" : "Share"}
-              </Button>
+                label="Share"
+                busy={sharing}
+                copied={copied}
+                onShare={handleShare}
+                iconSize={14}
+              />
             )}
 
             <Button
