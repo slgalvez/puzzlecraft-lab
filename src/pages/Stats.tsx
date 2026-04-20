@@ -13,7 +13,7 @@ import { getEndlessStats } from "@/lib/endlessHistory";
 import {
   Trophy, Flame, Clock, Target, Calendar,
   Infinity, ArrowRight, TrendingUp, TrendingDown, Shield,
-  Zap, Info, ChevronRight, ChevronLeft, Play, Crown, Lock, RotateCcw, Flame,
+  Zap, Info, ChevronRight, ChevronLeft, Play, Crown, Lock, RotateCcw,
 } from "lucide-react";
 import { isNativeApp } from "@/lib/appMode";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
