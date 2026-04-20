@@ -579,8 +579,8 @@ export function SocialTab({ myRating }: SocialTabProps) {
   const [showAddFriends, setShowAddFriends] = useState(false);
   const { toast } = useToast();
 
-  // Not signed in
-  if (!account) {
+  // Not signed in — but allow preview mode through
+  if (!account && !previewActive) {
     return (
       <div className="flex flex-col items-center justify-center py-14 px-4 text-center">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary mb-4">
@@ -633,9 +633,12 @@ export function SocialTab({ myRating }: SocialTabProps) {
         <>
           {/* 1. Today's daily leaderboard — most immediate, time-sensitive */}
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5">
-              Today vs Friends
-            </p>
+            <div className="flex items-center justify-between mb-2.5">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Today vs Friends
+              </p>
+              <PreviewLabel />
+            </div>
             <FriendsDailyLeaderboard />
           </div>
 
