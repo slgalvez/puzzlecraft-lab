@@ -176,9 +176,16 @@ function LockedCard({ m }: { m: MilestoneResult }) {
 
 // ── Tab content ────────────────────────────────────────────────────────────────
 
+const EMPTY_TAB_COPY: Record<MilestoneTab, { headline: string; cta: string; route: string }> = {
+  ranked:  { headline: "Solve 10 puzzles to earn your Player Rating", cta: "Play Daily", route: "/daily" },
+  solver:  { headline: "Solve a puzzle to start unlocking milestones", cta: "Play Daily", route: "/daily" },
+  crafter: { headline: "Create and send a puzzle to begin", cta: "Create a Puzzle", route: "/craft" },
+  social:  { headline: "Play or share a puzzle with someone to unlock these", cta: "Create a Puzzle", route: "/craft" },
+};
+
 function TabContent({
-  tab, uncelebratedIds,
-}: { tab: MilestoneTab; uncelebratedIds: Set<string>; }) {
+  tab, uncelebratedIds, navigate,
+}: { tab: MilestoneTab; uncelebratedIds: Set<string>; navigate: NavigateFunction; }) {
   const milestones = useMemo(() => getMilestonesForTab(tab), [tab]);
 
   const next       = milestones.find((m) => m.isNext && m.state !== "achieved");
@@ -187,6 +194,7 @@ function TabContent({
   const locked     = milestones.filter((m) => m.state === "locked" && !m.isNext);
 
   const allDone = milestones.every((m) => m.state === "achieved");
+  const isTabEmpty = milestones.every((m) => m.state === "locked");
 
   if (allDone) {
     return (
@@ -200,9 +208,20 @@ function TabContent({
     );
   }
 
+  const emptyCopy = EMPTY_TAB_COPY[tab];
+
   return (
     <div className="space-y-5">
-      {next && <NextCard m={next} isNew={uncelebratedIds.has(next.id)} />}
+      {isTabEmpty ? (
+        <div className="rounded-2xl border border-dashed border-border/60 p-5 text-center space-y-3">
+          <p className="text-sm font-semibold text-foreground">{emptyCopy.headline}</p>
+          <Button variant="default" size="sm" onClick={() => navigate(emptyCopy.route)}>
+            {emptyCopy.cta}
+          </Button>
+        </div>
+      ) : (
+        next && <NextCard m={next} isNew={uncelebratedIds.has(next.id)} />
+      )}
 
       {inProgress.length > 0 && (
         <div className="space-y-2.5">
