@@ -1,126 +1,109 @@
 
 
-# Milestones polish — copy, tone, subtle premium emphasis
+# Milestones become a progress board
 
-Two-file edit. No layout changes, no new components, no animations, no black buttons.
+Replace the Up Next + In Progress + Achieved + Coming Up vertical list inside `<MilestonesSection />` with a single continuous tile grid under a refined Up Next card. One file edited: `src/components/stats/MilestonesSection.tsx`. No changes to `milestones.ts`, no new files, no animation libraries, no black buttons.
 
-## File 1 — `src/lib/milestones.ts`
+## 1. Up Next card refinements
 
-Tighten the `description` strings on the 14 milestone specs only. All `name`, `unlockCopy`, `check`, `progress`, `icon`, `tab` fields untouched.
+- Helper line `"You're starting here"` → **`"Closest to unlock"`**.
+- Add a new helper paragraph below it: **`"You're close"`** in `text-[11px] text-primary/70 mt-1`.
+- CTA copy: `"Start solving →"` / `"Start crafting →"` → **`"Play now →"`** (solver/ranked/social) and **`"Create now →"`** (crafter). Outline + primary text, unchanged styling.
+- For trackable milestones with progress, replace the percent row with a "remaining" string derived from milestone id:
+  - `off-the-bench` → `${10 - solves} more solves to go`
+  - `on-a-roll` → `${3 - days} more days to go`
+  - `iron-habit` → `${30 - days} more days to go`
+  - `the-long-game` → `${8 - typesPlayed} more types to go`
+  - `puzzle-maker` → `${5 - sent} more puzzles to go`
+  - tier-* → `${threshold - rating} rating to go`
+  - Fallback (moment-based) → existing `"Moment-based — you'll know when it happens"`
+  - Implementation: small local helper `remainingLine(m)` parsing `m.progressLabel` (e.g. `"3 of 10 solves"` → `"7 more solves to go"`) so we don't touch `milestones.ts`.
+- Keep the `Progress` bar above the remaining line for trackable milestones with `progressRatio > 0`.
+- For zero-progress Up Next: hide bar, show only encouragement + goal line (existing) + outline CTA. No `0%`, no `0 of X`.
 
-| id | new description |
-|---|---|
-| off-the-bench | Your first rating unlock |
-| tier-skilled | Climb into the Skilled tier |
-| tier-advanced | Climb into the Advanced tier |
-| tier-expert | Reach the top of the board |
-| first-crack | Solve your very first puzzle |
-| on-a-roll | Build your first streak |
-| clean-sheet | Solve with no hints, no mistakes |
-| the-long-game | Play every one of the 8 puzzle types |
-| iron-habit | Hold a 30-day solve streak |
-| made-something | Send your first crafted puzzle |
-| they-solved-it | Get a recipient to finish your puzzle |
-| puzzle-maker | Create and send 5 puzzles |
-| challenge-accepted | Solve a puzzle made for you |
-| game-on | Beat a creator's challenge time |
+## 2. Remove "In Progress", "Achieved", "Coming Up" sections
 
-## File 2 — `src/components/stats/MilestonesSection.tsx`
+Delete the three labeled blocks inside `TabContent`. Replace with a single grid below the Up Next card.
 
-### A. `TAB_META` — warmer achieved icon halos
-- `ranked.bg`: `bg-primary/10` → `bg-primary/15`
-- `solver.bg`: `bg-emerald-500/10` → `bg-emerald-500/15`
-- `crafter.bg`: `bg-amber-500/10` → `bg-amber-500/15`
-- `social.bg`: `bg-violet-500/10` → `bg-violet-500/15`
+## 3. New Progress Grid (the core change)
 
-### B. Two new local lookup helpers (top of file, no exports)
+Below the Up Next card, render every other milestone in the active tab (i.e., all milestones in tab minus the Up Next one) inside:
 
-```ts
-const ENCOURAGEMENT: Record<MilestoneTab, string> = {
-  ranked:  "Every solve sharpens your rating",
-  solver:  "Every solve builds momentum",
-  crafter: "Every puzzle you make starts something",
-  social:  "Every send turns into a connection",
-};
-
-const GOAL_LINE: Record<string, string> = {
-  "off-the-bench":     "Solve 10 puzzles to get started",
-  "tier-skilled":      "Reach the Skilled tier to unlock",
-  "tier-advanced":     "Reach the Advanced tier to unlock",
-  "tier-expert":       "Reach the Expert tier to unlock",
-  "on-a-roll":         "Build a 3-day streak to unlock",
-  "iron-habit":        "Hold a 30-day streak to unlock",
-  "the-long-game":     "Play all 8 puzzle types to unlock",
-  "puzzle-maker":      "Send 5 puzzles to unlock",
-  "made-something":    "Send your first puzzle to unlock",
-};
-function goalLine(id: string) { return GOAL_LINE[id] ?? "Start to unlock this milestone"; }
-
-const CTA: Record<MilestoneTab, { label: string; route: string }> = {
-  ranked:  { label: "Start solving →",  route: "/daily" },
-  solver:  { label: "Start solving →",  route: "/daily" },
-  social:  { label: "Start solving →",  route: "/daily" },
-  crafter: { label: "Start crafting →", route: "/craft" },
-};
+```tsx
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+  {tiles.map(m => <MilestoneTile key={m.id} m={m} />)}
+</div>
 ```
 
-### C. `NextCard` — copy + emphasis + micro-CTA
+Sort order inside the grid:
+1. Active (state `in-progress`, ratio > 0 and < 1)
+2. Not started (state `locked`, ratio === 0, no prior tier locked) — split below
+3. Locked future (ratio === 0, depends on prior tier — `tier-skilled/advanced/expert` and `iron-habit` once lower thresholds unmet count as future)
+4. Completed (state `achieved`)
 
-- Container classes: `border-primary/25 bg-primary/[0.02] shadow-sm` → **`border-primary/40 bg-primary/5 shadow-sm`**.
-- Helper line `"This is your next milestone"` → **`"You're starting here"`**.
-- Replace the zero-progress branch (where `progressLabel` exists but `progressRatio === 0`) with two stacked muted lines:
-  - Line 1: `ENCOURAGEMENT[m.tab]`
-  - Line 2: `goalLine(m.id)`
-  No `Progress` bar, no `0%`, no "Not started — …".
-- Keep the existing `progressRatio > 0` branch intact (label + percent + bar).
-- Keep the moment-based fallback intact (`"Moment-based — you'll know when it happens"`).
-- New micro-CTA at the bottom of the card body:
-  ```tsx
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={() => navigate(CTA[m.tab].route)}
-    className="mt-3 h-8 px-3 text-xs text-primary border-primary/30 hover:bg-primary/5"
-  >
-    {CTA[m.tab].label}
-  </Button>
-  ```
-  Pass `navigate` into `NextCard` as a prop (already available in `TabContent` scope).
+For simplicity and without new data, "future" is identified by id heuristic: `tier-advanced` and `tier-expert` are "future" until `tier-skilled` is achieved; `iron-habit` is "future" until `on-a-roll` is achieved. All others with zero progress = "not started".
 
-### D. `InProgressCard` — defensive zero-state
-When `m.progressRatio === 0`: hide the `Progress` bar and `progressLabel` row, render single muted line **"Just getting started"**. When `> 0`: unchanged.
+Compact mode (Stats embed): cap the grid to **6 tiles total** (Up Next is rendered separately above). Full mode (`/milestones`): no cap.
 
-### E. `LockedCard` — drop "Locked — …" prefix
-Render only `m.description`. Lock icon already conveys state. Remove the `showLockedHint` branch entirely.
+## 4. New `MilestoneTile` (inline subcomponent)
 
-### F. Tab pill row — remove black active fill
-Active classes `bg-foreground text-background border-foreground` → **`bg-primary text-primary-foreground border-primary`**.
-Active inner `<Icon className={cn(isActive ? "text-background" : color)} />` → **`text-primary-foreground`** when active.
-Active count chip `text-background/70` → **`text-primary-foreground/80`** when active.
-Inactive states unchanged.
+Replaces `InProgressCard`, `AchievedCard`, `LockedCard`. One inline component inside `MilestonesSection.tsx`, no new file. Branches on derived tile state:
 
-### G. Empty-state copy (`EMPTY_TAB_COPY`)
-- ranked: `"Solve 10 puzzles to earn your Player Rating"` → **"Solve 10 puzzles to earn your first rating"**
-- solver: `"Solve a puzzle to start unlocking milestones"` → **"Start solving to unlock your first milestone"**
-- crafter: `"Create and send a puzzle to begin"` → **"Create your first puzzle to begin"**
-- social: `"Play or share a puzzle with someone to unlock these"` → **"Play or share with someone to unlock these"**
+### Active (in-progress, 0 < ratio < 1)
+```
+rounded-2xl border border-border/60 bg-card px-4 py-3
+hover:shadow-sm hover:-translate-y-[1px] transition-all
+```
+Icon top-right · title · description · `<Progress value={ratio*100} className="h-1.5">` · `progressLabel` · `<p className="text-[11px] text-muted-foreground mt-1">Keep going</p>`.
 
-CTA buttons in the dashed empty-state already use `variant="default"` (primary orange) — no change.
+### Not started (zero progress, not "future")
+Same container styling as active (no opacity dim — feels available).
+Icon · title · description · `<p className="text-[11px] text-muted-foreground mt-2">Start to unlock this</p>`.
+**No** progress bar, no `0 of X`, no `0%`.
 
-## What is NOT touched
+### Completed
+```
+rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3
+```
+Icon container `bg-primary/15` · `CheckCircle2` accent · title · description · `<span className="text-[11px] text-primary mt-1">Completed</span>`. Glow class `animate-milestone-glow` retained when in `uncelebratedIds` (existing CSS keyframe untouched).
 
-- Milestone logic, unlocking, `milestones.ts` structure beyond description strings.
-- Layout, ordering, structure, routes, share cards, modal manager.
-- Animations (`milestone-glow` keyframe untouched).
-- Standalone `/milestones` page — inherits all polish via shared component.
+### Locked / future
+```
+rounded-2xl border border-border/40 bg-card px-4 py-3 opacity-85
+```
+Lock icon (no title gray-out beyond opacity) · title · description · `<p className="text-[11px] text-muted-foreground mt-2">Unlocks after previous tier</p>`. No progress bar, no "Locked —" prefix.
+
+All four variants share the same dimensions / icon placement so the grid is visually uniform.
+
+## 5. Tab pill row — unchanged
+
+Already uses `bg-primary text-primary-foreground` for active state from prior pass. Verified no black fills remain.
+
+## 6. Empty state behavior — unchanged
+
+The global "no progress anywhere" branch (dashed CTA) stays as-is — it only shows when literally every milestone has `state === "locked"` and `progressRatio === 0`. The new grid means even truly fresh users with one solve will see Up Next + tiles for First Crack (active or completed), Off the Bench (active), On a Roll (not started), etc.
+
+## 7. Compact vs full
+
+| Mode | Up Next | Grid columns | Grid cap |
+|---|---|---|---|
+| `compact` (Stats) | yes | 1 / 2 / 3 | 6 tiles |
+| full (`/milestones`) | yes | 1 / 2 / 3 | no cap |
+
+## 8. What stays untouched
+
+- `src/lib/milestones.ts` — descriptions, logic, snapshot, `getAllMilestones`, `checkMilestones`, all unchanged.
+- `MilestoneShareCard`, `MilestoneModalManager`, `AdminPreview`, `PremiumPreview` — read legacy fields, untouched.
+- `@keyframes milestone-glow` and the new-unlock glow trigger — untouched.
+- Routing, `useNavigate`, smart default tab, intro card, ready-gate skeletons, "new" dot on tab pills — all preserved.
 
 ## Verification
 
-1. Stats Up Next card with no progress: shows "You're starting here", encouragement line, goal line, no `0%`, outline "Start solving →" / "Start crafting →" button.
-2. Stats Up Next with partial progress: original progress bar + label + percent renders unchanged.
-3. Active tab pill is **primary orange**, never black.
-4. Achieved icon halos render at 15% tint per tab color.
-5. Locked cards show only description, no "Locked — …" prefix.
-6. True global empty state shows the rewritten tab copy with primary "Play Daily" / "Create a Puzzle" CTA.
-7. `/milestones` standalone page reflects the same polish.
+1. Stats with zero progress, 1 solve recorded → Up Next: Off the Bench with `"9 more solves to go"`, "Closest to unlock" + "You're close" + "Play now →"; grid shows First Crack (Completed), On a Roll (Not started — "Start to unlock this"), Clean Sheet, Long Game, Skilled, Advanced (Future — "Unlocks after previous tier").
+2. Solver tab with mid-streak → Up Next: On a Roll with bar + "1 more day to go"; grid shows other solver milestones as Active/Not started/Completed.
+3. Completed tiles render with primary tint + checkmark + "Completed" label; new unlocks animate the existing glow keyframe.
+4. Locked future tiles show 85% opacity, lock icon, "Unlocks after previous tier" — no "Locked —" prefix, no `0%`.
+5. Hovering any tile lifts ~1px with subtle shadow; no new animation libs introduced.
+6. Tab pill active state remains primary orange — no black fills.
+7. `/milestones` standalone page shows the same grid uncapped, all tiles visible.
 
