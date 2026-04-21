@@ -521,15 +521,42 @@ const CraftPuzzle = () => {
                   {(selectedType === "word-fill" || selectedType === "word-search") && (
                     <div className="space-y-2">
                       <label className="text-xs font-medium text-muted-foreground">
-                        Your words (names, memories, inside jokes)
+                        Words from their world
                       </label>
                       <Textarea
                         value={wordInput}
                         onChange={e => setWordInput(e.target.value)}
-                        placeholder={"birthday\nnashville\nbeach\ntravel\nsummer"}
+                        placeholder={WORD_PLACEHOLDERS[selectedType]}
                         rows={5}
                         className="resize-none"
                       />
+                      {(() => {
+                        const activeTheme = selectedTheme !== "none" ? getTheme(selectedTheme) : null;
+                        if (!activeTheme || activeTheme.wordSuggestions.length === 0) return null;
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const suggestions = activeTheme.wordSuggestions.join("\n");
+                              setWordInput((prev) => {
+                                const existing = prev.trim();
+                                if (!existing) return suggestions;
+                                // Additive merge with dedupe (case-insensitive)
+                                const existingSet = new Set(
+                                  existing.split(/[,\n]+/).map((w) => w.trim().toUpperCase()).filter(Boolean),
+                                );
+                                const additions = activeTheme.wordSuggestions
+                                  .filter((w) => !existingSet.has(w.trim().toUpperCase()));
+                                if (additions.length === 0) return prev;
+                                return existing + "\n" + additions.join("\n");
+                              });
+                            }}
+                            className="inline-flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 font-medium transition-colors"
+                          >
+                            ✨ Fill {activeTheme.label} words
+                          </button>
+                        );
+                      })()}
                     </div>
                   )}
 
@@ -541,7 +568,7 @@ const CraftPuzzle = () => {
                       <Textarea
                         value={phraseInput}
                         onChange={e => setPhraseInput(e.target.value)}
-                        placeholder="MEET ME AT MIDNIGHT"
+                        placeholder="HAPPY BIRTHDAY FROM YOUR FAVORITE PERSON"
                         rows={4}
                         className="resize-none"
                       />
