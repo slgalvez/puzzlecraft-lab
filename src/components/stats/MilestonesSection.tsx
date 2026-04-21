@@ -395,12 +395,17 @@ function TabContent({
 
       {tilesToShow.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {tilesToShow.map((m) => (
+          {tilesToShow.map((m, i) => (
             <MilestoneTile
               key={m.id}
               m={m}
               isNew={uncelebratedIds.has(m.id)}
               all={milestones}
+              emphasis={
+                i === 0 ? "first"
+                : i === tilesToShow.length - 1 ? "last"
+                : "mid"
+              }
             />
           ))}
         </div>
