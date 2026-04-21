@@ -22,6 +22,7 @@ import {
   Zap, Target, Palette, Users, Trophy, Flame, Shield,
   Star, Lock, ArrowUpRight, CheckCircle2, Sparkles,
 } from "lucide-react";
+import type { NavigateFunction } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
