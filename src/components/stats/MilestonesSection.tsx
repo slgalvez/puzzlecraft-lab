@@ -41,10 +41,41 @@ const TAB_META: Record<MilestoneTab, {
   dotColor: string;
   bg: string;
 }> = {
-  ranked:  { Icon: Zap,     color: "text-primary",     dotColor: "bg-primary",     bg: "bg-primary/10" },
-  solver:  { Icon: Target,  color: "text-emerald-500", dotColor: "bg-emerald-500", bg: "bg-emerald-500/10" },
-  crafter: { Icon: Palette, color: "text-amber-500",   dotColor: "bg-amber-500",   bg: "bg-amber-500/10" },
-  social:  { Icon: Users,   color: "text-violet-500",  dotColor: "bg-violet-500",  bg: "bg-violet-500/10" },
+  ranked:  { Icon: Zap,     color: "text-primary",     dotColor: "bg-primary",     bg: "bg-primary/15" },
+  solver:  { Icon: Target,  color: "text-emerald-500", dotColor: "bg-emerald-500", bg: "bg-emerald-500/15" },
+  crafter: { Icon: Palette, color: "text-amber-500",   dotColor: "bg-amber-500",   bg: "bg-amber-500/15" },
+  social:  { Icon: Users,   color: "text-violet-500",  dotColor: "bg-violet-500",  bg: "bg-violet-500/15" },
+};
+
+// ── Copy lookups ───────────────────────────────────────────────────────────────
+
+const ENCOURAGEMENT: Record<MilestoneTab, string> = {
+  ranked:  "Every solve sharpens your rating",
+  solver:  "Every solve builds momentum",
+  crafter: "Every puzzle you make starts something",
+  social:  "Every send turns into a connection",
+};
+
+const GOAL_LINE: Record<string, string> = {
+  "off-the-bench":  "Solve 10 puzzles to get started",
+  "tier-skilled":   "Reach the Skilled tier to unlock",
+  "tier-advanced":  "Reach the Advanced tier to unlock",
+  "tier-expert":    "Reach the Expert tier to unlock",
+  "on-a-roll":      "Build a 3-day streak to unlock",
+  "iron-habit":     "Hold a 30-day streak to unlock",
+  "the-long-game":  "Play all 8 puzzle types to unlock",
+  "puzzle-maker":   "Send 5 puzzles to unlock",
+  "made-something": "Send your first puzzle to unlock",
+};
+function goalLine(id: string) {
+  return GOAL_LINE[id] ?? "Start to unlock this milestone";
+}
+
+const CTA: Record<MilestoneTab, { label: string; route: string }> = {
+  ranked:  { label: "Start solving →",  route: "/daily" },
+  solver:  { label: "Start solving →",  route: "/daily" },
+  social:  { label: "Start solving →",  route: "/daily" },
+  crafter: { label: "Start crafting →", route: "/craft" },
 };
 
 function MilestoneIconView({
@@ -79,12 +110,13 @@ function MilestoneIconView({
 
 // ── Cards ──────────────────────────────────────────────────────────────────────
 
-function NextCard({ m, isNew }: { m: MilestoneResult; isNew: boolean; }) {
+function NextCard({ m, isNew, navigate }: { m: MilestoneResult; isNew: boolean; navigate: NavigateFunction; }) {
+  const cta = CTA[m.tab];
   return (
     <div
       className={cn(
         "rounded-2xl border bg-card overflow-hidden",
-        "border-primary/25 bg-primary/[0.02] shadow-sm",
+        "border-primary/40 bg-primary/5 shadow-sm",
         isNew && "animate-milestone-glow",
       )}
     >
@@ -100,7 +132,7 @@ function NextCard({ m, isNew }: { m: MilestoneResult; isNew: boolean; }) {
         <p className="text-base font-bold text-foreground leading-tight">{m.name}</p>
         <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{m.description}</p>
 
-        <p className="mt-2 text-[10px] text-primary/70">This is your next milestone</p>
+        <p className="mt-2 text-[10px] text-primary/70">You're starting here</p>
 
         {m.progressLabel ? (
           m.progressRatio > 0 ? (
@@ -114,15 +146,25 @@ function NextCard({ m, isNew }: { m: MilestoneResult; isNew: boolean; }) {
               <Progress value={m.progressRatio * 100} className="h-1.5" />
             </div>
           ) : (
-            <p className="mt-3 text-[10px] text-muted-foreground">
-              Not started — {m.progressLabel}
-            </p>
+            <div className="mt-3 space-y-0.5">
+              <p className="text-[10px] text-muted-foreground">{ENCOURAGEMENT[m.tab]}</p>
+              <p className="text-[10px] text-muted-foreground/70">{goalLine(m.id)}</p>
+            </div>
           )
         ) : (
           <p className="mt-2 text-[10px] text-muted-foreground/50 italic">
             Moment-based — you'll know when it happens
           </p>
         )}
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate(cta.route)}
+          className="mt-3 h-8 px-3 text-xs text-primary border-primary/30 hover:bg-primary/5 hover:text-primary"
+        >
+          {cta.label}
+        </Button>
       </div>
     </div>
   );
@@ -164,25 +206,26 @@ function InProgressCard({ m }: { m: MilestoneResult }) {
         </div>
         <MilestoneIconView id={m.id} achieved={false} tab={m.tab} size={15} />
       </div>
-      {m.progressLabel && (
+      {m.progressLabel && m.progressRatio > 0 ? (
         <div className="space-y-1.5">
           <Progress value={m.progressRatio * 100} className="h-1" />
           <p className="text-[10px] text-muted-foreground">{m.progressLabel}</p>
         </div>
+      ) : (
+        <p className="text-[10px] text-muted-foreground">Just getting started</p>
       )}
     </div>
   );
 }
 
 function LockedCard({ m }: { m: MilestoneResult }) {
-  const showLockedHint = m.progressLabel && m.progressRatio === 0;
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border/30 bg-muted/10 px-4 py-3 opacity-60">
       <Lock size={13} className="text-muted-foreground/40 shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-muted-foreground/70 leading-tight">{m.name}</p>
         <p className="text-[11px] text-muted-foreground/50 mt-0.5 truncate">
-          {showLockedHint ? `Locked — ${m.description}` : m.description}
+          {m.description}
         </p>
       </div>
     </div>
@@ -192,10 +235,10 @@ function LockedCard({ m }: { m: MilestoneResult }) {
 // ── Tab content ────────────────────────────────────────────────────────────────
 
 const EMPTY_TAB_COPY: Record<MilestoneTab, { headline: string; cta: string; route: string }> = {
-  ranked:  { headline: "Solve 10 puzzles to earn your Player Rating", cta: "Play Daily", route: "/daily" },
-  solver:  { headline: "Solve a puzzle to start unlocking milestones", cta: "Play Daily", route: "/daily" },
-  crafter: { headline: "Create and send a puzzle to begin", cta: "Create a Puzzle", route: "/craft" },
-  social:  { headline: "Play or share a puzzle with someone to unlock these", cta: "Create a Puzzle", route: "/craft" },
+  ranked:  { headline: "Solve 10 puzzles to earn your first rating", cta: "Play Daily", route: "/daily" },
+  solver:  { headline: "Start solving to unlock your first milestone", cta: "Play Daily", route: "/daily" },
+  crafter: { headline: "Create your first puzzle to begin", cta: "Create a Puzzle", route: "/craft" },
+  social:  { headline: "Play or share with someone to unlock these", cta: "Create a Puzzle", route: "/craft" },
 };
 
 function TabContent({
@@ -240,7 +283,7 @@ function TabContent({
 
   return (
     <div className="space-y-5">
-      {next && <NextCard m={next} isNew={uncelebratedIds.has(next.id)} />}
+      {next && <NextCard m={next} isNew={uncelebratedIds.has(next.id)} navigate={navigate} />}
 
       {inProgress.length > 0 && (
         <div className="space-y-2.5">
@@ -413,16 +456,16 @@ export function MilestonesSection({
                   "relative shrink-0 flex items-center gap-1.5 rounded-full px-4 py-2",
                   "text-sm font-medium border transition-all duration-150",
                   isActive
-                    ? "bg-foreground text-background border-foreground"
+                    ? "bg-primary text-primary-foreground border-primary"
                     : "bg-card text-muted-foreground border-border hover:border-foreground/30 hover:text-foreground",
                 )}
               >
-                <Icon size={13} className={cn(isActive ? "text-background" : color)} />
+                <Icon size={13} className={cn(isActive ? "text-primary-foreground" : color)} />
                 {label}
                 {counts.achieved > 0 && (
                   <span className={cn(
                     "text-[9px] font-bold",
-                    isActive ? "text-background/70" : "text-muted-foreground/60",
+                    isActive ? "text-primary-foreground/80" : "text-muted-foreground/60",
                   )}>
                     {counts.achieved}/{counts.total}
                   </span>
