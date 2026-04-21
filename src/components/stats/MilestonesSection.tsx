@@ -71,12 +71,7 @@ function goalLine(id: string) {
   return GOAL_LINE[id] ?? "Start to unlock this milestone";
 }
 
-const CTA: Record<MilestoneTab, { label: string; route: string }> = {
-  ranked:  { label: "Start solving →",  route: "/daily" },
-  solver:  { label: "Start solving →",  route: "/daily" },
-  social:  { label: "Start solving →",  route: "/daily" },
-  crafter: { label: "Start crafting →", route: "/craft" },
-};
+
 
 function MilestoneIconView({
   id, achieved, tab, size = 18,
