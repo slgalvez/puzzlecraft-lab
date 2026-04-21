@@ -199,24 +199,32 @@ const EMPTY_TAB_COPY: Record<MilestoneTab, { headline: string; cta: string; rout
 };
 
 function TabContent({
-  tab, uncelebratedIds, navigate, showLocked,
+  tab, uncelebratedIds, navigate, compact,
 }: {
   tab: MilestoneTab;
   uncelebratedIds: Set<string>;
   navigate: NavigateFunction;
-  showLocked: boolean;
+  compact: boolean;
 }) {
   const milestones = useMemo(() => getMilestonesForTab(tab), [tab]);
 
-  const next       = milestones.find((m) => m.isNext && m.state !== "achieved");
-  const inProgress = milestones.filter((m) => m.state === "in-progress" && !m.isNext);
+  let next         = milestones.find((m) => m.isNext && m.state !== "achieved");
+  const inProgress = milestones.filter((m) => m.state === "in-progress" && m.id !== next?.id);
   const achieved   = milestones.filter((m) => m.state === "achieved");
-  const locked     = milestones.filter((m) => m.state === "locked" && !m.isNext);
+  let locked       = milestones.filter((m) => m.state === "locked" && m.id !== next?.id);
+
+  // If no "Up Next" exists yet (all locked at 0 progress), surface the first
+  // locked milestone as the focal card so every tab has something to look at.
+  if (!next && locked.length > 0) {
+    next = locked[0];
+    locked = locked.slice(1);
+  }
+
+  // In compact mode (Stats embed), cap locked previews to 2 to keep the
+  // section dense without collapsing it.
+  const lockedToShow = compact ? locked.slice(0, 2) : locked;
 
   const allDone = milestones.every((m) => m.state === "achieved");
-  const hasNoData = milestones.every(
-    (m) => m.state !== "achieved" && m.progressRatio === 0,
-  );
 
   if (allDone) {
     return (
@@ -230,20 +238,9 @@ function TabContent({
     );
   }
 
-  const emptyCopy = EMPTY_TAB_COPY[tab];
-
   return (
     <div className="space-y-5">
-      {hasNoData ? (
-        <div className="rounded-2xl border border-dashed border-border/60 p-5 text-center space-y-3">
-          <p className="text-sm font-semibold text-foreground">{emptyCopy.headline}</p>
-          <Button variant="default" size="sm" onClick={() => navigate(emptyCopy.route)}>
-            {emptyCopy.cta}
-          </Button>
-        </div>
-      ) : (
-        next && <NextCard m={next} isNew={uncelebratedIds.has(next.id)} />
-      )}
+      {next && <NextCard m={next} isNew={uncelebratedIds.has(next.id)} />}
 
       {inProgress.length > 0 && (
         <div className="space-y-2.5">
@@ -265,12 +262,12 @@ function TabContent({
         </div>
       )}
 
-      {showLocked && locked.length > 0 && (
+      {lockedToShow.length > 0 && (
         <div className="space-y-2">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-0.5">
             Coming Up
           </p>
-          {locked.map((m) => <LockedCard key={m.id} m={m} />)}
+          {lockedToShow.map((m) => <LockedCard key={m.id} m={m} />)}
         </div>
       )}
     </div>
@@ -288,13 +285,31 @@ export interface MilestonesSectionProps {
   showViewAllLink?: boolean;
 }
 
+/** Pick the first canonical tab with the most useful content. */
+function computeSmartDefaultTab(milestones: MilestoneResult[]): MilestoneTab {
+  const tabOrder: MilestoneTab[] = ["ranked", "solver", "crafter", "social"];
+  // 1. Tab with achieved or in-progress
+  for (const t of tabOrder) {
+    if (milestones.some(
+      (m) => m.tab === t && (m.state === "achieved" || m.state === "in-progress"),
+    )) return t;
+  }
+  // 2. Tab with any started progress
+  for (const t of tabOrder) {
+    if (milestones.some((m) => m.tab === t && m.progressRatio > 0)) return t;
+  }
+  return "solver";
+}
+
 export function MilestonesSection({
-  defaultTab = "solver",
+  defaultTab,
   compact = false,
   showViewAllLink = false,
 }: MilestonesSectionProps) {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<MilestoneTab>(defaultTab);
+  const [activeTab, setActiveTab] = useState<MilestoneTab>(
+    () => defaultTab ?? computeSmartDefaultTab(getAllMilestones()),
+  );
   const [uncelebratedIds, setUncelebratedIds] = useState<Set<string>>(new Set());
   const [showIntro, setShowIntro] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -327,6 +342,12 @@ export function MilestonesSection({
   }, []);
 
   const allMilestones = useMemo(() => getAllMilestones(), []);
+  const hasAnyProgress = useMemo(
+    () => allMilestones.some(
+      (m) => m.state === "achieved" || m.state === "in-progress" || m.progressRatio > 0,
+    ),
+    [allMilestones],
+  );
   const tabCounts = useMemo(() => {
     const out: Record<MilestoneTab, { achieved: number; total: number }> = {
       ranked: { achieved: 0, total: 0 },
@@ -429,12 +450,26 @@ export function MilestonesSection({
       </div>
 
       {ready ? (
-        <TabContent
-          tab={activeTab}
-          uncelebratedIds={uncelebratedIds}
-          navigate={navigate}
-          showLocked={!compact}
-        />
+        hasAnyProgress ? (
+          <TabContent
+            tab={activeTab}
+            uncelebratedIds={uncelebratedIds}
+            navigate={navigate}
+            compact={compact}
+          />
+        ) : (
+          (() => {
+            const emptyCopy = EMPTY_TAB_COPY[activeTab];
+            return (
+              <div className="rounded-2xl border border-dashed border-border/60 p-5 text-center space-y-3">
+                <p className="text-sm font-semibold text-foreground">{emptyCopy.headline}</p>
+                <Button variant="default" size="sm" onClick={() => navigate(emptyCopy.route)}>
+                  {emptyCopy.cta}
+                </Button>
+              </div>
+            );
+          })()
+        )
       ) : (
         <div className="space-y-3" aria-hidden="true">
           <Skeleton className="h-[88px] rounded-2xl" />
