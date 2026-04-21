@@ -1,78 +1,126 @@
 
 
-# Make Stats milestones a real surface
+# Milestones polish — copy, tone, subtle premium emphasis
 
-The embedded `<MilestonesSection compact showViewAllLink />` on `/stats` collapses into a teaser whenever the default tab (`solver`) has no progress, even when other tabs have achieved or in-progress milestones. Fix it so Stats shows real cards inline.
+Two-file edit. No layout changes, no new components, no animations, no black buttons.
 
-All edits are in `src/components/stats/MilestonesSection.tsx` plus one prop change in `src/pages/Stats.tsx`. No data-layer changes.
+## File 1 — `src/lib/milestones.ts`
 
-## Changes
+Tighten the `description` strings on the 14 milestone specs only. All `name`, `unlockCopy`, `check`, `progress`, `icon`, `tab` fields untouched.
 
-### 1. Smart default tab (replaces hardcoded `"solver"`)
+| id | new description |
+|---|---|
+| off-the-bench | Your first rating unlock |
+| tier-skilled | Climb into the Skilled tier |
+| tier-advanced | Climb into the Advanced tier |
+| tier-expert | Reach the top of the board |
+| first-crack | Solve your very first puzzle |
+| on-a-roll | Build your first streak |
+| clean-sheet | Solve with no hints, no mistakes |
+| the-long-game | Play every one of the 8 puzzle types |
+| iron-habit | Hold a 30-day solve streak |
+| made-something | Send your first crafted puzzle |
+| they-solved-it | Get a recipient to finish your puzzle |
+| puzzle-maker | Create and send 5 puzzles |
+| challenge-accepted | Solve a puzzle made for you |
+| game-on | Beat a creator's challenge time |
 
-In `MilestonesSection`, when no `defaultTab` is explicitly passed, compute the initial tab from live data:
+## File 2 — `src/components/stats/MilestonesSection.tsx`
 
-Priority:
-1. First tab (in canonical order: `ranked → solver → crafter → social`) with **any achieved or in-progress** milestone.
-2. Otherwise, first tab with a milestone whose `progressRatio > 0` (locked-but-started).
-3. Otherwise, fall back to `"solver"`.
+### A. `TAB_META` — warmer achieved icon halos
+- `ranked.bg`: `bg-primary/10` → `bg-primary/15`
+- `solver.bg`: `bg-emerald-500/10` → `bg-emerald-500/15`
+- `crafter.bg`: `bg-amber-500/10` → `bg-amber-500/15`
+- `social.bg`: `bg-violet-500/10` → `bg-violet-500/15`
 
-Implemented as a `useState` initializer that calls `getAllMilestones()` once. If the caller passes `defaultTab` explicitly, honor it (the standalone `/milestones` page can keep `"solver"` if it wants — currently it passes nothing, so it gets the same smart default, which is fine).
+### B. Two new local lookup helpers (top of file, no exports)
 
-### 2. Global "truly empty" check — empty-state CTA only when nothing exists anywhere
+```ts
+const ENCOURAGEMENT: Record<MilestoneTab, string> = {
+  ranked:  "Every solve sharpens your rating",
+  solver:  "Every solve builds momentum",
+  crafter: "Every puzzle you make starts something",
+  social:  "Every send turns into a connection",
+};
 
-Replace the per-tab `hasNoData` collapse with a section-level check computed once at the top of `MilestonesSection`:
+const GOAL_LINE: Record<string, string> = {
+  "off-the-bench":     "Solve 10 puzzles to get started",
+  "tier-skilled":      "Reach the Skilled tier to unlock",
+  "tier-advanced":     "Reach the Advanced tier to unlock",
+  "tier-expert":       "Reach the Expert tier to unlock",
+  "on-a-roll":         "Build a 3-day streak to unlock",
+  "iron-habit":        "Hold a 30-day streak to unlock",
+  "the-long-game":     "Play all 8 puzzle types to unlock",
+  "puzzle-maker":      "Send 5 puzzles to unlock",
+  "made-something":    "Send your first puzzle to unlock",
+};
+function goalLine(id: string) { return GOAL_LINE[id] ?? "Start to unlock this milestone"; }
 
+const CTA: Record<MilestoneTab, { label: string; route: string }> = {
+  ranked:  { label: "Start solving →",  route: "/daily" },
+  solver:  { label: "Start solving →",  route: "/daily" },
+  social:  { label: "Start solving →",  route: "/daily" },
+  crafter: { label: "Start crafting →", route: "/craft" },
+};
 ```
-const hasAnyProgress = allMilestones.some(
-  (m) => m.state === "achieved" || m.state === "in-progress" || m.progressRatio > 0
-);
-```
 
-- If `!hasAnyProgress` → render a single section-level empty-state card (uses the active tab's `EMPTY_TAB_COPY` so the CTA still feels relevant) and skip the per-tab body. This is the only place the dashed CTA appears.
-- If `hasAnyProgress` → always render the milestone grid in the active tab, even if that specific tab has zero progress.
+### C. `NextCard` — copy + emphasis + micro-CTA
 
-### 3. Per-tab "no progress yet" tabs still show real cards
+- Container classes: `border-primary/25 bg-primary/[0.02] shadow-sm` → **`border-primary/40 bg-primary/5 shadow-sm`**.
+- Helper line `"This is your next milestone"` → **`"You're starting here"`**.
+- Replace the zero-progress branch (where `progressLabel` exists but `progressRatio === 0`) with two stacked muted lines:
+  - Line 1: `ENCOURAGEMENT[m.tab]`
+  - Line 2: `goalLine(m.id)`
+  No `Progress` bar, no `0%`, no "Not started — …".
+- Keep the existing `progressRatio > 0` branch intact (label + percent + bar).
+- Keep the moment-based fallback intact (`"Moment-based — you'll know when it happens"`).
+- New micro-CTA at the bottom of the card body:
+  ```tsx
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => navigate(CTA[m.tab].route)}
+    className="mt-3 h-8 px-3 text-xs text-primary border-primary/30 hover:bg-primary/5"
+  >
+    {CTA[m.tab].label}
+  </Button>
+  ```
+  Pass `navigate` into `NextCard` as a prop (already available in `TabContent` scope).
 
-Inside `TabContent`, remove the `hasNoData` branch entirely. When a tab has no `next` / `inProgress` / `achieved`:
-- Always render any locked milestones in that tab as `LockedCard`s (so Crafter shows "Made Something / They Solved It / Puzzle Maker" as locked previews, not a CTA).
-- If `next` is `null` (no `isNext` flagged because all are locked with 0 progress), surface the **first locked milestone in tab order** as the "Up Next" card so the section always has a focal card. Use `NextCard` — it already handles `progressRatio === 0` with the "Not started" hint.
+### D. `InProgressCard` — defensive zero-state
+When `m.progressRatio === 0`: hide the `Progress` bar and `progressLabel` row, render single muted line **"Just getting started"**. When `> 0`: unchanged.
 
-This guarantees every tab shows a real grid: Up Next + Coming Up (or just Coming Up if compact hides it).
+### E. `LockedCard` — drop "Locked — …" prefix
+Render only `m.description`. Lock icon already conveys state. Remove the `showLockedHint` branch entirely.
 
-### 4. Compact mode shows "Coming Up" too
+### F. Tab pill row — remove black active fill
+Active classes `bg-foreground text-background border-foreground` → **`bg-primary text-primary-foreground border-primary`**.
+Active inner `<Icon className={cn(isActive ? "text-background" : color)} />` → **`text-primary-foreground`** when active.
+Active count chip `text-background/70` → **`text-primary-foreground/80`** when active.
+Inactive states unchanged.
 
-Currently `showLocked={!compact}` hides locked cards in compact mode. Per the request, compact must still show locked/coming-up cards — just fewer. Change to:
-- Always show `locked` in compact mode, but **cap at 2 cards** (`locked.slice(0, 2)`).
-- Full mode (`/milestones`) shows all locked, unchanged.
+### G. Empty-state copy (`EMPTY_TAB_COPY`)
+- ranked: `"Solve 10 puzzles to earn your Player Rating"` → **"Solve 10 puzzles to earn your first rating"**
+- solver: `"Solve a puzzle to start unlocking milestones"` → **"Start solving to unlock your first milestone"**
+- crafter: `"Create and send a puzzle to begin"` → **"Create your first puzzle to begin"**
+- social: `"Play or share a puzzle with someone to unlock these"` → **"Play or share with someone to unlock these"**
 
-This keeps Stats compact (Up Next + up to 2 in-progress + achieved + up to 2 locked) without collapsing into a single card.
+CTA buttons in the dashed empty-state already use `variant="default"` (primary orange) — no change.
 
-### 5. Remove inline "View all" from Stats embed
+## What is NOT touched
 
-In `src/pages/Stats.tsx` line 1059, change:
-```
-<MilestonesSection compact showViewAllLink />
-```
-to:
-```
-<MilestonesSection compact />
-```
-
-The top-right "Milestones" button on the Stats page header (already present at line 856-865) remains the route to `/milestones`. The `showViewAllLink` prop stays in the component API for any future use but is no longer set on Stats.
-
-### 6. Standalone `/milestones` unchanged in behavior
-
-`src/pages/Milestones.tsx` calls `<MilestonesSection />` with no props → it gets the smart default tab and full (non-compact) layout including all Coming Up cards. No edits needed there.
+- Milestone logic, unlocking, `milestones.ts` structure beyond description strings.
+- Layout, ordering, structure, routes, share cards, modal manager.
+- Animations (`milestone-glow` keyframe untouched).
+- Standalone `/milestones` page — inherits all polish via shared component.
 
 ## Verification
 
-1. **Stats, fresh user with 1 ranked solve, 0 streak, 0 crafted** → embedded section opens on Ranked tab (first with progress), shows Off the Bench as Up Next with progress bar; Solver/Crafter/Social tabs render Up Next + 2 Coming Up cards each (not the dashed CTA).
-2. **Stats, user with only Crafter activity** → opens on Crafter tab; Ranked/Solver tabs still render real locked cards instead of CTA.
-3. **Stats, true zero state (`totalSolved === 0`)** → Stats already short-circuits to `EmptyStats` before reaching the milestones block; section is not rendered. (Existing behavior preserved.)
-4. **Stats, user with no progress in any tab but `totalSolved > 0`** (edge: solves filtered out under 10s) → section shows the single global empty-state CTA with the active tab's copy.
-5. **Stats inline "View all →" link is gone**; top-right "Milestones" button still routes to `/milestones`.
-6. **`/milestones` page** → renders all 4 tabs with full Coming Up lists, smart default tab applied.
-7. **Tab switching on Stats** → no skeleton flicker (one-shot ready gate preserved); tabs always show real cards.
-8. **Glow / new-dot / intro card / `MilestoneShareCard` / `MilestoneModalManager`** → all unchanged (no data shape edits).
+1. Stats Up Next card with no progress: shows "You're starting here", encouragement line, goal line, no `0%`, outline "Start solving →" / "Start crafting →" button.
+2. Stats Up Next with partial progress: original progress bar + label + percent renders unchanged.
+3. Active tab pill is **primary orange**, never black.
+4. Achieved icon halos render at 15% tint per tab color.
+5. Locked cards show only description, no "Locked — …" prefix.
+6. True global empty state shows the rewritten tab copy with primary "Play Daily" / "Create a Puzzle" CTA.
+7. `/milestones` standalone page reflects the same polish.
 
