@@ -415,7 +415,15 @@ export default function Milestones() {
           })}
         </div>
 
-        <TabContent tab={activeTab} uncelebratedIds={uncelebratedIds} navigate={navigate} />
+        {ready ? (
+          <TabContent tab={activeTab} uncelebratedIds={uncelebratedIds} navigate={navigate} />
+        ) : (
+          <div className="space-y-3" aria-hidden="true">
+            <Skeleton className="h-[88px] rounded-2xl" />
+            <Skeleton className="h-[88px] rounded-2xl" />
+            <Skeleton className="h-[88px] rounded-2xl" />
+          </div>
+        )}
 
         {totalAchieved === 0 && (
           <div className="mt-8 rounded-2xl border border-dashed border-border/60 p-6 text-center space-y-3">
