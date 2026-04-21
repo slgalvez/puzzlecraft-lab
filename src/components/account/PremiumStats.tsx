@@ -25,19 +25,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 const MIN_SOLVES_FOR_AVG = 2;
 
-type MilestoneCategory = "ranking" | "solves" | "streak";
-const CATEGORY_TABS: { key: MilestoneCategory; label: string }[] = [
-  { key: "ranking", label: "Ranking" },
-  { key: "solves", label: "Solves" },
-  { key: "streak", label: "Streak" },
-];
-
-function getMilestoneCategory(id: string): MilestoneCategory {
-  if (id.startsWith("tier-")) return "ranking";
-  if (id.startsWith("streak-")) return "streak";
-  return "solves";
-}
-
 
 const ALL_CATEGORIES: PuzzleCategory[] = [
   "crossword", "word-fill", "number-fill", "sudoku",
@@ -82,18 +69,6 @@ function TrendBadge({ trend, invertColor, label }: { trend: { direction: "up" | 
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const MILESTONE_ICONS: Record<MilestoneIcon, any> = {
-  puzzle: Puzzle,
-  flame: Flame,
-  trophy: Trophy,
-  medal: Medal,
-  zap: Zap,
-  crown: Crown,
-  target: Target,
-  award: Award,
-  bolt: Bolt,
-};
 
 export default function PremiumStats({ onDataChange, hideAdminControls = false, overrideSolveRecords }: { onDataChange?: () => void; hideAdminControls?: boolean; overrideSolveRecords?: SolveRecord[] }) {
   const [refreshKey, setRefreshKey] = useState(0);
