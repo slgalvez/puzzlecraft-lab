@@ -328,6 +328,26 @@ export default function Milestones() {
               : `${totalAchieved} of ${totalCount} earned.`}
         </p>
 
+        {showIntro && (
+          <div className="rounded-2xl bg-secondary/40 px-4 py-3.5 mb-4">
+            <div className="flex items-start gap-2.5">
+              <Sparkles size={14} className="text-primary/70 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground mb-1">How milestones work</p>
+                <p className="text-xs text-muted-foreground leading-snug">
+                  Milestones track how you play. Complete puzzles, build streaks, create and share — each one unlocks as you go. Focus on what's marked <span className="font-semibold text-foreground">Next</span>.
+                </p>
+              </div>
+              <button
+                onClick={dismissIntro}
+                className="text-xs font-semibold text-primary shrink-0 px-1 py-0.5"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-2 overflow-x-auto pb-1 mb-6">
           {MILESTONE_TABS.map(({ id, label }) => {
             const { Icon, color, dotColor } = TAB_META[id];
