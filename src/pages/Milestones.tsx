@@ -281,6 +281,16 @@ export default function Milestones() {
     return !localStorage.getItem("milestones_seen_intro");
   });
 
+  // First-mount only ready gate. Stays true forever after first paint —
+  // tab switches and milestone updates must NOT re-trigger skeletons.
+  const [ready, setReady] = useState(false);
+  const readyOnceRef = useRef(false);
+  useEffect(() => {
+    if (readyOnceRef.current) return;
+    readyOnceRef.current = true;
+    setReady(true);
+  }, []);
+
   const dismissIntro = () => {
     try { localStorage.setItem("milestones_seen_intro", "true"); } catch {}
     setShowIntro(false);
