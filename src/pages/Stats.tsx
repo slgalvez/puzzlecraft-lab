@@ -20,6 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import PremiumStats from "@/components/account/PremiumStats";
 import { PremiumStatsAdminControls } from "@/components/account/PremiumStatsAdminControls";
 import { StatsPremiumPreview } from "@/components/account/PremiumPreview";
+import { MilestonesSection } from "@/components/stats/MilestonesSection";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
@@ -1044,6 +1045,18 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                     {recentExpanded ? "Show less" : `Show all ${filteredCompletions.length} solves`}
                   </button>
                 )}
+              </div>
+            )}
+
+            {/* Milestones — primary surface for both free and Plus users.
+                Gated by stats.totalSolved > 0 (already enforced by the empty state above). */}
+            {showGeneral && (
+              <div className="rounded-xl border bg-card p-5">
+                <h2 className="font-display text-base font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-primary" />
+                  Milestones
+                </h2>
+                <MilestonesSection compact showViewAllLink />
               </div>
             )}
 
