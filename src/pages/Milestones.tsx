@@ -93,6 +93,8 @@ function NextCard({ m, isNew }: { m: MilestoneResult; isNew: boolean; }) {
         <p className="text-base font-bold text-foreground leading-tight">{m.name}</p>
         <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{m.description}</p>
 
+        <p className="mt-2 text-[10px] text-primary/70">This is your next milestone</p>
+
         {m.progressLabel ? (
           <div className="mt-3 space-y-1.5">
             <div className="flex items-center justify-between">
