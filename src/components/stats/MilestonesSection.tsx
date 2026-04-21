@@ -216,38 +216,101 @@ function AchievedCard({ m, isNew }: { m: MilestoneResult; isNew: boolean; }) {
   );
 }
 
-function InProgressCard({ m }: { m: MilestoneResult }) {
-  return (
-    <div className="rounded-xl border border-border/60 bg-card px-4 py-3.5 space-y-2.5">
-      <div className="flex items-center justify-between">
-        <div className="flex-1 min-w-0 mr-3">
-          <p className="text-sm font-semibold text-foreground/80 leading-tight">{m.name}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">{m.description}</p>
-        </div>
-        <MilestoneIconView id={m.id} achieved={false} tab={m.tab} size={15} />
-      </div>
-      {m.progressLabel && m.progressRatio > 0 ? (
-        <div className="space-y-1.5">
-          <Progress value={m.progressRatio * 100} className="h-1" />
-          <p className="text-[10px] text-muted-foreground">{m.progressLabel}</p>
-        </div>
-      ) : (
-        <p className="text-[10px] text-muted-foreground">Just getting started</p>
-      )}
-    </div>
-  );
+// ── MilestoneTile (unified grid tile) ─────────────────────────────────────────
+
+type TileVariant = "active" | "not-started" | "completed" | "future";
+
+/** Future = locked-by-prerequisite. Heuristic: tier ladder + iron-habit depends on on-a-roll. */
+function isFutureMilestone(m: MilestoneResult, all: MilestoneResult[]): boolean {
+  const achieved = (id: string) => all.some((x) => x.id === id && x.state === "achieved");
+  if (m.id === "tier-advanced") return !achieved("tier-skilled");
+  if (m.id === "tier-expert")   return !achieved("tier-skilled") || !achieved("tier-advanced");
+  if (m.id === "iron-habit")    return !achieved("on-a-roll");
+  return false;
 }
 
-function LockedCard({ m }: { m: MilestoneResult }) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-border/30 bg-muted/10 px-4 py-3 opacity-60">
-      <Lock size={13} className="text-muted-foreground/40 shrink-0" />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-muted-foreground/70 leading-tight">{m.name}</p>
-        <p className="text-[11px] text-muted-foreground/50 mt-0.5 truncate">
-          {m.description}
-        </p>
+function tileVariant(m: MilestoneResult, all: MilestoneResult[]): TileVariant {
+  if (m.state === "achieved") return "completed";
+  if (m.state === "in-progress" && m.progressRatio > 0 && m.progressRatio < 1) return "active";
+  if (isFutureMilestone(m, all)) return "future";
+  return "not-started";
+}
+
+function MilestoneTile({
+  m, isNew, all,
+}: { m: MilestoneResult; isNew: boolean; all: MilestoneResult[] }) {
+  const variant = tileVariant(m, all);
+  const { color, bg } = TAB_META[m.tab];
+
+  if (variant === "completed") {
+    return (
+      <div
+        className={cn(
+          "rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3",
+          "transition-all hover:shadow-sm hover:-translate-y-[1px]",
+          isNew && "animate-milestone-glow",
+        )}
+      >
+        <div className="flex items-start justify-between gap-2 mb-1.5">
+          <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0", "bg-primary/15")}>
+            <MilestoneIconView id={m.id} achieved tab={m.tab} size={14} />
+          </div>
+          <CheckCircle2 size={14} className={cn("shrink-0 mt-1", color)} />
+        </div>
+        <p className="text-sm font-semibold text-foreground leading-tight">{m.name}</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{m.description}</p>
+        <p className="text-[11px] text-primary mt-1">Completed</p>
       </div>
+    );
+  }
+
+  if (variant === "future") {
+    return (
+      <div className="rounded-2xl border border-border/40 bg-card px-4 py-3 opacity-85 transition-all hover:shadow-sm hover:-translate-y-[1px]">
+        <div className="flex items-start justify-between gap-2 mb-1.5">
+          <div className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 bg-muted/40">
+            <Lock size={13} className="text-muted-foreground/60" />
+          </div>
+        </div>
+        <p className="text-sm font-semibold text-foreground/90 leading-tight">{m.name}</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{m.description}</p>
+        <p className="text-[11px] text-muted-foreground mt-2">Unlocks after previous tier</p>
+      </div>
+    );
+  }
+
+  if (variant === "active") {
+    return (
+      <div className="rounded-2xl border border-border/60 bg-card px-4 py-3 transition-all hover:shadow-sm hover:-translate-y-[1px]">
+        <div className="flex items-start justify-between gap-2 mb-1.5">
+          <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0", bg)}>
+            <MilestoneIconView id={m.id} achieved={false} tab={m.tab} size={14} />
+          </div>
+        </div>
+        <p className="text-sm font-semibold text-foreground leading-tight">{m.name}</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{m.description}</p>
+        {m.progressLabel && (
+          <div className="mt-2 space-y-1">
+            <Progress value={m.progressRatio * 100} className="h-1.5" />
+            <p className="text-[10px] text-muted-foreground">{m.progressLabel}</p>
+          </div>
+        )}
+        <p className="text-[11px] text-muted-foreground mt-1">Keep going</p>
+      </div>
+    );
+  }
+
+  // not-started
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card px-4 py-3 transition-all hover:shadow-sm hover:-translate-y-[1px]">
+      <div className="flex items-start justify-between gap-2 mb-1.5">
+        <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0", bg)}>
+          <MilestoneIconView id={m.id} achieved={false} tab={m.tab} size={14} />
+        </div>
+      </div>
+      <p className="text-sm font-semibold text-foreground leading-tight">{m.name}</p>
+      <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{m.description}</p>
+      <p className="text-[11px] text-muted-foreground mt-2">Start to unlock this</p>
     </div>
   );
 }
@@ -261,6 +324,13 @@ const EMPTY_TAB_COPY: Record<MilestoneTab, { headline: string; cta: string; rout
   social:  { headline: "Play or share with someone to unlock these", cta: "Create a Puzzle", route: "/craft" },
 };
 
+const VARIANT_ORDER: Record<TileVariant, number> = {
+  active: 0,
+  "not-started": 1,
+  future: 2,
+  completed: 3,
+};
+
 function TabContent({
   tab, uncelebratedIds, navigate, compact,
 }: {
@@ -271,21 +341,23 @@ function TabContent({
 }) {
   const milestones = useMemo(() => getMilestonesForTab(tab), [tab]);
 
-  let next         = milestones.find((m) => m.isNext && m.state !== "achieved");
-  const inProgress = milestones.filter((m) => m.state === "in-progress" && m.id !== next?.id);
-  const achieved   = milestones.filter((m) => m.state === "achieved");
-  let locked       = milestones.filter((m) => m.state === "locked" && m.id !== next?.id);
+  let next = milestones.find((m) => m.isNext && m.state !== "achieved");
 
-  // If no "Up Next" exists yet (all locked at 0 progress), surface the first
-  // locked milestone as the focal card so every tab has something to look at.
-  if (!next && locked.length > 0) {
-    next = locked[0];
-    locked = locked.slice(1);
+  // Fallback: if no canonical "Up Next", surface the first non-achieved tile.
+  if (!next) {
+    next = milestones.find((m) => m.state !== "achieved");
   }
 
-  // In compact mode (Stats embed), cap locked previews to 2 to keep the
-  // section dense without collapsing it.
-  const lockedToShow = compact ? locked.slice(0, 2) : locked;
+  const tiles = milestones.filter((m) => m.id !== next?.id);
+  tiles.sort((a, b) => {
+    const va = VARIANT_ORDER[tileVariant(a, milestones)];
+    const vb = VARIANT_ORDER[tileVariant(b, milestones)];
+    if (va !== vb) return va - vb;
+    return 0;
+  });
+
+  // Compact (Stats embed) caps total visible tiles to 6.
+  const tilesToShow = compact ? tiles.slice(0, 6) : tiles;
 
   const allDone = milestones.every((m) => m.state === "achieved");
 
@@ -302,35 +374,19 @@ function TabContent({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {next && <NextCard m={next} isNew={uncelebratedIds.has(next.id)} navigate={navigate} />}
 
-      {inProgress.length > 0 && (
-        <div className="space-y-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-0.5">
-            In Progress
-          </p>
-          {inProgress.map((m) => <InProgressCard key={m.id} m={m} />)}
-        </div>
-      )}
-
-      {achieved.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-0.5">
-            Achieved
-          </p>
-          {achieved.map((m) => (
-            <AchievedCard key={m.id} m={m} isNew={uncelebratedIds.has(m.id)} />
+      {tilesToShow.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {tilesToShow.map((m) => (
+            <MilestoneTile
+              key={m.id}
+              m={m}
+              isNew={uncelebratedIds.has(m.id)}
+              all={milestones}
+            />
           ))}
-        </div>
-      )}
-
-      {lockedToShow.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-0.5">
-            Coming Up
-          </p>
-          {lockedToShow.map((m) => <LockedCard key={m.id} m={m} />)}
         </div>
       )}
     </div>
