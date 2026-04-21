@@ -6,7 +6,7 @@
  * Glow animation plays once for newly unlocked milestones.
  */
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import {
@@ -26,6 +26,7 @@ import type { NavigateFunction } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // ── Tab meta ───────────────────────────────────────────────────────────────────
 
