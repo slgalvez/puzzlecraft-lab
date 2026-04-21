@@ -30,6 +30,7 @@ import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminViewAsStats from "./pages/AdminViewAsStats";
 import AdminHomepagePreview from "./pages/AdminHomepagePreview";
 import AdminPremiumEmails from "./pages/AdminPremiumEmails";
+import Milestones from "./pages/Milestones";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import { UserAccountProvider } from "./contexts/UserAccountContext";
@@ -139,6 +140,7 @@ function PublicRoutes() {
             <Route path="/help" element={<Help />} />
             <Route path="/stats" element={<Stats />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/milestones" element={<Milestones />} />
             <Route path="/craft" element={<CraftPuzzle />} />
             <Route path="/craft/play" element={<PlayCraftPuzzle />} />
             <Route path="/s/:id" element={<SharedCraftPuzzle />} />

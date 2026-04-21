@@ -1,105 +1,113 @@
 /**
- * Puzzlecraft+ Milestone System
+ * milestones.ts
  *
- * Lightweight client-side milestones that trigger toast notifications
- * when users hit solve count, streak, or skill tier thresholds.
- * Tracks which milestones have already been shown in localStorage.
+ * 13 milestones across 4 tabs:
+ *   Ranked (4) · Solver (5) · Crafter (3) · Social (2)
+ *
+ * Design principles:
+ *   - Milestones describe identity, not behavior counts
+ *   - Every milestone has a distinct trigger (no filler counters)
+ *   - Unlock copy uses identity language, not praise
+ *   - One "isNext" per tab — always a clear target
+ *
+ * Includes a back-compat shim for legacy consumers
+ * (PremiumStats, MilestoneModalManager, MilestoneShareCard, AdminPreview)
+ * that read `label`, `icon: MilestoneIcon`, `emoji`, `current`, `target`,
+ * `progressText`, and `isNext`.
  */
+
 import { getSolveRecords, type SolveRecord } from "./solveTracker";
 import { computePlayerRating, getSkillTier, type SkillTier } from "./solveScoring";
 import { getDailyStreak } from "./dailyChallenge";
+import { loadSentItems, loadReceivedItems } from "./craftHistory";
 import { toast } from "sonner";
+import type { PuzzleCategory } from "./puzzleTypes";
 
-const STORAGE_KEY = "puzzlecraft-milestones-shown";
+// ── Tabs ──────────────────────────────────────────────────────────────────────
 
-// ── Milestone definitions ──
+export type MilestoneTab = "ranked" | "solver" | "crafter" | "social";
 
-export type MilestoneIcon = "puzzle" | "flame" | "trophy" | "medal" | "zap" | "crown" | "target" | "award" | "bolt";
+export const MILESTONE_TABS: { id: MilestoneTab; label: string }[] = [
+  { id: "ranked",  label: "Ranked"  },
+  { id: "solver",  label: "Solver"  },
+  { id: "crafter", label: "Crafter" },
+  { id: "social",  label: "Social"  },
+];
 
-export type MilestoneState = "locked" | "in-progress" | "achieved";
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-interface Milestone {
+export type MilestoneState = "achieved" | "in-progress" | "locked";
+
+/** Legacy icon union — kept for back-compat with share cards / modal. */
+export type MilestoneIcon =
+  | "puzzle" | "flame" | "trophy" | "medal"
+  | "zap"    | "crown" | "target" | "award" | "bolt";
+
+export const MILESTONE_ICON_EMOJI: Record<MilestoneIcon, string> = {
+  puzzle: "🧩", flame: "🔥", trophy: "🏆", medal: "🥇",
+  zap: "⚡",   crown: "👑", target: "🎯", award: "🏅", bolt: "⚡",
+};
+
+/**
+ * Unified milestone shape returned by getAllMilestones().
+ * New page consumes the new fields (`name`, `unlockCopy`, `progressLabel`,
+ * `progressRatio`, `tab`); legacy consumers read `label`, `icon`, `emoji`,
+ * `current`, `target`, `progressText`. Both populated for every result.
+ */
+export interface MilestoneResult {
   id: string;
+  tab: MilestoneTab;
+  name: string;
+  description: string;
+  unlockCopy: string;
+  state: MilestoneState;
+  /** 0–1 completion ratio for trackable milestones; 0 for moment-based */
+  progressRatio: number;
+  /** e.g. "4 of 5 puzzles sent" — null for moment-based milestones */
+  progressLabel: string | null;
+  /** True for the single most-progressed unachieved milestone per tab */
+  isNext: boolean;
+
+  // ── Legacy compat fields ──
+  /** Alias of `name` */
   label: string;
   icon: MilestoneIcon;
-  /** Optional quote shown on the share card */
+  emoji: string;
+  /** 0–100 derived from progressRatio (legacy display) */
+  current: number;
+  /** 100 when progressLabel exists, else 0 (legacy display) */
+  target: number;
+  /** Alias of progressLabel ("" when null) */
+  progressText: string;
+  /** Optional motivational quote — alias of unlockCopy for share cards */
   quote?: string;
 }
 
-/**
- * Emoji mapping for milestone icons.
- *
- * ⚠️ CRITICAL: This is what the achievement share card must use to render
- * the icon. Using `m.icon` directly (the string "flame") renders as text.
- * Use `MILESTONE_ICON_EMOJI[m.icon]` wherever the icon appears in share
- * cards, canvas renders, or OG image templates.
- *
- * Find in MilestoneShareCard or equivalent and replace:
- *   <h1>{milestone.icon}</h1>          ← WRONG — renders "flame" as text
- *   <h1>{MILESTONE_ICON_EMOJI[milestone.icon]}</h1>  ← CORRECT — renders 🔥
- */
-export const MILESTONE_ICON_EMOJI: Record<MilestoneIcon, string> = {
-  puzzle:  "🧩",
-  flame:   "🔥",
-  trophy:  "🏆",
-  medal:   "🥇",
-  zap:     "⚡",
-  crown:   "👑",
-  target:  "🎯",
-  award:   "🏅",
-  bolt:    "⚡",
-};
+/** Legacy alias kept so old imports don't break. */
+export type MilestoneWithProgress = MilestoneResult;
 
-const SOLVE_MILESTONES: { count: number; milestone: Milestone }[] = [
-  { count: 10,   milestone: { id: "solves-10",   label: "10 Puzzles Solved",   icon: "puzzle", quote: "Every puzzle solved is a mind sharpened." } },
-  { count: 50,   milestone: { id: "solves-50",   label: "50 Puzzles Solved",   icon: "flame",  quote: "Consistency is the secret. Keep that streak burning." } },
-  { count: 100,  milestone: { id: "solves-100",  label: "100 Puzzles Solved",  icon: "trophy", quote: "100 down. You're in rare company." } },
-  { count: 250,  milestone: { id: "solves-250",  label: "250 Puzzles Solved",  icon: "medal",  quote: "This is what dedication looks like." } },
-  { count: 500,  milestone: { id: "solves-500",  label: "500 Puzzles Solved",  icon: "crown",  quote: "Half a thousand. Legendary." } },
-  { count: 1000, milestone: { id: "solves-1000", label: "1000 Puzzles Solved", icon: "trophy", quote: "Four digits. You're in a class of your own." } },
-];
+// ── localStorage keys ─────────────────────────────────────────────────────────
 
-const STREAK_MILESTONES: { days: number; milestone: Milestone }[] = [
-  { days: 3,   milestone: { id: "streak-3",   label: "3-Day Streak",   icon: "flame",  quote: "Three in a row. The habit is forming." } },
-  { days: 7,   milestone: { id: "streak-7",   label: "7-Day Streak",   icon: "zap",    quote: "One full week. You keep showing up." } },
-  { days: 14,  milestone: { id: "streak-14",  label: "14-Day Streak",  icon: "bolt",   quote: "Two weeks strong. This is real commitment." } },
-  { days: 30,  milestone: { id: "streak-30",  label: "30-Day Streak",  icon: "crown",  quote: "30 days. You've earned this." } },
-  { days: 60,  milestone: { id: "streak-60",  label: "60-Day Streak",  icon: "award",  quote: "Two months. Unbreakable." } },
-  { days: 100, milestone: { id: "streak-100", label: "100-Day Streak", icon: "crown",  quote: "Triple digits. This is mastery." } },
-];
+const SHOWN_KEY       = "puzzlecraft-milestones-shown";
+const CELEBRATED_KEY  = "puzzlecraft-milestones-celebrated";
+const PEAK_RATING_KEY = "puzzlecraft-peak-rating";
 
-const TIER_ORDER: SkillTier[] = ["Casual", "Skilled", "Advanced", "Expert"];
-const TIER_MILESTONES: { tier: SkillTier; milestone: Milestone }[] = [
-  { tier: "Casual",   milestone: { id: "tier-casual",   label: "Casual Rank Reached",   icon: "zap",    quote: "You've found your rhythm." } },
-  { tier: "Skilled",  milestone: { id: "tier-skilled",  label: "Skilled Rank Reached",  icon: "target", quote: "Your solve speed is climbing. Keep pushing." } },
-  { tier: "Advanced", milestone: { id: "tier-advanced", label: "Advanced Rank Reached", icon: "award",  quote: "Advanced. Most players never get here." } },
-  { tier: "Expert",   milestone: { id: "tier-expert",   label: "Expert Rank Reached",   icon: "medal",  quote: "Expert tier. You're among the very best." } },
-];
+export const FLAG_FIRST_RECIPIENT_SOLVE = "puzzlecraft-flag-recipient-solve";
+export const FLAG_BEAT_CHALLENGE_TIME   = "puzzlecraft-flag-beat-challenge";
 
-const TIER_RATING_THRESHOLDS: Record<string, number> = {
-  Casual: 650,
-  Skilled: 850,
-  Advanced: 1300,
-  Expert: 1650,
-};
-
-const CELEBRATED_KEY = "puzzlecraft-milestones-celebrated";
-
-// ── Persistence ──
+// ── Persistence helpers ───────────────────────────────────────────────────────
 
 function getShownIds(): Set<string> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(SHOWN_KEY);
     return raw ? new Set(JSON.parse(raw)) : new Set();
-  } catch {
-    return new Set();
-  }
+  } catch { return new Set(); }
 }
 
 function markShown(id: string) {
   const shown = getShownIds();
   shown.add(id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([...shown]));
+  try { localStorage.setItem(SHOWN_KEY, JSON.stringify([...shown])); } catch {}
 }
 
 export function getUncelebratedIds(): Set<string> {
@@ -107,14 +115,10 @@ export function getUncelebratedIds(): Set<string> {
     const raw = localStorage.getItem(CELEBRATED_KEY);
     const celebrated = raw ? new Set<string>(JSON.parse(raw)) : new Set<string>();
     const shown = getShownIds();
-    const uncelebrated = new Set<string>();
-    for (const id of shown) {
-      if (!celebrated.has(id)) uncelebrated.add(id);
-    }
-    return uncelebrated;
-  } catch {
-    return new Set();
-  }
+    const out = new Set<string>();
+    for (const id of shown) if (!celebrated.has(id)) out.add(id);
+    return out;
+  } catch { return new Set(); }
 }
 
 export function markCelebrated(ids: string[]) {
@@ -126,145 +130,359 @@ export function markCelebrated(ids: string[]) {
   } catch {}
 }
 
-// ── Check & notify ──
-
-export function checkMilestones() {
-  const shown = getShownIds();
-  const newMilestones: Milestone[] = [];
-
-  const solveCount = getSolveRecords().filter((r) => r.solveTime >= 10).length;
-  for (const { count, milestone } of SOLVE_MILESTONES) {
-    if (solveCount >= count && !shown.has(milestone.id)) {
-      newMilestones.push(milestone);
-    }
-  }
-
-  try {
-    const streak = getDailyStreak();
-    for (const { days, milestone } of STREAK_MILESTONES) {
-      if (streak.current >= days && !shown.has(milestone.id)) {
-        newMilestones.push(milestone);
-      }
-    }
-  } catch {}
-
-  const records = getSolveRecords().filter((r) => r.solveTime >= 10);
-  if (records.length >= 5) {
-    const rating = computePlayerRating(records);
-    const tier = getSkillTier(rating, records.length);
-    const tierIdx = TIER_ORDER.indexOf(tier);
-    for (const { tier: t, milestone } of TIER_MILESTONES) {
-      if (TIER_ORDER.indexOf(t) <= tierIdx && tierIdx >= 0 && !shown.has(milestone.id)) {
-        newMilestones.push(milestone);
-      }
-    }
-  }
-
-  newMilestones.forEach((m, i) => {
-    setTimeout(() => {
-      // Use emoji in toast — not the raw icon string
-      const emoji = MILESTONE_ICON_EMOJI[m.icon];
-      toast.success(`${emoji} ${m.label}`, {
-        description: m.quote ?? "Keep it up!",
-        duration: 4000,
-      });
-      markShown(m.id);
-    }, i * 1500);
-  });
-
-  return newMilestones.length;
+function getPeakRating(): number {
+  try { return parseInt(localStorage.getItem(PEAK_RATING_KEY) ?? "0", 10) || 0; }
+  catch { return 0; }
 }
 
-export interface MilestoneWithProgress {
-  id: string;
-  label: string;
-  icon: MilestoneIcon;
-  /** Use MILESTONE_ICON_EMOJI[icon] to render this as an emoji */
-  emoji: string;
-  /** Optional motivational quote for share cards */
-  quote?: string;
-  state: MilestoneState;
-  current: number;
-  target: number;
-  progressText: string;
-  isNext: boolean;
+function updatePeakRating(current: number): boolean {
+  const prev = getPeakRating();
+  if (current > prev) {
+    try { localStorage.setItem(PEAK_RATING_KEY, String(current)); } catch {}
+    return true;
+  }
+  return false;
 }
 
-export function getAllMilestones(overrideRecords?: SolveRecord[]): MilestoneWithProgress[] {
+function getFlag(key: string): boolean {
+  try { return localStorage.getItem(key) === "1"; } catch { return false; }
+}
+
+export function setFlag(key: string) {
+  try { localStorage.setItem(key, "1"); } catch {}
+}
+
+// ── Convenience exports ───────────────────────────────────────────────────────
+
+export function recordFirstRecipientSolve() {
+  setFlag(FLAG_FIRST_RECIPIENT_SOLVE);
+  checkMilestones();
+}
+
+export function recordBeatChallengeTime() {
+  setFlag(FLAG_BEAT_CHALLENGE_TIME);
+  checkMilestones();
+}
+
+// ── Snapshot ──────────────────────────────────────────────────────────────────
+
+const ALL_TYPES: PuzzleCategory[] = [
+  "crossword", "word-fill", "number-fill", "sudoku",
+  "word-search", "kakuro", "nonogram", "cryptogram",
+];
+
+const TIER_ORDER: SkillTier[] = ["Beginner", "Casual", "Skilled", "Advanced", "Expert"];
+const TIER_THRESHOLDS: Record<string, number> = {
+  Skilled: 850, Advanced: 1300, Expert: 1650,
+};
+
+interface Snapshot {
+  solveCount: number;
+  typesPlayed: Set<PuzzleCategory>;
+  hasCleanSheet: boolean;
+  streakCurrent: number;
+  rating: number;
+  tierIdx: number;
+  isPeakRating: boolean;
+  sentCount: number;
+  receivedCompleted: boolean;
+  firstRecipientSolve: boolean;
+  beatChallengeTime: boolean;
+}
+
+function snapshot(overrideRecords?: SolveRecord[]): Snapshot {
   const baseRecords = overrideRecords ?? getSolveRecords();
-  const filtered = baseRecords.filter((r) => r.solveTime >= 10);
-  const solveCount = filtered.length;
-  const records = filtered;
-  const rating = records.length >= 5 ? computePlayerRating(records) : 0;
-  const tier = getSkillTier(rating, records.length);
-  const tierIdx = TIER_ORDER.indexOf(tier);
+  const records     = baseRecords.filter((r) => r.solveTime >= 10);
+  const solveCount  = records.length;
+  const typesPlayed = new Set(records.map((r) => r.puzzleType));
+  const hasCleanSheet = records.some((r) => r.hintsUsed === 0 && r.mistakesCount === 0);
 
   let streakCurrent = 0;
   try { streakCurrent = getDailyStreak().current; } catch {}
 
-  const all: MilestoneWithProgress[] = [];
+  const rating  = solveCount >= 5 ? computePlayerRating(records) : 0;
+  const tier    = getSkillTier(rating, solveCount);
+  const tierIdx = TIER_ORDER.indexOf(tier);
 
-  for (const { count, milestone } of SOLVE_MILESTONES) {
-    const achieved = solveCount >= count;
-    const progress = Math.min(solveCount, count);
-    const ratio = progress / count;
-    const state: MilestoneState = achieved ? "achieved" : ratio >= 0.3 ? "in-progress" : "locked";
-    all.push({
-      ...milestone,
-      emoji: MILESTONE_ICON_EMOJI[milestone.icon],
+  const isPeakRating = rating > 0 ? updatePeakRating(rating) : false;
+
+  let sentCount = 0;
+  let receivedCompleted = false;
+  try { sentCount = loadSentItems().length; } catch {}
+  try { receivedCompleted = loadReceivedItems().some((r) => r.status === "completed"); } catch {}
+
+  const firstRecipientSolve = getFlag(FLAG_FIRST_RECIPIENT_SOLVE);
+  const beatChallengeTime   = getFlag(FLAG_BEAT_CHALLENGE_TIME);
+
+  return {
+    solveCount, typesPlayed, hasCleanSheet, streakCurrent,
+    rating, tierIdx, isPeakRating,
+    sentCount, receivedCompleted, firstRecipientSolve, beatChallengeTime,
+  };
+}
+
+// ── Milestone specifications ──────────────────────────────────────────────────
+
+interface MilestoneSpec {
+  id: string;
+  tab: MilestoneTab;
+  name: string;
+  description: string;
+  unlockCopy: string;
+  /** Legacy icon for share cards / modal */
+  icon: MilestoneIcon;
+  check: (s: Snapshot) => boolean;
+  progress?: (s: Snapshot) => { ratio: number; label: string };
+}
+
+const SPECS: MilestoneSpec[] = [
+  // ── RANKED ──
+  {
+    id: "off-the-bench",
+    tab: "ranked",
+    name: "Off the Bench",
+    description: "Earned your first Player Rating",
+    unlockCopy: "You're in the system. Now let's see how high you go.",
+    icon: "zap",
+    check: (s) => s.solveCount >= 10,
+    progress: (s) => ({
+      ratio: Math.min(s.solveCount / 10, 1),
+      label: `${Math.min(s.solveCount, 10)} of 10 solves`,
+    }),
+  },
+  {
+    id: "tier-skilled",
+    tab: "ranked",
+    name: "Skilled",
+    description: "Crossed into the Skilled tier",
+    unlockCopy: "Comfortable with the hard stuff. That's what Skilled means.",
+    icon: "target",
+    check: (s) => s.tierIdx >= TIER_ORDER.indexOf("Skilled"),
+    progress: (s) => ({
+      ratio: Math.min(s.rating / TIER_THRESHOLDS.Skilled, 1),
+      label: `${s.rating} of ${TIER_THRESHOLDS.Skilled} rating`,
+    }),
+  },
+  {
+    id: "tier-advanced",
+    tab: "ranked",
+    name: "Advanced",
+    description: "Crossed into the Advanced tier",
+    unlockCopy: "You're not just solving — you're excelling.",
+    icon: "award",
+    check: (s) => s.tierIdx >= TIER_ORDER.indexOf("Advanced"),
+    progress: (s) => ({
+      ratio: Math.min(s.rating / TIER_THRESHOLDS.Advanced, 1),
+      label: `${s.rating} of ${TIER_THRESHOLDS.Advanced} rating`,
+    }),
+  },
+  {
+    id: "tier-expert",
+    tab: "ranked",
+    name: "Expert",
+    description: "Reached the Expert tier — top of the board",
+    unlockCopy: "Elite. There's no higher rank.",
+    icon: "trophy",
+    check: (s) => s.tierIdx >= TIER_ORDER.indexOf("Expert"),
+    progress: (s) => ({
+      ratio: Math.min(s.rating / TIER_THRESHOLDS.Expert, 1),
+      label: `${s.rating} of ${TIER_THRESHOLDS.Expert} rating`,
+    }),
+  },
+
+  // ── SOLVER ──
+  {
+    id: "first-crack",
+    tab: "solver",
+    name: "First Crack",
+    description: "Solved your very first puzzle",
+    unlockCopy: "You're a Puzzlecraft solver now.",
+    icon: "puzzle",
+    check: (s) => s.solveCount >= 1,
+  },
+  {
+    id: "on-a-roll",
+    tab: "solver",
+    name: "On a Roll",
+    description: "3-day solve streak",
+    unlockCopy: "Three days in a row. That's a habit starting.",
+    icon: "flame",
+    check: (s) => s.streakCurrent >= 3,
+    progress: (s) => ({
+      ratio: Math.min(s.streakCurrent / 3, 1),
+      label: `${Math.min(s.streakCurrent, 3)} of 3 days`,
+    }),
+  },
+  {
+    id: "clean-sheet",
+    tab: "solver",
+    name: "Clean Sheet",
+    description: "Solved a puzzle with no hints and no mistakes",
+    unlockCopy: "No hints. No mistakes. That's you.",
+    icon: "medal",
+    check: (s) => s.hasCleanSheet,
+  },
+  {
+    id: "the-long-game",
+    tab: "solver",
+    name: "The Long Game",
+    description: "Solved every one of the 8 puzzle types",
+    unlockCopy: "All 8 types. You've seen everything this game has.",
+    icon: "target",
+    check: (s) => ALL_TYPES.every((t) => s.typesPlayed.has(t)),
+    progress: (s) => {
+      const done = ALL_TYPES.filter((t) => s.typesPlayed.has(t)).length;
+      return { ratio: done / 8, label: `${done} of 8 types played` };
+    },
+  },
+  {
+    id: "iron-habit",
+    tab: "solver",
+    name: "Iron Habit",
+    description: "30-day solve streak",
+    unlockCopy: "30 days. That's not luck — that's character.",
+    icon: "crown",
+    check: (s) => s.streakCurrent >= 30,
+    progress: (s) => ({
+      ratio: Math.min(s.streakCurrent / 30, 1),
+      label: `${Math.min(s.streakCurrent, 30)} of 30 days`,
+    }),
+  },
+
+  // ── CRAFTER ──
+  {
+    id: "made-something",
+    tab: "crafter",
+    name: "Made Something",
+    description: "Sent your first crafted puzzle",
+    unlockCopy: "You're a crafter now. Someone's about to get this.",
+    icon: "puzzle",
+    check: (s) => s.sentCount >= 1,
+  },
+  {
+    id: "they-solved-it",
+    tab: "crafter",
+    name: "They Solved It",
+    description: "Someone completed a puzzle you made for them",
+    unlockCopy: "They finished it. The loop is complete.",
+    icon: "trophy",
+    check: (s) => s.firstRecipientSolve,
+  },
+  {
+    id: "puzzle-maker",
+    tab: "crafter",
+    name: "Puzzle Maker",
+    description: "Sent 5 crafted puzzles",
+    unlockCopy: "Five people got a puzzle from you. That's a thing you do now.",
+    icon: "award",
+    check: (s) => s.sentCount >= 5,
+    progress: (s) => ({
+      ratio: Math.min(s.sentCount / 5, 1),
+      label: `${Math.min(s.sentCount, 5)} of 5 puzzles sent`,
+    }),
+  },
+
+  // ── SOCIAL ──
+  {
+    id: "challenge-accepted",
+    tab: "social",
+    name: "Challenge Accepted",
+    description: "Solved a puzzle someone made for you",
+    unlockCopy: "They made it. You solved it. That's how this works.",
+    icon: "bolt",
+    check: (s) => s.receivedCompleted,
+  },
+  {
+    id: "game-on",
+    tab: "social",
+    name: "Game On",
+    description: "Beat a creator's challenge time",
+    unlockCopy: "You beat their time. Now they know.",
+    icon: "zap",
+    check: (s) => s.beatChallengeTime,
+  },
+];
+
+// ── Public API ────────────────────────────────────────────────────────────────
+
+export function getAllMilestones(overrideRecords?: SolveRecord[]): MilestoneResult[] {
+  const s = snapshot(overrideRecords);
+
+  const results: MilestoneResult[] = SPECS.map((spec) => {
+    const achieved = spec.check(s);
+    const prog     = spec.progress ? spec.progress(s) : null;
+
+    let state: MilestoneState;
+    if (achieved) state = "achieved";
+    else if (prog && prog.ratio >= 0.25) state = "in-progress";
+    else state = "locked";
+
+    const ratio = achieved ? 1 : (prog?.ratio ?? 0);
+    const label = prog?.label ?? null;
+
+    return {
+      id:            spec.id,
+      tab:           spec.tab,
+      name:          spec.name,
+      description:   spec.description,
+      unlockCopy:    spec.unlockCopy,
       state,
-      current: progress,
-      target: count,
-      progressText: `${progress} / ${count} puzzles`,
-      isNext: false,
+      progressRatio: ratio,
+      progressLabel: label,
+      isNext:        false,
+
+      // legacy compat
+      label:        spec.name,
+      icon:         spec.icon,
+      emoji:        MILESTONE_ICON_EMOJI[spec.icon],
+      current:      Math.round(ratio * 100),
+      target:       label ? 100 : 0,
+      progressText: label ?? "",
+      quote:        spec.unlockCopy,
+    };
+  });
+
+  // One isNext per tab — prefer in-progress, then highest ratio
+  const tabs: MilestoneTab[] = ["ranked", "solver", "crafter", "social"];
+  for (const tab of tabs) {
+    const unachieved = results.filter((r) => r.tab === tab && r.state !== "achieved");
+    if (!unachieved.length) continue;
+    const best = unachieved.reduce((a, b) => {
+      const scoreA = (a.state === "in-progress" ? 100 : 0) + a.progressRatio * 10;
+      const scoreB = (b.state === "in-progress" ? 100 : 0) + b.progressRatio * 10;
+      return scoreB > scoreA ? b : a;
     });
+    best.isNext = true;
   }
 
-  for (const { days, milestone } of STREAK_MILESTONES) {
-    const achieved = streakCurrent >= days;
-    const progress = Math.min(streakCurrent, days);
-    const ratio = progress / days;
-    const state: MilestoneState = achieved ? "achieved" : ratio >= 0.3 ? "in-progress" : "locked";
-    all.push({
-      ...milestone,
-      emoji: MILESTONE_ICON_EMOJI[milestone.icon],
-      state,
-      current: progress,
-      target: days,
-      progressText: `Day ${progress} of ${days}`,
-      isNext: false,
-    });
-  }
+  return results;
+}
 
-  for (const { tier: t, milestone } of TIER_MILESTONES) {
-    const achieved = TIER_ORDER.indexOf(t) <= tierIdx && tierIdx >= 0;
-    const threshold = TIER_RATING_THRESHOLDS[t] ?? 700;
-    const progress = Math.min(rating, threshold);
-    const ratio = progress / threshold;
-    const state: MilestoneState = achieved ? "achieved" : ratio >= 0.3 ? "in-progress" : "locked";
-    all.push({
-      ...milestone,
-      emoji: MILESTONE_ICON_EMOJI[milestone.icon],
-      state,
-      current: progress,
-      target: threshold,
-      progressText: `${progress} / ${threshold} rating`,
-      isNext: false,
-    });
-  }
+export function getMilestonesForTab(tab: MilestoneTab): MilestoneResult[] {
+  return getAllMilestones().filter((m) => m.tab === tab);
+}
 
-  let bestNextIdx = -1;
-  let bestNextRatio = -1;
-  for (let i = 0; i < all.length; i++) {
-    if (all[i].state !== "achieved") {
-      const ratio = all[i].current / all[i].target;
-      if (ratio > bestNextRatio) {
-        bestNextRatio = ratio;
-        bestNextIdx = i;
-      }
-    }
-  }
-  if (bestNextIdx >= 0) all[bestNextIdx].isNext = true;
+// ── checkMilestones ───────────────────────────────────────────────────────────
 
-  return all;
+/**
+ * Checks all milestones; fires a sonner toast for each newly achieved one.
+ * Identity-forward: name on line 1, unlockCopy on line 2. Staggered 1.5s apart.
+ */
+export function checkMilestones(): number {
+  const s     = snapshot();
+  const shown = getShownIds();
+  const newly = SPECS.filter((spec) => !shown.has(spec.id) && spec.check(s));
+
+  newly.forEach((spec, i) => {
+    setTimeout(() => {
+      markShown(spec.id);
+      toast.success(spec.name, {
+        description: spec.unlockCopy,
+        duration:    4500,
+        id:          `milestone-${spec.id}`,
+      });
+    }, i * 1500);
+  });
+
+  return newly.length;
 }
