@@ -166,8 +166,8 @@ function NextCard({ m, isNew, navigate }: { m: MilestoneResult; isNew: boolean; 
         <p className="text-base font-bold text-foreground leading-tight">{m.name}</p>
         <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{m.description}</p>
 
-        <p className="mt-2 text-[10px] text-primary/70">Closest to unlock</p>
-        <p className="text-[11px] text-primary/70 mt-1">You're close</p>
+        <p className="mt-2 text-[10px] text-primary/70">Almost there</p>
+        <p className="text-[11px] text-primary/70 mt-1">Keep going</p>
 
         {m.progressLabel ? (
           m.progressRatio > 0 ? (
@@ -178,9 +178,10 @@ function NextCard({ m, isNew, navigate }: { m: MilestoneResult; isNew: boolean; 
               </p>
             </div>
           ) : (
-            <div className="mt-3 space-y-0.5">
-              <p className="text-[10px] text-muted-foreground">{ENCOURAGEMENT[m.tab]}</p>
-              <p className="text-[10px] text-muted-foreground/70">{goalLine(m.id)}</p>
+            <div className="mt-3 space-y-1.5">
+              <Progress value={0} className="h-1.5" />
+              <p className="text-[10px] text-muted-foreground">{baselineLabel(m) ?? m.progressLabel}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">{ZERO_STATE_HELPER[m.tab]}</p>
             </div>
           )
         ) : (
