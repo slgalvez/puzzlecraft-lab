@@ -6,7 +6,7 @@
  * Glow animation plays once for newly unlocked milestones.
  */
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import {
@@ -26,6 +26,7 @@ import type { NavigateFunction } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // ── Tab meta ───────────────────────────────────────────────────────────────────
 
@@ -97,15 +98,21 @@ function NextCard({ m, isNew }: { m: MilestoneResult; isNew: boolean; }) {
         <p className="mt-2 text-[10px] text-primary/70">This is your next milestone</p>
 
         {m.progressLabel ? (
-          <div className="mt-3 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-muted-foreground">{m.progressLabel}</span>
-              <span className="text-[10px] text-primary font-medium">
-                {Math.round(m.progressRatio * 100)}%
-              </span>
+          m.progressRatio > 0 ? (
+            <div className="mt-3 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-muted-foreground">{m.progressLabel}</span>
+                <span className="text-[10px] text-primary font-medium">
+                  {Math.round(m.progressRatio * 100)}%
+                </span>
+              </div>
+              <Progress value={m.progressRatio * 100} className="h-1.5" />
             </div>
-            <Progress value={m.progressRatio * 100} className="h-1.5" />
-          </div>
+          ) : (
+            <p className="mt-3 text-[10px] text-muted-foreground">
+              Not started — {m.progressLabel}
+            </p>
+          )
         ) : (
           <p className="mt-2 text-[10px] text-muted-foreground/50 italic">
             Moment-based — you'll know when it happens
@@ -163,12 +170,15 @@ function InProgressCard({ m }: { m: MilestoneResult }) {
 }
 
 function LockedCard({ m }: { m: MilestoneResult }) {
+  const showLockedHint = m.progressLabel && m.progressRatio === 0;
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border/30 bg-muted/10 px-4 py-3 opacity-60">
       <Lock size={13} className="text-muted-foreground/40 shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-muted-foreground/70 leading-tight">{m.name}</p>
-        <p className="text-[11px] text-muted-foreground/50 mt-0.5 truncate">{m.description}</p>
+        <p className="text-[11px] text-muted-foreground/50 mt-0.5 truncate">
+          {showLockedHint ? `Locked — ${m.description}` : m.description}
+        </p>
       </div>
     </div>
   );
@@ -194,7 +204,12 @@ function TabContent({
   const locked     = milestones.filter((m) => m.state === "locked" && !m.isNext);
 
   const allDone = milestones.every((m) => m.state === "achieved");
-  const isTabEmpty = milestones.every((m) => m.state === "locked");
+  // Explicit zero-data check: nothing achieved AND zero progress on every milestone.
+  // Stricter than "every locked" — keeps Up Next visible when at least one milestone
+  // has meaningful progress, even if no tab milestone is yet achieved.
+  const hasNoData = milestones.every(
+    (m) => m.state !== "achieved" && m.progressRatio === 0,
+  );
 
   if (allDone) {
     return (
@@ -212,7 +227,7 @@ function TabContent({
 
   return (
     <div className="space-y-5">
-      {isTabEmpty ? (
+      {hasNoData ? (
         <div className="rounded-2xl border border-dashed border-border/60 p-5 text-center space-y-3">
           <p className="text-sm font-semibold text-foreground">{emptyCopy.headline}</p>
           <Button variant="default" size="sm" onClick={() => navigate(emptyCopy.route)}>
@@ -265,6 +280,16 @@ export default function Milestones() {
     if (typeof window === "undefined") return false;
     return !localStorage.getItem("milestones_seen_intro");
   });
+
+  // First-mount only ready gate. Stays true forever after first paint —
+  // tab switches and milestone updates must NOT re-trigger skeletons.
+  const [ready, setReady] = useState(false);
+  const readyOnceRef = useRef(false);
+  useEffect(() => {
+    if (readyOnceRef.current) return;
+    readyOnceRef.current = true;
+    setReady(true);
+  }, []);
 
   const dismissIntro = () => {
     try { localStorage.setItem("milestones_seen_intro", "true"); } catch {}
@@ -390,7 +415,15 @@ export default function Milestones() {
           })}
         </div>
 
-        <TabContent tab={activeTab} uncelebratedIds={uncelebratedIds} navigate={navigate} />
+        {ready ? (
+          <TabContent tab={activeTab} uncelebratedIds={uncelebratedIds} navigate={navigate} />
+        ) : (
+          <div className="space-y-3" aria-hidden="true">
+            <Skeleton className="h-[88px] rounded-2xl" />
+            <Skeleton className="h-[88px] rounded-2xl" />
+            <Skeleton className="h-[88px] rounded-2xl" />
+          </div>
+        )}
 
         {totalAchieved === 0 && (
           <div className="mt-8 rounded-2xl border border-dashed border-border/60 p-6 text-center space-y-3">
