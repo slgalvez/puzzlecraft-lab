@@ -22,6 +22,7 @@ import {
   Zap, Target, Palette, Users, Trophy, Flame, Shield,
   Star, Lock, ArrowUpRight, CheckCircle2, Sparkles,
 } from "lucide-react";
+import type { NavigateFunction } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -92,6 +93,8 @@ function NextCard({ m, isNew }: { m: MilestoneResult; isNew: boolean; }) {
 
         <p className="text-base font-bold text-foreground leading-tight">{m.name}</p>
         <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{m.description}</p>
+
+        <p className="mt-2 text-[10px] text-primary/70">This is your next milestone</p>
 
         {m.progressLabel ? (
           <div className="mt-3 space-y-1.5">
@@ -173,9 +176,16 @@ function LockedCard({ m }: { m: MilestoneResult }) {
 
 // ── Tab content ────────────────────────────────────────────────────────────────
 
+const EMPTY_TAB_COPY: Record<MilestoneTab, { headline: string; cta: string; route: string }> = {
+  ranked:  { headline: "Solve 10 puzzles to earn your Player Rating", cta: "Play Daily", route: "/daily" },
+  solver:  { headline: "Solve a puzzle to start unlocking milestones", cta: "Play Daily", route: "/daily" },
+  crafter: { headline: "Create and send a puzzle to begin", cta: "Create a Puzzle", route: "/craft" },
+  social:  { headline: "Play or share a puzzle with someone to unlock these", cta: "Create a Puzzle", route: "/craft" },
+};
+
 function TabContent({
-  tab, uncelebratedIds,
-}: { tab: MilestoneTab; uncelebratedIds: Set<string>; }) {
+  tab, uncelebratedIds, navigate,
+}: { tab: MilestoneTab; uncelebratedIds: Set<string>; navigate: NavigateFunction; }) {
   const milestones = useMemo(() => getMilestonesForTab(tab), [tab]);
 
   const next       = milestones.find((m) => m.isNext && m.state !== "achieved");
@@ -184,6 +194,7 @@ function TabContent({
   const locked     = milestones.filter((m) => m.state === "locked" && !m.isNext);
 
   const allDone = milestones.every((m) => m.state === "achieved");
+  const isTabEmpty = milestones.every((m) => m.state === "locked");
 
   if (allDone) {
     return (
@@ -197,9 +208,20 @@ function TabContent({
     );
   }
 
+  const emptyCopy = EMPTY_TAB_COPY[tab];
+
   return (
     <div className="space-y-5">
-      {next && <NextCard m={next} isNew={uncelebratedIds.has(next.id)} />}
+      {isTabEmpty ? (
+        <div className="rounded-2xl border border-dashed border-border/60 p-5 text-center space-y-3">
+          <p className="text-sm font-semibold text-foreground">{emptyCopy.headline}</p>
+          <Button variant="default" size="sm" onClick={() => navigate(emptyCopy.route)}>
+            {emptyCopy.cta}
+          </Button>
+        </div>
+      ) : (
+        next && <NextCard m={next} isNew={uncelebratedIds.has(next.id)} />
+      )}
 
       {inProgress.length > 0 && (
         <div className="space-y-2.5">
@@ -239,6 +261,15 @@ export default function Milestones() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<MilestoneTab>("solver");
   const [uncelebratedIds, setUncelebratedIds] = useState<Set<string>>(new Set());
+  const [showIntro, setShowIntro] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !localStorage.getItem("milestones_seen_intro");
+  });
+
+  const dismissIntro = () => {
+    try { localStorage.setItem("milestones_seen_intro", "true"); } catch {}
+    setShowIntro(false);
+  };
 
   useEffect(() => {
     const ids = getUncelebratedIds();
@@ -297,6 +328,26 @@ export default function Milestones() {
               : `${totalAchieved} of ${totalCount} earned.`}
         </p>
 
+        {showIntro && (
+          <div className="rounded-2xl bg-secondary/40 px-4 py-3.5 mb-4">
+            <div className="flex items-start gap-2.5">
+              <Sparkles size={14} className="text-primary/70 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground mb-1">How milestones work</p>
+                <p className="text-xs text-muted-foreground leading-snug">
+                  Milestones track how you play. Complete puzzles, build streaks, create and share — each one unlocks as you go. Focus on what's marked <span className="font-semibold text-foreground">Next</span>.
+                </p>
+              </div>
+              <button
+                onClick={dismissIntro}
+                className="text-xs font-semibold text-primary shrink-0 px-1 py-0.5"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-2 overflow-x-auto pb-1 mb-6">
           {MILESTONE_TABS.map(({ id, label }) => {
             const { Icon, color, dotColor } = TAB_META[id];
@@ -339,7 +390,7 @@ export default function Milestones() {
           })}
         </div>
 
-        <TabContent tab={activeTab} uncelebratedIds={uncelebratedIds} />
+        <TabContent tab={activeTab} uncelebratedIds={uncelebratedIds} navigate={navigate} />
 
         {totalAchieved === 0 && (
           <div className="mt-8 rounded-2xl border border-dashed border-border/60 p-6 text-center space-y-3">
