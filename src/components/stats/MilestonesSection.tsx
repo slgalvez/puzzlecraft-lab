@@ -189,33 +189,6 @@ function NextCard({ m, isNew, navigate }: { m: MilestoneResult; isNew: boolean; 
     </div>
   );
 }
-
-function AchievedCard({ m, isNew }: { m: MilestoneResult; isNew: boolean; }) {
-  const { color, bg } = TAB_META[m.tab];
-  return (
-    <div
-      className={cn(
-        "flex items-center gap-3.5 rounded-xl border px-4 py-3.5",
-        "border-border/60 bg-card",
-        isNew && "animate-milestone-glow",
-      )}
-    >
-      <div className={cn("h-9 w-9 rounded-full flex items-center justify-center shrink-0", bg)}>
-        <MilestoneIconView id={m.id} achieved tab={m.tab} size={15} />
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground leading-tight">{m.name}</p>
-        <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug truncate">
-          {m.description}
-        </p>
-      </div>
-
-      <CheckCircle2 size={14} className={cn("shrink-0", color)} />
-    </div>
-  );
-}
-
 // ── MilestoneTile (unified grid tile) ─────────────────────────────────────────
 
 type TileVariant = "active" | "not-started" | "completed" | "future";
