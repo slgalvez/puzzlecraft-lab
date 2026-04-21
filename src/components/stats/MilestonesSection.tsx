@@ -167,7 +167,6 @@ function NextCard({ m, isNew, navigate }: { m: MilestoneResult; isNew: boolean; 
         <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{m.description}</p>
 
         <p className="mt-2 text-[10px] text-primary/70">Almost there</p>
-        <p className="text-[11px] text-primary/70 mt-1">Keep going</p>
 
         {m.progressLabel ? (
           m.progressRatio > 0 ? (
@@ -184,11 +183,7 @@ function NextCard({ m, isNew, navigate }: { m: MilestoneResult; isNew: boolean; 
               <p className="text-[11px] text-muted-foreground mt-1">{ZERO_STATE_HELPER[m.tab]}</p>
             </div>
           )
-        ) : (
-          <p className="mt-2 text-[10px] text-muted-foreground/50 italic">
-            Moment-based — you'll know when it happens
-          </p>
-        )}
+        ) : null}
 
         <Button
           variant="outline"
