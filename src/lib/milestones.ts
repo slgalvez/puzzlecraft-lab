@@ -18,7 +18,7 @@
 
 import { getSolveRecords, type SolveRecord } from "./solveTracker";
 import { computePlayerRating, getSkillTier, type SkillTier } from "./solveScoring";
-import { getDailyStreak } from "./dailyChallenge";
+import { getProgressStats } from "./progressTracker";
 import { loadSentItems, loadReceivedItems } from "./craftHistory";
 import { toast } from "sonner";
 import type { PuzzleCategory } from "./puzzleTypes";
@@ -198,7 +198,7 @@ function snapshot(overrideRecords?: SolveRecord[]): Snapshot {
   const hasCleanSheet = records.some((r) => r.hintsUsed === 0 && r.mistakesCount === 0);
 
   let streakCurrent = 0;
-  try { streakCurrent = getDailyStreak().current; } catch {}
+  try { streakCurrent = getProgressStats().currentStreak; } catch {}
 
   const rating  = solveCount >= 5 ? computePlayerRating(records) : 0;
   const tier    = getSkillTier(rating, solveCount);
