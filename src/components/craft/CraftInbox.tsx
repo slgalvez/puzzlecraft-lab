@@ -24,6 +24,7 @@ import {
   deleteReceivedItem,
   relativeTime,
 } from "@/lib/craftHistory";
+import { recordFirstRecipientSolve } from "@/lib/milestones";
 import { cn } from "@/lib/utils";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -102,6 +103,8 @@ export default function CraftInbox({ onResumeDraft, onDataChange, initialTab }: 
         map[row.id] = { status, solveTime: row.solve_time ?? null };
         if (status === "completed" && !prevCompleted.current.has(row.id)) {
           freshNewSolves.add(row.id);
+          // Trigger "They Solved It" milestone on first-ever recipient solve
+          recordFirstRecipientSolve();
         }
         if (status === "completed") prevCompleted.current.add(row.id);
       }
