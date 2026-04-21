@@ -15,8 +15,7 @@ import {
   trueMistakes,
   type SkillTier,
 } from "@/lib/solveScoring";
-import { getAllMilestones, getUncelebratedIds, markCelebrated, type MilestoneIcon, type MilestoneState } from "@/lib/milestones";
-import { Trophy, Target, BarChart3, Zap, CheckCircle, FlaskConical, Trash2, TrendingUp, TrendingDown, Award, Puzzle, Flame, Crown, Medal, Bolt } from "lucide-react";
+import { Target, BarChart3, CheckCircle, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateDemoSolves, clearDemoSolves, hasDemoData, generateDemoLeaderboard, clearDemoLeaderboard, hasDemoLeaderboard } from "@/lib/demoStats";
 import { useUserAccount } from "@/contexts/UserAccountContext";
