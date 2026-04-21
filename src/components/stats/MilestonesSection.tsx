@@ -110,8 +110,30 @@ function MilestoneIconView({
 
 // ── Cards ──────────────────────────────────────────────────────────────────────
 
+/** Parse a progressLabel like "3 of 10 solves" → "7 more solves to go". */
+function remainingLine(m: MilestoneResult): string | null {
+  if (!m.progressLabel) return null;
+  // Match patterns like "3 of 10 solves", "1200 of 1300 rating", "2 of 3 days"
+  const match = m.progressLabel.match(/^(\d+)\s+of\s+(\d+)\s+(.+)$/i);
+  if (!match) return null;
+  const current = parseInt(match[1], 10);
+  const target  = parseInt(match[2], 10);
+  const unit    = match[3].trim();
+  const remaining = Math.max(0, target - current);
+  if (remaining === 0) return null;
+  return `${remaining} more ${unit} to go`;
+}
+
+const NEXT_CTA: Record<MilestoneTab, { label: string; route: string }> = {
+  ranked:  { label: "Play now →",   route: "/daily" },
+  solver:  { label: "Play now →",   route: "/daily" },
+  social:  { label: "Play now →",   route: "/daily" },
+  crafter: { label: "Create now →", route: "/craft" },
+};
+
 function NextCard({ m, isNew, navigate }: { m: MilestoneResult; isNew: boolean; navigate: NavigateFunction; }) {
-  const cta = CTA[m.tab];
+  const cta = NEXT_CTA[m.tab];
+  const remaining = remainingLine(m);
   return (
     <div
       className={cn(
@@ -132,18 +154,16 @@ function NextCard({ m, isNew, navigate }: { m: MilestoneResult; isNew: boolean; 
         <p className="text-base font-bold text-foreground leading-tight">{m.name}</p>
         <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{m.description}</p>
 
-        <p className="mt-2 text-[10px] text-primary/70">You're starting here</p>
+        <p className="mt-2 text-[10px] text-primary/70">Closest to unlock</p>
+        <p className="text-[11px] text-primary/70 mt-1">You're close</p>
 
         {m.progressLabel ? (
           m.progressRatio > 0 ? (
             <div className="mt-3 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-muted-foreground">{m.progressLabel}</span>
-                <span className="text-[10px] text-primary font-medium">
-                  {Math.round(m.progressRatio * 100)}%
-                </span>
-              </div>
               <Progress value={m.progressRatio * 100} className="h-1.5" />
+              <p className="text-[10px] text-muted-foreground">
+                {remaining ?? m.progressLabel}
+              </p>
             </div>
           ) : (
             <div className="mt-3 space-y-0.5">
