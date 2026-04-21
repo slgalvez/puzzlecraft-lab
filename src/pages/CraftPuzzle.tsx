@@ -49,6 +49,13 @@ import {
 
 type Step = "type" | "content" | "preview";
 
+// Per-type placeholder text for the words input. Kept at file-top so each type
+// can diverge later without hunting through render code.
+const WORD_PLACEHOLDERS: Record<"word-fill" | "word-search", string> = {
+  "word-search": "BARCELONA\nOCTOBER\nTHE BRIDGE\nPATRICK\nMIDNIGHT SWIM",
+  "word-fill":   "SUNDAY MORNING\nCOFFEE\nYOUR BACKYARD\nLATE SUMMER",
+};
+
 function generateShortId(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
@@ -514,15 +521,42 @@ const CraftPuzzle = () => {
                   {(selectedType === "word-fill" || selectedType === "word-search") && (
                     <div className="space-y-2">
                       <label className="text-xs font-medium text-muted-foreground">
-                        Your words (names, memories, inside jokes)
+                        Words from their world
                       </label>
                       <Textarea
                         value={wordInput}
                         onChange={e => setWordInput(e.target.value)}
-                        placeholder={"birthday\nnashville\nbeach\ntravel\nsummer"}
+                        placeholder={WORD_PLACEHOLDERS[selectedType]}
                         rows={5}
                         className="resize-none"
                       />
+                      {(() => {
+                        const activeTheme = selectedTheme !== "none" ? getTheme(selectedTheme) : null;
+                        if (!activeTheme || activeTheme.wordSuggestions.length === 0) return null;
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const suggestions = activeTheme.wordSuggestions.join("\n");
+                              setWordInput((prev) => {
+                                const existing = prev.trim();
+                                if (!existing) return suggestions;
+                                // Additive merge with dedupe (case-insensitive)
+                                const existingSet = new Set(
+                                  existing.split(/[,\n]+/).map((w) => w.trim().toUpperCase()).filter(Boolean),
+                                );
+                                const additions = activeTheme.wordSuggestions
+                                  .filter((w) => !existingSet.has(w.trim().toUpperCase()));
+                                if (additions.length === 0) return prev;
+                                return existing + "\n" + additions.join("\n");
+                              });
+                            }}
+                            className="inline-flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 font-medium transition-colors"
+                          >
+                            ✨ Fill {activeTheme.label} words
+                          </button>
+                        );
+                      })()}
                     </div>
                   )}
 
@@ -534,7 +568,7 @@ const CraftPuzzle = () => {
                       <Textarea
                         value={phraseInput}
                         onChange={e => setPhraseInput(e.target.value)}
-                        placeholder="MEET ME AT MIDNIGHT"
+                        placeholder="HAPPY BIRTHDAY FROM YOUR FAVORITE PERSON"
                         rows={4}
                         className="resize-none"
                       />
@@ -581,6 +615,20 @@ const CraftPuzzle = () => {
                   />
                 </div>
 
+                {/* Reveal message — promoted out of Personalize for visibility */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-foreground">What they'll read when they finish</label>
+                  <Input
+                    value={revealMessage}
+                    onChange={e => setRevealMessage(e.target.value)}
+                    placeholder="Happy birthday — I hid the words just for you 🎂"
+                    maxLength={500}
+                  />
+                  <p className="text-[10px] text-muted-foreground/50">
+                    Optional — a personal message revealed only after solving
+                  </p>
+                </div>
+
                 {/* ── PERSONALIZE — collapsed by default ──────────────────────
                     Optional: title, from, reveal message, theme, settings.
                     Drops the visible form surface from ~8 elements to ~2. */}
@@ -594,7 +642,7 @@ const CraftPuzzle = () => {
                       <Palette className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-sm font-medium text-foreground">Personalize</span>
                       <span className="text-[11px] text-muted-foreground">
-                        title · reveal message · theme · color · difficulty
+                        title · theme · color · difficulty
                       </span>
                     </div>
                     {personalizationOpen
@@ -614,16 +662,6 @@ const CraftPuzzle = () => {
                           <label className="text-xs font-medium text-muted-foreground">From</label>
                           <Input value={puzzleFrom} onChange={e => setPuzzleFrom(e.target.value)} placeholder="Mariah" maxLength={100} />
                         </div>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground">Message revealed after solving</label>
-                        <Input
-                          value={revealMessage}
-                          onChange={e => setRevealMessage(e.target.value)}
-                          placeholder="Congratulations! You cracked it 🎉"
-                          maxLength={500}
-                        />
                       </div>
 
                       <CraftThemePicker
@@ -692,16 +730,23 @@ const CraftPuzzle = () => {
               <div className="animate-in fade-in-0 slide-in-from-right-4 duration-300 space-y-5">
 
                 {/* Nav row */}
-                <div className="grid grid-cols-[1fr_auto_1fr] items-center">
-                  <button onClick={handleBack} className="justify-self-start flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                <div className="flex items-center justify-between">
+                  <button onClick={handleBack} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
                     <ArrowLeft size={13} /> Edit
                   </button>
-                  <p className="justify-self-center text-[10px] uppercase tracking-[0.15em] text-muted-foreground/60 font-medium">
-                    Preview
-                  </p>
-                  <button onClick={handleStartOver} className="justify-self-end text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <button onClick={handleStartOver} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                     Start over
                   </button>
+                </div>
+
+                {/* Personalized headline */}
+                <div className="text-center">
+                  <h2 className="font-display text-xl font-bold text-foreground">
+                    {puzzleTitle.trim() ? `"${puzzleTitle.trim()}" is ready` : "Your puzzle is ready to send"}
+                  </h2>
+                  {puzzleTitle.trim() && (
+                    <p className="text-xs text-muted-foreground mt-1">Here's exactly what they'll see</p>
+                  )}
                 </div>
 
                 {/* ── PUZZLE PREVIEW HERO ── */}
