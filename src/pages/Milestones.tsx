@@ -390,7 +390,7 @@ export default function Milestones() {
           })}
         </div>
 
-        <TabContent tab={activeTab} uncelebratedIds={uncelebratedIds} />
+        <TabContent tab={activeTab} uncelebratedIds={uncelebratedIds} navigate={navigate} />
 
         {totalAchieved === 0 && (
           <div className="mt-8 rounded-2xl border border-dashed border-border/60 p-6 text-center space-y-3">
