@@ -204,7 +204,12 @@ function TabContent({
   const locked     = milestones.filter((m) => m.state === "locked" && !m.isNext);
 
   const allDone = milestones.every((m) => m.state === "achieved");
-  const isTabEmpty = milestones.every((m) => m.state === "locked");
+  // Explicit zero-data check: nothing achieved AND zero progress on every milestone.
+  // Stricter than "every locked" — keeps Up Next visible when at least one milestone
+  // has meaningful progress, even if no tab milestone is yet achieved.
+  const hasNoData = milestones.every(
+    (m) => m.state !== "achieved" && m.progressRatio === 0,
+  );
 
   if (allDone) {
     return (
@@ -222,7 +227,7 @@ function TabContent({
 
   return (
     <div className="space-y-5">
-      {isTabEmpty ? (
+      {hasNoData ? (
         <div className="rounded-2xl border border-dashed border-border/60 p-5 text-center space-y-3">
           <p className="text-sm font-semibold text-foreground">{emptyCopy.headline}</p>
           <Button variant="default" size="sm" onClick={() => navigate(emptyCopy.route)}>
