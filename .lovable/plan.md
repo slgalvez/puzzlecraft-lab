@@ -1,47 +1,63 @@
 
 
-# Fix streak tracking for milestone system
+# Milestones first-view clarity
 
-## Root cause
+Five small additions to `src/pages/Milestones.tsx`. No changes to `milestones.ts` (descriptions and event-based copy already exist). No new files.
 
-Solver-tab streak milestones ("On a Roll" 3-day, "Iron Habit" 30-day) read `snapshot.streakCurrent`, which is currently sourced from `getDailyStreak()`. That only counts daily-challenge solves, so a user solving any other puzzle type sees 0 progress.
+## 1. First-view explainer card
 
-`progressTracker.calcStreak()` already tracks the correct overall solve streak (increments on consecutive days, resets on miss, starts at 1, supports Streak Shield). It's written by `recordCompletion(...)` on every solve, and `checkMilestones()` runs after that — so the data flow is correct, only the snapshot source is wrong.
+Add above the tab pill row, gated on `localStorage.getItem("milestones_seen_intro")`.
 
-## Fix — single file change
+- Container: `rounded-2xl bg-secondary/40 px-4 py-3.5 mb-4` (no border emphasis)
+- Sparkles icon (lucide, size 14, `text-primary/70`) + heading "How milestones work"
+- Body (3 lines max, `text-xs text-muted-foreground leading-snug`):
+  > Milestones track how you play. Complete puzzles, build streaks, create and share — each one unlocks as you go. Focus on what's marked **Next**.
+- Inline "Got it" button (`text-xs font-semibold text-primary`, right-aligned) → sets `localStorage["milestones_seen_intro"] = "true"` and hides the card via local state.
 
-### `src/lib/milestones.ts`
+State: `const [showIntro, setShowIntro] = useState(() => !localStorage.getItem("milestones_seen_intro"));`
 
-1. Remove the `getDailyStreak` import. Import `getProgressStats` from `@/lib/progressTracker`.
+## 2. Micro descriptions on every card
 
-2. In `snapshot()`, replace:
-   ```ts
-   let streakCurrent = 0;
-   try { streakCurrent = getDailyStreak().current; } catch {}
-   ```
-   with:
-   ```ts
-   let streakCurrent = 0;
-   try { streakCurrent = getProgressStats().currentStreak; } catch {}
-   ```
+Already implemented — `NextCard`, `InProgressCard`, `AchievedCard`, `LockedCard` all render `m.description` under the title with `text-xs text-muted-foreground`. **No change.**
 
-3. **Implementation guard (per user):** `streakCurrent` MUST come only from `getProgressStats().currentStreak`. No fallback to `getDailyStreak()`, no combining the two. This keeps Solver streak semantics strictly "overall play streak" and prevents mixed daily-only/overall semantics from leaking back in.
+## 3. Strengthen "Up Next" card
 
-4. No changes to milestone specs, check functions, progress labels, or `checkMilestones()` ordering (already runs post-`recordCompletion`).
+In `NextCard`, add a helper line above the progress bar (or above the moment-based italic line):
+- Trackable: `"This is your next milestone"` — `text-[10px] text-primary/70 mt-2`
+- Event-based: existing `"Moment-based — you'll know when it happens"` line stays as-is, prefixed by the same helper.
 
-## Out of scope
+## 4. Per-tab empty state
 
-- Daily page streak header (still uses `getDailyStreak()` correctly — daily-only by design).
-- Milestone definitions, copy, icons.
-- Streak Shield logic.
-- DB persistence (streak is derived, not stored).
+In `TabContent`, compute `isTabEmpty = milestones.every(m => m.state === "locked")` (nothing achieved, nothing in-progress). When true, render an empty-state block IN PLACE OF the Up Next card (other sections — Coming Up — still render below).
+
+Empty-state copy + CTA per tab:
+
+| Tab | Headline | CTA | Route |
+|---|---|---|---|
+| `solver`  | Solve a puzzle to start unlocking milestones    | Play Daily       | `/daily` |
+| `crafter` | Create and send a puzzle to begin               | Create a Puzzle  | `/craft` |
+| `social`  | Play or share a puzzle with someone to unlock these | Create a Puzzle | `/craft` |
+| `ranked`  | Solve 10 puzzles to earn your Player Rating     | Play Daily       | `/daily` |
+
+Styling: dashed border card (`rounded-2xl border border-dashed border-border/60 p-5 text-center space-y-3`) — matches existing zero-state at the bottom of the page. Small primary `Button size="sm"`.
+
+Pass `navigate` into `TabContent` (currently uses no navigation).
+
+## 5. Removed scope (per user)
+
+- No hover tooltips
+- No accordions
+- No modals
+- No repeated explanations
+- Existing global zero-state ("Start earning") at the bottom of the page stays as-is — it only renders when `totalAchieved === 0`, complementary to per-tab guidance.
 
 ## Verification
 
-1. Solve any puzzle yesterday + today → `/milestones` Solver tab → "On a Roll" shows `2 of 3 days`, in-progress.
-2. Third consecutive day → "On a Roll" achieved, toast fires, glow on card.
-3. Skip a day → next solve resets to 1; milestone returns to in-progress.
-4. Daily-only solvers progress identically (their solves also call `recordCompletion`).
-5. `getDailyStreak` is no longer referenced anywhere in `milestones.ts` (grep clean).
-6. PremiumStats still renders without errors (legacy compat shape unchanged).
+1. Fresh user (no `milestones_seen_intro`): sees explainer card above tabs.
+2. Click "Got it" → card disappears; refresh page → still gone.
+3. Solver tab with zero progress → shows "Solve a puzzle to start unlocking milestones" + "Play Daily" CTA in dashed card; Coming Up list still visible below.
+4. After first solve → Up Next card returns with "This is your next milestone" helper above progress bar.
+5. Up Next event-based milestone (e.g. Clean Sheet when you have solves but no clean sheet yet) → shows "This is your next milestone" + "Moment-based — you'll know when it happens".
+6. Crafter tab empty → "Create a Puzzle" CTA routes to `/craft`.
+7. Returning user with progress: no explainer card, normal cards render unchanged.
 
