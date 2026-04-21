@@ -71,6 +71,23 @@ function goalLine(id: string) {
   return GOAL_LINE[id] ?? "Start to unlock this milestone";
 }
 
+const ZERO_STATE_HELPER: Record<MilestoneTab, string> = {
+  ranked:  "Start playing to begin",
+  solver:  "Start playing to begin",
+  crafter: "Start creating to begin",
+  social:  "Play or share to begin",
+};
+
+/** Reformat "3 of 10 solves" → "0 / 10 solves" baseline label. */
+function baselineLabel(m: MilestoneResult): string | null {
+  if (!m.progressLabel) return null;
+  const match = m.progressLabel.match(/^(\d+)\s+of\s+(\d+)\s+(.+)$/i);
+  if (!match) return null;
+  const target = parseInt(match[2], 10);
+  const unit = match[3].trim();
+  return `0 / ${target} ${unit}`;
+}
+
 
 
 function MilestoneIconView({
@@ -149,8 +166,8 @@ function NextCard({ m, isNew, navigate }: { m: MilestoneResult; isNew: boolean; 
         <p className="text-base font-bold text-foreground leading-tight">{m.name}</p>
         <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{m.description}</p>
 
-        <p className="mt-2 text-[10px] text-primary/70">Closest to unlock</p>
-        <p className="text-[11px] text-primary/70 mt-1">You're close</p>
+        <p className="mt-2 text-[10px] text-primary/70">Almost there</p>
+        <p className="text-[11px] text-primary/70 mt-1">Keep going</p>
 
         {m.progressLabel ? (
           m.progressRatio > 0 ? (
@@ -161,9 +178,10 @@ function NextCard({ m, isNew, navigate }: { m: MilestoneResult; isNew: boolean; 
               </p>
             </div>
           ) : (
-            <div className="mt-3 space-y-0.5">
-              <p className="text-[10px] text-muted-foreground">{ENCOURAGEMENT[m.tab]}</p>
-              <p className="text-[10px] text-muted-foreground/70">{goalLine(m.id)}</p>
+            <div className="mt-3 space-y-1.5">
+              <Progress value={0} className="h-1.5" />
+              <p className="text-[10px] text-muted-foreground">{baselineLabel(m) ?? m.progressLabel}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">{ZERO_STATE_HELPER[m.tab]}</p>
             </div>
           )
         ) : (
@@ -205,10 +223,17 @@ function tileVariant(m: MilestoneResult, all: MilestoneResult[]): TileVariant {
 }
 
 function MilestoneTile({
-  m, isNew, all,
-}: { m: MilestoneResult; isNew: boolean; all: MilestoneResult[] }) {
+  m, isNew, all, emphasis = "mid",
+}: {
+  m: MilestoneResult;
+  isNew: boolean;
+  all: MilestoneResult[];
+  emphasis?: "first" | "mid" | "last";
+}) {
   const variant = tileVariant(m, all);
   const { color, bg } = TAB_META[m.tab];
+  const emphasisBorder = emphasis === "first" ? "border-primary/30" : "";
+  const emphasisOpacity = emphasis === "last" ? "opacity-85" : "";
 
   if (variant === "completed") {
     return (
@@ -234,7 +259,11 @@ function MilestoneTile({
 
   if (variant === "future") {
     return (
-      <div className="rounded-2xl border border-border/40 bg-card px-4 py-3 opacity-85 transition-all hover:shadow-sm hover:-translate-y-[1px]">
+      <div className={cn(
+        "rounded-2xl border bg-card px-4 py-3 transition-all hover:shadow-sm hover:-translate-y-[1px]",
+        emphasisBorder || "border-border/40",
+        emphasisOpacity || "opacity-85",
+      )}>
         <div className="flex items-start justify-between gap-2 mb-1.5">
           <div className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 bg-muted/40">
             <Lock size={13} className="text-muted-foreground/60" />
@@ -242,14 +271,18 @@ function MilestoneTile({
         </div>
         <p className="text-sm font-semibold text-foreground/90 leading-tight">{m.name}</p>
         <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{m.description}</p>
-        <p className="text-[11px] text-muted-foreground mt-2">Unlocks after previous tier</p>
+        <p className="text-[11px] text-muted-foreground mt-2">Complete the step before</p>
       </div>
     );
   }
 
   if (variant === "active") {
     return (
-      <div className="rounded-2xl border border-border/60 bg-card px-4 py-3 transition-all hover:shadow-sm hover:-translate-y-[1px]">
+      <div className={cn(
+        "rounded-2xl border bg-card px-4 py-3 transition-all hover:shadow-sm hover:-translate-y-[1px]",
+        emphasisBorder || "border-border/60",
+        emphasisOpacity,
+      )}>
         <div className="flex items-start justify-between gap-2 mb-1.5">
           <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0", bg)}>
             <MilestoneIconView id={m.id} achieved={false} tab={m.tab} size={14} />
@@ -269,8 +302,13 @@ function MilestoneTile({
   }
 
   // not-started
+  const baseline = baselineLabel(m);
   return (
-    <div className="rounded-2xl border border-border/60 bg-card px-4 py-3 transition-all hover:shadow-sm hover:-translate-y-[1px]">
+    <div className={cn(
+      "rounded-2xl border bg-card px-4 py-3 transition-all hover:shadow-sm hover:-translate-y-[1px]",
+      emphasisBorder || "border-border/60",
+      emphasisOpacity,
+    )}>
       <div className="flex items-start justify-between gap-2 mb-1.5">
         <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0", bg)}>
           <MilestoneIconView id={m.id} achieved={false} tab={m.tab} size={14} />
@@ -278,7 +316,17 @@ function MilestoneTile({
       </div>
       <p className="text-sm font-semibold text-foreground leading-tight">{m.name}</p>
       <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{m.description}</p>
-      <p className="text-[11px] text-muted-foreground mt-2">Start to unlock this</p>
+      {baseline ? (
+        <>
+          <div className="mt-2 space-y-1">
+            <Progress value={0} className="h-1.5" />
+            <p className="text-[10px] text-muted-foreground">{baseline}</p>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-1">{ZERO_STATE_HELPER[m.tab]}</p>
+        </>
+      ) : (
+        <p className="text-[11px] text-muted-foreground mt-2">Start here</p>
+      )}
     </div>
   );
 }
@@ -347,12 +395,17 @@ function TabContent({
 
       {tilesToShow.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {tilesToShow.map((m) => (
+          {tilesToShow.map((m, i) => (
             <MilestoneTile
               key={m.id}
               m={m}
               isNew={uncelebratedIds.has(m.id)}
               all={milestones}
+              emphasis={
+                i === 0 ? "first"
+                : i === tilesToShow.length - 1 ? "last"
+                : "mid"
+              }
             />
           ))}
         </div>
