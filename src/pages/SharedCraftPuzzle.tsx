@@ -18,6 +18,7 @@ import { CRAFT_PALETTES, applyPalette } from "@/components/craft/CraftColorPicke
 import { hapticSuccess, hapticTap } from "@/lib/haptic";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { recordBeatChallengeTime } from "@/lib/milestones";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -215,6 +216,11 @@ const SharedCraftPuzzle = () => {
         .eq("id", id)
         .is("completed_at" as any, null)
         .then();
+    }
+
+    // Trigger "Game On" milestone if recipient beat the creator's time
+    if (creatorSolveTime !== null && finalTime > 0 && finalTime < creatorSolveTime) {
+      recordBeatChallengeTime();
     }
 
     // Stagger confetti + completion panel

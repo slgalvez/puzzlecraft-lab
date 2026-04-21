@@ -852,9 +852,20 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
           <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
             {headingLabel}
           </h1>
-          {account?.isAdmin && !isViewAs && (
-            <PremiumStatsAdminControls onRefresh={() => setDataVersion((v) => v + 1)} className="shrink-0" />
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/milestones")}
+              className="gap-1.5"
+            >
+              <Trophy className="h-3.5 w-3.5" />
+              Milestones
+            </Button>
+            {account?.isAdmin && !isViewAs && (
+              <PremiumStatsAdminControls onRefresh={() => setDataVersion((v) => v + 1)} className="shrink-0" />
+            )}
+          </div>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             Your solving stats, streaks, and best times.
