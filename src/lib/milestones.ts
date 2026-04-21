@@ -18,7 +18,7 @@
 
 import { getSolveRecords, type SolveRecord } from "./solveTracker";
 import { computePlayerRating, getSkillTier, type SkillTier } from "./solveScoring";
-import { getDailyStreak } from "./dailyChallenge";
+import { getProgressStats } from "./progressTracker";
 import { loadSentItems, loadReceivedItems } from "./craftHistory";
 import { toast } from "sonner";
 import type { PuzzleCategory } from "./puzzleTypes";
