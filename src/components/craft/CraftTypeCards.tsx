@@ -20,7 +20,7 @@ const TYPE_OPTIONS: TypeOption[] = [
   {
     value: "word-search",
     label: "Word Search",
-    tagline: "Hide your words in a grid",
+    tagline: "They hunt for every word you hid",
     difficulty: "Easy",
     accentClass: "hover:border-sky-400/40 hover:bg-sky-400/[0.03]",
     iconBg: "bg-sky-400/10 text-sky-500",
@@ -29,7 +29,7 @@ const TYPE_OPTIONS: TypeOption[] = [
   {
     value: "word-fill",
     label: "Word Fill-In",
-    tagline: "Build a grid they have to solve",
+    tagline: "A grid only your words can complete",
     difficulty: "Medium",
     accentClass: "hover:border-emerald-400/40 hover:bg-emerald-400/[0.03]",
     iconBg: "bg-emerald-400/10 text-emerald-500",
@@ -38,7 +38,7 @@ const TYPE_OPTIONS: TypeOption[] = [
   {
     value: "crossword",
     label: "Crossword",
-    tagline: "Write the clues, set the trap",
+    tagline: "Your knowledge, your clues — only you could write this",
     difficulty: "Tricky",
     accentClass: "hover:border-primary/40 hover:bg-primary/[0.03]",
     iconBg: "bg-primary/10 text-primary",
@@ -47,7 +47,7 @@ const TYPE_OPTIONS: TypeOption[] = [
   {
     value: "cryptogram",
     label: "Cryptogram",
-    tagline: "Turn a message into a cipher",
+    tagline: "Your message, encoded — they have to earn it",
     difficulty: "Tricky",
     accentClass: "hover:border-violet-400/40 hover:bg-violet-400/[0.03]",
     iconBg: "bg-violet-400/10 text-violet-500",
@@ -71,7 +71,7 @@ export default function CraftTypeCards({ onSelect }: { onSelect: (type: CraftTyp
   return (
     <div className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
       <p className="text-xs text-muted-foreground mb-4">
-        What kind of puzzle do you want to send?
+        What kind of experience do you want to give them?
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -133,7 +133,7 @@ export default function CraftTypeCards({ onSelect }: { onSelect: (type: CraftTyp
       </div>
 
       <p className="text-center text-[11px] text-muted-foreground/50 mt-4">
-        All types support a personal message revealed after solving
+        Every type lets you include a personal message they read after solving
       </p>
     </div>
   );

@@ -21,24 +21,24 @@ export function CraftSolveFirst({
   onSkip,
 }: CraftSolveFirstProps) {
 
-  // ── State: time already set ──────────────────────────────────────────────
+  // ── Solved state ─────────────────────────────────────────────────────────
   if (creatorSolveTime !== null) {
     return (
       <div className="flex items-center gap-3 rounded-2xl border border-emerald-400/30 bg-emerald-50 dark:bg-emerald-950/30 px-4 py-3.5">
         <CheckCircle size={17} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 leading-tight">
-            Your time: {formatTime(creatorSolveTime)}
+            You set the bar: {formatTime(creatorSolveTime)}
           </p>
           <p className="text-[11px] text-emerald-600/70 dark:text-emerald-400/70 mt-0.5">
-            Can they beat you? The challenge is set.
+            They'll see your time when they start. Game on.
           </p>
         </div>
       </div>
     );
   }
 
-  // ── State: not yet set ───────────────────────────────────────────────────
+  // ── Not yet solved ───────────────────────────────────────────────────────
   return (
     <div className="rounded-2xl border border-border/60 bg-muted/30 px-4 py-4">
       <div className="flex items-start gap-3 mb-3.5">
@@ -47,29 +47,29 @@ export function CraftSolveFirst({
         </div>
         <div>
           <p className="text-sm font-semibold text-foreground leading-tight">
-            Set a challenge time
+            Race them
           </p>
           <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
-            Solve your own puzzle first — friends will try to beat your time.
+            Play it yourself and set a time they have to beat.
           </p>
         </div>
       </div>
 
-      {/* Co-equal actions: Solve + Skip */}
+      {/* Co-equal: Play it now + Send without a time */}
       <div className="flex gap-2">
         <Button
           onClick={() => { hapticTap(); onSolveFirst(); }}
           className="flex-1 gap-1.5 h-9 text-sm"
         >
           <Play size={13} className="fill-current" />
-          Solve it first
+          Play it now
         </Button>
         <Button
           variant="outline"
           onClick={() => { hapticTap(); onSkip(); }}
           className="flex-1 h-9 text-sm text-muted-foreground"
         >
-          Skip for now
+          Send without a time
         </Button>
       </div>
     </div>
