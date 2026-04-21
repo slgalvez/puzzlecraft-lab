@@ -49,6 +49,13 @@ import {
 
 type Step = "type" | "content" | "preview";
 
+// Per-type placeholder text for the words input. Kept at file-top so each type
+// can diverge later without hunting through render code.
+const WORD_PLACEHOLDERS: Record<"word-fill" | "word-search", string> = {
+  "word-search": "BARCELONA\nOCTOBER\nTHE BRIDGE\nPATRICK\nMIDNIGHT SWIM",
+  "word-fill":   "SUNDAY MORNING\nCOFFEE\nYOUR BACKYARD\nLATE SUMMER",
+};
+
 function generateShortId(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
