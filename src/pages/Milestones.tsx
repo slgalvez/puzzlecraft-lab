@@ -98,15 +98,21 @@ function NextCard({ m, isNew }: { m: MilestoneResult; isNew: boolean; }) {
         <p className="mt-2 text-[10px] text-primary/70">This is your next milestone</p>
 
         {m.progressLabel ? (
-          <div className="mt-3 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-muted-foreground">{m.progressLabel}</span>
-              <span className="text-[10px] text-primary font-medium">
-                {Math.round(m.progressRatio * 100)}%
-              </span>
+          m.progressRatio > 0 ? (
+            <div className="mt-3 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-muted-foreground">{m.progressLabel}</span>
+                <span className="text-[10px] text-primary font-medium">
+                  {Math.round(m.progressRatio * 100)}%
+                </span>
+              </div>
+              <Progress value={m.progressRatio * 100} className="h-1.5" />
             </div>
-            <Progress value={m.progressRatio * 100} className="h-1.5" />
-          </div>
+          ) : (
+            <p className="mt-3 text-[10px] text-muted-foreground">
+              Not started — {m.progressLabel}
+            </p>
+          )
         ) : (
           <p className="mt-2 text-[10px] text-muted-foreground/50 italic">
             Moment-based — you'll know when it happens
