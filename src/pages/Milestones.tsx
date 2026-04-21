@@ -170,12 +170,15 @@ function InProgressCard({ m }: { m: MilestoneResult }) {
 }
 
 function LockedCard({ m }: { m: MilestoneResult }) {
+  const showLockedHint = m.progressLabel && m.progressRatio === 0;
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border/30 bg-muted/10 px-4 py-3 opacity-60">
       <Lock size={13} className="text-muted-foreground/40 shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-muted-foreground/70 leading-tight">{m.name}</p>
-        <p className="text-[11px] text-muted-foreground/50 mt-0.5 truncate">{m.description}</p>
+        <p className="text-[11px] text-muted-foreground/50 mt-0.5 truncate">
+          {showLockedHint ? `Locked — ${m.description}` : m.description}
+        </p>
       </div>
     </div>
   );
