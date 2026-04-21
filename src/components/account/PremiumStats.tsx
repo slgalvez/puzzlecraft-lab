@@ -72,7 +72,7 @@ function TrendBadge({ trend, invertColor, label }: { trend: { direction: "up" | 
 
 export default function PremiumStats({ onDataChange, hideAdminControls = false, overrideSolveRecords }: { onDataChange?: () => void; hideAdminControls?: boolean; overrideSolveRecords?: SolveRecord[] }) {
   const [refreshKey, setRefreshKey] = useState(0);
-  const [activeCategory, setActiveCategory] = useState<MilestoneCategory>("ranking");
+  
   const { account } = useUserAccount();
   const isAdmin = account?.isAdmin ?? false;
   const hasOverride = overrideSolveRecords != null;
@@ -173,125 +173,10 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
           </p>
         )}
 
-        {/* ── MILESTONES ── */}
-        {(() => {
-          const milestones = getAllMilestones(records);
-          const achievedCount = milestones.filter((m) => m.state === "achieved").length;
-          if (achievedCount === 0 && records.length < 5) return null;
+        {/* Milestones now render in Stats.tsx (above PremiumStats) via <MilestonesSection compact showViewAllLink />.
+            They appear for free users too — see src/pages/Stats.tsx. */}
 
-          const uncelebrated = getUncelebratedIds();
-          const newlyAchieved = milestones
-            .filter((m) => m.state === "achieved" && uncelebrated.has(m.id))
-            .map((m) => m.id);
 
-          if (newlyAchieved.length > 0) {
-            setTimeout(() => markCelebrated(newlyAchieved), 2000);
-          }
-
-          const filtered = milestones.filter(m => getMilestoneCategory(m.id) === activeCategory);
-          const catAchieved = filtered.filter(m => m.state === "achieved").length;
-
-          return (
-            <div className="rounded-xl border bg-card p-5">
-              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <Award size={15} className="text-primary" />
-                Milestones
-                <span className="text-xs text-muted-foreground font-normal">{achievedCount}/{milestones.length}</span>
-              </h3>
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {CATEGORY_TABS.map((tab) => {
-                  const tabMilestones = milestones.filter(m => getMilestoneCategory(m.id) === tab.key);
-                  const tabAchieved = tabMilestones.filter(m => m.state === "achieved").length;
-                  return (
-                    <button
-                      key={tab.key}
-                      type="button"
-                      onClick={() => setActiveCategory(tab.key)}
-                      className={cn(
-                        "px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors",
-                        activeCategory === tab.key
-                          ? "bg-primary/15 text-primary"
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {tab.label}
-                      <span className="ml-1 opacity-60">{tabAchieved}/{tabMilestones.length}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {filtered.map((m) => {
-                  const IconComp = MILESTONE_ICONS[m.icon] ?? Target;
-                  const isAchieved = m.state === "achieved";
-                  const isInProgress = m.state === "in-progress";
-                  const isLocked = m.state === "locked";
-                  const progressPercent = Math.round((m.current / m.target) * 100);
-                  const isCelebrating = isAchieved && uncelebrated.has(m.id);
-
-                  return (
-                    <div
-                      key={m.id}
-                      className={cn(
-                        "rounded-lg border p-3 transition-all relative",
-                        isAchieved && "bg-primary/5 border-primary/25",
-                        isInProgress && "bg-card border-border",
-                        isLocked && "opacity-40",
-                        isCelebrating && "animate-milestone-glow"
-                      )}
-                    >
-                      {isCelebrating && (
-                        <>
-                          <span className="absolute top-1 right-1 text-primary animate-milestone-sparkle" style={{ animationDelay: "0.1s" }}>✦</span>
-                          <span className="absolute bottom-1 left-2 text-primary/60 animate-milestone-sparkle text-[10px]" style={{ animationDelay: "0.3s" }}>✦</span>
-                          <span className="absolute top-2 left-1 text-primary/40 animate-milestone-sparkle text-[8px]" style={{ animationDelay: "0.5s" }}>✦</span>
-                        </>
-                      )}
-                      <div className="flex items-start gap-2.5">
-                        <IconComp
-                          size={18}
-                          className={cn(
-                            "shrink-0 mt-0.5",
-                            isAchieved ? "text-primary" : "text-muted-foreground",
-                            isCelebrating && "animate-milestone-sparkle"
-                          )}
-                          style={isCelebrating ? { animationDelay: "0.2s" } : undefined}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-1">
-                            <p className={cn(
-                              "text-xs leading-tight",
-                              isAchieved ? "text-foreground font-medium" : "text-muted-foreground"
-                            )}>{m.label}</p>
-                            {m.isNext && !isAchieved && (
-                              <span className="shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-[8px] font-bold text-primary uppercase tracking-wider">
-                                Next
-                              </span>
-                            )}
-                          </div>
-                          {isInProgress && (
-                            <div className="mt-1.5 space-y-1">
-                              <Progress value={progressPercent} className="h-1.5" />
-                              <p className="text-[10px] text-muted-foreground">{m.progressText}</p>
-                            </div>
-                          )}
-                          {isAchieved && (
-                            <p className="text-[10px] text-primary/70 mt-0.5">Achieved</p>
-                          )}
-                          {isLocked && (
-                            <p className="text-[10px] text-muted-foreground/60 mt-0.5">Upcoming</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* ── ACCURACY INSIGHTS ── */}
         <div className="rounded-xl border bg-card p-5">
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <CheckCircle size={15} className="text-primary" />
