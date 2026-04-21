@@ -342,6 +342,12 @@ export function MilestonesSection({
   }, []);
 
   const allMilestones = useMemo(() => getAllMilestones(), []);
+  const hasAnyProgress = useMemo(
+    () => allMilestones.some(
+      (m) => m.state === "achieved" || m.state === "in-progress" || m.progressRatio > 0,
+    ),
+    [allMilestones],
+  );
   const tabCounts = useMemo(() => {
     const out: Record<MilestoneTab, { achieved: number; total: number }> = {
       ranked: { achieved: 0, total: 0 },
@@ -444,12 +450,26 @@ export function MilestonesSection({
       </div>
 
       {ready ? (
-        <TabContent
-          tab={activeTab}
-          uncelebratedIds={uncelebratedIds}
-          navigate={navigate}
-          showLocked={!compact}
-        />
+        hasAnyProgress ? (
+          <TabContent
+            tab={activeTab}
+            uncelebratedIds={uncelebratedIds}
+            navigate={navigate}
+            compact={compact}
+          />
+        ) : (
+          (() => {
+            const emptyCopy = EMPTY_TAB_COPY[activeTab];
+            return (
+              <div className="rounded-2xl border border-dashed border-border/60 p-5 text-center space-y-3">
+                <p className="text-sm font-semibold text-foreground">{emptyCopy.headline}</p>
+                <Button variant="default" size="sm" onClick={() => navigate(emptyCopy.route)}>
+                  {emptyCopy.cta}
+                </Button>
+              </div>
+            );
+          })()
+        )
       ) : (
         <div className="space-y-3" aria-hidden="true">
           <Skeleton className="h-[88px] rounded-2xl" />
