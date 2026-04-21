@@ -1,63 +1,82 @@
 
 
-# Milestones first-view clarity
+# Milestones become part of Stats
 
-Five small additions to `src/pages/Milestones.tsx`. No changes to `milestones.ts` (descriptions and event-based copy already exist). No new files.
+Promote the upgraded milestone UI (4 tabs, Up Next, descriptions, empty states, skeletons, intro card) into the Stats page as the primary milestone surface. Replace the legacy 3-tab compact grid currently rendered inside `PremiumStats`. Keep `/milestones` reachable as an optional expanded view.
 
-## 1. First-view explainer card
+## What changes
 
-Add above the tab pill row, gated on `localStorage.getItem("milestones_seen_intro")`.
+### 1. New shared component — `src/components/stats/MilestonesSection.tsx`
 
-- Container: `rounded-2xl bg-secondary/40 px-4 py-3.5 mb-4` (no border emphasis)
-- Sparkles icon (lucide, size 14, `text-primary/70`) + heading "How milestones work"
-- Body (3 lines max, `text-xs text-muted-foreground leading-snug`):
-  > Milestones track how you play. Complete puzzles, build streaks, create and share — each one unlocks as you go. Focus on what's marked **Next**.
-- Inline "Got it" button (`text-xs font-semibold text-primary`, right-aligned) → sets `localStorage["milestones_seen_intro"] = "true"` and hides the card via local state.
+Extract every UI piece from `src/pages/Milestones.tsx` (TAB_META, MilestoneIconView, NextCard, AchievedCard, InProgressCard, LockedCard, EMPTY_TAB_COPY, TabContent, the `@keyframes milestone-glow` style block, the intro-card logic, the 4-tab pill row, the skeleton ready-gate) into a single self-contained `<MilestonesSection />` component.
 
-State: `const [showIntro, setShowIntro] = useState(() => !localStorage.getItem("milestones_seen_intro"));`
+Props (all optional):
+- `defaultTab?: MilestoneTab` — default `"solver"`
+- `compact?: boolean` — when `true`: hide the "Coming Up" list (keeps Up Next + In Progress + Achieved), tighter top spacing, no own heading. Used inside Stats.
+- `showViewAllLink?: boolean` — renders a small right-aligned "View all →" link to `/milestones`.
 
-## 2. Micro descriptions on every card
+Internals stay 1:1 with current Milestones page logic: `getAllMilestones()`, per-tab counts on pill row, "new" dot, one-shot skeleton ready-gate via `useRef`, intro-card gated by `localStorage.getItem("milestones_seen_intro")`.
 
-Already implemented — `NextCard`, `InProgressCard`, `AchievedCard`, `LockedCard` all render `m.description` under the title with `text-xs text-muted-foreground`. **No change.**
+### 2. `src/components/account/PremiumStats.tsx`
 
-## 3. Strengthen "Up Next" card
+- Remove the entire current Milestones block (lines ~202–318): `getMilestoneCategory`, `CATEGORY_TABS`, `MILESTONE_ICONS`, the `<div className="grid grid-cols-2 sm:grid-cols-3 gap-2">` tile grid, and related imports (`Puzzle`, `Flame`, `Crown`, `Medal`, `Bolt`, `MilestoneIcon`, `getUncelebratedIds`, `markCelebrated`).
+- In its place render `<MilestonesSection compact showViewAllLink />` wrapped in the same `rounded-xl border bg-card p-5` shell, with the existing `Award` icon + "Milestones" heading on top. Keep section first-in-order (Milestones → Accuracy → Performance → Solve History).
+- Pass nothing else; the component reads its own data via existing `getAllMilestones()`. The current `overrideSolveRecords` prop on PremiumStats only feeds Accuracy/Performance — milestones already source live data globally, same behavior as the standalone page today.
 
-In `NextCard`, add a helper line above the progress bar (or above the moment-based italic line):
-- Trackable: `"This is your next milestone"` — `text-[10px] text-primary/70 mt-2`
-- Event-based: existing `"Moment-based — you'll know when it happens"` line stays as-is, prefixed by the same helper.
+### 3. `src/pages/Milestones.tsx`
 
-## 4. Per-tab empty state
+Reduce to a thin wrapper: render `<Layout><div className="container py-6 md:py-10 max-w-2xl">…<MilestonesSection /></div></Layout>` (non-compact, no view-all link, full tab including Coming Up). Keep page heading + total achieved count copy that already lives there. All previously-inlined pieces now come from the shared component.
 
-In `TabContent`, compute `isTabEmpty = milestones.every(m => m.state === "locked")` (nothing achieved, nothing in-progress). When true, render an empty-state block IN PLACE OF the Up Next card (other sections — Coming Up — still render below).
+### 4. `src/pages/Stats.tsx` — surface for free users
 
-Empty-state copy + CTA per tab:
+Currently the milestones live inside `PremiumStats`, which only renders for `isPlus` users. Move the surface so free users see milestones too:
 
-| Tab | Headline | CTA | Route |
-|---|---|---|---|
-| `solver`  | Solve a puzzle to start unlocking milestones    | Play Daily       | `/daily` |
-| `crafter` | Create and send a puzzle to begin               | Create a Puzzle  | `/craft` |
-| `social`  | Play or share a puzzle with someone to unlock these | Create a Puzzle | `/craft` |
-| `ranked`  | Solve 10 puzzles to earn your Player Rating     | Play Daily       | `/daily` |
+- Add `<MilestonesSection compact showViewAllLink />` directly on Stats just above the `StatsPremiumPreview` / `PremiumStats` block (around line 1050), gated only by `stats.totalSolved > 0` — i.e. anyone past the empty state sees it.
+- Inside `PremiumStats`, the section is removed (per change #2) so we don't double-render.
+- Keep the existing top-right "Milestones" button (line 856–864) — it now serves as the "see the full standalone page" entry; alternatively consolidate into the inline "View all →" link. Plan: keep the button; it's discoverable and consistent with current header layout.
 
-Styling: dashed border card (`rounded-2xl border border-dashed border-border/60 p-5 text-center space-y-3`) — matches existing zero-state at the bottom of the page. Small primary `Button size="sm"`.
+### 5. Legacy compat
 
-Pass `navigate` into `TabContent` (currently uses no navigation).
+`MilestoneShareCard`, `MilestoneModalManager`, `AdminPreview` continue to read `getAllMilestones()` directly with the legacy `label`/`icon`/`emoji`/`current`/`target` fields — those fields stay on `MilestoneResult`, untouched.
 
-## 5. Removed scope (per user)
+## Layout impression on Stats
 
-- No hover tooltips
-- No accordions
-- No modals
-- No repeated explanations
-- Existing global zero-state ("Start earning") at the bottom of the page stays as-is — it only renders when `totalAchieved === 0`, complementary to per-tab guidance.
+```text
+Heading: Your Progress      [Milestones btn] [Admin]
+Personal | Social
+─────────────────────────────────────────
+Stat cards (rating, streak, totals)
+Activity calendar
+Daily / Endless cards
+Recent solves preview
+
+┌─ Milestones ──────────────── View all → ┐
+│ [Ranked] [Solver] [Crafter] [Social]    │
+│                                         │
+│ ┌─ Up Next ─────────────────┐           │
+│ │ On a Roll                 │           │
+│ │ Solve puzzles 3 days …    │           │
+│ │ ▓▓▓░░ 2 of 3 days  66%    │           │
+│ └───────────────────────────┘           │
+│                                         │
+│ Achieved                                │
+│ • First Crack                           │
+└─────────────────────────────────────────┘
+
+Premium upsell / PremiumStats
+Recent solves (full)
+```
+
+On a brand-new account the section shows the dashed empty-state CTA per tab (e.g. "Solve a puzzle to start unlocking milestones · Play Daily").
 
 ## Verification
 
-1. Fresh user (no `milestones_seen_intro`): sees explainer card above tabs.
-2. Click "Got it" → card disappears; refresh page → still gone.
-3. Solver tab with zero progress → shows "Solve a puzzle to start unlocking milestones" + "Play Daily" CTA in dashed card; Coming Up list still visible below.
-4. After first solve → Up Next card returns with "This is your next milestone" helper above progress bar.
-5. Up Next event-based milestone (e.g. Clean Sheet when you have solves but no clean sheet yet) → shows "This is your next milestone" + "Moment-based — you'll know when it happens".
-6. Crafter tab empty → "Create a Puzzle" CTA routes to `/craft`.
-7. Returning user with progress: no explainer card, normal cards render unchanged.
+1. `/stats` (free user, ≥1 solve) — Milestones section renders inline with 4 tabs; Up Next card visible; "View all →" link routes to `/milestones`.
+2. `/stats` (Plus user) — same section appears once (not duplicated by PremiumStats).
+3. `/stats` (zero solves) — no Milestones section (matches existing empty state).
+4. Tab switch on Stats — no skeleton flicker (one-shot ready gate preserved).
+5. `/milestones` — full version renders including "Coming Up" list, no intro card after dismissing once on Stats (shared `localStorage` key `milestones_seen_intro`).
+6. Solve a puzzle → toast fires (unchanged) → Stats Milestones section animates glow on the new card.
+7. `MilestoneShareCard`, `MilestoneModalManager`, `AdminPreview`, `PremiumPreview` continue to render without error (legacy field shape preserved).
+8. Top-right "Milestones" button on Stats still navigates to `/milestones`.
 
