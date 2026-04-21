@@ -71,6 +71,23 @@ function goalLine(id: string) {
   return GOAL_LINE[id] ?? "Start to unlock this milestone";
 }
 
+const ZERO_STATE_HELPER: Record<MilestoneTab, string> = {
+  ranked:  "Start playing to begin",
+  solver:  "Start playing to begin",
+  crafter: "Start creating to begin",
+  social:  "Play or share to begin",
+};
+
+/** Reformat "3 of 10 solves" → "0 / 10 solves" baseline label. */
+function baselineLabel(m: MilestoneResult): string | null {
+  if (!m.progressLabel) return null;
+  const match = m.progressLabel.match(/^(\d+)\s+of\s+(\d+)\s+(.+)$/i);
+  if (!match) return null;
+  const target = parseInt(match[2], 10);
+  const unit = match[3].trim();
+  return `0 / ${target} ${unit}`;
+}
+
 
 
 function MilestoneIconView({
