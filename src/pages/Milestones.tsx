@@ -261,6 +261,15 @@ export default function Milestones() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<MilestoneTab>("solver");
   const [uncelebratedIds, setUncelebratedIds] = useState<Set<string>>(new Set());
+  const [showIntro, setShowIntro] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !localStorage.getItem("milestones_seen_intro");
+  });
+
+  const dismissIntro = () => {
+    try { localStorage.setItem("milestones_seen_intro", "true"); } catch {}
+    setShowIntro(false);
+  };
 
   useEffect(() => {
     const ids = getUncelebratedIds();
