@@ -854,6 +854,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
             {headingLabel}
           </h1>
           <div className="flex items-center gap-2 shrink-0">
+            {/* Milestones button — hidden but kept for potential reuse
             <Button
               variant="outline"
               size="sm"
@@ -863,6 +864,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
               <Trophy className="h-3.5 w-3.5" />
               Milestones
             </Button>
+            */}
             {account?.isAdmin && !isViewAs && (
               <PremiumStatsAdminControls onRefresh={() => setDataVersion((v) => v + 1)} className="shrink-0" />
             )}
