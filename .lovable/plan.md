@@ -1,40 +1,25 @@
 
 
-# Tab-contextual zero-state helper copy
+# Remove redundant Up Next copy
 
-Tiny copy refinement layered on top of the previously approved baseline-progress plan. One file: `src/components/stats/MilestonesSection.tsx`. No logic, no layout, no new components.
+One file: `src/components/stats/MilestonesSection.tsx` — `NextCard` only.
 
-## Change
+## Changes
 
-Replace the single hardcoded `"Start playing to begin"` string with a tab-keyed lookup.
+1. **Delete the "Moment-based" italic fallback** (lines 188-190). Moment-based milestones (no `progressLabel`) will simply render no progress block — the name, description, chip, and CTA already convey enough.
 
-### New local map (top of file, alongside `ENCOURAGEMENT` / `GOAL_LINE`)
+2. **Collapse "Almost there" + "Keep going" into one line.** Keep **"Almost there"** (line 169), delete **"Keep going"** (line 170). "Almost there" is more directional and pairs better with the chip styling.
 
-```ts
-const ZERO_STATE_HELPER: Record<MilestoneTab, string> = {
-  ranked:  "Start playing to begin",
-  solver:  "Start playing to begin",
-  crafter: "Start creating to begin",
-  social:  "Play or share to begin",
-};
-```
+## Resulting NextCard structure
 
-### Apply in two places
-
-1. **`MilestoneTile` not-started branch (trackable, zero progress)** — under the baseline `Progress` bar + `"0 / 10 solves"` label, render `ZERO_STATE_HELPER[m.tab]` instead of the static string.
-2. **`NextCard` zero-progress trackable branch** — same swap under the baseline bar + label.
-
-Non-trackable not-started tiles still render `"Start here"` (unchanged). Moment-based `NextCard` zero-state still renders `"Moment-based — you'll know when it happens"` (unchanged).
+- Up Next chip + icon
+- Name + description
+- `Almost there` (single helper line)
+- Progress block (active → bar + remaining; zero → bar + baseline + tab helper; moment-based → nothing)
+- CTA button
 
 ## Untouched
 
-- All other copy from the prior plan ("Almost there", "Keep going", "Start here", "Complete the step before", "Play now →" / "Create now →", baseline progress bars, slash-form labels).
-- Tile hierarchy, hover lift, grid, sorting, glow, milestone logic.
-
-## Verification
-
-1. Solver/Ranked Up Next or tile at zero progress → "Start playing to begin".
-2. Crafter Up Next or tile at zero progress → "Start creating to begin".
-3. Social Up Next or tile at zero progress → "Play or share to begin".
-4. Non-trackable not-started tiles → still "Start here".
+- All tile variants, sorting, hierarchy, hover, glow.
+- `milestones.ts`, routing, smart default tab, intro card.
 
