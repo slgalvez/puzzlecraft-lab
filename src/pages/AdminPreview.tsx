@@ -1788,19 +1788,22 @@ export default function AdminPreview() {
           </p>
         </div>
 
-        <Tabs defaultValue="qa" className="w-full">
-          <TabsList className="w-full flex overflow-x-auto gap-1 bg-muted/50 p-1 rounded-xl">
-            <TabsTrigger value="qa" className="text-xs flex-1 min-w-0">QA Mode</TabsTrigger>
-            <TabsTrigger value="modern" className="text-xs flex-1 min-w-0">Modern</TabsTrigger>
-            <TabsTrigger value="core" className="text-xs flex-1 min-w-0">Core UI</TabsTrigger>
-            <TabsTrigger value="premium" className="text-xs flex-1 min-w-0">Premium</TabsTrigger>
-            <TabsTrigger value="ios" className="text-xs flex-1 min-w-0">iOS App</TabsTrigger>
-            <TabsTrigger value="notifications" className="text-xs flex-1 min-w-0">Notifications</TabsTrigger>
-            <TabsTrigger value="craft" className="text-xs flex-1 min-w-0">Craft</TabsTrigger>
-            <TabsTrigger value="patterns" className="text-xs flex-1 min-w-0">Patterns</TabsTrigger>
-            <TabsTrigger value="sharecards" className="text-xs flex-1 min-w-0">Share Cards</TabsTrigger>
-            <TabsTrigger value="weeklypacks" className="text-xs flex-1 min-w-0">Weekly Packs</TabsTrigger>
-            <TabsTrigger value="ranking" className="text-xs flex-1 min-w-0">Ranking</TabsTrigger>
+        <Tabs defaultValue="modern" className="w-full">
+          <TabsList className="w-full grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-11 gap-1 h-auto bg-muted/50 p-1 rounded-xl">
+            <TabsTrigger value="qa" className="text-xs">QA Mode</TabsTrigger>
+            <TabsTrigger value="modern" className="text-xs relative">
+              Modern
+              <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
+            </TabsTrigger>
+            <TabsTrigger value="core" className="text-xs">Core UI</TabsTrigger>
+            <TabsTrigger value="premium" className="text-xs">Premium</TabsTrigger>
+            <TabsTrigger value="ios" className="text-xs">iOS App</TabsTrigger>
+            <TabsTrigger value="notifications" className="text-xs">Notifications</TabsTrigger>
+            <TabsTrigger value="craft" className="text-xs">Craft</TabsTrigger>
+            <TabsTrigger value="patterns" className="text-xs">Patterns</TabsTrigger>
+            <TabsTrigger value="sharecards" className="text-xs">Share Cards</TabsTrigger>
+            <TabsTrigger value="weeklypacks" className="text-xs">Weekly Packs</TabsTrigger>
+            <TabsTrigger value="ranking" className="text-xs">Ranking</TabsTrigger>
           </TabsList>
 
           <TabsContent value="qa" className="space-y-6 mt-4">
