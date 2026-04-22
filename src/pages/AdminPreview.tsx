@@ -1808,6 +1808,222 @@ export default function AdminPreview() {
           </TabsContent>
 
           {/* ══════════════════════════════════════════════════════════════ */}
+          {/* TAB: MODERN FEATURES — recently shipped, real components       */}
+          {/* ══════════════════════════════════════════════════════════════ */}
+          <TabsContent value="modern" className="space-y-6 mt-4">
+
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Sparkles size={14} className="text-primary" /> Recently shipped
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Live, production-grade previews of features added since the last QA refresh. Components below are the
+                real source code — what you see here is what users see.
+              </p>
+            </div>
+
+            {/* ── Streak Shield (real component, all states) ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Shield size={14} /> Streak Shield Banner — all states
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Real <code className="text-[10px] bg-muted px-1 rounded">StreakShieldBanner.tsx</code>. Internal state
+                (shield count / auto-used / dismissed) is read from <code className="text-[10px] bg-muted px-1 rounded">useStreakShield()</code>,
+                so live behaviour depends on the admin's own shield state.
+              </p>
+              <div className="space-y-3 max-w-sm">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Streak 5, played today</p>
+                  <StreakShieldBanner streakLength={5} hasPlayedToday={true} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Streak 10, NOT played today</p>
+                  <StreakShieldBanner streakLength={10} hasPlayedToday={false} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">High-stake streak (15)</p>
+                  <StreakShieldBanner streakLength={15} hasPlayedToday={true} />
+                </div>
+              </div>
+            </section>
+
+            {/* ── Insights Banner (real component) ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <TrendingUp size={14} /> Insights Banner
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Real <code className="text-[10px] bg-muted px-1 rounded">InsightsBanner.tsx</code> — derives 1–3 insights
+                from <code className="text-[10px] bg-muted px-1 rounded">getSolveRecords()</code>. Hidden until the user has
+                ≥ 5 unassisted solves. Use QA Mode → simulators to seed solves first.
+              </p>
+              <div className="max-w-sm">
+                <InsightsBanner />
+              </div>
+            </section>
+
+            {/* ── Weekly Pack (compact + full-bleed) ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Puzzle size={14} /> Weekly Pack — desktop variants
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                <code className="text-[10px] bg-muted px-1 rounded">WeeklyPackSection.tsx</code> — surfaces the iOS-only
+                <code className="text-[10px] bg-muted px-1 rounded"> WeeklyPackCard</code> on web. Compact = no header.
+                Full-bleed = with "This week" header.
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Compact</p>
+                  <WeeklyPackSection compact />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Full-bleed</p>
+                  <WeeklyPackSection />
+                </div>
+              </div>
+            </section>
+
+            {/* ── Puzzlecraft+ marketing section (Index Section 4) ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Crown size={14} /> Puzzlecraft+ marketing block
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Mirror of homepage Section 4. Currently live (
+                <code className="text-[10px] bg-muted px-1 rounded">PUZZLECRAFT_PLUS_LAUNCHED = {String(PUZZLECRAFT_PLUS_LAUNCHED)}</code>
+                ). Hidden on the real homepage when user is already premium.
+              </p>
+              <div className="rounded-2xl border bg-surface-warm p-6 sm:p-8">
+                <div className="max-w-2xl mx-auto text-center">
+                  <div className="flex justify-center mb-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20">
+                      <Crown size={22} className="text-primary" />
+                    </div>
+                  </div>
+                  <h3 className="font-display text-2xl font-bold text-foreground">Puzzlecraft+</h3>
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
+                    The complete experience. Extreme and Insane difficulty. Unlimited craft puzzles.
+                    Full analytics, skill rating, Streak Shield, and early weekly pack access.
+                  </p>
+                  <div className="mt-5 flex flex-wrap justify-center gap-1.5">
+                    {[
+                      "Extreme & Insane difficulty",
+                      "Unlimited craft puzzles",
+                      "Skill rating & leaderboard",
+                      "Full analytics",
+                      "Streak Shield",
+                      "Weekly pack early access",
+                    ].map((f) => (
+                      <span
+                        key={f}
+                        className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 bg-card text-muted-foreground text-[11px]"
+                      >
+                        <Star size={9} className="text-primary/60 fill-primary/30 shrink-0" />
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-5 flex flex-col items-center gap-1.5">
+                    <Button size="sm" className="gap-2 px-5" onClick={() => setUpgradeOpen(true)}>
+                      <Crown size={14} /> Get Puzzlecraft+
+                    </Button>
+                    <p className="text-[11px] text-muted-foreground">{MONTHLY_PRICE}/month · Cancel anytime</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ── Daily Leaderboard (real) ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Trophy size={14} /> Daily Leaderboard (real)
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Real <code className="text-[10px] bg-muted px-1 rounded">DailyLeaderboard.tsx</code> — pulls live data
+                from <code className="text-[10px] bg-muted px-1 rounded">daily_scores</code> for today. Shown in both
+                completed and locked states.
+              </p>
+              <div className="grid sm:grid-cols-2 gap-4 max-w-2xl">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Not completed today</p>
+                  <DailyLeaderboard hasCompletedToday={false} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Completed today</p>
+                  <DailyLeaderboard hasCompletedToday={true} />
+                </div>
+              </div>
+            </section>
+
+            {/* ── Activity Calendar pattern ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Clock size={14} /> Activity Calendar pattern (Free vs Plus)
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                The real <code className="text-[10px] bg-muted px-1 rounded">InlineCalendar</code> lives inside{" "}
+                <Link to="/stats" className="text-primary hover:underline">/stats</Link>. Free users see a 7-day
+                row; Plus users see a monthly grid. Use QA Mode → "Plus · Mixed" or "Plus · Daily only" to inspect
+                the live calendar with mock fixtures.
+              </p>
+              <div className="space-y-3 max-w-md">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Free — 7-day strip</p>
+                  <div className="flex gap-1.5 rounded-xl border bg-card p-3">
+                    {Array.from({ length: 7 }).map((_, i) => (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                        <span className="text-[9px] uppercase text-muted-foreground tracking-wide">{["S","M","T","W","T","F","S"][i]}</span>
+                        <div className={cn(
+                          "w-7 h-7 rounded-md flex items-center justify-center text-[11px] font-mono",
+                          i < 5 ? "bg-primary/15 text-primary font-semibold" : "bg-muted text-muted-foreground/60",
+                          i === 5 && "ring-2 ring-primary"
+                        )}>
+                          {15 + i}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Plus — monthly grid</p>
+                  <div className="grid grid-cols-7 gap-1 rounded-xl border bg-card p-3">
+                    {Array.from({ length: 35 }).map((_, i) => {
+                      const intensity = [0, 0.2, 0.4, 0.7, 1][Math.floor(Math.random() * 5)];
+                      return (
+                        <div
+                          key={i}
+                          className="aspect-square rounded-sm"
+                          style={{
+                            backgroundColor: intensity === 0
+                              ? "hsl(var(--muted))"
+                              : `hsl(var(--primary) / ${intensity})`,
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground/60 mt-1">Random intensities for visual reference only.</p>
+                </div>
+              </div>
+            </section>
+
+            {/* ── Completion Sheet quick reference ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Wand2 size={14} /> Completion Sheet (iOS-style)
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                The real <code className="text-[10px] bg-muted px-1 rounded">CompletionSheet.tsx</code> slides up after
+                a solve. To preview the sheet end-to-end (with tier-up celebration), use{" "}
+                <strong>QA Mode → Easy-complete simulators</strong> above.
+              </p>
+            </section>
+
+          </TabsContent>
+
+          {/* ══════════════════════════════════════════════════════════════ */}
           {/* TAB 1: CORE UI                                                */}
           {/* ══════════════════════════════════════════════════════════════ */}
           <TabsContent value="core" className="space-y-6 mt-4">
