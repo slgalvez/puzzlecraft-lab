@@ -412,6 +412,45 @@ export default function AdminHomepagePreview() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
+          NEW: WEEKLY PACK + STREAK SHIELD STRIP (returning users)
+      ═══════════════════════════════════════════════════════ */}
+      {isReturning && (
+        <section className="border-b">
+          <div className="container py-8 grid gap-4 lg:grid-cols-2">
+            {/* Weekly Pack mock */}
+            <div className="rounded-2xl border bg-card p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles size={14} className="text-primary" />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">This week</p>
+              </div>
+              <h3 className="font-display text-lg font-bold text-foreground">🌊 Ocean Voyage</h3>
+              <p className="text-xs text-muted-foreground mt-1">Six puzzles, one curated theme.</p>
+              <div className="mt-3 flex items-center gap-2">
+                <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full bg-primary" style={{ width: "50%" }} />
+                </div>
+                <span className="text-[11px] font-mono text-muted-foreground">3/6</span>
+              </div>
+              <Button size="sm" variant="outline" className="mt-3 gap-1 w-full">
+                Continue pack <ArrowRight size={12} />
+              </Button>
+            </div>
+
+            {/* Streak Shield */}
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 flex items-start gap-3">
+              <Shield size={18} className="text-amber-500 mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">Streak Shield ready</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Your {MOCK_STREAK.current}-day streak is protected if you miss tomorrow. 1 shield remaining.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════
           SECTION 3 — CREATE
       ═══════════════════════════════════════════════════════ */}
       <section className="border-b bg-surface-warm">
