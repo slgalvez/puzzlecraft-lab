@@ -91,6 +91,7 @@ export type MilestoneWithProgress = MilestoneResult;
 const SHOWN_KEY       = "puzzlecraft-milestones-shown";
 const CELEBRATED_KEY  = "puzzlecraft-milestones-celebrated";
 const PEAK_RATING_KEY = "puzzlecraft-peak-rating";
+const BACKFILL_KEY    = "puzzlecraft-milestones-backfilled-v1";
 
 export const FLAG_FIRST_RECIPIENT_SOLVE = "puzzlecraft-flag-recipient-solve";
 export const FLAG_BEAT_CHALLENGE_TIME   = "puzzlecraft-flag-beat-challenge";
