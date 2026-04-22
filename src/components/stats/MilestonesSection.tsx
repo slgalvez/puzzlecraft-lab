@@ -650,6 +650,7 @@ export function MilestonesSection({
             uncelebratedIds={uncelebratedIds}
             navigate={navigate}
             compact={compact}
+            dataSource={dataSource}
           />
         ) : (
           (() => {
