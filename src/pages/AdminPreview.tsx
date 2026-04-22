@@ -2344,57 +2344,31 @@ export default function AdminPreview() {
               </div>
             </section>
 
-            {/* ── Notification Settings Mock ── */}
-            <section className="space-y-3 rounded-xl border border-border/30 p-4">
-              <h2 className="text-sm font-semibold text-foreground">Notification Settings</h2>
-              <p className="text-xs text-muted-foreground">
-                User-facing notification preferences available in the private settings.
-              </p>
-              <div className="max-w-sm space-y-2">
-                {[
-                  { label: "Streak reminders", desc: "Daily reminder if you haven't played", on: true },
-                  { label: "Friend activity", desc: "When friends solve your puzzles", on: true },
-                  { label: "Push notifications", desc: "Alerts when app is closed", on: false },
-                ].map((setting) => (
-                  <div key={setting.label} className="flex items-center justify-between rounded-xl border border-border/40 bg-card px-4 py-3">
-                    <div>
-                      <p className="text-sm text-foreground">{setting.label}</p>
-                      <p className="text-[11px] text-muted-foreground">{setting.desc}</p>
-                    </div>
-                    <div className={cn(
-                      "w-10 h-6 rounded-full transition-colors relative",
-                      setting.on ? "bg-primary" : "bg-muted"
-                    )}>
-                      <div className={cn(
-                        "absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform",
-                        setting.on ? "translate-x-4" : "translate-x-0.5"
-                      )} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
+            {/* Notification Settings mock removed — no source-of-truth UI yet; was misleading. */}
 
-            {/* ── Paywall Timing Triggers ── */}
+            {/* ── Paywall Timing Triggers (matches usePaywallTiming.ts) ── */}
             <section className="space-y-3 rounded-xl border border-border/30 p-4">
               <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Zap size={14} /> Paywall Timing Triggers
               </h2>
               <p className="text-xs text-muted-foreground">
-                The upgrade modal fires at high-emotion moments. Each trigger is gated to once per 48 hours.
+                The upgrade modal fires at emotionally resonant moments. Each trigger is gated to once per 48 hours.
+                Source: <code className="text-[10px] bg-muted px-1 rounded">src/hooks/usePaywallTiming.ts</code>.
               </p>
               <div className="space-y-2 max-w-sm">
                 {[
-                  { trigger: "After 7-day streak", icon: "🔥", condition: "streak ≥ 7 && !shown in 48h" },
-                  { trigger: "After friend solves your puzzle", icon: "🏆", condition: "craft_recipients.completed_at" },
-                  { trigger: "After completing Hard difficulty", icon: "💪", condition: "difficulty ≥ hard && !shown in 48h" },
-                  { trigger: "After 3rd solve in a session", icon: "⚡", condition: "sessionSolves ≥ 3 && !shown in 48h" },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-3 rounded-xl border border-border/40 bg-card px-3 py-2.5">
+                  { trigger: "streak_7", label: "7 / 14 / 30-day streak hit", icon: "🔥", condition: "streak.current === 7 || 14 || 30 (1.5s delay)" },
+                  { trigger: "streak_at_risk", label: "Streak at risk", icon: "⚠️", condition: "streak ≥ 5 && !playedToday (polled every 60s)" },
+                  { trigger: "friend_solved", label: "Friend solved your puzzle", icon: "🏆", condition: "craft_recipients.completed_at (1s delay)" },
+                  { trigger: "hard_complete", label: "Completed a Hard puzzle", icon: "💪", condition: "difficulty === 'hard' (3s delay)" },
+                  { trigger: "first_milestone", label: "First milestone (10 solves)", icon: "🎯", condition: "records.length === 10 (2.5s delay)" },
+                ].map((item) => (
+                  <div key={item.trigger} className="flex items-start gap-3 rounded-xl border border-border/40 bg-card px-3 py-2.5">
                     <span className="text-lg mt-0.5">{item.icon}</span>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{item.trigger}</p>
-                      <p className="text-[10px] font-mono text-muted-foreground/60">{item.condition}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground">{item.label}</p>
+                      <p className="text-[10px] font-mono text-primary/70">{item.trigger}</p>
+                      <p className="text-[10px] font-mono text-muted-foreground/60 mt-0.5">{item.condition}</p>
                     </div>
                   </div>
                 ))}
