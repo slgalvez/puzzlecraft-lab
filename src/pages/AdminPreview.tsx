@@ -2226,110 +2226,59 @@ export default function AdminPreview() {
               </div>
             </section>
 
-            {/* ── iOS Tab Bar Preview ── */}
+            {/* ── iOS Tab Bar (real component) ── */}
             <section className="space-y-3 rounded-xl border border-border/30 p-4">
               <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Smartphone size={14} /> iOS Tab Bar
+                <Smartphone size={14} /> iOS Tab Bar (real)
               </h2>
               <p className="text-xs text-muted-foreground">
-                Native-feel bottom tab bar with spring animations. Only shown in the native iOS app.
+                The actual <code className="text-[10px] bg-muted px-1 rounded">IOSTabBar.tsx</code> with spring animations and live unread-craft badge.
               </p>
-              <div className="max-w-sm mx-auto rounded-2xl border bg-card overflow-hidden">
-                <div className="h-32 flex items-center justify-center text-muted-foreground/30 text-sm">
+              <div className="max-w-sm mx-auto rounded-2xl border bg-card overflow-hidden relative" style={{ minHeight: 180 }}>
+                <div className="h-32 flex items-center justify-center text-muted-foreground/30 text-xs">
                   (App content area)
                 </div>
-                {/* Mock tab bar — static representation */}
-                <div className="border-t border-border/40 bg-background/95 backdrop-blur-sm px-2 py-2">
-                  <div className="flex items-center justify-around">
-                    {[
-                      { icon: "🎲", label: "Play", active: true },
-                      { icon: "🎨", label: "Create", active: false, badge: 0 },
-                      { icon: "📊", label: "Stats", active: false },
-                      { icon: "👤", label: "Account", active: false },
-                    ].map((tab) => (
-                      <div key={tab.label} className="flex flex-col items-center gap-0.5 relative">
-                        <span className={cn("text-lg", tab.active ? "" : "opacity-40")}>{tab.icon}</span>
-                        <span className={cn("text-[10px]", tab.active ? "text-primary font-semibold" : "text-muted-foreground")}>
-                          {tab.label}
-                        </span>
-                        {tab.badge ? (
-                          <span className="absolute -top-1 -right-2 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                            {tab.badge}
-                          </span>
-                        ) : null}
-                      </div>
-                    ))}
+                <div className="relative">
+                  {/* Render the real tab bar inside this preview frame using absolute positioning */}
+                  <div className="relative h-16">
+                    <div className="absolute inset-x-0 bottom-0">
+                      <IOSTabBar />
+                    </div>
                   </div>
                 </div>
               </div>
+              <p className="text-[10px] text-muted-foreground/70 italic">
+                Note: tab bar is fixed-positioned in production — preview frame above renders it inline for QA only.
+              </p>
             </section>
 
-            {/* ── Friend Activity Feed (mock) ── */}
+            {/* ── Friend Activity Feed (real) ── */}
             <section className="space-y-3 rounded-xl border border-border/30 p-4">
               <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Users size={14} /> Friend Activity Feed
+                <Users size={14} /> Friend Activity Feed (real)
               </h2>
               <p className="text-xs text-muted-foreground">
-                Shows recent friend puzzle activity — solves and sends. Fetches from craft_recipients in real-time.
+                Real <code className="text-[10px] bg-muted px-1 rounded">FriendActivityFeed.tsx</code> — pulls from <code className="text-[10px] bg-muted px-1 rounded">useFriendActivity()</code>. Hidden when empty / signed out (matches production behavior).
               </p>
-              <div className="max-w-sm space-y-2">
-                {[
-                  { name: "Alex", action: "solved your puzzle", time: "2m ago", emoji: "✅" },
-                  { name: "Jordan", action: "sent you a puzzle", time: "1h ago", emoji: "📩" },
-                  { name: "Sam", action: "beat your time!", time: "3h ago", emoji: "🏆" },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 rounded-xl border border-border/40 bg-card px-3 py-2.5">
-                    <span className="text-lg">{item.emoji}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground">
-                        <span className="font-medium">{item.name}</span>{" "}
-                        <span className="text-muted-foreground">{item.action}</span>
-                      </p>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground shrink-0">{item.time}</span>
-                  </div>
-                ))}
+              <div className="max-w-sm">
+                <FriendActivityFeed />
               </div>
             </section>
 
-            {/* ── Puzzle Type Picker (mock) ── */}
+            {/* ── Puzzle Type Picker (real) ── */}
             <section className="space-y-3 rounded-xl border border-border/30 p-4">
               <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Puzzle size={14} /> Puzzle Type Picker (Difficulty Sheet)
+                <Puzzle size={14} /> Puzzle Type Picker (real)
               </h2>
               <p className="text-xs text-muted-foreground">
-                Bottom sheet shown when tapping a puzzle type tile. Shows difficulty options with premium locks.
+                Real <code className="text-[10px] bg-muted px-1 rounded">PuzzleTypePicker.tsx</code> — bottom sheet with difficulty rows, premium locks, and personal-best display.
               </p>
-              <div className="max-w-sm mx-auto rounded-2xl border bg-card overflow-hidden">
-                <div className="px-4 py-3 border-b border-border/40">
-                  <p className="text-sm font-semibold text-foreground">Crossword</p>
-                  <p className="text-xs text-muted-foreground">Classic clue-based word grid</p>
-                </div>
-                <div className="divide-y divide-border/30">
-                  {[
-                    { label: "Easy", subtitle: "Great for beginners", locked: false },
-                    { label: "Medium", subtitle: "A balanced challenge", locked: false },
-                    { label: "Hard", subtitle: "For experienced solvers", locked: false },
-                    { label: "Extreme", subtitle: "Push your limits", locked: true },
-                    { label: "Insane", subtitle: "Only for the elite", locked: true },
-                  ].map((d) => (
-                    <div key={d.label} className={cn(
-                      "flex items-center justify-between px-4 py-3",
-                      d.locked && "opacity-50"
-                    )}>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{d.label}</p>
-                        <p className="text-xs text-muted-foreground">{d.subtitle}</p>
-                      </div>
-                      {d.locked && (
-                        <div className="flex items-center gap-1 text-xs text-primary">
-                          <Crown size={12} /> Plus
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <Button size="sm" onClick={() => setPickerType("crossword")}>
+                Open picker for Crossword
+              </Button>
+              {pickerType && (
+                <PuzzleTypePicker type={pickerType} onClose={() => setPickerType(null)} />
+              )}
             </section>
           </TabsContent>
 
