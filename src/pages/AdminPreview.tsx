@@ -2122,14 +2122,7 @@ export default function AdminPreview() {
               <StatsPremiumPreview onUpgrade={() => setUpgradeOpen(true)} />
             </section>
 
-            {/* ── Login Premium Preview ── */}
-            <section className="space-y-3 rounded-xl border border-border/30 p-4">
-              <h2 className="text-sm font-semibold text-foreground">Login Premium Preview</h2>
-              <p className="text-xs text-muted-foreground">
-                Shown on the Login page — lighter blurred teaser with "Coming soon" overlay.
-              </p>
-              <LoginPremiumPreview />
-            </section>
+            {/* Login Premium Preview removed — private login uses the puzzle-code form, not LoginPremiumPreview. */}
 
             {/* ── Premium Stats ── */}
             <section className="space-y-3 rounded-xl border border-border/30 p-4">
