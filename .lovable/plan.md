@@ -1,68 +1,48 @@
 
 
-# Refresh admin preview pages — remove stale, add current
+# Delete `/craft-v2` and surface the Modern tab
 
-Audit of `/admin-preview`, `/admin-preview/homepage`, `/admin-analytics`, `/admin-view-as-stats`, `/craft-v2` against current production. Goals: drop dead sections, refresh inaccurate ones, add previews for features shipped since the last update.
+## 1. Delete craft v2 (route + page)
 
-## What's outdated (remove or rewrite)
+`/craft-v2` was an admin alias rendering `CraftPreviewPage.tsx` — the live `/craft` page already uses the production `CraftPuzzle.tsx`. The alias is redundant.
 
-**`src/pages/AdminPreview.tsx`**
-- **Core UI → "Activity Calendar" stub** (lines 2038–2046): just a paragraph saying "calendar is now inline in Stats." Dead text — delete.
-- **Core UI → "Data Controls"** (lines 2048–2091): "Generate 50 Demo Solves" / "Reset Milestones" — overlap with QA Mode panel and dump fake data into real localStorage. Move "Reset Milestones" into QA panel; delete demo-solve buttons (QA Mode preview is the modern path).
-- **iOS App → "iOS Tab Bar" mock** (2277–2313): hand-coded emoji tabs — no longer represents `IOSTabBar.tsx` (4 tabs with spring animations + real PuzzleIcon). Replace with real `<IOSTabBar />` rendered in a phone frame OR remove and link to native preview.
-- **iOS App → "Friend Activity Feed" mock** (2315–2341): emoji rows. Real component is `FriendActivityFeed.tsx`. Replace with real component fed by QA fixtures.
-- **iOS App → "Puzzle Type Picker" mock** (2343–2381): static rows. Real component is `PuzzleTypePicker.tsx` / `IOSCustomizeSheet.tsx`. Swap to render real component.
-- **Notifications → "Notification Settings" mock** (2445–2474): hand-built toggle rows with no source of truth. Either render the actual settings UI or delete (currently misleading).
-- **Notifications → "Paywall Timing Triggers"** (2476–2500): lists `streak_7`, `friend_solved`, `hard_complete`, `3rd solve in session`. Production triggers in `usePaywallTiming.ts` are `streak_7 | friend_solved | hard_complete | first_milestone | streak_at_risk` — "3rd solve" is gone, `first_milestone` and `streak_at_risk` are missing. Update list to match source.
-- **Premium → "Login Premium Preview"** (2166–2173): `LoginPremiumPreview` is no longer surfaced on the live login flow (private login uses code form). Verify and remove if dead.
-- **Header copy** (1773–1776): generic — refresh to mention 4 admin tools.
+- **`src/App.tsx`** — Remove the `import CraftPreviewPage` line and the `<Route path="/craft-v2" ...>` block (and its comment).
+- **`src/pages/CraftPreviewPage.tsx`** — Delete the file.
+- Verify no other references remain (already searched — only `App.tsx` and the file itself reference it).
 
-**`src/pages/AdminHomepagePreview.tsx`**
-- Mock data is a snapshot of an older homepage. Missing: `WeeklyPackSection` (live on Index for returning users), `StreakShieldBanner` (live), `Puzzlecraft+ section` (Index Section 4 when launched + non-premium), midnight countdown timer, `MONTHLY_PRICE` / `PUZZLECRAFT_PLUS_LAUNCHED` gating.
-- Hero CTAs say "Surprise Me / Endless" — current Index is `Surprise / Endless` plus weekly-pack discovery. Update the mock to mirror current 4-section layout.
-- "8h 42m left" is hardcoded — replace with mock countdown matching the real timer pattern.
+## 2. Make the Modern tab visible
 
-**`src/pages/CraftPreviewPage.tsx` (`/craft-v2`)**
-- This is the **current production craft page** mounted at `/craft-v2` as a preview alias. The route doc-comment still says "v2 preview." Decision: keep the route as an alias but add a `<PreviewLabel>` banner clarifying "this is the live craft experience" so it doesn't read as a stale preview.
+Root cause: 11 tabs in a `flex overflow-x-auto` strip on a 907px viewport pushes some tabs offscreen with no scroll affordance. The Modern tab is at index 2 so it should be visible, but text-xs + flex-1 + min-w-0 collapses labels and makes the strip easy to miss.
 
-**`src/pages/AdminAnalytics.tsx`** — current and accurate. No changes.
+**`src/pages/AdminPreview.tsx`** — Replace the single-row `TabsList` with a 2-row wrap layout so every tab is visible without scrolling, and add a subtle "NEW" pip on the Modern tab so it's discoverable:
 
-**`src/pages/AdminViewAsStats.tsx`** — current and accurate. No changes.
+```tsx
+<TabsList className="w-full grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-11 gap-1 h-auto bg-muted/50 p-1 rounded-xl">
+  <TabsTrigger value="qa" className="text-xs">QA Mode</TabsTrigger>
+  <TabsTrigger value="modern" className="text-xs relative">
+    Modern
+    <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
+  </TabsTrigger>
+  {/* …rest unchanged… */}
+</TabsList>
+```
 
-## What's missing (add)
+Also bump default tab from `qa` → `modern` so admins land directly on the refreshed previews:
 
-Add a **new "Modern Features" tab** to `AdminPreview.tsx` covering shipped-but-unrepresented surfaces:
+```tsx
+<Tabs defaultValue="modern" className="w-full">
+```
 
-1. **Streak Shield (live component)** — render `<StreakShieldBanner />` with mock props for all 4 states (at-risk pre-launch, at-risk post-launch, ready, just-used) using the actual component, not hand-coded mocks.
-2. **Insights Banner** — render `<InsightsBanner />` with mock `usePersonalInsights` data (trend up / down / neutral / hidden <5 solves).
-3. **Weekly Pack Card** — already in iOS tab; also show desktop variant via `<WeeklyPackSection compact />` and `<WeeklyPackSection />` (full-bleed).
-4. **Puzzlecraft+ marketing section** — extract Section 4 of `Index.tsx` into a preview block so admins can verify the launched-state CTA without flipping the global flag.
-5. **Activity Calendar (real)** — render the real `InlineCalendar` from `Stats.tsx` with QA fixture data (Free 7-day row + Plus monthly grid).
-6. **Friend Leaderboard (real)** — render actual `<DailyLeaderboard />` with `hasCompletedToday` toggle (already in iOS tab — promote to a top-level "leaderboards" section alongside `<Leaderboard />` peek).
-7. **Tier-up Celebration + Provisional Rating Card** — already in Ranking tab; verify they reflect current `solveScoring.ts` thresholds (`650/850/1300/1650` per memory).
-8. **Completion Sheet (iOS-style)** — already in QA Simulators; ensure it renders with current `CompletionSheet.tsx` props.
+## Files
 
-## File-by-file changes
-
-| File | Change |
-|---|---|
-| `src/pages/AdminPreview.tsx` | Delete dead sections (calendar stub, demo-data buttons, iOS tab mock, friend feed mock, puzzle picker mock, notif settings mock). Rewrite paywall trigger list to match `usePaywallTiming.ts`. Replace hand-coded mocks with real components fed by `previewFixtures.ts`. Add new "Modern Features" tab. Refresh header copy. |
-| `src/pages/AdminHomepagePreview.tsx` | Add mock `WeeklyPackSection`, `StreakShieldBanner`, Puzzlecraft+ marketing section, midnight countdown, `MONTHLY_PRICE` reference. Update mock CTAs to mirror current Index. |
-| `src/pages/CraftPreviewPage.tsx` | Add `<PreviewLabel alwaysShow label="Live craft experience" />` banner at top so admins know this is the production page, not a preview. Update route comment in `App.tsx`. |
-| `src/components/admin/QAModePanel.tsx` | Add "Reset Milestones / Clear demo solves" buttons (migrated from old Data Controls). |
-| `src/App.tsx` | Update inline comment on `/craft-v2` route. |
-
-## Untouched
-- `AdminAnalytics.tsx`, `AdminViewAsStats.tsx`, `AdminPremiumEmails.tsx`
-- All QA simulators and share-preview infrastructure (`QASimulators`, `QASharePreviews`, `QAMessagingPreview`, `previewFixtures.ts`)
-- Production homepage, Stats page, craft flow
+- `src/App.tsx` — remove import + route
+- `src/pages/CraftPreviewPage.tsx` — delete file
+- `src/pages/AdminPreview.tsx` — wrap TabsList into a grid, add NEW pip on Modern, set defaultValue="modern"
 
 ## Verification
-1. `/admin-preview` Core UI tab: no "calendar is now inline" stub; no demo-data dump buttons.
-2. `/admin-preview` iOS tab: real `IOSTabBar`, real `FriendActivityFeed`, real `PuzzleTypePicker` instead of mocks.
-3. `/admin-preview` Notifications tab: paywall trigger list matches `usePaywallTiming.ts` exactly (5 triggers).
-4. `/admin-preview` new "Modern Features" tab: Streak Shield (4 states), Insights Banner, Weekly Pack (compact + full), Puzzlecraft+ section, real Activity Calendar.
-5. `/admin-preview/homepage`: mock now includes Weekly Pack, Streak Shield, and Puzzlecraft+ section matching production Index.
-6. `/craft-v2`: shows "Live craft experience" badge at top.
-7. `/admin-analytics`, `/admin-view-as-stats`: unchanged and functional.
+
+1. Visiting `/craft-v2` → 404 (NotFound route).
+2. `/admin-preview` lands on Modern tab by default.
+3. All 11 tabs visible without horizontal scrolling at 907px viewport.
+4. `/craft` (production craft page) unaffected.
 
