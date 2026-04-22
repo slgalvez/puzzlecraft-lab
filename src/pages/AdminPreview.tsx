@@ -33,7 +33,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import QAModePanel from "@/components/admin/QAModePanel";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Clock, Users, Bell, Smartphone, Eye, Shield, Sparkles, X, ChevronRight, Play } from "lucide-react";
+import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Clock, Users, Bell, Smartphone, Eye, Shield, Sparkles, X, ChevronRight, Play, ArrowRight, TrendingUp, Wand2 } from "lucide-react";
 import { generateNonogram } from "@/lib/generators/nonogram";
 import { SCHEDULED_OVERRIDES, type PackOverride } from "@/lib/packOverrides";
 import { type WeeklyPack, type PackPuzzle } from "@/lib/weeklyPacks";
