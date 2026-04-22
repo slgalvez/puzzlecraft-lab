@@ -13,7 +13,7 @@ import QAMessagingPreview from "@/components/admin/QAMessagingPreview";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
-  Eye, RotateCcw, Crown, Users, Zap,
+  Eye, RotateCcw, Crown, Users, Zap, Trash2,
 } from "lucide-react";
 import type { PreviewScenario, FriendsVariant } from "@/lib/previewFixtures";
 
@@ -88,6 +88,35 @@ export default function QAModePanel() {
             Reading exclusively from in-memory fixtures. No localStorage or DB writes occur.
           </p>
         )}
+
+        {/* Local-data utilities (write to real localStorage — use with care) */}
+        <div className="flex flex-wrap gap-2 pt-2 border-t border-border/30">
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 h-8 text-xs"
+            onClick={() => {
+              localStorage.removeItem("puzzlecraft-milestones-shown");
+              localStorage.removeItem("puzzlecraft-milestones-celebrated");
+              window.location.reload();
+            }}
+          >
+            <Trash2 size={11} /> Reset Milestones (local)
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 h-8 text-xs"
+            onClick={() => {
+              import("@/lib/demoStats").then((mod) => {
+                mod.clearDemoSolves();
+                window.location.reload();
+              });
+            }}
+          >
+            <Trash2 size={11} /> Clear Demo Solves
+          </Button>
+        </div>
       </section>
 
       {/* Scenario switcher */}

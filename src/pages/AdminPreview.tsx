@@ -7,7 +7,7 @@ import Layout from "@/components/layout/Layout";
 import CompletionPanel from "@/components/puzzles/CompletionPanel";
 import MilestoneModal, { type MilestoneToShow } from "@/components/puzzles/MilestoneModal";
 import PremiumStats from "@/components/account/PremiumStats";
-import { StatsPremiumPreview, LoginPremiumPreview } from "@/components/account/PremiumPreview";
+import { StatsPremiumPreview } from "@/components/account/PremiumPreview";
 import PremiumLockedCard from "@/components/account/PremiumLockedCard";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import UpgradeModalNextUI from "@/components/account/UpgradeModalNextUI";
@@ -18,14 +18,22 @@ import CraftThemePicker from "@/components/craft/CraftThemePicker";
 import { WeeklyPackCard } from "@/components/ios/WeeklyPackCard";
 import { DailyLeaderboard } from "@/components/ios/DailyLeaderboard";
 import { StreakShieldBanner } from "@/components/ios/StreakShieldBanner";
+import { InsightsBanner } from "@/components/ios/InsightsBanner";
+import { FriendActivityFeed } from "@/components/ios/FriendActivityFeed";
+import { PuzzleTypePicker } from "@/components/ios/PuzzleTypePicker";
+import IOSTabBar from "@/components/ios/IOSTabBar";
+import { WeeklyPackSection } from "@/components/puzzles/WeeklyPackSection";
 import { PremiumGate, PremiumBadge, PremiumLockRow } from "@/components/premium/PremiumGate";
+import { PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
+import { MONTHLY_PRICE } from "@/lib/pricing";
+import { Link } from "react-router-dom";
 import type { MilestoneIcon } from "@/lib/milestones";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import QAModePanel from "@/components/admin/QAModePanel";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Clock, Users, Bell, Smartphone, Eye, Shield, Sparkles, X, ChevronRight, Play } from "lucide-react";
+import { Trophy, Flame, Target, Medal, Zap, Crown, Award, Star, Puzzle, Clock, Users, Bell, Smartphone, Eye, Shield, Sparkles, X, ChevronRight, Play, ArrowRight, TrendingUp, Wand2 } from "lucide-react";
 import { generateNonogram } from "@/lib/generators/nonogram";
 import { SCHEDULED_OVERRIDES, type PackOverride } from "@/lib/packOverrides";
 import { type WeeklyPack, type PackPuzzle } from "@/lib/weeklyPacks";
@@ -1741,6 +1749,7 @@ export default function AdminPreview() {
   const [upgradeNextOpen, setUpgradeNextOpen] = useState(false);
   const [upgradeNextAnnual, setUpgradeNextAnnual] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [pickerType, setPickerType] = useState<import("@/lib/puzzleTypes").PuzzleCategory | null>(null);
 
   const handleAchieve = useCallback((id: string) => {
     setAchievedIds((prev) => new Set(prev).add(id));
@@ -1772,13 +1781,17 @@ export default function AdminPreview() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Admin Preview</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Preview ALL UI features with mock data — onboarding, premium, iOS, notifications, and more.
+            QA scenarios, modern feature previews, and the full UI library — paired with{" "}
+            <Link to="/admin-preview/homepage" className="text-primary hover:underline">Homepage Preview</Link>,{" "}
+            <Link to="/admin-analytics" className="text-primary hover:underline">Analytics</Link>, and{" "}
+            <Link to="/admin-view-as-stats" className="text-primary hover:underline">View-As Stats</Link>.
           </p>
         </div>
 
         <Tabs defaultValue="qa" className="w-full">
           <TabsList className="w-full flex overflow-x-auto gap-1 bg-muted/50 p-1 rounded-xl">
             <TabsTrigger value="qa" className="text-xs flex-1 min-w-0">QA Mode</TabsTrigger>
+            <TabsTrigger value="modern" className="text-xs flex-1 min-w-0">Modern</TabsTrigger>
             <TabsTrigger value="core" className="text-xs flex-1 min-w-0">Core UI</TabsTrigger>
             <TabsTrigger value="premium" className="text-xs flex-1 min-w-0">Premium</TabsTrigger>
             <TabsTrigger value="ios" className="text-xs flex-1 min-w-0">iOS App</TabsTrigger>
@@ -1792,6 +1805,222 @@ export default function AdminPreview() {
 
           <TabsContent value="qa" className="space-y-6 mt-4">
             <QAModePanel />
+          </TabsContent>
+
+          {/* ══════════════════════════════════════════════════════════════ */}
+          {/* TAB: MODERN FEATURES — recently shipped, real components       */}
+          {/* ══════════════════════════════════════════════════════════════ */}
+          <TabsContent value="modern" className="space-y-6 mt-4">
+
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Sparkles size={14} className="text-primary" /> Recently shipped
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Live, production-grade previews of features added since the last QA refresh. Components below are the
+                real source code — what you see here is what users see.
+              </p>
+            </div>
+
+            {/* ── Streak Shield (real component, all states) ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Shield size={14} /> Streak Shield Banner — all states
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Real <code className="text-[10px] bg-muted px-1 rounded">StreakShieldBanner.tsx</code>. Internal state
+                (shield count / auto-used / dismissed) is read from <code className="text-[10px] bg-muted px-1 rounded">useStreakShield()</code>,
+                so live behaviour depends on the admin's own shield state.
+              </p>
+              <div className="space-y-3 max-w-sm">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Streak 5, played today</p>
+                  <StreakShieldBanner streakLength={5} hasPlayedToday={true} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Streak 10, NOT played today</p>
+                  <StreakShieldBanner streakLength={10} hasPlayedToday={false} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">High-stake streak (15)</p>
+                  <StreakShieldBanner streakLength={15} hasPlayedToday={true} />
+                </div>
+              </div>
+            </section>
+
+            {/* ── Insights Banner (real component) ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <TrendingUp size={14} /> Insights Banner
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Real <code className="text-[10px] bg-muted px-1 rounded">InsightsBanner.tsx</code> — derives 1–3 insights
+                from <code className="text-[10px] bg-muted px-1 rounded">getSolveRecords()</code>. Hidden until the user has
+                ≥ 5 unassisted solves. Use QA Mode → simulators to seed solves first.
+              </p>
+              <div className="max-w-sm">
+                <InsightsBanner />
+              </div>
+            </section>
+
+            {/* ── Weekly Pack (compact + full-bleed) ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Puzzle size={14} /> Weekly Pack — desktop variants
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                <code className="text-[10px] bg-muted px-1 rounded">WeeklyPackSection.tsx</code> — surfaces the iOS-only
+                <code className="text-[10px] bg-muted px-1 rounded"> WeeklyPackCard</code> on web. Compact = no header.
+                Full-bleed = with "This week" header.
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Compact</p>
+                  <WeeklyPackSection compact />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Full-bleed</p>
+                  <WeeklyPackSection />
+                </div>
+              </div>
+            </section>
+
+            {/* ── Puzzlecraft+ marketing section (Index Section 4) ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Crown size={14} /> Puzzlecraft+ marketing block
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Mirror of homepage Section 4. Currently live (
+                <code className="text-[10px] bg-muted px-1 rounded">PUZZLECRAFT_PLUS_LAUNCHED = {String(PUZZLECRAFT_PLUS_LAUNCHED)}</code>
+                ). Hidden on the real homepage when user is already premium.
+              </p>
+              <div className="rounded-2xl border bg-surface-warm p-6 sm:p-8">
+                <div className="max-w-2xl mx-auto text-center">
+                  <div className="flex justify-center mb-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20">
+                      <Crown size={22} className="text-primary" />
+                    </div>
+                  </div>
+                  <h3 className="font-display text-2xl font-bold text-foreground">Puzzlecraft+</h3>
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">
+                    The complete experience. Extreme and Insane difficulty. Unlimited craft puzzles.
+                    Full analytics, skill rating, Streak Shield, and early weekly pack access.
+                  </p>
+                  <div className="mt-5 flex flex-wrap justify-center gap-1.5">
+                    {[
+                      "Extreme & Insane difficulty",
+                      "Unlimited craft puzzles",
+                      "Skill rating & leaderboard",
+                      "Full analytics",
+                      "Streak Shield",
+                      "Weekly pack early access",
+                    ].map((f) => (
+                      <span
+                        key={f}
+                        className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 bg-card text-muted-foreground text-[11px]"
+                      >
+                        <Star size={9} className="text-primary/60 fill-primary/30 shrink-0" />
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-5 flex flex-col items-center gap-1.5">
+                    <Button size="sm" className="gap-2 px-5" onClick={() => setUpgradeOpen(true)}>
+                      <Crown size={14} /> Get Puzzlecraft+
+                    </Button>
+                    <p className="text-[11px] text-muted-foreground">{MONTHLY_PRICE}/month · Cancel anytime</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ── Daily Leaderboard (real) ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Trophy size={14} /> Daily Leaderboard (real)
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Real <code className="text-[10px] bg-muted px-1 rounded">DailyLeaderboard.tsx</code> — pulls live data
+                from <code className="text-[10px] bg-muted px-1 rounded">daily_scores</code> for today. Shown in both
+                completed and locked states.
+              </p>
+              <div className="grid sm:grid-cols-2 gap-4 max-w-2xl">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Not completed today</p>
+                  <DailyLeaderboard hasCompletedToday={false} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Completed today</p>
+                  <DailyLeaderboard hasCompletedToday={true} />
+                </div>
+              </div>
+            </section>
+
+            {/* ── Activity Calendar pattern ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Clock size={14} /> Activity Calendar pattern (Free vs Plus)
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                The real <code className="text-[10px] bg-muted px-1 rounded">InlineCalendar</code> lives inside{" "}
+                <Link to="/stats" className="text-primary hover:underline">/stats</Link>. Free users see a 7-day
+                row; Plus users see a monthly grid. Use QA Mode → "Plus · Mixed" or "Plus · Daily only" to inspect
+                the live calendar with mock fixtures.
+              </p>
+              <div className="space-y-3 max-w-md">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Free — 7-day strip</p>
+                  <div className="flex gap-1.5 rounded-xl border bg-card p-3">
+                    {Array.from({ length: 7 }).map((_, i) => (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                        <span className="text-[9px] uppercase text-muted-foreground tracking-wide">{["S","M","T","W","T","F","S"][i]}</span>
+                        <div className={cn(
+                          "w-7 h-7 rounded-md flex items-center justify-center text-[11px] font-mono",
+                          i < 5 ? "bg-primary/15 text-primary font-semibold" : "bg-muted text-muted-foreground/60",
+                          i === 5 && "ring-2 ring-primary"
+                        )}>
+                          {15 + i}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Plus — monthly grid</p>
+                  <div className="grid grid-cols-7 gap-1 rounded-xl border bg-card p-3">
+                    {Array.from({ length: 35 }).map((_, i) => {
+                      const intensity = [0, 0.2, 0.4, 0.7, 1][Math.floor(Math.random() * 5)];
+                      return (
+                        <div
+                          key={i}
+                          className="aspect-square rounded-sm"
+                          style={{
+                            backgroundColor: intensity === 0
+                              ? "hsl(var(--muted))"
+                              : `hsl(var(--primary) / ${intensity})`,
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground/60 mt-1">Random intensities for visual reference only.</p>
+                </div>
+              </div>
+            </section>
+
+            {/* ── Completion Sheet quick reference ── */}
+            <section className="space-y-3 rounded-xl border border-border/30 p-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Wand2 size={14} /> Completion Sheet (iOS-style)
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                The real <code className="text-[10px] bg-muted px-1 rounded">CompletionSheet.tsx</code> slides up after
+                a solve. To preview the sheet end-to-end (with tier-up celebration), use{" "}
+                <strong>QA Mode → Easy-complete simulators</strong> above.
+              </p>
+            </section>
+
           </TabsContent>
 
           {/* ══════════════════════════════════════════════════════════════ */}
@@ -2035,60 +2264,7 @@ export default function AdminPreview() {
               />
             </section>
 
-            {/* ── Activity Calendar ── */}
-            <section className="space-y-3 rounded-xl border border-border/30 p-4">
-              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Clock size={14} /> Activity Calendar
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Calendar is now inline in the Stats page with hierarchical activity visualization.
-              </p>
-            </section>
-
-            {/* ── Data Controls ── */}
-            <section className="space-y-3 rounded-xl border border-border/30 p-4">
-              <h2 className="text-sm font-semibold text-foreground">Data Controls</h2>
-              <p className="text-xs text-muted-foreground">
-                Generate or clear demo data to test features with realistic numbers.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    import("@/lib/demoStats").then((mod) => {
-                      mod.generateDemoSolves(50);
-                      window.location.reload();
-                    });
-                  }}
-                >
-                  Generate 50 Demo Solves
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    import("@/lib/demoStats").then((mod) => {
-                      mod.clearDemoSolves();
-                      window.location.reload();
-                    });
-                  }}
-                >
-                  Clear Demo Solves
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    localStorage.removeItem("puzzlecraft-milestones-shown");
-                    localStorage.removeItem("puzzlecraft-milestones-celebrated");
-                    window.location.reload();
-                  }}
-                >
-                  Reset Milestones
-                </Button>
-              </div>
-            </section>
+            {/* Note: Activity Calendar lives inline in /stats. Demo-data buttons live in the QA Mode tab. */}
           </TabsContent>
 
           {/* ══════════════════════════════════════════════════════════════ */}
@@ -2163,14 +2339,7 @@ export default function AdminPreview() {
               <StatsPremiumPreview onUpgrade={() => setUpgradeOpen(true)} />
             </section>
 
-            {/* ── Login Premium Preview ── */}
-            <section className="space-y-3 rounded-xl border border-border/30 p-4">
-              <h2 className="text-sm font-semibold text-foreground">Login Premium Preview</h2>
-              <p className="text-xs text-muted-foreground">
-                Shown on the Login page — lighter blurred teaser with "Coming soon" overlay.
-              </p>
-              <LoginPremiumPreview />
-            </section>
+            {/* Login Premium Preview removed — private login uses the puzzle-code form, not LoginPremiumPreview. */}
 
             {/* ── Premium Stats ── */}
             <section className="space-y-3 rounded-xl border border-border/30 p-4">
@@ -2274,110 +2443,59 @@ export default function AdminPreview() {
               </div>
             </section>
 
-            {/* ── iOS Tab Bar Preview ── */}
+            {/* ── iOS Tab Bar (real component) ── */}
             <section className="space-y-3 rounded-xl border border-border/30 p-4">
               <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Smartphone size={14} /> iOS Tab Bar
+                <Smartphone size={14} /> iOS Tab Bar (real)
               </h2>
               <p className="text-xs text-muted-foreground">
-                Native-feel bottom tab bar with spring animations. Only shown in the native iOS app.
+                The actual <code className="text-[10px] bg-muted px-1 rounded">IOSTabBar.tsx</code> with spring animations and live unread-craft badge.
               </p>
-              <div className="max-w-sm mx-auto rounded-2xl border bg-card overflow-hidden">
-                <div className="h-32 flex items-center justify-center text-muted-foreground/30 text-sm">
+              <div className="max-w-sm mx-auto rounded-2xl border bg-card overflow-hidden relative" style={{ minHeight: 180 }}>
+                <div className="h-32 flex items-center justify-center text-muted-foreground/30 text-xs">
                   (App content area)
                 </div>
-                {/* Mock tab bar — static representation */}
-                <div className="border-t border-border/40 bg-background/95 backdrop-blur-sm px-2 py-2">
-                  <div className="flex items-center justify-around">
-                    {[
-                      { icon: "🎲", label: "Play", active: true },
-                      { icon: "🎨", label: "Create", active: false, badge: 0 },
-                      { icon: "📊", label: "Stats", active: false },
-                      { icon: "👤", label: "Account", active: false },
-                    ].map((tab) => (
-                      <div key={tab.label} className="flex flex-col items-center gap-0.5 relative">
-                        <span className={cn("text-lg", tab.active ? "" : "opacity-40")}>{tab.icon}</span>
-                        <span className={cn("text-[10px]", tab.active ? "text-primary font-semibold" : "text-muted-foreground")}>
-                          {tab.label}
-                        </span>
-                        {tab.badge ? (
-                          <span className="absolute -top-1 -right-2 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                            {tab.badge}
-                          </span>
-                        ) : null}
-                      </div>
-                    ))}
+                <div className="relative">
+                  {/* Render the real tab bar inside this preview frame using absolute positioning */}
+                  <div className="relative h-16">
+                    <div className="absolute inset-x-0 bottom-0">
+                      <IOSTabBar />
+                    </div>
                   </div>
                 </div>
               </div>
+              <p className="text-[10px] text-muted-foreground/70 italic">
+                Note: tab bar is fixed-positioned in production — preview frame above renders it inline for QA only.
+              </p>
             </section>
 
-            {/* ── Friend Activity Feed (mock) ── */}
+            {/* ── Friend Activity Feed (real) ── */}
             <section className="space-y-3 rounded-xl border border-border/30 p-4">
               <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Users size={14} /> Friend Activity Feed
+                <Users size={14} /> Friend Activity Feed (real)
               </h2>
               <p className="text-xs text-muted-foreground">
-                Shows recent friend puzzle activity — solves and sends. Fetches from craft_recipients in real-time.
+                Real <code className="text-[10px] bg-muted px-1 rounded">FriendActivityFeed.tsx</code> — pulls from <code className="text-[10px] bg-muted px-1 rounded">useFriendActivity()</code>. Hidden when empty / signed out (matches production behavior).
               </p>
-              <div className="max-w-sm space-y-2">
-                {[
-                  { name: "Alex", action: "solved your puzzle", time: "2m ago", emoji: "✅" },
-                  { name: "Jordan", action: "sent you a puzzle", time: "1h ago", emoji: "📩" },
-                  { name: "Sam", action: "beat your time!", time: "3h ago", emoji: "🏆" },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 rounded-xl border border-border/40 bg-card px-3 py-2.5">
-                    <span className="text-lg">{item.emoji}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground">
-                        <span className="font-medium">{item.name}</span>{" "}
-                        <span className="text-muted-foreground">{item.action}</span>
-                      </p>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground shrink-0">{item.time}</span>
-                  </div>
-                ))}
+              <div className="max-w-sm">
+                <FriendActivityFeed />
               </div>
             </section>
 
-            {/* ── Puzzle Type Picker (mock) ── */}
+            {/* ── Puzzle Type Picker (real) ── */}
             <section className="space-y-3 rounded-xl border border-border/30 p-4">
               <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Puzzle size={14} /> Puzzle Type Picker (Difficulty Sheet)
+                <Puzzle size={14} /> Puzzle Type Picker (real)
               </h2>
               <p className="text-xs text-muted-foreground">
-                Bottom sheet shown when tapping a puzzle type tile. Shows difficulty options with premium locks.
+                Real <code className="text-[10px] bg-muted px-1 rounded">PuzzleTypePicker.tsx</code> — bottom sheet with difficulty rows, premium locks, and personal-best display.
               </p>
-              <div className="max-w-sm mx-auto rounded-2xl border bg-card overflow-hidden">
-                <div className="px-4 py-3 border-b border-border/40">
-                  <p className="text-sm font-semibold text-foreground">Crossword</p>
-                  <p className="text-xs text-muted-foreground">Classic clue-based word grid</p>
-                </div>
-                <div className="divide-y divide-border/30">
-                  {[
-                    { label: "Easy", subtitle: "Great for beginners", locked: false },
-                    { label: "Medium", subtitle: "A balanced challenge", locked: false },
-                    { label: "Hard", subtitle: "For experienced solvers", locked: false },
-                    { label: "Extreme", subtitle: "Push your limits", locked: true },
-                    { label: "Insane", subtitle: "Only for the elite", locked: true },
-                  ].map((d) => (
-                    <div key={d.label} className={cn(
-                      "flex items-center justify-between px-4 py-3",
-                      d.locked && "opacity-50"
-                    )}>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{d.label}</p>
-                        <p className="text-xs text-muted-foreground">{d.subtitle}</p>
-                      </div>
-                      {d.locked && (
-                        <div className="flex items-center gap-1 text-xs text-primary">
-                          <Crown size={12} /> Plus
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <Button size="sm" onClick={() => setPickerType("crossword")}>
+                Open picker for Crossword
+              </Button>
+              {pickerType && (
+                <PuzzleTypePicker type={pickerType} onClose={() => setPickerType(null)} />
+              )}
             </section>
           </TabsContent>
 
@@ -2442,57 +2560,31 @@ export default function AdminPreview() {
               </div>
             </section>
 
-            {/* ── Notification Settings Mock ── */}
-            <section className="space-y-3 rounded-xl border border-border/30 p-4">
-              <h2 className="text-sm font-semibold text-foreground">Notification Settings</h2>
-              <p className="text-xs text-muted-foreground">
-                User-facing notification preferences available in the private settings.
-              </p>
-              <div className="max-w-sm space-y-2">
-                {[
-                  { label: "Streak reminders", desc: "Daily reminder if you haven't played", on: true },
-                  { label: "Friend activity", desc: "When friends solve your puzzles", on: true },
-                  { label: "Push notifications", desc: "Alerts when app is closed", on: false },
-                ].map((setting) => (
-                  <div key={setting.label} className="flex items-center justify-between rounded-xl border border-border/40 bg-card px-4 py-3">
-                    <div>
-                      <p className="text-sm text-foreground">{setting.label}</p>
-                      <p className="text-[11px] text-muted-foreground">{setting.desc}</p>
-                    </div>
-                    <div className={cn(
-                      "w-10 h-6 rounded-full transition-colors relative",
-                      setting.on ? "bg-primary" : "bg-muted"
-                    )}>
-                      <div className={cn(
-                        "absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform",
-                        setting.on ? "translate-x-4" : "translate-x-0.5"
-                      )} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
+            {/* Notification Settings mock removed — no source-of-truth UI yet; was misleading. */}
 
-            {/* ── Paywall Timing Triggers ── */}
+            {/* ── Paywall Timing Triggers (matches usePaywallTiming.ts) ── */}
             <section className="space-y-3 rounded-xl border border-border/30 p-4">
               <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Zap size={14} /> Paywall Timing Triggers
               </h2>
               <p className="text-xs text-muted-foreground">
-                The upgrade modal fires at high-emotion moments. Each trigger is gated to once per 48 hours.
+                The upgrade modal fires at emotionally resonant moments. Each trigger is gated to once per 48 hours.
+                Source: <code className="text-[10px] bg-muted px-1 rounded">src/hooks/usePaywallTiming.ts</code>.
               </p>
               <div className="space-y-2 max-w-sm">
                 {[
-                  { trigger: "After 7-day streak", icon: "🔥", condition: "streak ≥ 7 && !shown in 48h" },
-                  { trigger: "After friend solves your puzzle", icon: "🏆", condition: "craft_recipients.completed_at" },
-                  { trigger: "After completing Hard difficulty", icon: "💪", condition: "difficulty ≥ hard && !shown in 48h" },
-                  { trigger: "After 3rd solve in a session", icon: "⚡", condition: "sessionSolves ≥ 3 && !shown in 48h" },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-3 rounded-xl border border-border/40 bg-card px-3 py-2.5">
+                  { trigger: "streak_7", label: "7 / 14 / 30-day streak hit", icon: "🔥", condition: "streak.current === 7 || 14 || 30 (1.5s delay)" },
+                  { trigger: "streak_at_risk", label: "Streak at risk", icon: "⚠️", condition: "streak ≥ 5 && !playedToday (polled every 60s)" },
+                  { trigger: "friend_solved", label: "Friend solved your puzzle", icon: "🏆", condition: "craft_recipients.completed_at (1s delay)" },
+                  { trigger: "hard_complete", label: "Completed a Hard puzzle", icon: "💪", condition: "difficulty === 'hard' (3s delay)" },
+                  { trigger: "first_milestone", label: "First milestone (10 solves)", icon: "🎯", condition: "records.length === 10 (2.5s delay)" },
+                ].map((item) => (
+                  <div key={item.trigger} className="flex items-start gap-3 rounded-xl border border-border/40 bg-card px-3 py-2.5">
                     <span className="text-lg mt-0.5">{item.icon}</span>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{item.trigger}</p>
-                      <p className="text-[10px] font-mono text-muted-foreground/60">{item.condition}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground">{item.label}</p>
+                      <p className="text-[10px] font-mono text-primary/70">{item.trigger}</p>
+                      <p className="text-[10px] font-mono text-muted-foreground/60 mt-0.5">{item.condition}</p>
                     </div>
                   </div>
                 ))}

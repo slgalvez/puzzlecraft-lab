@@ -8,12 +8,13 @@
  * Route: /admin-preview/homepage
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight, Flame, CheckCircle2, Trophy, Clock,
   Target, Infinity, Dices, Send, Users, Zap,
   ChevronRight, TrendingUp, Star, Eye, EyeOff,
+  Crown, Shield, Sparkles,
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,8 @@ import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { cn } from "@/lib/utils";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
+import { MONTHLY_PRICE } from "@/lib/pricing";
+import { PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
 
@@ -82,6 +85,23 @@ const MODE_LABELS: { value: PreviewMode; label: string }[] = [
 
 export default function AdminHomepagePreview() {
   const [mode, setMode] = useState<PreviewMode>("returning-unsolved");
+  const [countdown, setCountdown] = useState("—");
+
+  // Real midnight countdown — mirrors production timer pattern
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0);
+      const diff = midnight.getTime() - now.getTime();
+      const h = Math.floor(diff / 3_600_000);
+      const m = Math.floor((diff % 3_600_000) / 60_000);
+      setCountdown(`${h}h ${m}m left`);
+    };
+    tick();
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const isReturning    = mode !== "new-user";
   const dailySolved    = mode === "returning-solved";
@@ -236,7 +256,7 @@ export default function AdminHomepagePreview() {
                         </span>
                         {!dailySolved && (
                           <span className="text-[11px] text-muted-foreground/50 tabular-nums">
-                            6h 42m left
+                            {countdown}
                           </span>
                         )}
                       </div>
@@ -392,6 +412,45 @@ export default function AdminHomepagePreview() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
+          NEW: WEEKLY PACK + STREAK SHIELD STRIP (returning users)
+      ═══════════════════════════════════════════════════════ */}
+      {isReturning && (
+        <section className="border-b">
+          <div className="container py-8 grid gap-4 lg:grid-cols-2">
+            {/* Weekly Pack mock */}
+            <div className="rounded-2xl border bg-card p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles size={14} className="text-primary" />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">This week</p>
+              </div>
+              <h3 className="font-display text-lg font-bold text-foreground">🌊 Ocean Voyage</h3>
+              <p className="text-xs text-muted-foreground mt-1">Six puzzles, one curated theme.</p>
+              <div className="mt-3 flex items-center gap-2">
+                <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full bg-primary" style={{ width: "50%" }} />
+                </div>
+                <span className="text-[11px] font-mono text-muted-foreground">3/6</span>
+              </div>
+              <Button size="sm" variant="outline" className="mt-3 gap-1 w-full">
+                Continue pack <ArrowRight size={12} />
+              </Button>
+            </div>
+
+            {/* Streak Shield */}
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 flex items-start gap-3">
+              <Shield size={18} className="text-amber-500 mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">Streak Shield ready</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Your {MOCK_STREAK.current}-day streak is protected if you miss tomorrow. 1 shield remaining.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════
           SECTION 3 — CREATE
       ═══════════════════════════════════════════════════════ */}
       <section className="border-b bg-surface-warm">
@@ -463,7 +522,55 @@ export default function AdminHomepagePreview() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 4 — PROGRESS (returning users only)
+          NEW: PUZZLECRAFT+ MARKETING (matches Index Section 4)
+      ═══════════════════════════════════════════════════════ */}
+      {PUZZLECRAFT_PLUS_LAUNCHED && (
+        <section className="border-b bg-surface-warm">
+          <div className="container py-14">
+            <div className="max-w-2xl mx-auto text-center">
+              <div className="flex justify-center mb-5">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20">
+                  <Crown size={26} className="text-primary" />
+                </div>
+              </div>
+              <h2 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
+                Puzzlecraft+
+              </h2>
+              <p className="mt-3 text-muted-foreground leading-relaxed max-w-lg mx-auto">
+                The complete experience. Extreme and Insane difficulty. Unlimited craft puzzles.
+                Full analytics, skill rating, Streak Shield, and early weekly pack access.
+              </p>
+              <div className="mt-8 flex flex-wrap justify-center gap-2">
+                {[
+                  "Extreme & Insane difficulty",
+                  "Unlimited craft puzzles",
+                  "Skill rating & leaderboard",
+                  "Full analytics",
+                  "Streak Shield",
+                  "Weekly pack early access",
+                ].map((f) => (
+                  <span
+                    key={f}
+                    className="flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 bg-card text-muted-foreground text-[13px]"
+                  >
+                    <Star size={10} className="text-primary/60 fill-primary/30 shrink-0" />
+                    {f}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-8 flex flex-col items-center gap-2">
+                <Button size="lg" className="gap-2 px-8">
+                  <Crown size={16} /> Get Puzzlecraft+
+                </Button>
+                <p className="text-xs text-muted-foreground">{MONTHLY_PRICE}/month · Cancel anytime</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════
+          SECTION 5 — PROGRESS (returning users only)
       ═══════════════════════════════════════════════════════ */}
       {isReturning && (
         <section className="border-t">
