@@ -404,10 +404,33 @@ const SPECS: MilestoneSpec[] = [
   },
 ];
 
+// ── Backfill ──────────────────────────────────────────────────────────────────
+
+/**
+ * One-time silent backfill for existing users. Marks every currently-achieved
+ * milestone as already shown + celebrated, so the milestones UI reflects the
+ * user's full solve history WITHOUT firing a wall of "new milestone!" toasts
+ * or "new" dot indicators on first load. Idempotent — runs once per device.
+ */
+function backfillIfNeeded(s: Snapshot): void {
+  try {
+    if (localStorage.getItem(BACKFILL_KEY) === "1") return;
+    const achievedIds = SPECS.filter((spec) => spec.check(s)).map((spec) => spec.id);
+    if (achievedIds.length > 0) {
+      const shown = getShownIds();
+      for (const id of achievedIds) shown.add(id);
+      localStorage.setItem(SHOWN_KEY, JSON.stringify([...shown]));
+      markCelebrated(achievedIds);
+    }
+    localStorage.setItem(BACKFILL_KEY, "1");
+  } catch {}
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export function getAllMilestones(overrideRecords?: SolveRecord[]): MilestoneResult[] {
   const s = snapshot(overrideRecords);
+  if (!overrideRecords) backfillIfNeeded(s);
 
   const results: MilestoneResult[] = SPECS.map((spec) => {
     const achieved = spec.check(s);
