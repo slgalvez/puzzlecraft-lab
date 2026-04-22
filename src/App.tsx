@@ -25,7 +25,7 @@ import PlayCraftPuzzle from "./pages/PlayCraftPuzzle";
 import SharedCraftPuzzle from "./pages/SharedCraftPuzzle";
 import Account from "./pages/Account";
 import AdminPreview from "./pages/AdminPreview";
-import CraftPreviewPage from "./pages/CraftPreviewPage";
+
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminViewAsStats from "./pages/AdminViewAsStats";
 import AdminHomepagePreview from "./pages/AdminHomepagePreview";
@@ -146,8 +146,6 @@ function PublicRoutes() {
             <Route path="/s/:id" element={<SharedCraftPuzzle />} />
             <Route path="/account" element={<Account />} />
             <Route path="/admin-preview" element={<AdminPreview />} />
-            {/* /craft-v2 — admin alias for the live craft experience (production page) */}
-            <Route path="/craft-v2" element={<CraftPreviewPage />} />
             <Route path="/admin-preview/homepage" element={<AdminHomepagePreview />} />
              <Route path="/admin/premium-emails" element={<AdminPremiumEmails />} />
              <Route path="/admin-analytics" element={<AdminAnalytics />} />
