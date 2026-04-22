@@ -21,6 +21,7 @@ import {
   getUncelebratedIds,
   markCelebrated,
   MILESTONE_TABS,
+  type MilestoneDataSource,
   type MilestoneResult,
   type MilestoneTab,
 } from "@/lib/milestones";
