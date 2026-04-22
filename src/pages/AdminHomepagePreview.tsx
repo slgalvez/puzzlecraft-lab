@@ -8,12 +8,13 @@
  * Route: /admin-preview/homepage
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight, Flame, CheckCircle2, Trophy, Clock,
   Target, Infinity, Dices, Send, Users, Zap,
   ChevronRight, TrendingUp, Star, Eye, EyeOff,
+  Crown, Shield, Sparkles,
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,8 @@ import { CATEGORY_INFO, type PuzzleCategory } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
 import { cn } from "@/lib/utils";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
+import { MONTHLY_PRICE } from "@/lib/pricing";
+import { PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
 
