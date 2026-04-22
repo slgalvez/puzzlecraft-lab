@@ -443,9 +443,16 @@ export default function CraftPreviewPage() {
   const isBuilding = !!selectedType && !showTypeCards;
   const hasGenerated = !!generatedData && !!shareUrl;
 
+  const isAdminRoute = typeof window !== "undefined" && window.location.pathname === "/craft-v2";
+
   return (
     <Layout>
       <div className="container max-w-3xl mx-auto pb-28">
+        {isAdminRoute && (
+          <div className="flex items-center justify-center pt-3">
+            <PreviewLabel alwaysShow label="Live craft experience" />
+          </div>
+        )}
         {/* ── Header ─────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between py-4">
           <button onClick={handleBack} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
