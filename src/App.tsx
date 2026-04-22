@@ -146,8 +146,6 @@ function PublicRoutes() {
             <Route path="/s/:id" element={<SharedCraftPuzzle />} />
             <Route path="/account" element={<Account />} />
             <Route path="/admin-preview" element={<AdminPreview />} />
-            {/* /craft-v2 — admin alias for the live craft experience (production page) */}
-            <Route path="/craft-v2" element={<CraftPreviewPage />} />
             <Route path="/admin-preview/homepage" element={<AdminHomepagePreview />} />
              <Route path="/admin/premium-emails" element={<AdminPremiumEmails />} />
              <Route path="/admin-analytics" element={<AdminAnalytics />} />
