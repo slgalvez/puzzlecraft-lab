@@ -770,10 +770,13 @@ const CraftPuzzle = () => {
 
                 {/* ── SHARE — second visible element, no scroll required ── */}
                 <div className="space-y-2.5 p-5 rounded-2xl border border-primary/20 bg-primary/[0.03]">
-                  <Button onClick={handleShare} className="w-full gap-2 h-11">
-                    <ShareIcon className="h-4 w-4" />
-                    {shareButtonLabel}
-                  </Button>
+                  <ShareButton
+                    onShare={handleShare}
+                    label={shareButtonLabel}
+                    copied={shareState !== "idle"}
+                    className="w-full h-11"
+                    iconSize={16}
+                  />
 
                   <button
                     onClick={handleCopyLink}
