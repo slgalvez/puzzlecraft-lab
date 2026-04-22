@@ -450,7 +450,7 @@ const CraftPuzzle = () => {
     shareState === "sent"   ? "Sent ✓" :
     shareState === "copied" ? "Link copied ✓" :
     "Send Puzzle";
-  const ShareIcon = shareState === "idle" ? Share2 : Check;
+  
 
   return (
     <Layout>
