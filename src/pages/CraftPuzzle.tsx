@@ -7,9 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
 import {
-  ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share2, Copy,
+  ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Copy,
   Check, Loader2, Trophy, AlertCircle, Palette, ChevronDown, ChevronUp,
 } from "lucide-react";
+import { ShareButton } from "@/components/ui/ShareButton";
 import { CraftSolveFirst } from "@/components/craft/CraftSolveFirst";
 import { usePremiumAccess } from "@/lib/premiumAccess";
 import UpgradeModal from "@/components/account/UpgradeModal";
@@ -449,7 +450,7 @@ const CraftPuzzle = () => {
     shareState === "sent"   ? "Sent ✓" :
     shareState === "copied" ? "Link copied ✓" :
     "Send Puzzle";
-  const ShareIcon = shareState === "idle" ? Share2 : Check;
+  
 
   return (
     <Layout>
@@ -770,10 +771,13 @@ const CraftPuzzle = () => {
 
                 {/* ── SHARE — second visible element, no scroll required ── */}
                 <div className="space-y-2.5 p-5 rounded-2xl border border-primary/20 bg-primary/[0.03]">
-                  <Button onClick={handleShare} className="w-full gap-2 h-11">
-                    <ShareIcon className="h-4 w-4" />
-                    {shareButtonLabel}
-                  </Button>
+                  <ShareButton
+                    onShare={handleShare}
+                    label={shareButtonLabel}
+                    copied={shareState !== "idle"}
+                    className="w-full h-11"
+                    iconSize={16}
+                  />
 
                   <button
                     onClick={handleCopyLink}
