@@ -21,6 +21,7 @@ import PremiumStats from "@/components/account/PremiumStats";
 import { PremiumStatsAdminControls } from "@/components/account/PremiumStatsAdminControls";
 import { StatsPremiumPreview } from "@/components/account/PremiumPreview";
 import { MilestonesSection } from "@/components/stats/MilestonesSection";
+import type { MilestoneDataSource } from "@/lib/milestones";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
