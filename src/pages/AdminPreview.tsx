@@ -7,7 +7,7 @@ import Layout from "@/components/layout/Layout";
 import CompletionPanel from "@/components/puzzles/CompletionPanel";
 import MilestoneModal, { type MilestoneToShow } from "@/components/puzzles/MilestoneModal";
 import PremiumStats from "@/components/account/PremiumStats";
-import { StatsPremiumPreview, LoginPremiumPreview } from "@/components/account/PremiumPreview";
+import { StatsPremiumPreview } from "@/components/account/PremiumPreview";
 import PremiumLockedCard from "@/components/account/PremiumLockedCard";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import UpgradeModalNextUI from "@/components/account/UpgradeModalNextUI";
