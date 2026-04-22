@@ -1,95 +1,68 @@
 
 
-# Fix milestones in View-As mode + smarter default tab
+# Refresh admin preview pages — remove stale, add current
 
-Two issues:
-1. `<MilestonesSection />` ignores View-As/Preview data and reads admin's local `getSolveRecords()`/`getProgressStats()`/`loadSentItems()` — Queen A's 50+ solves don't show.
-2. Default tab doesn't prefer the user's most-recently-achieved milestone.
+Audit of `/admin-preview`, `/admin-preview/homepage`, `/admin-analytics`, `/admin-view-as-stats`, `/craft-v2` against current production. Goals: drop dead sections, refresh inaccurate ones, add previews for features shipped since the last update.
 
-## Files
+## What's outdated (remove or rewrite)
 
-- `src/lib/milestones.ts`
-- `src/components/stats/MilestonesSection.tsx`
-- `src/pages/Stats.tsx`
+**`src/pages/AdminPreview.tsx`**
+- **Core UI → "Activity Calendar" stub** (lines 2038–2046): just a paragraph saying "calendar is now inline in Stats." Dead text — delete.
+- **Core UI → "Data Controls"** (lines 2048–2091): "Generate 50 Demo Solves" / "Reset Milestones" — overlap with QA Mode panel and dump fake data into real localStorage. Move "Reset Milestones" into QA panel; delete demo-solve buttons (QA Mode preview is the modern path).
+- **iOS App → "iOS Tab Bar" mock** (2277–2313): hand-coded emoji tabs — no longer represents `IOSTabBar.tsx` (4 tabs with spring animations + real PuzzleIcon). Replace with real `<IOSTabBar />` rendered in a phone frame OR remove and link to native preview.
+- **iOS App → "Friend Activity Feed" mock** (2315–2341): emoji rows. Real component is `FriendActivityFeed.tsx`. Replace with real component fed by QA fixtures.
+- **iOS App → "Puzzle Type Picker" mock** (2343–2381): static rows. Real component is `PuzzleTypePicker.tsx` / `IOSCustomizeSheet.tsx`. Swap to render real component.
+- **Notifications → "Notification Settings" mock** (2445–2474): hand-built toggle rows with no source of truth. Either render the actual settings UI or delete (currently misleading).
+- **Notifications → "Paywall Timing Triggers"** (2476–2500): lists `streak_7`, `friend_solved`, `hard_complete`, `3rd solve in session`. Production triggers in `usePaywallTiming.ts` are `streak_7 | friend_solved | hard_complete | first_milestone | streak_at_risk` — "3rd solve" is gone, `first_milestone` and `streak_at_risk` are missing. Update list to match source.
+- **Premium → "Login Premium Preview"** (2166–2173): `LoginPremiumPreview` is no longer surfaced on the live login flow (private login uses code form). Verify and remove if dead.
+- **Header copy** (1773–1776): generic — refresh to mention 4 admin tools.
 
-## Changes
+**`src/pages/AdminHomepagePreview.tsx`**
+- Mock data is a snapshot of an older homepage. Missing: `WeeklyPackSection` (live on Index for returning users), `StreakShieldBanner` (live), `Puzzlecraft+ section` (Index Section 4 when launched + non-premium), midnight countdown timer, `MONTHLY_PRICE` / `PUZZLECRAFT_PLUS_LAUNCHED` gating.
+- Hero CTAs say "Surprise Me / Endless" — current Index is `Surprise / Endless` plus weekly-pack discovery. Update the mock to mirror current 4-section layout.
+- "8h 42m left" is hardcoded — replace with mock countdown matching the real timer pattern.
 
-### 1. `milestones.ts` — accept full data override
+**`src/pages/CraftPreviewPage.tsx` (`/craft-v2`)**
+- This is the **current production craft page** mounted at `/craft-v2` as a preview alias. The route doc-comment still says "v2 preview." Decision: keep the route as an alias but add a `<PreviewLabel>` banner clarifying "this is the live craft experience" so it doesn't read as a stale preview.
 
-Replace `snapshot()`'s implicit local reads with an optional `MilestoneDataSource`:
+**`src/pages/AdminAnalytics.tsx`** — current and accurate. No changes.
 
-```ts
-export interface MilestoneDataSource {
-  solves?: SolveRecord[];           // overrides getSolveRecords()
-  currentStreak?: number;            // overrides getProgressStats().currentStreak
-  sentCount?: number;                // overrides loadSentItems().length
-  receivedCompleted?: boolean;       // overrides loadReceivedItems()
-  /** When true, suppress flag-based milestones (recipient solve / beat challenge) */
-  suppressLocalFlags?: boolean;
-}
-```
+**`src/pages/AdminViewAsStats.tsx`** — current and accurate. No changes.
 
-- `snapshot(src?: MilestoneDataSource)` — when `src` provided, use its values; for missing fields default to `0`/`false` (do NOT fall back to localStorage, since that would leak admin data into View-As).
-- When `suppressLocalFlags === true`, set `firstRecipientSolve = false` and `beatChallengeTime = false`.
-- `getAllMilestones(src?: MilestoneDataSource)` — passes through; skips `backfillIfNeeded` whenever `src` is provided (already does this for the legacy `overrideRecords` case).
-- `getMilestonesForTab(tab, src?)` — forwards override.
-- Remove the legacy `overrideRecords?: SolveRecord[]` parameter and migrate any callers to the new shape (or keep it as an overload that wraps `{ solves: overrideRecords }`).
+## What's missing (add)
 
-### 2. `MilestonesSection.tsx` — accept and forward the override
+Add a **new "Modern Features" tab** to `AdminPreview.tsx` covering shipped-but-unrepresented surfaces:
 
-Add prop:
+1. **Streak Shield (live component)** — render `<StreakShieldBanner />` with mock props for all 4 states (at-risk pre-launch, at-risk post-launch, ready, just-used) using the actual component, not hand-coded mocks.
+2. **Insights Banner** — render `<InsightsBanner />` with mock `usePersonalInsights` data (trend up / down / neutral / hidden <5 solves).
+3. **Weekly Pack Card** — already in iOS tab; also show desktop variant via `<WeeklyPackSection compact />` and `<WeeklyPackSection />` (full-bleed).
+4. **Puzzlecraft+ marketing section** — extract Section 4 of `Index.tsx` into a preview block so admins can verify the launched-state CTA without flipping the global flag.
+5. **Activity Calendar (real)** — render the real `InlineCalendar` from `Stats.tsx` with QA fixture data (Free 7-day row + Plus monthly grid).
+6. **Friend Leaderboard (real)** — render actual `<DailyLeaderboard />` with `hasCompletedToday` toggle (already in iOS tab — promote to a top-level "leaderboards" section alongside `<Leaderboard />` peek).
+7. **Tier-up Celebration + Provisional Rating Card** — already in Ranking tab; verify they reflect current `solveScoring.ts` thresholds (`650/850/1300/1650` per memory).
+8. **Completion Sheet (iOS-style)** — already in QA Simulators; ensure it renders with current `CompletionSheet.tsx` props.
 
-```ts
-export interface MilestonesSectionProps {
-  defaultTab?: MilestoneTab;
-  compact?: boolean;
-  showViewAllLink?: boolean;
-  dataSource?: MilestoneDataSource;  // NEW
-}
-```
+## File-by-file changes
 
-- Pass `dataSource` to every `getAllMilestones(...)` and `getMilestonesForTab(...)` call (inside `TabContent`, `computeSmartDefaultTab` lookup, `tabCounts` memo, `hasAnyProgress` memo, `uncelebrated` lookups).
-- Add `dataSource` to the `useMemo` dependency arrays so tab counts/tiles re-compute when View-As switches.
-- Replace `computeSmartDefaultTab` with a "**most recently achieved → fallback Ranked**" picker:
-  1. Find the achieved milestone with the latest unlock — since we don't store unlock timestamps, approximate by **highest tier reached** within ranked, then fall back to whichever tab has the highest `achieved` count.
-  2. If nothing is achieved, default to **`ranked`** (per spec — "land on Rank tab").
-  3. Keep current "any-progress" fallback only when truly empty (preserves graceful zero state).
+| File | Change |
+|---|---|
+| `src/pages/AdminPreview.tsx` | Delete dead sections (calendar stub, demo-data buttons, iOS tab mock, friend feed mock, puzzle picker mock, notif settings mock). Rewrite paywall trigger list to match `usePaywallTiming.ts`. Replace hand-coded mocks with real components fed by `previewFixtures.ts`. Add new "Modern Features" tab. Refresh header copy. |
+| `src/pages/AdminHomepagePreview.tsx` | Add mock `WeeklyPackSection`, `StreakShieldBanner`, Puzzlecraft+ marketing section, midnight countdown, `MONTHLY_PRICE` reference. Update mock CTAs to mirror current Index. |
+| `src/pages/CraftPreviewPage.tsx` | Add `<PreviewLabel alwaysShow label="Live craft experience" />` banner at top so admins know this is the production page, not a preview. Update route comment in `App.tsx`. |
+| `src/components/admin/QAModePanel.tsx` | Add "Reset Milestones / Clear demo solves" buttons (migrated from old Data Controls). |
+| `src/App.tsx` | Update inline comment on `/craft-v2` route. |
 
-### 3. `Stats.tsx` — build the dataSource for view-as / preview / real
-
-Inside the `Stats` component, compute one `milestoneDataSource: MilestoneDataSource | undefined` based on the existing 3-branch isolation:
-
-```ts
-const milestoneDataSource = useMemo<MilestoneDataSource | undefined>(() => {
-  if (previewActive) return {
-    solves: preview.profile.calendar.solves,
-    currentStreak: getDailyStreakFrom(preview.profile.calendar.dailyData).current,
-    sentCount: preview.profile.calendar.craftDates.length,
-    receivedCompleted: false,
-    suppressLocalFlags: true,
-  };
-  if (isViewAs) return {
-    solves: getSolveRecordsFrom(viewAsUser!.solves),
-    currentStreak: getDailyStreakFrom(viewAsUser!.dailyData).current,
-    sentCount: 0,            // craft history not synced to backend
-    receivedCompleted: false,
-    suppressLocalFlags: true,
-  };
-  return undefined;          // real user — milestones reads localStorage as today
-}, [previewActive, preview, isViewAs, viewAsUser, dataVersion]);
-```
-
-Pass `<MilestonesSection compact dataSource={milestoneDataSource} />`.
-
-### 4. `Milestones.tsx` standalone page — no change
-
-Continues to read local data (the page is for the signed-in user only). View-As only ever reaches it through Stats, which is the embed.
+## Untouched
+- `AdminAnalytics.tsx`, `AdminViewAsStats.tsx`, `AdminPremiumEmails.tsx`
+- All QA simulators and share-preview infrastructure (`QASimulators`, `QASharePreviews`, `QAMessagingPreview`, `previewFixtures.ts`)
+- Production homepage, Stats page, craft flow
 
 ## Verification
-
-1. View-As Queen A → Milestones section shows her ranked tier, solve-count milestones, streak milestones based on her cloud-synced data, not the admin's.
-2. Crafter/Social tabs in View-As show baseline (0) — accurate, since craft history is local-only.
-3. Exiting View-As → milestones immediately revert to admin's own data (re-renders via `dataSource` dep).
-4. Stats page default tab: a user with any achieved milestone lands on the tab containing their highest-tier / most-achieved milestone; brand-new user lands on **Ranked**.
-5. Preview QA mode still isolated (no localStorage leak, no toasts fired, no backfill marked).
+1. `/admin-preview` Core UI tab: no "calendar is now inline" stub; no demo-data dump buttons.
+2. `/admin-preview` iOS tab: real `IOSTabBar`, real `FriendActivityFeed`, real `PuzzleTypePicker` instead of mocks.
+3. `/admin-preview` Notifications tab: paywall trigger list matches `usePaywallTiming.ts` exactly (5 triggers).
+4. `/admin-preview` new "Modern Features" tab: Streak Shield (4 states), Insights Banner, Weekly Pack (compact + full), Puzzlecraft+ section, real Activity Calendar.
+5. `/admin-preview/homepage`: mock now includes Weekly Pack, Streak Shield, and Puzzlecraft+ section matching production Index.
+6. `/craft-v2`: shows "Live craft experience" badge at top.
+7. `/admin-analytics`, `/admin-view-as-stats`: unchanged and functional.
 
