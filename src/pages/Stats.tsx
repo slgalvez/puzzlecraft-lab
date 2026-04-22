@@ -632,6 +632,27 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
     return getEndlessStats();
   }, [dataVersion, previewActive, isViewAs, viewAsUser]);
 
+  // Milestone data source — 3-branch isolation matching the rest of Stats.
+  // When undefined, MilestonesSection reads from localStorage (real user).
+  const milestoneDataSource = useMemo<MilestoneDataSource | undefined>(() => {
+    if (previewActive) return {
+      solves:             preview.profile.calendar.solves,
+      currentStreak:      getDailyStreakFrom(preview.profile.calendar.dailyData).current,
+      sentCount:          preview.profile.calendar.craftDates.length,
+      receivedCompleted:  false,
+      suppressLocalFlags: true,
+    };
+    if (isViewAs) return {
+      solves:             getSolveRecordsFrom(viewAsUser!.solves),
+      currentStreak:      getDailyStreakFrom(viewAsUser!.dailyData).current,
+      sentCount:          0,           // craft history is local-only, not synced
+      receivedCompleted:  false,
+      suppressLocalFlags: true,
+    };
+    return undefined;
+  }, [previewActive, preview.profile.calendar.solves, preview.profile.calendar.dailyData,
+      preview.profile.calendar.craftDates, isViewAs, viewAsUser, dataVersion]);
+
   // Build solve record lookup for matching completions to scores/badges
   const solveRecordMap = useMemo(() => {
     const recs = previewActive
