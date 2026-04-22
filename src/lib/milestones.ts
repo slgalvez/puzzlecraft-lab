@@ -454,9 +454,9 @@ function backfillIfNeeded(s: Snapshot): void {
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-export function getAllMilestones(overrideRecords?: SolveRecord[]): MilestoneResult[] {
-  const s = snapshot(overrideRecords);
-  if (!overrideRecords) backfillIfNeeded(s);
+export function getAllMilestones(src?: MilestoneDataSource): MilestoneResult[] {
+  const s = snapshot(src);
+  if (!src) backfillIfNeeded(s);
 
   const results: MilestoneResult[] = SPECS.map((spec) => {
     const achieved = spec.check(s);
@@ -508,8 +508,8 @@ export function getAllMilestones(overrideRecords?: SolveRecord[]): MilestoneResu
   return results;
 }
 
-export function getMilestonesForTab(tab: MilestoneTab): MilestoneResult[] {
-  return getAllMilestones().filter((m) => m.tab === tab);
+export function getMilestonesForTab(tab: MilestoneTab, src?: MilestoneDataSource): MilestoneResult[] {
+  return getAllMilestones(src).filter((m) => m.tab === tab);
 }
 
 // ── checkMilestones ───────────────────────────────────────────────────────────
