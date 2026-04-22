@@ -1780,13 +1780,17 @@ export default function AdminPreview() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Admin Preview</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Preview ALL UI features with mock data — onboarding, premium, iOS, notifications, and more.
+            QA scenarios, modern feature previews, and the full UI library — paired with{" "}
+            <Link to="/admin-preview/homepage" className="text-primary hover:underline">Homepage Preview</Link>,{" "}
+            <Link to="/admin-analytics" className="text-primary hover:underline">Analytics</Link>, and{" "}
+            <Link to="/admin-view-as-stats" className="text-primary hover:underline">View-As Stats</Link>.
           </p>
         </div>
 
         <Tabs defaultValue="qa" className="w-full">
           <TabsList className="w-full flex overflow-x-auto gap-1 bg-muted/50 p-1 rounded-xl">
             <TabsTrigger value="qa" className="text-xs flex-1 min-w-0">QA Mode</TabsTrigger>
+            <TabsTrigger value="modern" className="text-xs flex-1 min-w-0">Modern</TabsTrigger>
             <TabsTrigger value="core" className="text-xs flex-1 min-w-0">Core UI</TabsTrigger>
             <TabsTrigger value="premium" className="text-xs flex-1 min-w-0">Premium</TabsTrigger>
             <TabsTrigger value="ios" className="text-xs flex-1 min-w-0">iOS App</TabsTrigger>
