@@ -13,7 +13,7 @@ import QAMessagingPreview from "@/components/admin/QAMessagingPreview";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
-  Eye, RotateCcw, Crown, Users, Zap,
+  Eye, RotateCcw, Crown, Users, Zap, Trash2,
 } from "lucide-react";
 import type { PreviewScenario, FriendsVariant } from "@/lib/previewFixtures";
 
