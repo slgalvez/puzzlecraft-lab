@@ -417,39 +417,91 @@ function TabContent({
 // ── Public component ───────────────────────────────────────────────────────────
 
 export interface MilestonesSectionProps {
-  /** Default selected tab. Defaults to "solver". */
+  /** Default selected tab. Defaults to a smart pick. */
   defaultTab?: MilestoneTab;
   /** Compact mode hides the "Coming Up" locked list and uses tighter top spacing. */
   compact?: boolean;
   /** Render a small right-aligned "View all →" link to /milestones. */
   showViewAllLink?: boolean;
+  /**
+   * Override data source. When provided, milestones are computed from this
+   * data instead of localStorage — used by Stats in View-As / Preview mode.
+   */
+  dataSource?: MilestoneDataSource;
 }
 
-/** Pick the first canonical tab with the most useful content. */
+const TIER_RANK: Record<string, number> = {
+  "tier-expert":   3,
+  "tier-advanced": 2,
+  "tier-skilled":  1,
+  "off-the-bench": 0,
+};
+
+/**
+ * Pick the most contextually relevant tab.
+ *  1. If any milestone is achieved, prefer the tab with the highest-tier
+ *     ranked achievement; otherwise the tab with the most achievements.
+ *  2. Else, the first tab with any in-progress milestone.
+ *  3. Else, fall back to "ranked".
+ */
 function computeSmartDefaultTab(milestones: MilestoneResult[]): MilestoneTab {
   const tabOrder: MilestoneTab[] = ["ranked", "solver", "crafter", "social"];
-  // 1. Tab with achieved or in-progress
-  for (const t of tabOrder) {
-    if (milestones.some(
-      (m) => m.tab === t && (m.state === "achieved" || m.state === "in-progress"),
-    )) return t;
+
+  const achieved = milestones.filter((m) => m.state === "achieved");
+  if (achieved.length > 0) {
+    // Prefer ranked if any tier is achieved (rank by tier height)
+    const rankedAchieved = achieved.filter((m) => m.tab === "ranked" && m.id in TIER_RANK);
+    if (rankedAchieved.length > 0) return "ranked";
+
+    // Else, tab with the most achievements
+    const counts: Record<MilestoneTab, number> = { ranked: 0, solver: 0, crafter: 0, social: 0 };
+    for (const m of achieved) counts[m.tab]++;
+    let bestTab: MilestoneTab = "ranked";
+    let bestCount = -1;
+    for (const t of tabOrder) {
+      if (counts[t] > bestCount) { bestCount = counts[t]; bestTab = t; }
+    }
+    return bestTab;
   }
-  // 2. Tab with any started progress
+
+  // Any in-progress
+  for (const t of tabOrder) {
+    if (milestones.some((m) => m.tab === t && m.state === "in-progress")) return t;
+  }
+  // Any started progress
   for (const t of tabOrder) {
     if (milestones.some((m) => m.tab === t && m.progressRatio > 0)) return t;
   }
-  return "solver";
+  return "ranked";
 }
 
 export function MilestonesSection({
   defaultTab,
   compact = false,
   showViewAllLink = false,
+  dataSource,
 }: MilestonesSectionProps) {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<MilestoneTab>(
-    () => defaultTab ?? computeSmartDefaultTab(getAllMilestones()),
+
+  const allMilestones = useMemo(
+    () => getAllMilestones(dataSource),
+    [dataSource],
   );
+
+  const [activeTab, setActiveTab] = useState<MilestoneTab>(
+    () => defaultTab ?? computeSmartDefaultTab(allMilestones),
+  );
+
+  // When dataSource changes (entering/exiting View-As), re-pick the smart tab
+  // unless an explicit defaultTab was given.
+  const lastDataSourceRef = useRef(dataSource);
+  useEffect(() => {
+    if (lastDataSourceRef.current !== dataSource) {
+      lastDataSourceRef.current = dataSource;
+      if (!defaultTab) setActiveTab(computeSmartDefaultTab(allMilestones));
+    }
+  }, [dataSource, allMilestones, defaultTab]);
+
   const [uncelebratedIds, setUncelebratedIds] = useState<Set<string>>(new Set());
   const [showIntro, setShowIntro] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -470,6 +522,9 @@ export function MilestonesSection({
   };
 
   useEffect(() => {
+    // Only consume "uncelebrated" ids for the real local user — never for
+    // View-As / Preview, where uncelebrated state belongs to the admin only.
+    if (dataSource) { setUncelebratedIds(new Set()); return; }
     const ids = getUncelebratedIds();
     setUncelebratedIds(ids);
     if (ids.size > 0) {
@@ -479,9 +534,8 @@ export function MilestonesSection({
       }, 2000);
       return () => clearTimeout(t);
     }
-  }, []);
+  }, [dataSource]);
 
-  const allMilestones = useMemo(() => getAllMilestones(), []);
   const hasAnyProgress = useMemo(
     () => allMilestones.some(
       (m) => m.state === "achieved" || m.state === "in-progress" || m.progressRatio > 0,
