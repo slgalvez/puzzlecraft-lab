@@ -191,29 +191,55 @@ interface Snapshot {
   beatChallengeTime: boolean;
 }
 
-function snapshot(overrideRecords?: SolveRecord[]): Snapshot {
-  const baseRecords = overrideRecords ?? getSolveRecords();
-  const records     = baseRecords.filter((r) => r.solveTime >= 10);
-  const solveCount  = records.length;
-  const typesPlayed = new Set(records.map((r) => r.puzzleType));
+/**
+ * Override data source for milestones. When provided, snapshot() uses these
+ * values instead of reading localStorage — used by View-As mode and QA Preview
+ * mode to ensure milestones reflect the target user (not the admin).
+ */
+export interface MilestoneDataSource {
+  solves?: SolveRecord[];
+  currentStreak?: number;
+  sentCount?: number;
+  receivedCompleted?: boolean;
+  /** When true, suppress flag-based achievements (recipient solve / beat challenge) */
+  suppressLocalFlags?: boolean;
+}
+
+function snapshot(src?: MilestoneDataSource): Snapshot {
+  const usingOverride = !!src;
+  const baseRecords   = src?.solves ?? getSolveRecords();
+  const records       = baseRecords.filter((r) => r.solveTime >= 10);
+  const solveCount    = records.length;
+  const typesPlayed   = new Set(records.map((r) => r.puzzleType));
   const hasCleanSheet = records.some((r) => r.hintsUsed === 0 && r.mistakesCount === 0);
 
   let streakCurrent = 0;
-  try { streakCurrent = getProgressStats().currentStreak; } catch {}
+  if (usingOverride) {
+    streakCurrent = src?.currentStreak ?? 0;
+  } else {
+    try { streakCurrent = getProgressStats().currentStreak; } catch {}
+  }
 
   const rating  = solveCount >= 5 ? computePlayerRating(records) : 0;
   const tier    = getSkillTier(rating, solveCount);
   const tierIdx = TIER_ORDER.indexOf(tier);
 
-  const isPeakRating = rating > 0 ? updatePeakRating(rating) : false;
+  // Peak rating tracking only for the real local user — never for overrides
+  const isPeakRating = !usingOverride && rating > 0 ? updatePeakRating(rating) : false;
 
   let sentCount = 0;
   let receivedCompleted = false;
-  try { sentCount = loadSentItems().length; } catch {}
-  try { receivedCompleted = loadReceivedItems().some((r) => r.status === "completed"); } catch {}
+  if (usingOverride) {
+    sentCount         = src?.sentCount ?? 0;
+    receivedCompleted = src?.receivedCompleted ?? false;
+  } else {
+    try { sentCount = loadSentItems().length; } catch {}
+    try { receivedCompleted = loadReceivedItems().some((r) => r.status === "completed"); } catch {}
+  }
 
-  const firstRecipientSolve = getFlag(FLAG_FIRST_RECIPIENT_SOLVE);
-  const beatChallengeTime   = getFlag(FLAG_BEAT_CHALLENGE_TIME);
+  const suppressFlags       = usingOverride && (src?.suppressLocalFlags ?? false);
+  const firstRecipientSolve = suppressFlags ? false : getFlag(FLAG_FIRST_RECIPIENT_SOLVE);
+  const beatChallengeTime   = suppressFlags ? false : getFlag(FLAG_BEAT_CHALLENGE_TIME);
 
   return {
     solveCount, typesPlayed, hasCleanSheet, streakCurrent,
@@ -428,9 +454,9 @@ function backfillIfNeeded(s: Snapshot): void {
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-export function getAllMilestones(overrideRecords?: SolveRecord[]): MilestoneResult[] {
-  const s = snapshot(overrideRecords);
-  if (!overrideRecords) backfillIfNeeded(s);
+export function getAllMilestones(src?: MilestoneDataSource): MilestoneResult[] {
+  const s = snapshot(src);
+  if (!src) backfillIfNeeded(s);
 
   const results: MilestoneResult[] = SPECS.map((spec) => {
     const achieved = spec.check(s);
@@ -482,8 +508,8 @@ export function getAllMilestones(overrideRecords?: SolveRecord[]): MilestoneResu
   return results;
 }
 
-export function getMilestonesForTab(tab: MilestoneTab): MilestoneResult[] {
-  return getAllMilestones().filter((m) => m.tab === tab);
+export function getMilestonesForTab(tab: MilestoneTab, src?: MilestoneDataSource): MilestoneResult[] {
+  return getAllMilestones(src).filter((m) => m.tab === tab);
 }
 
 // ── checkMilestones ───────────────────────────────────────────────────────────
