@@ -522,7 +522,55 @@ export default function AdminHomepagePreview() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════
-          SECTION 4 — PROGRESS (returning users only)
+          NEW: PUZZLECRAFT+ MARKETING (matches Index Section 4)
+      ═══════════════════════════════════════════════════════ */}
+      {PUZZLECRAFT_PLUS_LAUNCHED && (
+        <section className="border-b bg-surface-warm">
+          <div className="container py-14">
+            <div className="max-w-2xl mx-auto text-center">
+              <div className="flex justify-center mb-5">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20">
+                  <Crown size={26} className="text-primary" />
+                </div>
+              </div>
+              <h2 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
+                Puzzlecraft+
+              </h2>
+              <p className="mt-3 text-muted-foreground leading-relaxed max-w-lg mx-auto">
+                The complete experience. Extreme and Insane difficulty. Unlimited craft puzzles.
+                Full analytics, skill rating, Streak Shield, and early weekly pack access.
+              </p>
+              <div className="mt-8 flex flex-wrap justify-center gap-2">
+                {[
+                  "Extreme & Insane difficulty",
+                  "Unlimited craft puzzles",
+                  "Skill rating & leaderboard",
+                  "Full analytics",
+                  "Streak Shield",
+                  "Weekly pack early access",
+                ].map((f) => (
+                  <span
+                    key={f}
+                    className="flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 bg-card text-muted-foreground text-[13px]"
+                  >
+                    <Star size={10} className="text-primary/60 fill-primary/30 shrink-0" />
+                    {f}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-8 flex flex-col items-center gap-2">
+                <Button size="lg" className="gap-2 px-8">
+                  <Crown size={16} /> Get Puzzlecraft+
+                </Button>
+                <p className="text-xs text-muted-foreground">{MONTHLY_PRICE}/month · Cancel anytime</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════
+          SECTION 5 — PROGRESS (returning users only)
       ═══════════════════════════════════════════════════════ */}
       {isReturning && (
         <section className="border-t">
