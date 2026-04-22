@@ -1749,6 +1749,7 @@ export default function AdminPreview() {
   const [upgradeNextOpen, setUpgradeNextOpen] = useState(false);
   const [upgradeNextAnnual, setUpgradeNextAnnual] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [pickerType, setPickerType] = useState<import("@/lib/puzzleTypes").PuzzleCategory | null>(null);
 
   const handleAchieve = useCallback((id: string) => {
     setAchievedIds((prev) => new Set(prev).add(id));
