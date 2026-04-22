@@ -7,9 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
 import {
-  ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Share2, Copy,
+  ArrowLeft, Plus, Trash2, Sparkles, RefreshCw, Copy,
   Check, Loader2, Trophy, AlertCircle, Palette, ChevronDown, ChevronUp,
 } from "lucide-react";
+import { ShareButton } from "@/components/ui/ShareButton";
 import { CraftSolveFirst } from "@/components/craft/CraftSolveFirst";
 import { usePremiumAccess } from "@/lib/premiumAccess";
 import UpgradeModal from "@/components/account/UpgradeModal";
