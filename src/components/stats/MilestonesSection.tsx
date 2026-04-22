@@ -344,14 +344,18 @@ const VARIANT_ORDER: Record<TileVariant, number> = {
 };
 
 function TabContent({
-  tab, uncelebratedIds, navigate, compact,
+  tab, uncelebratedIds, navigate, compact, dataSource,
 }: {
   tab: MilestoneTab;
   uncelebratedIds: Set<string>;
   navigate: NavigateFunction;
   compact: boolean;
+  dataSource?: MilestoneDataSource;
 }) {
-  const milestones = useMemo(() => getMilestonesForTab(tab), [tab]);
+  const milestones = useMemo(
+    () => getMilestonesForTab(tab, dataSource),
+    [tab, dataSource],
+  );
 
   let next = milestones.find((m) => m.isNext && m.state !== "achieved");
 
