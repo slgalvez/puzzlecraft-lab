@@ -256,7 +256,7 @@ export default function AdminHomepagePreview() {
                         </span>
                         {!dailySolved && (
                           <span className="text-[11px] text-muted-foreground/50 tabular-nums">
-                            6h 42m left
+                            {countdown}
                           </span>
                         )}
                       </div>
