@@ -85,6 +85,23 @@ const MODE_LABELS: { value: PreviewMode; label: string }[] = [
 
 export default function AdminHomepagePreview() {
   const [mode, setMode] = useState<PreviewMode>("returning-unsolved");
+  const [countdown, setCountdown] = useState("—");
+
+  // Real midnight countdown — mirrors production timer pattern
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0);
+      const diff = midnight.getTime() - now.getTime();
+      const h = Math.floor(diff / 3_600_000);
+      const m = Math.floor((diff % 3_600_000) / 60_000);
+      setCountdown(`${h}h ${m}m left`);
+    };
+    tick();
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const isReturning    = mode !== "new-user";
   const dailySolved    = mode === "returning-solved";
