@@ -25,7 +25,7 @@ import PlayCraftPuzzle from "./pages/PlayCraftPuzzle";
 import SharedCraftPuzzle from "./pages/SharedCraftPuzzle";
 import Account from "./pages/Account";
 import AdminPreview from "./pages/AdminPreview";
-import CraftPreviewPage from "./pages/CraftPreviewPage";
+
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminViewAsStats from "./pages/AdminViewAsStats";
 import AdminHomepagePreview from "./pages/AdminHomepagePreview";
