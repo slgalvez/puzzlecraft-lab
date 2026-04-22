@@ -1080,7 +1080,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                   <Trophy className="h-4 w-4 text-primary" />
                   Milestones
                 </h2>
-                <MilestonesSection compact />
+                <MilestonesSection compact dataSource={milestoneDataSource} />
               </div>
             )}
 
