@@ -2047,60 +2047,7 @@ export default function AdminPreview() {
               />
             </section>
 
-            {/* ── Activity Calendar ── */}
-            <section className="space-y-3 rounded-xl border border-border/30 p-4">
-              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Clock size={14} /> Activity Calendar
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Calendar is now inline in the Stats page with hierarchical activity visualization.
-              </p>
-            </section>
-
-            {/* ── Data Controls ── */}
-            <section className="space-y-3 rounded-xl border border-border/30 p-4">
-              <h2 className="text-sm font-semibold text-foreground">Data Controls</h2>
-              <p className="text-xs text-muted-foreground">
-                Generate or clear demo data to test features with realistic numbers.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    import("@/lib/demoStats").then((mod) => {
-                      mod.generateDemoSolves(50);
-                      window.location.reload();
-                    });
-                  }}
-                >
-                  Generate 50 Demo Solves
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    import("@/lib/demoStats").then((mod) => {
-                      mod.clearDemoSolves();
-                      window.location.reload();
-                    });
-                  }}
-                >
-                  Clear Demo Solves
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    localStorage.removeItem("puzzlecraft-milestones-shown");
-                    localStorage.removeItem("puzzlecraft-milestones-celebrated");
-                    window.location.reload();
-                  }}
-                >
-                  Reset Milestones
-                </Button>
-              </div>
-            </section>
+            {/* Note: Activity Calendar lives inline in /stats. Demo-data buttons live in the QA Mode tab. */}
           </TabsContent>
 
           {/* ══════════════════════════════════════════════════════════════ */}
