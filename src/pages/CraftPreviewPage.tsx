@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { ShareButton } from "@/components/ui/ShareButton";
 import { executeShare } from "@/lib/shareUtils";
+import { PreviewLabel } from "@/components/admin/PreviewLabel";
 
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { usePremiumAccess } from "@/lib/premiumAccess";
