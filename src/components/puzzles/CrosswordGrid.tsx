@@ -389,8 +389,33 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
         else if (solutionGrid[r][c] && grid[r][c] === solutionGrid[r][c]) correct.add(`${r}-${c}`);
       }
     }
+
+    // Check-gated sweep: cells that belong to a newly fully-correct word and weren't already in correctCells.
+    const sweep = new Set<string>();
+    for (const clue of clues) {
+      const dr = clue.direction === "down" ? 1 : 0;
+      const dc = clue.direction === "across" ? 1 : 0;
+      let allCorrect = true;
+      const wordKeys: string[] = [];
+      for (let i = 0; i < clue.answer.length; i++) {
+        const wr = clue.row + dr * i;
+        const wc = clue.col + dc * i;
+        const k = `${wr}-${wc}`;
+        wordKeys.push(k);
+        if (!correct.has(k)) { allCorrect = false; break; }
+      }
+      if (allCorrect && wordKeys.some((k) => !correctCells.has(k))) {
+        wordKeys.forEach((k) => sweep.add(k));
+      }
+    }
+
     setErrors(errs);
     setCorrectCells(correct);
+    if (sweep.size > 0) {
+      setSweepCells(sweep);
+      haptic(15);
+      scheduleTimeout(() => setSweepCells(new Set()), 240);
+    }
     if (errs.size > 0) { errorCheckCount.current++; session.recordMistake(); }
     if (errs.size === 0 && filled) {
       const { isNewBest } = timer.solve({ assisted: hintCount.current > 0, hintsUsed: hintCount.current, mistakesCount: errorCheckCount.current });
