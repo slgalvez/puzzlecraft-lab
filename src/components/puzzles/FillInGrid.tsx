@@ -487,10 +487,59 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
           progressTotal={session.progressTotal}
           progressUnit={session.progressUnit}
         />
-        {!needsKeyboard && (
-          <p className="mb-2 text-xs text-muted-foreground">
-            Arrow keys to move • Type to fill • Delete to clear • Tap same cell to toggle direction
-          </p>
+        {/* Active slot + direction toggle — sticky on mobile, visible on all viewports */}
+        {activeCell && !timer.isSolved && !isRevealed && (() => {
+          const slot = getActiveSlot(activeCell[0], activeCell[1], direction);
+          const slotLen = slot?.cells.length ?? 0;
+          return (
+            <div className="sticky top-0 z-10 -mx-2 px-2 py-2 bg-background/85 backdrop-blur-sm">
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setDirection("across")}
+                  className={cn(
+                    "px-2.5 py-1 rounded-full text-xs font-medium transition-colors touch-manipulation",
+                    direction === "across" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
+                  )}
+                  aria-pressed={direction === "across"}
+                >
+                  Across
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDirection("down")}
+                  className={cn(
+                    "px-2.5 py-1 rounded-full text-xs font-medium transition-colors touch-manipulation",
+                    direction === "down" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
+                  )}
+                  aria-pressed={direction === "down"}
+                >
+                  Down
+                </button>
+                {slotLen > 0 && (
+                  <span className="rounded-full bg-secondary/40 px-3 py-1 text-sm">
+                    <span className="font-semibold text-primary mr-1.5">{slotLen}</span>
+                    <span className="text-foreground">{isNumbers ? "digits" : "letters"} {direction}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Desktop keyboard hint chips — show on first load, hide after first keypress */}
+        {!needsKeyboard && hintsVisible && (
+          <div className="mb-2 flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground">
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-1.5 py-0.5">
+              <kbd className="font-mono">← →</kbd> Move
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-1.5 py-0.5">
+              <kbd className="font-mono">Tab</kbd> Next
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-1.5 py-0.5">
+              <kbd className="font-mono">Click</kbd> Toggle
+            </span>
+          </div>
         )}
 
         {isMobile && !timer.isSolved && !isRevealed && (
@@ -507,22 +556,22 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
           </div>
         )}
 
-        {!isNumbers && (
-          <MobileLetterInput
-            ref={mobileInputRef}
-            active={needsKeyboard && !!activeCell && !timer.isSolved && !isRevealed}
-            onLetter={enterChar}
-            onDelete={deleteChar}
-          />
-        )}
-
         <div className="max-w-full overflow-x-auto [overscroll-behavior:contain] scroll-mt-4">
+          {!isNumbers && (
+            <MobileLetterInput
+              ref={mobileInputRef}
+              active={needsKeyboard && !!activeCell && !timer.isSolved && !isRevealed}
+              onLetter={enterChar}
+              onDelete={deleteChar}
+            />
+          )}
         <div
           ref={containerRef}
           tabIndex={0}
           className="inline-grid border-2 border-puzzle-border outline-none"
           style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
           onKeyDown={handleKeyDown}
+          aria-label={activeCell ? `Row ${activeCell[0] + 1} Column ${activeCell[1] + 1}, ${direction === "across" ? "Across" : "Down"}` : "Fill-in grid"}
         >
           {Array.from({ length: gridSize }, (_, r) =>
             Array.from({ length: gridSize }, (_, c) => {
@@ -530,22 +579,26 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
               const isActive = activeCell?.[0] === r && activeCell?.[1] === c;
               const isInActiveEntry = activeEntryCells.has(`${r}-${c}`);
               const hasError = errors.has(`${r}-${c}`);
+              const isCorrect = correctCells.has(`${r}-${c}`);
 
               return (
                 <div
                   key={`${r}-${c}`}
                   className={cn(
-                    "relative w-7 h-7 sm:w-9 sm:h-9 md:w-11 md:h-11 lg:w-12 lg:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
+                    "relative border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
+                    baseSize,
+                    isActive && "scroll-mt-24",
                     black && "bg-puzzle-cell-black",
                     !black && hasError && "bg-puzzle-cell-error",
                     !black && !hasError && isActive && "bg-puzzle-cell-active",
                     !black && !hasError && !isActive && isInActiveEntry && "bg-puzzle-cell-highlight",
-                    !black && !hasError && !isActive && !isInActiveEntry && "bg-puzzle-cell"
+                    !black && !hasError && !isActive && !isInActiveEntry && "bg-puzzle-cell",
+                    !black && isCorrect && !isActive && "opacity-85"
                   )}
                   onClick={() => handleCellClick(r, c)}
                 >
                   {!black && (
-                    <span className="text-xs sm:text-sm md:text-lg lg:text-xl font-semibold text-foreground uppercase">{grid[r][c]}</span>
+                    <span className={cn("font-semibold text-foreground uppercase", gridSize >= 15 ? "text-xs" : "text-xs sm:text-sm md:text-lg lg:text-xl")}>{grid[r][c]}</span>
                   )}
                 </div>
               );
@@ -554,10 +607,11 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
         </div>
         </div>
         {isNumbers && (
-          <MobileNumberPad
-            visible={needsKeyboard && !!activeCell && !timer.isSolved && !isRevealed}
-            onNumber={(n) => enterChar(n.toString())}
-            onDelete={deleteChar}
+          <div className="sticky bottom-[env(safe-area-inset-bottom)] z-10 bg-background/95 backdrop-blur-sm pt-2 pb-1">
+            <MobileNumberPad
+              visible={needsKeyboard && !!activeCell && !timer.isSolved && !isRevealed}
+              onNumber={(n) => enterChar(n.toString())}
+              onDelete={deleteChar}
           />
         )}
 
