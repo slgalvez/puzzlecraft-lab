@@ -522,7 +522,10 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
                 Down
               </button>
               {activeClue && (
-                <span className="rounded-full bg-secondary/40 px-3 py-1 text-sm leading-snug max-w-full truncate">
+                <span
+                  key={`${activeClue.number}-${activeClue.direction}`}
+                  className="rounded-full bg-secondary/40 px-3 py-1 text-sm leading-snug max-w-full truncate animate-[clue-fade_120ms_ease-out]"
+                >
                   <span className="font-semibold text-primary mr-1.5">
                     {activeClue.number}{activeClue.direction === "across" ? "A" : "D"}
                   </span>
@@ -533,9 +536,14 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
           </div>
         )}
 
-        {/* Desktop keyboard hint chips — show on first load, hide after first keypress */}
-        {!needsKeyboard && hintsVisible && (
-          <div className="mb-2 flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground">
+        {/* Desktop keyboard hint chips — fade up + out on first keypress, then unmount. */}
+        {!needsKeyboard && hintPhase !== "hidden" && (
+          <div
+            className={cn(
+              "mb-2 flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground",
+              hintPhase === "exiting" && "animate-[chip-exit_150ms_ease-out_forwards] pointer-events-none"
+            )}
+          >
             <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-1.5 py-0.5">
               <kbd className="font-mono">← →</kbd> Move
             </span>
