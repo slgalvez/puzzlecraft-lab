@@ -577,22 +577,35 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
               const num = getCellNumber(r, c);
               const isActive = activeCell?.[0] === r && activeCell?.[1] === c;
               const isHighlighted = highlighted.has(`${r}-${c}`);
-              const hasError = errors.has(`${r}-${c}`);
-              const isCorrect = correctCells.has(`${r}-${c}`);
+              const cellKey = `${r}-${c}`;
+              const hasError = errors.has(cellKey);
+              const isCorrect = correctCells.has(cellKey);
+              // Single transform animation per cell — priority: shake > entry pop.
+              const transformAnim = !black && hasError
+                ? "animate-[cell-shake-soft_180ms_ease-out]"
+                : !black && recentlyEntered.has(cellKey)
+                  ? "animate-[cell-enter_110ms_ease-out]"
+                  : "";
+              // Sweep is background-only; safe to combine with transform anim.
+              const sweepAnim = !black && sweepCells.has(cellKey)
+                ? "animate-[cell-sweep_220ms_ease-out]"
+                : "";
 
               return (
                 <div
-                  key={`${r}-${c}`}
+                  key={cellKey}
                   className={cn(
-                    "relative border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
+                    "puzzle-cell relative border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
                     baseSize,
-                    isActive && "scroll-mt-24",
+                    isActive && "scroll-mt-24 outline outline-2 -outline-offset-2 outline-primary/25",
                     black && "bg-puzzle-cell-black",
                     !black && hasError && "bg-puzzle-cell-error",
                     !black && !hasError && isActive && "bg-puzzle-cell-active",
                     !black && !hasError && !isActive && isHighlighted && "bg-puzzle-cell-highlight",
                     !black && !hasError && !isActive && !isHighlighted && "bg-puzzle-cell",
-                    !black && isCorrect && !isActive && "opacity-85"
+                    !black && isCorrect && !isActive && "opacity-85",
+                    transformAnim,
+                    sweepAnim
                   )}
                   onClick={() => handleCellClick(r, c)}
                 >
