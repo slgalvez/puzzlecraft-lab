@@ -331,6 +331,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
     setGrid(Array.from({ length: gridSize }, () => Array(gridSize).fill("")));
     setErrors(new Set());
     setIsRevealed(false);
+    setCorrectCells(new Set());
     hintCount.current = 0;
     resetCount.current++;
     timer.reset();
@@ -341,15 +342,18 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   const handleCheck = () => {
     checkCount.current++;
     const errs = new Set<string>();
+    const correct = new Set<string>();
     let filled = true;
     for (let r = 0; r < gridSize; r++) {
       for (let c = 0; c < gridSize; c++) {
         if (isBlack(r, c)) continue;
         if (!grid[r][c]) { filled = false; continue; }
         if (solutionGrid[r][c] && grid[r][c] !== solutionGrid[r][c]) errs.add(`${r}-${c}`);
+        else if (solutionGrid[r][c] && grid[r][c] === solutionGrid[r][c]) correct.add(`${r}-${c}`);
       }
     }
     setErrors(errs);
+    setCorrectCells(correct);
     if (errs.size > 0) { errorCheckCount.current++; session.recordMistake(); }
     if (errs.size === 0 && filled) {
       const { isNewBest } = timer.solve({ assisted: hintCount.current > 0, hintsUsed: hintCount.current, mistakesCount: errorCheckCount.current });
