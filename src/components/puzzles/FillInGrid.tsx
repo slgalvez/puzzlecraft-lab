@@ -338,6 +338,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
     setGrid(Array.from({ length: gridSize }, () => Array(gridSize).fill("")));
     setUsedEntries(new Set());
     setErrors(new Set());
+    setCorrectCells(new Set());
     setDirection("across");
     setIsRevealed(false);
     hintCount.current = 0;
@@ -350,6 +351,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
   const handleCheck = () => {
     checkCount.current++;
     const errs = new Set<string>();
+    const correct = new Set<string>();
     let filled = true;
 
     for (let r = 0; r < gridSize; r++) {
@@ -368,6 +370,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
 
       const usedCounts = new Map<string, number>();
       const badSlots: EntrySlot[] = [];
+      const goodSlots: EntrySlot[] = [];
 
       for (let i = 0; i < entrySlots.length; i++) {
         const word = slotWords[i];
@@ -375,10 +378,14 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
         const used = usedCounts.get(word) || 0;
         if (available > 0 && used < available) {
           usedCounts.set(word, used + 1);
+          goodSlots.push(entrySlots[i]);
         } else {
           badSlots.push(entrySlots[i]);
         }
       }
+
+      for (const slot of goodSlots) for (const [r, c] of slot.cells) correct.add(`${r}-${c}`);
+      setCorrectCells(correct);
 
       if (badSlots.length === 0) {
         const { isNewBest } = timer.solve({ assisted: hintCount.current > 0, hintsUsed: hintCount.current, mistakesCount: errorCheckCount.current });
@@ -399,9 +406,12 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
         const allFilled = slot.cells.every(([r, c]) => grid[r][c]);
         if (allFilled && !entries.includes(word)) {
           for (const [r, c] of slot.cells) errs.add(`${r}-${c}`);
+        } else if (allFilled && entries.includes(word)) {
+          for (const [r, c] of slot.cells) correct.add(`${r}-${c}`);
         }
       }
       setErrors(errs);
+      setCorrectCells(correct);
       if (errs.size > 0) {
         errorCheckCount.current++;
         session.recordMistake();
