@@ -254,7 +254,24 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
     }
   }, [activeCell, timer.isSolved, isRevealed, grid, moveToPrev]);
 
+  const clearActiveCell = useCallback(() => {
+    if (!activeCell || timer.isSolved || isRevealed) return;
+    const [r, c] = activeCell;
+    setGrid((prev) => {
+      const next = prev.map((row) => [...row]);
+      next[r][c] = "";
+      return next;
+    });
+    setErrors(new Set());
+    setCorrectCells((prev) => {
+      const next = new Set(prev);
+      next.delete(`${r}-${c}`);
+      return next;
+    });
+  }, [activeCell, timer.isSolved, isRevealed]);
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (hintsVisible) setHintsVisible(false);
     if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
     switch (e.key) {
