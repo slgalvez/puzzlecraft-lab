@@ -247,14 +247,30 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   const enterLetter = useCallback((letter: string) => {
     if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
+    const key = `${r}-${c}`;
     setGrid((prev) => {
       const next = prev.map((row) => [...row]);
       next[r][c] = letter.toUpperCase();
       return next;
     });
     setErrors(new Set());
+    // Entry pop — transient, single-shot, cleared after the animation duration.
+    setRecentlyEntered((prev) => {
+      if (prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+    scheduleTimeout(() => {
+      setRecentlyEntered((prev) => {
+        if (!prev.has(key)) return prev;
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }, 130);
     moveToNext(r, c);
-  }, [activeCell, timer.isSolved, isRevealed, moveToNext]);
+  }, [activeCell, timer.isSolved, isRevealed, moveToNext, scheduleTimeout]);
 
   const deleteLetter = useCallback(() => {
     if (!activeCell || timer.isSolved || isRevealed) return;
@@ -288,7 +304,11 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   }, [activeCell, timer.isSolved, isRevealed]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (hintsVisible) setHintsVisible(false);
+    // One-shot hint-chip exit: only triggers on the first keypress in "visible" phase.
+    if (hintPhase === "visible") {
+      setHintPhase("exiting");
+      scheduleTimeout(() => setHintPhase("hidden"), 150);
+    }
     if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
     switch (e.key) {
