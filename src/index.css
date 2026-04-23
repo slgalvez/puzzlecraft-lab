@@ -370,6 +370,37 @@ body:has(.private-app) [data-sidebar="sidebar"][data-mobile="true"] {
   animation: cell-pop 0.12s ease-out;
 }
 
+/* Restrained entry pop — applied once when a value is written into a cell */
+@keyframes cell-enter {
+  0%   { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+/* Soft shake — applied on Check failure. Transform-only, single-shot. */
+@keyframes cell-shake-soft {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-2px); }
+  75%      { transform: translateX(2px); }
+}
+
+/* Word-completion sweep — background only, no transform. Safe to stack with shake/enter. */
+@keyframes cell-sweep {
+  0%   { background-color: hsl(var(--primary) / 0.10); }
+  100% { background-color: transparent; }
+}
+
+/* Active-clue text fade-in on remount */
+@keyframes clue-fade {
+  0%   { opacity: 0; transform: translateY(2px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Hint-chip strip exit — one-shot fade + lift */
+@keyframes chip-exit {
+  0%   { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-6px); }
+}
+
 /* Puzzle container scroll isolation */
 .puzzle-scroll-container {
   overscroll-behavior: contain;
@@ -406,11 +437,12 @@ body:has(.private-app) [data-sidebar="sidebar"][data-mobile="true"] {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Puzzle cells: GPU compositing for smooth transitions */
+/* Puzzle cells: GPU compositing + smooth cursor-movement transitions */
 .puzzle-cell {
-  will-change: background-color;
+  will-change: background-color, transform;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
+  transition: background-color 120ms ease, transform 100ms ease;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
