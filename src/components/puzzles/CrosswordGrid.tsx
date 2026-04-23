@@ -58,6 +58,11 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   const [direction, setDirection] = useState<"across" | "down">("across");
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const [isRevealed, setIsRevealed] = useState(false);
+  const [hintsVisible, setHintsVisible] = useState(true);
+  const [correctCells, setCorrectCells] = useState<Set<string>>(new Set());
+
+  // Derived: responsive cell base size — keeps large grids dense, small grids tappable
+  const baseSize = gridSize >= 15 ? "w-[26px] h-[26px]" : "w-8 h-8 sm:w-9 sm:h-9 md:w-11 md:h-11 lg:w-12 lg:h-12";
   const containerRef = useRef<HTMLDivElement>(null);
   const mobileInputRef = useRef<MobileLetterInputHandle>(null);
   const resetCount = useRef(0);
@@ -249,7 +254,24 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
     }
   }, [activeCell, timer.isSolved, isRevealed, grid, moveToPrev]);
 
+  const clearActiveCell = useCallback(() => {
+    if (!activeCell || timer.isSolved || isRevealed) return;
+    const [r, c] = activeCell;
+    setGrid((prev) => {
+      const next = prev.map((row) => [...row]);
+      next[r][c] = "";
+      return next;
+    });
+    setErrors(new Set());
+    setCorrectCells((prev) => {
+      const next = new Set(prev);
+      next.delete(`${r}-${c}`);
+      return next;
+    });
+  }, [activeCell, timer.isSolved, isRevealed]);
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (hintsVisible) setHintsVisible(false);
     if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
     switch (e.key) {
@@ -309,6 +331,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
     setGrid(Array.from({ length: gridSize }, () => Array(gridSize).fill("")));
     setErrors(new Set());
     setIsRevealed(false);
+    setCorrectCells(new Set());
     hintCount.current = 0;
     resetCount.current++;
     timer.reset();
@@ -319,15 +342,18 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   const handleCheck = () => {
     checkCount.current++;
     const errs = new Set<string>();
+    const correct = new Set<string>();
     let filled = true;
     for (let r = 0; r < gridSize; r++) {
       for (let c = 0; c < gridSize; c++) {
         if (isBlack(r, c)) continue;
         if (!grid[r][c]) { filled = false; continue; }
         if (solutionGrid[r][c] && grid[r][c] !== solutionGrid[r][c]) errs.add(`${r}-${c}`);
+        else if (solutionGrid[r][c] && grid[r][c] === solutionGrid[r][c]) correct.add(`${r}-${c}`);
       }
     }
     setErrors(errs);
+    setCorrectCells(correct);
     if (errs.size > 0) { errorCheckCount.current++; session.recordMistake(); }
     if (errs.size === 0 && filled) {
       const { isNewBest } = timer.solve({ assisted: hintCount.current > 0, hintsUsed: hintCount.current, mistakesCount: errorCheckCount.current });
@@ -407,60 +433,73 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
           progressUnit={session.progressUnit}
         />
 
-        {needsKeyboard && activeCell && !timer.isSolved && !isRevealed && (
-          <div className="flex items-center gap-2 mb-2">
-            <button
-              type="button"
-              className={cn(
-                "px-3 py-1.5 rounded-md text-xs font-semibold transition-colors touch-manipulation",
-                direction === "across" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
+        {/* Active clue + direction toggle — sticky on mobile, visible on all viewports */}
+        {activeCell && !timer.isSolved && !isRevealed && (
+          <div className="sticky top-0 z-10 -mx-2 px-2 py-2 bg-background/85 backdrop-blur-sm">
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setDirection("across")}
+                className={cn(
+                  "px-2.5 py-1 rounded-full text-xs font-medium transition-colors touch-manipulation",
+                  direction === "across" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
+                )}
+                aria-pressed={direction === "across"}
+              >
+                Across
+              </button>
+              <button
+                type="button"
+                onClick={() => setDirection("down")}
+                className={cn(
+                  "px-2.5 py-1 rounded-full text-xs font-medium transition-colors touch-manipulation",
+                  direction === "down" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
+                )}
+                aria-pressed={direction === "down"}
+              >
+                Down
+              </button>
+              {activeClue && (
+                <span className="rounded-full bg-secondary/40 px-3 py-1 text-sm leading-snug max-w-full truncate">
+                  <span className="font-semibold text-primary mr-1.5">
+                    {activeClue.number}{activeClue.direction === "across" ? "A" : "D"}
+                  </span>
+                  <span className="text-foreground">{activeClue.clue}</span>
+                </span>
               )}
-              onClick={() => setDirection("across")}
-            >
-              Across →
-            </button>
-            <button
-              type="button"
-              className={cn(
-                "px-3 py-1.5 rounded-md text-xs font-semibold transition-colors touch-manipulation",
-                direction === "down" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
-              )}
-              onClick={() => setDirection("down")}
-            >
-              Down ↓
-            </button>
+            </div>
           </div>
         )}
 
-        {needsKeyboard && activeClue && !timer.isSolved && !isRevealed && (
-          <div className="mb-2 rounded-lg border bg-card/95 px-3 py-2 text-sm leading-snug">
-            <span className="font-semibold text-primary mr-1.5">
-              {activeClue.number}{activeClue.direction === "across" ? "A" : "D"}
+        {/* Desktop keyboard hint chips — show on first load, hide after first keypress */}
+        {!needsKeyboard && hintsVisible && (
+          <div className="mb-2 flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground">
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-1.5 py-0.5">
+              <kbd className="font-mono">← →</kbd> Move
             </span>
-            <span className="text-foreground">{activeClue.clue}</span>
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-1.5 py-0.5">
+              <kbd className="font-mono">Tab</kbd> Next
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-1.5 py-0.5">
+              <kbd className="font-mono">Click</kbd> Toggle
+            </span>
           </div>
         )}
-
-        {!needsKeyboard && (
-          <p className="mb-2 text-xs text-muted-foreground">
-            Arrow keys to move • Tab for next word • Click cell to toggle direction
-          </p>
-        )}
-
-        <MobileLetterInput
-          ref={mobileInputRef}
-          active={needsKeyboard && !!activeCell && !timer.isSolved && !isRevealed}
-          onLetter={enterLetter}
-          onDelete={deleteLetter}
-        />
 
         <div className="max-w-full overflow-x-auto">
+          <MobileLetterInput
+            ref={mobileInputRef}
+            active={needsKeyboard && !!activeCell && !timer.isSolved && !isRevealed}
+            onLetter={enterLetter}
+            onDelete={deleteLetter}
+          />
         <div
           ref={containerRef}
           tabIndex={0}
           className="inline-grid border-2 border-puzzle-border outline-none"
           style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
           onKeyDown={handleKeyDown}
+          aria-label={activeCell ? `Row ${activeCell[0] + 1} Column ${activeCell[1] + 1}, ${direction === "across" ? "Across" : "Down"}` : "Crossword grid"}
         >
           {Array.from({ length: gridSize }, (_, r) =>
             Array.from({ length: gridSize }, (_, c) => {
@@ -469,17 +508,21 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
               const isActive = activeCell?.[0] === r && activeCell?.[1] === c;
               const isHighlighted = highlighted.has(`${r}-${c}`);
               const hasError = errors.has(`${r}-${c}`);
+              const isCorrect = correctCells.has(`${r}-${c}`);
 
               return (
                 <div
                   key={`${r}-${c}`}
                   className={cn(
-                    "relative w-7 h-7 sm:w-9 sm:h-9 md:w-11 md:h-11 lg:w-12 lg:h-12 border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
+                    "relative border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
+                    baseSize,
+                    isActive && "scroll-mt-24",
                     black && "bg-puzzle-cell-black",
                     !black && hasError && "bg-puzzle-cell-error",
                     !black && !hasError && isActive && "bg-puzzle-cell-active",
                     !black && !hasError && !isActive && isHighlighted && "bg-puzzle-cell-highlight",
-                    !black && !hasError && !isActive && !isHighlighted && "bg-puzzle-cell"
+                    !black && !hasError && !isActive && !isHighlighted && "bg-puzzle-cell",
+                    !black && isCorrect && !isActive && "opacity-85"
                   )}
                   onClick={() => handleCellClick(r, c)}
                 >
@@ -487,7 +530,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
                     <span className="absolute left-0.5 top-0 text-[7px] sm:text-[8px] md:text-[9px] font-medium text-puzzle-number leading-tight">{num}</span>
                   )}
                   {!black && (
-                    <span className="text-xs sm:text-sm md:text-lg lg:text-xl font-semibold text-foreground uppercase">{grid[r][c]}</span>
+                    <span className={cn("font-semibold text-foreground uppercase", gridSize >= 15 ? "text-xs" : "text-xs sm:text-sm md:text-lg lg:text-xl")}>{grid[r][c]}</span>
                   )}
                 </div>
               );
@@ -524,6 +567,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
               onHint={showHints ? handleHint : undefined}
               hintsRemaining={showHints && maxHints != null ? Math.max(0, maxHints - hintCount.current) : undefined}
               onCheck={handleCheck}
+              onErase={clearActiveCell}
               onReveal={showReveal ? handleReveal : undefined}
             />
             <PuzzleControls
