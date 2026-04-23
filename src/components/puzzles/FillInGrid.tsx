@@ -282,7 +282,11 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
   }, [activeCell, timer.isSolved, isRevealed]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (hintsVisible) setHintsVisible(false);
+    // One-shot hint-chip exit on first keystroke.
+    if (hintPhase === "visible") {
+      setHintPhase("exiting");
+      scheduleTimeout(() => setHintPhase("hidden"), 150);
+    }
     if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
 
