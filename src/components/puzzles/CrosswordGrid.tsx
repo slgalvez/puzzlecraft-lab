@@ -58,8 +58,25 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   const [direction, setDirection] = useState<"across" | "down">("across");
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const [isRevealed, setIsRevealed] = useState(false);
-  const [hintsVisible, setHintsVisible] = useState(true);
+  const [hintPhase, setHintPhase] = useState<"visible" | "exiting" | "hidden">("visible");
   const [correctCells, setCorrectCells] = useState<Set<string>>(new Set());
+  const [recentlyEntered, setRecentlyEntered] = useState<Set<string>>(new Set());
+  const [sweepCells, setSweepCells] = useState<Set<string>>(new Set());
+
+  // Track every pending setTimeout so animation flags cannot leak across unmounts.
+  const timeoutsRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+  const scheduleTimeout = useCallback((fn: () => void, ms: number) => {
+    const id = setTimeout(() => {
+      timeoutsRef.current.delete(id);
+      fn();
+    }, ms);
+    timeoutsRef.current.add(id);
+    return id;
+  }, []);
+  useEffect(() => () => {
+    timeoutsRef.current.forEach(clearTimeout);
+    timeoutsRef.current.clear();
+  }, []);
 
   // Derived: responsive cell base size — keeps large grids dense, small grids tappable
   const baseSize = gridSize >= 15 ? "w-[26px] h-[26px]" : "w-8 h-8 sm:w-9 sm:h-9 md:w-11 md:h-11 lg:w-12 lg:h-12";
@@ -230,14 +247,30 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   const enterLetter = useCallback((letter: string) => {
     if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
+    const key = `${r}-${c}`;
     setGrid((prev) => {
       const next = prev.map((row) => [...row]);
       next[r][c] = letter.toUpperCase();
       return next;
     });
     setErrors(new Set());
+    // Entry pop — transient, single-shot, cleared after the animation duration.
+    setRecentlyEntered((prev) => {
+      if (prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+    scheduleTimeout(() => {
+      setRecentlyEntered((prev) => {
+        if (!prev.has(key)) return prev;
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }, 130);
     moveToNext(r, c);
-  }, [activeCell, timer.isSolved, isRevealed, moveToNext]);
+  }, [activeCell, timer.isSolved, isRevealed, moveToNext, scheduleTimeout]);
 
   const deleteLetter = useCallback(() => {
     if (!activeCell || timer.isSolved || isRevealed) return;
@@ -271,7 +304,11 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
   }, [activeCell, timer.isSolved, isRevealed]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (hintsVisible) setHintsVisible(false);
+    // One-shot hint-chip exit: only triggers on the first keypress in "visible" phase.
+    if (hintPhase === "visible") {
+      setHintPhase("exiting");
+      scheduleTimeout(() => setHintPhase("hidden"), 150);
+    }
     if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
     switch (e.key) {
@@ -310,7 +347,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
         if (/^[A-Z]$/.test(letter)) { e.preventDefault(); enterLetter(letter); }
       }
     }
-  }, [activeCell, direction, timer.isSolved, isRevealed, grid, gridSize, blacks, clues, enterLetter, deleteLetter]);
+  }, [activeCell, direction, timer.isSolved, isRevealed, grid, gridSize, blacks, clues, enterLetter, deleteLetter, hintPhase, scheduleTimeout]);
 
   const handleCellClick = (r: number, c: number) => {
     if (isBlack(r, c)) return;
@@ -352,8 +389,33 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
         else if (solutionGrid[r][c] && grid[r][c] === solutionGrid[r][c]) correct.add(`${r}-${c}`);
       }
     }
+
+    // Check-gated sweep: cells that belong to a newly fully-correct word and weren't already in correctCells.
+    const sweep = new Set<string>();
+    for (const clue of clues) {
+      const dr = clue.direction === "down" ? 1 : 0;
+      const dc = clue.direction === "across" ? 1 : 0;
+      let allCorrect = true;
+      const wordKeys: string[] = [];
+      for (let i = 0; i < clue.answer.length; i++) {
+        const wr = clue.row + dr * i;
+        const wc = clue.col + dc * i;
+        const k = `${wr}-${wc}`;
+        wordKeys.push(k);
+        if (!correct.has(k)) { allCorrect = false; break; }
+      }
+      if (allCorrect && wordKeys.some((k) => !correctCells.has(k))) {
+        wordKeys.forEach((k) => sweep.add(k));
+      }
+    }
+
     setErrors(errs);
     setCorrectCells(correct);
+    if (sweep.size > 0) {
+      setSweepCells(sweep);
+      haptic(15);
+      scheduleTimeout(() => setSweepCells(new Set()), 240);
+    }
     if (errs.size > 0) { errorCheckCount.current++; session.recordMistake(); }
     if (errs.size === 0 && filled) {
       const { isNewBest } = timer.solve({ assisted: hintCount.current > 0, hintsUsed: hintCount.current, mistakesCount: errorCheckCount.current });
@@ -460,7 +522,10 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
                 Down
               </button>
               {activeClue && (
-                <span className="rounded-full bg-secondary/40 px-3 py-1 text-sm leading-snug max-w-full truncate">
+                <span
+                  key={`${activeClue.number}-${activeClue.direction}`}
+                  className="rounded-full bg-secondary/40 px-3 py-1 text-sm leading-snug max-w-full truncate animate-[clue-fade_120ms_ease-out]"
+                >
                   <span className="font-semibold text-primary mr-1.5">
                     {activeClue.number}{activeClue.direction === "across" ? "A" : "D"}
                   </span>
@@ -471,9 +536,14 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
           </div>
         )}
 
-        {/* Desktop keyboard hint chips — show on first load, hide after first keypress */}
-        {!needsKeyboard && hintsVisible && (
-          <div className="mb-2 flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground">
+        {/* Desktop keyboard hint chips — fade up + out on first keypress, then unmount. */}
+        {!needsKeyboard && hintPhase !== "hidden" && (
+          <div
+            className={cn(
+              "mb-2 flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground",
+              hintPhase === "exiting" && "animate-[chip-exit_150ms_ease-out_forwards] pointer-events-none"
+            )}
+          >
             <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-1.5 py-0.5">
               <kbd className="font-mono">← →</kbd> Move
             </span>
@@ -507,22 +577,35 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
               const num = getCellNumber(r, c);
               const isActive = activeCell?.[0] === r && activeCell?.[1] === c;
               const isHighlighted = highlighted.has(`${r}-${c}`);
-              const hasError = errors.has(`${r}-${c}`);
-              const isCorrect = correctCells.has(`${r}-${c}`);
+              const cellKey = `${r}-${c}`;
+              const hasError = errors.has(cellKey);
+              const isCorrect = correctCells.has(cellKey);
+              // Single transform animation per cell — priority: shake > entry pop.
+              const transformAnim = !black && hasError
+                ? "animate-[cell-shake-soft_180ms_ease-out]"
+                : !black && recentlyEntered.has(cellKey)
+                  ? "animate-[cell-enter_110ms_ease-out]"
+                  : "";
+              // Sweep is background-only; safe to combine with transform anim.
+              const sweepAnim = !black && sweepCells.has(cellKey)
+                ? "animate-[cell-sweep_220ms_ease-out]"
+                : "";
 
               return (
                 <div
-                  key={`${r}-${c}`}
+                  key={cellKey}
                   className={cn(
-                    "relative border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
+                    "puzzle-cell relative border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
                     baseSize,
-                    isActive && "scroll-mt-24",
+                    isActive && "scroll-mt-24 outline outline-2 -outline-offset-2 outline-primary/25",
                     black && "bg-puzzle-cell-black",
                     !black && hasError && "bg-puzzle-cell-error",
                     !black && !hasError && isActive && "bg-puzzle-cell-active",
                     !black && !hasError && !isActive && isHighlighted && "bg-puzzle-cell-highlight",
                     !black && !hasError && !isActive && !isHighlighted && "bg-puzzle-cell",
-                    !black && isCorrect && !isActive && "opacity-85"
+                    !black && isCorrect && !isActive && "opacity-85",
+                    transformAnim,
+                    sweepAnim
                   )}
                   onClick={() => handleCellClick(r, c)}
                 >
