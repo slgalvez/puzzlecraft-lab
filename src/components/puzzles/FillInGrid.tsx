@@ -213,12 +213,28 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
   const enterChar = useCallback((char: string) => {
     if (!activeCell || timer.isSolved || isRevealed) return;
     const [r, c] = activeCell;
+    const key = `${r}-${c}`;
     setGrid((prev) => {
       const next = prev.map((row) => [...row]);
       next[r][c] = char;
       return next;
     });
     setErrors(new Set());
+    // Entry pop — transient, single-shot.
+    setRecentlyEntered((prev) => {
+      if (prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+    scheduleTimeout(() => {
+      setRecentlyEntered((prev) => {
+        if (!prev.has(key)) return prev;
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }, 130);
     const slot = getActiveSlot(r, c, direction);
     if (slot) {
       const idx = slot.cells.findIndex(([cr, cc]) => cr === r && cc === c);
@@ -226,7 +242,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
         setActiveCell(slot.cells[idx + 1]);
       }
     }
-  }, [activeCell, timer.isSolved, isRevealed, direction, getActiveSlot]);
+  }, [activeCell, timer.isSolved, isRevealed, direction, getActiveSlot, scheduleTimeout]);
 
   const deleteChar = useCallback(() => {
     if (!activeCell || timer.isSolved || isRevealed) return;
