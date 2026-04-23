@@ -578,7 +578,10 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
                   Down
                 </button>
                 {slotLen > 0 && (
-                  <span className="rounded-full bg-secondary/40 px-3 py-1 text-sm">
+                  <span
+                    key={`${activeCell[0]}-${activeCell[1]}-${direction}`}
+                    className="rounded-full bg-secondary/40 px-3 py-1 text-sm animate-[clue-fade_120ms_ease-out]"
+                  >
                     <span className="font-semibold text-primary mr-1.5">{slotLen}</span>
                     <span className="text-foreground">{isNumbers ? "digits" : "letters"} {direction}</span>
                   </span>
@@ -643,23 +646,35 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
             Array.from({ length: gridSize }, (_, c) => {
               const black = isBlack(r, c);
               const isActive = activeCell?.[0] === r && activeCell?.[1] === c;
-              const isInActiveEntry = activeEntryCells.has(`${r}-${c}`);
-              const hasError = errors.has(`${r}-${c}`);
-              const isCorrect = correctCells.has(`${r}-${c}`);
+              const cellKey = `${r}-${c}`;
+              const isInActiveEntry = activeEntryCells.has(cellKey);
+              const hasError = errors.has(cellKey);
+              const isCorrect = correctCells.has(cellKey);
+              // Single transform animation per cell — priority: shake > entry pop.
+              const transformAnim = !black && hasError
+                ? "animate-[cell-shake-soft_180ms_ease-out]"
+                : !black && recentlyEntered.has(cellKey)
+                  ? "animate-[cell-enter_110ms_ease-out]"
+                  : "";
+              const sweepAnim = !black && sweepCells.has(cellKey)
+                ? "animate-[cell-sweep_220ms_ease-out]"
+                : "";
 
               return (
                 <div
-                  key={`${r}-${c}`}
+                  key={cellKey}
                   className={cn(
-                    "relative border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
+                    "puzzle-cell relative border border-puzzle-border flex items-center justify-center cursor-pointer select-none touch-manipulation active:animate-cell-pop",
                     baseSize,
-                    isActive && "scroll-mt-24",
+                    isActive && "scroll-mt-24 outline outline-2 -outline-offset-2 outline-primary/25",
                     black && "bg-puzzle-cell-black",
                     !black && hasError && "bg-puzzle-cell-error",
                     !black && !hasError && isActive && "bg-puzzle-cell-active",
                     !black && !hasError && !isActive && isInActiveEntry && "bg-puzzle-cell-highlight",
                     !black && !hasError && !isActive && !isInActiveEntry && "bg-puzzle-cell",
-                    !black && isCorrect && !isActive && "opacity-85"
+                    !black && isCorrect && !isActive && "opacity-85",
+                    transformAnim,
+                    sweepAnim
                   )}
                   onClick={() => handleCellClick(r, c)}
                 >
