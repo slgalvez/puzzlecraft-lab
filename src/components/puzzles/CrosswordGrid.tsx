@@ -567,6 +567,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
               onHint={showHints ? handleHint : undefined}
               hintsRemaining={showHints && maxHints != null ? Math.max(0, maxHints - hintCount.current) : undefined}
               onCheck={handleCheck}
+              onErase={clearActiveCell}
               onReveal={showReveal ? handleReveal : undefined}
             />
             <PuzzleControls
