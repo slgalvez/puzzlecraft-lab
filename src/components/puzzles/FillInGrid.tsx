@@ -333,7 +333,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
         if (char) { e.preventDefault(); enterChar(char); }
       }
     }
-  }, [activeCell, timer.isSolved, isRevealed, gridSize, isNumbers, enterChar, deleteChar, isBlack, direction, getActiveSlot, entrySlots]);
+  }, [activeCell, timer.isSolved, isRevealed, gridSize, isNumbers, enterChar, deleteChar, isBlack, direction, getActiveSlot, entrySlots, hintPhase, scheduleTimeout]);
 
   const handleCellClick = (r: number, c: number) => {
     if (isBlack(r, c)) return;
@@ -398,6 +398,15 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
       }
     }
 
+    // Helper: track which slots transitioned to fully-correct on this Check.
+    const newlyCorrectSlots: EntrySlot[] = [];
+    const recordSweep = (slot: EntrySlot) => {
+      // Only sweep if at least one cell wasn't already in correctCells.
+      if (slot.cells.some(([r, c]) => !correctCells.has(`${r}-${c}`))) {
+        newlyCorrectSlots.push(slot);
+      }
+    };
+
     if (filled) {
       const slotWords = entrySlots.map((slot) =>
         slot.cells.map(([r, c]) => grid[r][c]).join("")
@@ -421,7 +430,10 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
         }
       }
 
-      for (const slot of goodSlots) for (const [r, c] of slot.cells) correct.add(`${r}-${c}`);
+      for (const slot of goodSlots) {
+        for (const [r, c] of slot.cells) correct.add(`${r}-${c}`);
+        recordSweep(slot);
+      }
       setCorrectCells(correct);
 
       if (badSlots.length === 0) {
@@ -445,6 +457,7 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
           for (const [r, c] of slot.cells) errs.add(`${r}-${c}`);
         } else if (allFilled && entries.includes(word)) {
           for (const [r, c] of slot.cells) correct.add(`${r}-${c}`);
+          recordSweep(slot);
         }
       }
       setErrors(errs);
