@@ -66,6 +66,11 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
   );
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const [isRevealed, setIsRevealed] = useState(false);
+  const [hintsVisible, setHintsVisible] = useState(true);
+  const [correctCells, setCorrectCells] = useState<Set<string>>(new Set());
+
+  // Derived: responsive cell base size — keeps large grids dense, small grids tappable
+  const baseSize = gridSize >= 15 ? "w-[26px] h-[26px]" : "w-8 h-8 sm:w-9 sm:h-9 md:w-11 md:h-11 lg:w-12 lg:h-12";
   const containerRef = useRef<HTMLDivElement>(null);
   const mobileInputRef = useRef<MobileLetterInputHandle>(null);
   const resetCount = useRef(0);
