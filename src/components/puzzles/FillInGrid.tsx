@@ -470,6 +470,17 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
         toast({ title: "Keep going!", description: "No errors so far." });
       }
     }
+
+    // Check-gated sweep — collect cells from any newly fully-correct slot.
+    if (newlyCorrectSlots.length > 0) {
+      const sweep = new Set<string>();
+      for (const slot of newlyCorrectSlots) {
+        for (const [r, c] of slot.cells) sweep.add(`${r}-${c}`);
+      }
+      setSweepCells(sweep);
+      haptic(15);
+      scheduleTimeout(() => setSweepCells(new Set()), 240);
+    }
   };
 
   const handleHint = () => {
@@ -577,9 +588,14 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
           );
         })()}
 
-        {/* Desktop keyboard hint chips — show on first load, hide after first keypress */}
-        {!needsKeyboard && hintsVisible && (
-          <div className="mb-2 flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground">
+        {/* Desktop keyboard hint chips — fade up + out on first keypress, then unmount. */}
+        {!needsKeyboard && hintPhase !== "hidden" && (
+          <div
+            className={cn(
+              "mb-2 flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground",
+              hintPhase === "exiting" && "animate-[chip-exit_150ms_ease-out_forwards] pointer-events-none"
+            )}
+          >
             <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-1.5 py-0.5">
               <kbd className="font-mono">← →</kbd> Move
             </span>
