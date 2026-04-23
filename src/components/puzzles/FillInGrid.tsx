@@ -66,8 +66,25 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
   );
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const [isRevealed, setIsRevealed] = useState(false);
-  const [hintsVisible, setHintsVisible] = useState(true);
+  const [hintPhase, setHintPhase] = useState<"visible" | "exiting" | "hidden">("visible");
   const [correctCells, setCorrectCells] = useState<Set<string>>(new Set());
+  const [recentlyEntered, setRecentlyEntered] = useState<Set<string>>(new Set());
+  const [sweepCells, setSweepCells] = useState<Set<string>>(new Set());
+
+  // Track every pending setTimeout so animation flags cannot leak across unmounts.
+  const timeoutsRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+  const scheduleTimeout = useCallback((fn: () => void, ms: number) => {
+    const id = setTimeout(() => {
+      timeoutsRef.current.delete(id);
+      fn();
+    }, ms);
+    timeoutsRef.current.add(id);
+    return id;
+  }, []);
+  useEffect(() => () => {
+    timeoutsRef.current.forEach(clearTimeout);
+    timeoutsRef.current.clear();
+  }, []);
 
   // Derived: responsive cell base size — keeps large grids dense, small grids tappable
   const baseSize = gridSize >= 15 ? "w-[26px] h-[26px]" : "w-8 h-8 sm:w-9 sm:h-9 md:w-11 md:h-11 lg:w-12 lg:h-12";
