@@ -612,7 +612,8 @@ const FillInGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, isE
               visible={needsKeyboard && !!activeCell && !timer.isSolved && !isRevealed}
               onNumber={(n) => enterChar(n.toString())}
               onDelete={deleteChar}
-          />
+            />
+          </div>
         )}
 
         {/* Entry list — mobile: inline before controls */}
