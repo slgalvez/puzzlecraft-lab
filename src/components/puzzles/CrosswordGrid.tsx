@@ -347,7 +347,7 @@ const CrosswordGrid = ({ puzzle, showControls, onNewPuzzle, onSolve, timeLimit, 
         if (/^[A-Z]$/.test(letter)) { e.preventDefault(); enterLetter(letter); }
       }
     }
-  }, [activeCell, direction, timer.isSolved, isRevealed, grid, gridSize, blacks, clues, enterLetter, deleteLetter]);
+  }, [activeCell, direction, timer.isSolved, isRevealed, grid, gridSize, blacks, clues, enterLetter, deleteLetter, hintPhase, scheduleTimeout]);
 
   const handleCellClick = (r: number, c: number) => {
     if (isBlack(r, c)) return;
