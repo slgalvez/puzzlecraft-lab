@@ -1,58 +1,121 @@
 
 
-# Crossword + Fill-In UX Polish (Safe Tier)
+# Crossword + Fill-In Micro-Interactions (Restrained, Hardened)
 
-UI clarity and accessibility improvements only — no changes to solving logic, scoring, validation, or puzzle behavior.
+Subtle feel-only polish with strict safety constraints. No logic, scoring, or validation changes. Transforms never stack; sweep is background-only and check-gated; timeouts cleaned on unmount; hint-chip exit is one-shot.
 
 ## Files
 
-- `src/components/puzzles/CrosswordGrid.tsx`
-- `src/components/puzzles/FillInGrid.tsx`
-- `src/components/puzzles/PuzzleToolbar.tsx`
+- `src/index.css` — keyframes + utility animations
+- `src/components/puzzles/CrosswordGrid.tsx` — wire effects + cleanup
+- `src/components/puzzles/FillInGrid.tsx` — wire effects + cleanup
 
-## Changes
+## CSS additions (`src/index.css`)
 
-### 1. Active clue bar — all devices
-Lift the active-clue chip out of the `needsKeyboard` mobile gate in both grids. Render above the grid on every viewport as a `rounded-full bg-secondary/40 text-sm px-3 py-1` pill containing the clue number, direction, and text.
+Append next to existing `cell-pop`:
 
-### 2. Direction toggle (Across / Down)
-Render two small pill buttons next to the clue chip on all viewports. Active button gets `bg-primary/10 text-primary` (subtle, no heavy fill); inactive gets `text-muted-foreground hover:text-foreground`. Click flips `direction` state — reuses the existing toggle handler. Keyboard shortcuts (Tab, click-to-flip) untouched.
+- `cell-enter` — `transform: scale(1.06) → 1` over 110ms ease-out.
+- `cell-shake-soft` — `translateX 0 → -2px → 2px → 0` over 180ms.
+- `cell-sweep` — `background-color: hsl(var(--primary) / 0.10) → transparent` over 220ms. **Background only — no transform.**
+- `clue-fade` — `opacity 0 → 1, translateY 2px → 0` over 120ms.
+- `chip-exit` — `opacity 1 → 0, translateY 0 → -6px` over 150ms forwards.
 
-### 3. Desktop keyboard hint chips
-Replace the dense one-line "Arrow keys to move • Tab for next word • Click cell to toggle direction" hint with three small kbd-styled chips: `← → Move`, `Tab Next`, `Click Toggle`. Component-local `useState` `hintsVisible` starts `true`, flips to `false` on first `keydown`. Desktop only (hidden when `needsKeyboard` is true). No persistence.
+Extend `.puzzle-cell` with `transition: background-color 120ms ease, transform 100ms ease;`.
 
-### 4. Sticky mobile clue bar
-Wrap the active-clue + direction-toggle row in a `sticky top-0 z-10 bg-background/85 backdrop-blur-sm` container so it overlays the grid as the player scrolls. Applies on all viewports — innocuous on desktop where there's no scroll.
+## Conflict resolution (per cell)
 
-### 5. Mobile input stability
-- **Crossword**: Move `<MobileLetterInput />` from the page-level wrapper into the grid container. Add `scroll-mt-24` to the active cell's `<div>` so iOS doesn't scroll the grid out of view when the keyboard mounts.
-- **Fill-in (numbers)**: Wrap `<MobileNumberPad />` in `<div className="sticky bottom-[env(safe-area-inset-bottom)] z-10 bg-background/95 backdrop-blur-sm pt-2 pb-1">`.
-- **Both**: Add `aria-label={\`Row ${activeRow + 1} Column ${activeCol + 1}, ${direction === "across" ? "Across" : "Down"}\`}` to the hidden input element.
-
-### 6. Cell size responsiveness
-Derive a single base-size class from the grid dimension and apply to every cell in both grids:
+Single transform animation chosen by priority:
 ```ts
-const baseSize = gridSize >= 15 ? "w-[26px] h-[26px]" : "w-8 h-8 sm:w-9 sm:h-9";
+const transformAnim =
+  hasError        ? "animate-[cell-shake-soft_180ms_ease-out]" :
+  recentlyEntered ? "animate-[cell-enter_110ms_ease-out]"      :
+  "";
+const bgAnim = sweepCells.has(key) ? "animate-[cell-sweep_220ms_ease-out]" : "";
 ```
-Replace the existing hard-coded `w-7 sm:w-9 md:w-11 lg:w-12` cell sizing.
 
-### 7. Solved-word visual feedback
-After a successful Check (or when all crossings of a word are confirmed correct via existing per-cell `correct` state), apply `opacity-85` to the cells of that word while keeping the `font-semibold` letter weight. Pure visual — no logic change. Computed inline by checking each cell's existing `correct` flag against the word's slot membership.
+Press uses CSS `:active` only (`active:scale-[0.97]`) — pseudo-class, no animation conflict.
 
-### 8. Toolbar — add Erase
-Add an optional `onErase?: () => void` action wired into `PuzzleToolbar` between Check and Reveal (already supported in the toolbar's action ordering). In both grids, pass `onErase={() => clearActiveCell()}` reusing the existing single-cell clear path. Final toolbar order: `Hint · Check · Erase · Reveal`. **No "Next" button.**
+## Transient state + timeout discipline
+
+Two `Set<string>` states per grid: `recentlyEntered`, `sweepCells`.
+
+A single `useRef<Set<number>>(new Set())` per grid tracks every active `setTimeout` ID. Every scheduling call (`setTimeout(...)`) immediately registers its ID; the callback removes itself before mutating state. On unmount:
+
+```ts
+useEffect(() => () => {
+  timeoutsRef.current.forEach(clearTimeout);
+  timeoutsRef.current.clear();
+}, []);
+```
+
+Guarantees no orphaned animation flags survive a puzzle change, route swap, or component remount.
+
+## Sweep is Check-gated only
+
+`sweepCells` is populated **exclusively inside `handleCheck`** when a word's cells transition to fully-correct. It is **never** populated by `enterLetter`/`enterChar` or by passive crossing-derived correctness during typing. The existing per-cell `correct` flag continues to drive the static `opacity-85` dim independently — that's pure CSS, no animation.
+
+This preserves the "Check is the reward moment" feel and prevents accidental flashes mid-solve.
+
+## Hint chip exit (one-shot, no retrigger)
+
+State machine in component:
+```ts
+type HintPhase = "visible" | "exiting" | "hidden";
+const [hintPhase, setHintPhase] = useState<HintPhase>("visible");
+```
+
+On first `keydown` (only when `hintPhase === "visible"`):
+1. Set `hintPhase = "exiting"`.
+2. Schedule `setTimeout(() => setHintPhase("hidden"), 150)` (registered in `timeoutsRef`).
+
+Subsequent keystrokes during the 150ms window: handler short-circuits because `hintPhase !== "visible"`. The exit animation runs once; the chips unmount cleanly when `"hidden"`. No restart, no class re-application.
+
+Render:
+```tsx
+{hintPhase !== "hidden" && (
+  <div className={hintPhase === "exiting" ? "animate-[chip-exit_150ms_ease-out_forwards]" : ""}>
+    {/* three kbd chips */}
+  </div>
+)}
+```
+
+## Active clue fade
+
+Wrap clue text in `<span key={`${activeClue.number}-${activeClue.direction}`} className="inline-block animate-[clue-fade_120ms_ease-out]">…</span>`. React remount triggers fade; no layout reflow.
+
+## Active-cell ring
+
+Add to active cell classes: `outline outline-2 -outline-offset-2 outline-primary/25`. Outline avoids layout shift and doesn't conflict with transforms.
+
+## Haptics (minimal)
+
+Reuse `src/lib/haptic.ts`:
+- **Word completion only**: `haptic(15)` inside `handleCheck` when `sweepCells` becomes non-empty.
+- **No per-letter haptic.** Skipped to keep typing crisp on lower-end Android.
+
+## Performance guardrails
+
+- All animations CSS-only, ≤ 220ms, transform/opacity/background-color.
+- No `setInterval`, no rAF loops.
+- Timeout IDs tracked in a ref Set; cleared on unmount.
+- Per-cell entry timeout: if a new entry happens on the same cell mid-pop, the existing timeout finishes naturally and clears its own flag — no duplicate scheduling because the set membership is idempotent.
 
 ## Untouched
-- All solving logic, autosave, completion sheet, scoring, hints/reveal counts.
+
+- Solving logic, scoring, validation, autosave, completion sheet, toolbar, ARIA labels, sticky clue bar, cell sizing, Erase action.
 - Sudoku, word-search, kakuro, nonogram, cryptogram grids.
-- `PuzzleHeader`, `PuzzleControls`, `GroupedEntryList`, `PuzzleSession`.
+- `PuzzleHeader`, `GroupedEntryList`, `PuzzleSession`.
 
 ## Verification
-1. Desktop crossword (1280px): active-clue pill + Across/Down toggle visible above grid; three keyboard hint chips show on load and disappear after first keypress.
-2. Mobile crossword (375px): clue bar stays sticky while scrolling the grid; tapping a cell focuses input without scrolling the active row out of view.
-3. Mobile fill-in (numbers): number pad stays docked above the safe-area inset; doesn't overlap toolbar.
-4. 15×15 crossword on 360px: cells render at 26px, no horizontal scroll. 7×7 fill-in: cells stay at 32–36px for comfortable taps.
-5. After Check on a fully-correct word: that word's cells dim to 85% opacity, letters stay bold.
-6. Toolbar shows `Hint · Check · Erase · Reveal`. Erase clears only the active cell.
-7. VoiceOver on iOS announces "Row 3 Column 5, Across" on the hidden input.
+
+1. Type a letter → cell pops to 1.06× then settles. No haptic. No sweep.
+2. Type rapidly → no jitter, no stacked transforms, typing latency unchanged.
+3. Press Check on wrong cells → shake fires; entry pop suppressed on those cells (priority resolved).
+4. Press Check on a fully-correct word → cells flash `bg-primary/10` → transparent over 220ms; one light haptic; static `opacity-85` remains after.
+5. Solve a word passively via crossings (no Check pressed) → no sweep, no haptic. Static dim still applies once `correct` flag flips after next Check.
+6. First keystroke on desktop → hint chips exit over 150ms. Mash keys during the exit → animation does not restart; chips unmount cleanly at 150ms.
+7. Switch puzzle / navigate away mid-animation → no console warnings about state updates after unmount; all pending timeouts cleared.
+8. Switch active clue → text fades in over 120ms; no layout jump.
+9. Cursor movement → smooth 120ms background transition.
+10. Active cell shows subtle inner outline ring (primary @ 25% opacity).
 
