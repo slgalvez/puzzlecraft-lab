@@ -43,7 +43,7 @@ const BENEFIT_SECTIONS = [
   {
     title: "Unlock Gameplay",
     icon: Zap,
-    items: ["Extreme & Insane modes", "Access weekly puzzle packs"],
+    items: ["Extreme & Insane modes", "Unlimited craft puzzles"],
   },
   {
     title: "Compete",
