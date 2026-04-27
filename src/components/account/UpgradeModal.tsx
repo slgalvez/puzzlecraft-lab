@@ -35,7 +35,7 @@ const TRIGGER_COPY: Record<UpgradeTrigger, { headline: string; sub: string }> = 
   "craft-limit":   { headline: "You've hit your craft limit", sub: "Upgrade to send unlimited craft puzzles every month." },
   stats:           { headline: "See your full stats",         sub: "Rating, tier tracking, and deep analytics are Puzzlecraft+ features." },
   "streak-shield": { headline: "Protect your streak",        sub: "Streak shields let you skip a day without losing progress." },
-  "weekly-pack":   { headline: "Weekly packs await",          sub: "Curated themed packs are exclusive to Puzzlecraft+ members." },
+  "weekly-pack":   { headline: "Unlock Puzzlecraft+",         sub: "Get the full premium experience." },
   generic:         { headline: "Puzzlecraft+",                sub: "Create puzzles. Compete. Improve." },
 };
 
