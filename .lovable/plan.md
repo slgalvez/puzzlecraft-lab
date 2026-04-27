@@ -1,121 +1,73 @@
+# Hide Weekly Packs (Visibility Pass)
 
+Hide every user-facing surface that mentions or links to Weekly Packs. Keep routes, components, generators, DB, and pack logic fully intact for future re-enable.
 
-# Crossword + Fill-In Micro-Interactions (Restrained, Hardened)
+## Strategy
 
-Subtle feel-only polish with strict safety constraints. No logic, scoring, or validation changes. Transforms never stack; sweep is background-only and check-gated; timeouts cleaned on unmount; hint-chip exit is one-shot.
+Add a single feature flag and gate all user-facing entry points behind it. No deletions. After applying, sweep the codebase for any remaining user-facing copy.
 
-## Files
+## Files & Changes
 
-- `src/index.css` — keyframes + utility animations
-- `src/components/puzzles/CrosswordGrid.tsx` — wire effects + cleanup
-- `src/components/puzzles/FillInGrid.tsx` — wire effects + cleanup
-
-## CSS additions (`src/index.css`)
-
-Append next to existing `cell-pop`:
-
-- `cell-enter` — `transform: scale(1.06) → 1` over 110ms ease-out.
-- `cell-shake-soft` — `translateX 0 → -2px → 2px → 0` over 180ms.
-- `cell-sweep` — `background-color: hsl(var(--primary) / 0.10) → transparent` over 220ms. **Background only — no transform.**
-- `clue-fade` — `opacity 0 → 1, translateY 2px → 0` over 120ms.
-- `chip-exit` — `opacity 1 → 0, translateY 0 → -6px` over 150ms forwards.
-
-Extend `.puzzle-cell` with `transition: background-color 120ms ease, transform 100ms ease;`.
-
-## Conflict resolution (per cell)
-
-Single transform animation chosen by priority:
-```ts
-const transformAnim =
-  hasError        ? "animate-[cell-shake-soft_180ms_ease-out]" :
-  recentlyEntered ? "animate-[cell-enter_110ms_ease-out]"      :
-  "";
-const bgAnim = sweepCells.has(key) ? "animate-[cell-sweep_220ms_ease-out]" : "";
-```
-
-Press uses CSS `:active` only (`active:scale-[0.97]`) — pseudo-class, no animation conflict.
-
-## Transient state + timeout discipline
-
-Two `Set<string>` states per grid: `recentlyEntered`, `sweepCells`.
-
-A single `useRef<Set<number>>(new Set())` per grid tracks every active `setTimeout` ID. Every scheduling call (`setTimeout(...)`) immediately registers its ID; the callback removes itself before mutating state. On unmount:
+### 1. New flag — `src/lib/featureFlags.ts` (new file)
 
 ```ts
-useEffect(() => () => {
-  timeoutsRef.current.forEach(clearTimeout);
-  timeoutsRef.current.clear();
-}, []);
+// Master switch for hiding Weekly Packs from all user-facing UI.
+// Internals (routes, generators, DB, admin tooling) stay functional.
+export const WEEKLY_PACKS_VISIBLE = false;
 ```
 
-Guarantees no orphaned animation flags survive a puzzle change, route swap, or component remount.
+### 2. `src/components/puzzles/WeeklyPackSection.tsx`
 
-## Sweep is Check-gated only
+At top of `WeeklyPackSection`, return `null` when `!WEEKLY_PACKS_VISIBLE`. Removes the card from:
+- Home page (`Index.tsx` returning-user compact slot)
+- Puzzle Library page (`PuzzleLibrary.tsx`)
 
-`sweepCells` is populated **exclusively inside `handleCheck`** when a word's cells transition to fully-correct. It is **never** populated by `enterLetter`/`enterChar` or by passive crossing-derived correctness during typing. The existing per-cell `correct` flag continues to drive the static `opacity-85` dim independently — that's pure CSS, no animation.
+### 3. `src/components/ios/IOSPlayTab.tsx` (around lines 350-351)
 
-This preserves the "Check is the reward moment" feel and prevents accidental flashes mid-solve.
+Wrap `<WeeklyPackCard />` render in `{WEEKLY_PACKS_VISIBLE && (...)}`. Removes the iOS Play tab entry.
 
-## Hint chip exit (one-shot, no retrigger)
+### 4. `src/pages/Index.tsx` Puzzlecraft+ marketing copy
 
-State machine in component:
-```ts
-type HintPhase = "visible" | "exiting" | "hidden";
-const [hintPhase, setHintPhase] = useState<HintPhase>("visible");
-```
+- Line 694: drop "and early weekly pack access" → end sentence at "Streak Shield."
+- Line 703: remove the `"Weekly pack early access"` chip from the features array.
 
-On first `keydown` (only when `hintPhase === "visible"`):
-1. Set `hintPhase = "exiting"`.
-2. Schedule `setTimeout(() => setHintPhase("hidden"), 150)` (registered in `timeoutsRef`).
+### 5. `src/components/account/UpgradeModal.tsx`
 
-Subsequent keystrokes during the 150ms window: handler short-circuits because `hintPhase !== "visible"`. The exit animation runs once; the chips unmount cleanly when `"hidden"`. No restart, no class re-application.
+Reason key `"weekly-pack"` is now unreachable (no entry point triggers it). Update the reason copy to a neutral premium pitch so any stray future trigger does not surface weekly-pack language:
+- `headline` → `"Unlock Puzzlecraft+"`
+- `sub` → `"Get the full premium experience."`
+Keep the type key intact to avoid breaking imports.
 
-Render:
-```tsx
-{hintPhase !== "hidden" && (
-  <div className={hintPhase === "exiting" ? "animate-[chip-exit_150ms_ease-out_forwards]" : ""}>
-    {/* three kbd chips */}
-  </div>
-)}
-```
+### 6. Verification sweep (post-edit)
 
-## Active clue fade
+Run a full ripgrep for user-facing strings and confirm only admin/internal hits remain:
+- `"Weekly Pack"`, `"Weekly Packs"`, `"weekly pack"`, `"pack access"`, `"weekly puzzle"`, `"pack streak"`, `"pack progress"`, `"pack preview"`
 
-Wrap clue text in `<span key={`${activeClue.number}-${activeClue.direction}`} className="inline-block animate-[clue-fade_120ms_ease-out]">…</span>`. React remount triggers fade; no layout reflow.
+Expected remaining (allowed) hits:
+- `src/lib/weeklyPacks.ts`, `src/lib/packOverrides.ts`, `src/lib/weeklyThemeWordBanks.ts` — internal logic
+- `src/components/ios/WeeklyPackCard.tsx` — component file (now unmounted)
+- `src/components/puzzles/WeeklyPackSection.tsx` — gated wrapper
+- `src/pages/AdminPreview.tsx`, `src/pages/AdminHomepagePreview.tsx` — admin-only tooling
+- `src/pages/QuickPlay.tsx` — `?pack=` URL handling (deep-link only, no UI copy)
+- Code comments (e.g. `CryptogramPuzzle.tsx` line 29) — non-rendered
 
-## Active-cell ring
+Any other user-facing string surfaced by the sweep gets hidden or rephrased in the same pass.
 
-Add to active cell classes: `outline outline-2 -outline-offset-2 outline-primary/25`. Outline avoids layout shift and doesn't conflict with transforms.
+### 7. Leave untouched
 
-## Haptics (minimal)
+- All pack generation, override, and word-bank logic
+- `WeeklyPackCard.tsx` component (unrendered for users)
+- `QuickPlay.tsx` `?pack=` deep-link support
+- Admin preview pages
+- Database / Supabase / config
 
-Reuse `src/lib/haptic.ts`:
-- **Word completion only**: `haptic(15)` inside `handleCheck` when `sweepCells` becomes non-empty.
-- **No per-letter haptic.** Skipped to keep typing crisp on lower-end Android.
+## Verification Checklist
 
-## Performance guardrails
-
-- All animations CSS-only, ≤ 220ms, transform/opacity/background-color.
-- No `setInterval`, no rAF loops.
-- Timeout IDs tracked in a ref Set; cleared on unmount.
-- Per-cell entry timeout: if a new entry happens on the same cell mid-pop, the existing timeout finishes naturally and clears its own flag — no duplicate scheduling because the set membership is idempotent.
-
-## Untouched
-
-- Solving logic, scoring, validation, autosave, completion sheet, toolbar, ARIA labels, sticky clue bar, cell sizing, Erase action.
-- Sudoku, word-search, kakuro, nonogram, cryptogram grids.
-- `PuzzleHeader`, `GroupedEntryList`, `PuzzleSession`.
-
-## Verification
-
-1. Type a letter → cell pops to 1.06× then settles. No haptic. No sweep.
-2. Type rapidly → no jitter, no stacked transforms, typing latency unchanged.
-3. Press Check on wrong cells → shake fires; entry pop suppressed on those cells (priority resolved).
-4. Press Check on a fully-correct word → cells flash `bg-primary/10` → transparent over 220ms; one light haptic; static `opacity-85` remains after.
-5. Solve a word passively via crossings (no Check pressed) → no sweep, no haptic. Static dim still applies once `correct` flag flips after next Check.
-6. First keystroke on desktop → hint chips exit over 150ms. Mash keys during the exit → animation does not restart; chips unmount cleanly at 150ms.
-7. Switch puzzle / navigate away mid-animation → no console warnings about state updates after unmount; all pending timeouts cleared.
-8. Switch active clue → text fades in over 120ms; no layout jump.
-9. Cursor movement → smooth 120ms background transition.
-10. Active cell shows subtle inner outline ring (primary @ 25% opacity).
-
+- Web home (`/`): no Weekly Pack card
+- `/puzzles`: no Weekly Pack section
+- iOS Play tab: no Weekly Pack card
+- Account/Plus marketing on Index: no weekly-pack mentions
+- UpgradeModal: no weekly-pack copy reachable
+- Direct deep link (`/quick-play/...?pack=...`) still resolves and plays
+- `/admin-preview` still shows pack tooling for admins
+- Final ripgrep sweep returns only allowed internal/admin hits
