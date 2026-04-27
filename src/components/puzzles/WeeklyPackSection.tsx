@@ -22,6 +22,7 @@
 
 import { isNativeApp } from "@/lib/appMode";
 import { WeeklyPackCard } from "@/components/ios/WeeklyPackCard";
+import { WEEKLY_PACKS_VISIBLE } from "@/lib/featureFlags";
 
 interface WeeklyPackSectionProps {
   /** Compact mode: no section header, card only */
@@ -29,6 +30,8 @@ interface WeeklyPackSectionProps {
 }
 
 export function WeeklyPackSection({ compact = false }: WeeklyPackSectionProps) {
+  // Feature temporarily hidden from all user-facing surfaces.
+  if (!WEEKLY_PACKS_VISIBLE) return null;
   // Native iOS app already renders this in IOSPlayTab — skip to avoid duplication
   if (isNativeApp()) return null;
 
