@@ -691,7 +691,7 @@ const Index = () => {
               </h2>
               <p className="mt-3 text-muted-foreground leading-relaxed max-w-lg mx-auto">
                 The complete experience. Extreme and Insane difficulty. Unlimited craft puzzles.
-                Full analytics, skill rating, Streak Shield, and early weekly pack access.
+                Full analytics, skill rating, and Streak Shield.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-2">
                 {[
@@ -700,7 +700,6 @@ const Index = () => {
                   "Skill rating & leaderboard",
                   "Full analytics",
                   "Streak Shield",
-                  "Weekly pack early access",
                 ].map((f) => (
                   <span
                     key={f}

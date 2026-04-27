@@ -46,6 +46,7 @@ import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
 import { cn } from "@/lib/utils";
 import { setBackDestination } from "@/hooks/useBackDestination";
 import { WeeklyPackCard } from "@/components/ios/WeeklyPackCard";
+import { WEEKLY_PACKS_VISIBLE } from "@/lib/featureFlags";
 
 // ── Constants ─────────────────────────────────────────────────────────────
 
@@ -348,7 +349,7 @@ const IOSPlayTab = () => {
       </button>
 
       {/* ── 5. WEEKLY PACK ─────────────────────────────────────────────── */}
-      <WeeklyPackCard />
+      {WEEKLY_PACKS_VISIBLE && <WeeklyPackCard />}
 
       {/* ── 6. FAVOURITES or BEGINNER PICKS ───────────────────────────── */}
       <div>
