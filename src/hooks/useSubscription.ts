@@ -183,8 +183,9 @@ export function useSubscription(): UseSubscriptionReturn {
       if (platform === "stripe") {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Sign in first to subscribe");
+        // Redirects away to Stripe — leave result as "idle".
+        // Real failures fall into the catch below and set "error" properly.
         await openStripeCheckout(annual, user.id);
-        setResult("error");
       } else if (platform === "apple") {
         const success = await purchaseWithRevenueCat(annual);
         if (success) {

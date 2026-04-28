@@ -11,9 +11,10 @@
  * - Simplified: Upgrade prompt for free users (one clean CTA, not a full marketing block)
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserAccount } from "@/contexts/UserAccountContext";
+import { usePreviewMode } from "@/contexts/PreviewModeContext";
 import Layout from "@/components/layout/Layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -42,9 +43,26 @@ export default function AccountPage() {
   const {
     account, signIn, signUp, signOut,
     subscribed, subscriptionEnd, openCustomerPortal,
-    entitlementSource,
+    entitlementSource, refreshSubscription,
   } = useUserAccount();
   const { isPremium: premiumAccess, showUpgradeCTA: showUpgrade } = usePremiumAccess();
+  const preview = usePreviewMode();
+  const isSimulatedPlus = preview.active && preview.isPlus && !subscribed && !account?.isAdmin;
+
+  // Stripe success → toast once per session, settle delay before refresh, clean URL.
+  useEffect(() => {
+    if (!account) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("subscribed") !== "1") return;
+
+    if (!sessionStorage.getItem("subscribed_toast_shown")) {
+      toast.success("You're now a Puzzlecraft+ member 🎉");
+      sessionStorage.setItem("subscribed_toast_shown", "1");
+    }
+    const t = setTimeout(() => { refreshSubscription(); }, 800);
+    window.history.replaceState({}, "", "/account");
+    return () => clearTimeout(t);
+  }, [account, refreshSubscription]);
 
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [tab, setTab] = useState<"login" | "signup">("login");
@@ -53,7 +71,7 @@ export default function AccountPage() {
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [signupSuccess, setSignupSuccess] = useState(false);
+  // (signup-success screen removed — auto-confirm is enabled, so we route directly to Sign In)
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
   const [nameSaving, setNameSaving] = useState(false);
@@ -193,39 +211,54 @@ export default function AccountPage() {
           </div>
 
           {/* ── Puzzlecraft+ — ACTIVE (subscriber view) ── */}
-          {premiumAccess && (
-            <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4">
+          {(premiumAccess || isSimulatedPlus) && (
+            <div className={cn(
+              "rounded-2xl border p-4",
+              isSimulatedPlus
+                ? "border-dashed border-amber-400/60 bg-amber-400/5"
+                : "border-primary/25 bg-primary/5",
+            )}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Crown size={15} className="text-primary" />
+                  <Crown size={15} className={isSimulatedPlus ? "text-amber-500" : "text-primary"} />
                   <span className="font-semibold text-sm text-foreground">Puzzlecraft+</span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/15 px-2 py-0.5 rounded-full">
-                    {isAdmin ? "Admin" : "Active"}
+                  <span className={cn(
+                    "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
+                    isSimulatedPlus
+                      ? "bg-amber-400/20 text-amber-600 dark:text-amber-400"
+                      : "bg-primary/15 text-primary",
+                  )}>
+                    {isSimulatedPlus ? "Simulated (Admin)" : isAdmin ? "Admin" : "Active"}
                   </span>
                 </div>
               </div>
 
               {/* Source-aware subtitle */}
-              {entitlementSource === "admin_grant" && !isAdmin && (
+              {isSimulatedPlus && (
+                <p className="text-[11px] text-muted-foreground mb-3">
+                  Admin test mode — no payment processed. Resets on refresh.
+                </p>
+              )}
+              {!isSimulatedPlus && entitlementSource === "admin_grant" && !isAdmin && (
                 <p className="text-[11px] text-muted-foreground mb-3">
                   Granted by admin — no expiry
                 </p>
               )}
-              {entitlementSource === "stripe" && subscriptionEnd && (
+              {!isSimulatedPlus && entitlementSource === "stripe" && subscriptionEnd && (
                 <p className="text-[11px] text-muted-foreground mb-3">
                   Renews {new Date(subscriptionEnd).toLocaleDateString(undefined, {
                     month: "long", day: "numeric", year: "numeric",
                   })}
                 </p>
               )}
-              {isAdmin && (
+              {!isSimulatedPlus && isAdmin && (
                 <p className="text-[11px] text-muted-foreground mb-3">
                   Admin access — all features unlocked
                 </p>
               )}
 
-              {/* Only show manage button for Stripe subscribers */}
-              {entitlementSource === "stripe" && !isAdmin && (
+              {/* Only show manage button for real Stripe subscribers */}
+              {!isSimulatedPlus && entitlementSource === "stripe" && !isAdmin && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -350,38 +383,20 @@ export default function AccountPage() {
       } else {
         if (password.length < 6) { setError("Password must be at least 6 characters"); setSubmitting(false); return; }
         const res = await signUp(email, password, displayName || undefined);
-        if (res.error) setError(res.error);
-        else setSignupSuccess(true);
+        if (res.error) {
+          setError(res.error);
+        } else {
+          // Auto-confirm is enabled — no email verification needed.
+          // Switch to Sign In tab with email prefilled.
+          toast.success("Account created — you can sign in now");
+          setPassword("");
+          setTab("login");
+        }
       }
     } finally {
       setSubmitting(false);
     }
   };
-
-  if (signupSuccess) {
-    return (
-      <Layout>
-        <div className="container max-w-md py-12 space-y-6">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft size={16} /> Back
-          </button>
-          <div className="rounded-2xl border bg-card p-8 text-center space-y-4">
-            <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-              <Mail className="h-7 w-7 text-primary" />
-            </div>
-            <h2 className="font-display text-xl font-bold text-foreground">Check your email</h2>
-            <p className="text-sm text-muted-foreground">
-              We sent a verification link to <strong>{email}</strong>.
-              Click it to activate your account, then come back and sign in.
-            </p>
-            <Button variant="outline" className="w-full rounded-xl" onClick={() => { setSignupSuccess(false); setTab("login"); }}>
-              Back to Sign In
-            </Button>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
 
   // ── SIGNED OUT ────────────────────────────────────────────────────────────
 
