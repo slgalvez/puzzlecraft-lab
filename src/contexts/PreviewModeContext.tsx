@@ -7,6 +7,11 @@
  *
  * Strict isolation: when `active`, components MUST read exclusively from
  * `previewProfile` — never merge with real data sources.
+ *
+ * SAFETY CONTRACT (do not break):
+ *   • MUST never persist any preview state to localStorage or the database.
+ *   • Simulated Plus state MUST reset on page refresh and on exitPreview().
+ *   • MUST never call Stripe, edge functions, or write to user_profiles.
  */
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { Eye, RotateCcw, X, Crown, ExternalLink } from "lucide-react";
@@ -161,9 +166,14 @@ function PreviewBanner() {
         <span className="text-[10px] opacity-80 hidden sm:inline">·</span>
         <button
           onClick={togglePlus}
-          className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold rounded-full bg-primary-foreground/15 px-2 py-0.5 hover:bg-primary-foreground/25 transition-colors"
+          className={cn(
+            "hidden sm:inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold transition-colors",
+            isPlus
+              ? "bg-amber-400 text-amber-950 hover:bg-amber-300"
+              : "bg-primary-foreground/15 hover:bg-primary-foreground/25",
+          )}
         >
-          {isPlus && <Crown size={9} />} {isPlus ? "Plus" : "Free"}
+          {isPlus && <Crown size={9} />} {isPlus ? "Simulated Plus" : "Free"}
         </button>
         <span className="text-[10px] opacity-80 hidden sm:inline">·</span>
         <span className="text-[10px] opacity-90 truncate">{SCENARIO_LABEL[scenario]}</span>

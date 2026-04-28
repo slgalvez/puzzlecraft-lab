@@ -1,73 +1,59 @@
-# Hide Weekly Packs (Visibility Pass)
+# Puzzlecraft+ Pre-TestFlight UX Fixes (Approved + 2 Safeguards)
 
-Hide every user-facing surface that mentions or links to Weekly Packs. Keep routes, components, generators, DB, and pack logic fully intact for future re-enable.
+Six small, surgical fixes plus two reliability safeguards. No backend, no Stripe, no logic rewrites.
 
-## Strategy
+## 1. Fix misleading "Check your email" after signup
+**File:** `src/pages/Account.tsx` (lines 361–384)
+- Drop the `signupSuccess` state branch entirely.
+- After successful `signUp`, set `tab = "login"`, prefill the email field, and fire `toast.success("Account created — you can sign in now")`.
 
-Add a single feature flag and gate all user-facing entry points behind it. No deletions. After applying, sweep the codebase for any remaining user-facing copy.
+## 2. Success toast after Stripe checkout (with safeguards)
+**File:** `src/pages/Account.tsx` (signed-in branch)
+- Add `useEffect` reading `window.location.search` for `?subscribed=1`.
+- **Safeguard A (no replay):** guard the toast with `sessionStorage`:
+  ```ts
+  if (!sessionStorage.getItem("subscribed_toast_shown")) {
+    toast.success("You're now a Puzzlecraft+ member 🎉");
+    sessionStorage.setItem("subscribed_toast_shown", "1");
+  }
+  ```
+- **Safeguard B (settle delay):** wrap the refresh call:
+  ```ts
+  setTimeout(() => { refreshSubscription(); }, 800);
+  ```
+- After the effect fires, strip the param via `window.history.replaceState({}, "", "/account")`.
 
-## Files & Changes
+## 3. Remove false "error" state during Stripe redirect
+**File:** `src/hooks/useSubscription.ts` (line 187)
+- Inside the `platform === "stripe"` branch, remove `setResult("error")` after `openStripeCheckout(...)`.
+- Leave `result` as `"idle"`. The `try/catch` still sets `"error"` on real failure.
 
-### 1. New flag — `src/lib/featureFlags.ts` (new file)
+## 4. Distinguish Simulated vs Real Plus
+**A. Account page — `src/pages/Account.tsx` (line ~196 Plus card)**
+- Read `usePreviewMode()`. When `preview.active && preview.isPlus` and the user is NOT a real subscriber (no Stripe / admin_grant source), show the card with badge "Simulated Plus (Admin)" and a dashed amber border.
+- Real subscribers and real admin grants keep the existing "Active" / "Admin" badge unchanged.
 
-```ts
-// Master switch for hiding Weekly Packs from all user-facing UI.
-// Internals (routes, generators, DB, admin tooling) stay functional.
-export const WEEKLY_PACKS_VISIBLE = false;
-```
+**B. Preview banner — `src/contexts/PreviewModeContext.tsx` (line ~166)**
+- Change the pill label from `"Plus"` → `"Simulated Plus"` when `isPlus` is true.
+- Style it with amber background tint so it's never confused with real entitlement.
 
-### 2. `src/components/puzzles/WeeklyPackSection.tsx`
+## 5. Confirm simulation never persists
+- Already true in `PreviewModeContext` (state is only React `useState`, no localStorage, no DB writes).
+- Add a brief contract comment at the top of `PreviewModeContext.tsx` documenting: "MUST never persist to localStorage or DB. Simulated state resets on refresh and on exitPreview()."
 
-At top of `WeeklyPackSection`, return `null` when `!WEEKLY_PACKS_VISIBLE`. Removes the card from:
-- Home page (`Index.tsx` returning-user compact slot)
-- Puzzle Library page (`PuzzleLibrary.tsx`)
+## 6. Clean up `?subscribed=1` URL
+- Handled in #2 via `window.history.replaceState`.
 
-### 3. `src/components/ios/IOSPlayTab.tsx` (around lines 350-351)
+## Files changed
+- `src/pages/Account.tsx` — signup flow, success toast/effect with sessionStorage guard + 800ms refresh delay, simulated-Plus label
+- `src/hooks/useSubscription.ts` — drop bogus `setResult("error")`
+- `src/contexts/PreviewModeContext.tsx` — banner label "Simulated Plus" + amber styling + contract comment
 
-Wrap `<WeeklyPackCard />` render in `{WEEKLY_PACKS_VISIBLE && (...)}`. Removes the iOS Play tab entry.
-
-### 4. `src/pages/Index.tsx` Puzzlecraft+ marketing copy
-
-- Line 694: drop "and early weekly pack access" → end sentence at "Streak Shield."
-- Line 703: remove the `"Weekly pack early access"` chip from the features array.
-
-### 5. `src/components/account/UpgradeModal.tsx`
-
-Reason key `"weekly-pack"` is now unreachable (no entry point triggers it). Update the reason copy to a neutral premium pitch so any stray future trigger does not surface weekly-pack language:
-- `headline` → `"Unlock Puzzlecraft+"`
-- `sub` → `"Get the full premium experience."`
-Keep the type key intact to avoid breaking imports.
-
-### 6. Verification sweep (post-edit)
-
-Run a full ripgrep for user-facing strings and confirm only admin/internal hits remain:
-- `"Weekly Pack"`, `"Weekly Packs"`, `"weekly pack"`, `"pack access"`, `"weekly puzzle"`, `"pack streak"`, `"pack progress"`, `"pack preview"`
-
-Expected remaining (allowed) hits:
-- `src/lib/weeklyPacks.ts`, `src/lib/packOverrides.ts`, `src/lib/weeklyThemeWordBanks.ts` — internal logic
-- `src/components/ios/WeeklyPackCard.tsx` — component file (now unmounted)
-- `src/components/puzzles/WeeklyPackSection.tsx` — gated wrapper
-- `src/pages/AdminPreview.tsx`, `src/pages/AdminHomepagePreview.tsx` — admin-only tooling
-- `src/pages/QuickPlay.tsx` — `?pack=` URL handling (deep-link only, no UI copy)
-- Code comments (e.g. `CryptogramPuzzle.tsx` line 29) — non-rendered
-
-Any other user-facing string surfaced by the sweep gets hidden or rephrased in the same pass.
-
-### 7. Leave untouched
-
-- All pack generation, override, and word-bank logic
-- `WeeklyPackCard.tsx` component (unrendered for users)
-- `QuickPlay.tsx` `?pack=` deep-link support
-- Admin preview pages
-- Database / Supabase / config
-
-## Verification Checklist
-
-- Web home (`/`): no Weekly Pack card
-- `/puzzles`: no Weekly Pack section
-- iOS Play tab: no Weekly Pack card
-- Account/Plus marketing on Index: no weekly-pack mentions
-- UpgradeModal: no weekly-pack copy reachable
-- Direct deep link (`/quick-play/...?pack=...`) still resolves and plays
-- `/admin-preview` still shows pack tooling for admins
-- Final ripgrep sweep returns only allowed internal/admin hits
+## Verification
+- Sign up → no "check your email"; lands on Sign In tab with email prefilled and success toast.
+- Stripe success → `/account?subscribed=1` shows toast once, URL becomes `/account`, Plus card flips after ~800ms.
+- Navigating back to `/account` in same session → no duplicate toast.
+- Slow Stripe redirect on web → no error flash.
+- Admin in Preview Mode with Plus on → banner pill reads "Simulated Plus" in amber; Account card (when shown) reads "Simulated Plus (Admin)".
+- Refresh → simulation gone.
+- No `user_profiles` mutation during any of the above.
