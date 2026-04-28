@@ -21,6 +21,7 @@ import {
   buildCalendarFixture, buildFriendsFixture,
   type PreviewScenario, type CalendarFixture, type FriendsFixture, type FriendsVariant,
 } from "@/lib/previewFixtures";
+import { cn } from "@/lib/utils";
 
 export interface PreviewProfile {
   active: boolean;
