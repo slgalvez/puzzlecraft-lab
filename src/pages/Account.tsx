@@ -71,7 +71,7 @@ export default function AccountPage() {
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [signupSuccess, setSignupSuccess] = useState(false);
+  // (signup-success screen removed — auto-confirm is enabled, so we route directly to Sign In)
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
   const [nameSaving, setNameSaving] = useState(false);
