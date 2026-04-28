@@ -11,9 +11,10 @@
  * - Simplified: Upgrade prompt for free users (one clean CTA, not a full marketing block)
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserAccount } from "@/contexts/UserAccountContext";
+import { usePreviewMode } from "@/contexts/PreviewModeContext";
 import Layout from "@/components/layout/Layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -42,9 +43,26 @@ export default function AccountPage() {
   const {
     account, signIn, signUp, signOut,
     subscribed, subscriptionEnd, openCustomerPortal,
-    entitlementSource,
+    entitlementSource, refreshSubscription,
   } = useUserAccount();
   const { isPremium: premiumAccess, showUpgradeCTA: showUpgrade } = usePremiumAccess();
+  const preview = usePreviewMode();
+  const isSimulatedPlus = preview.active && preview.isPlus && !subscribed && !account?.isAdmin;
+
+  // Stripe success → toast once per session, settle delay before refresh, clean URL.
+  useEffect(() => {
+    if (!account) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("subscribed") !== "1") return;
+
+    if (!sessionStorage.getItem("subscribed_toast_shown")) {
+      toast.success("You're now a Puzzlecraft+ member 🎉");
+      sessionStorage.setItem("subscribed_toast_shown", "1");
+    }
+    const t = setTimeout(() => { refreshSubscription(); }, 800);
+    window.history.replaceState({}, "", "/account");
+    return () => clearTimeout(t);
+  }, [account, refreshSubscription]);
 
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [tab, setTab] = useState<"login" | "signup">("login");
