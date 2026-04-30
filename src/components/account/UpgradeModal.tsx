@@ -39,13 +39,30 @@ const TRIGGER_COPY: Record<UpgradeTrigger, { headline: string; sub: string }> = 
   generic:         { headline: "Puzzlecraft+",                sub: "Create puzzles. Compete. Improve." },
 };
 
+type UpgradeContext =
+  | "difficulty"
+  | "craft-limit"
+  | "stats"
+  | "replay"
+  | "streak-shield"
+  | undefined;
+
+const CONTEXT_HEADERS: Record<NonNullable<UpgradeContext>, string> = {
+  "difficulty":    "Extreme and Insane difficulty are Puzzlecraft+ only",
+  "craft-limit":   "You've used all 10 free crafts this month",
+  "stats":         "Full analytics are a Puzzlecraft+ feature",
+  "replay":        "Replaying past daily challenges requires Puzzlecraft+",
+  "streak-shield": "Streak Shield is a Puzzlecraft+ feature",
+};
+
 interface UpgradeModalProps {
   open: boolean;
   onClose: () => void;
   trigger?: UpgradeTrigger;
+  context?: UpgradeContext;
 }
 
-export default function UpgradeModal({ open, onClose, trigger = "generic" }: UpgradeModalProps) {
+export default function UpgradeModal({ open, onClose, trigger = "generic", context }: UpgradeModalProps) {
   const [annual, setAnnual] = useState(true);
   const [notifyEmail, setNotifyEmail] = useState("");
   const [notifySubmitted, setNotifySubmitted] = useState(false);
@@ -197,6 +214,7 @@ export default function UpgradeModal({ open, onClose, trigger = "generic" }: Upg
       onClose={onClose}
       headline={copy.headline}
       subline={copy.sub}
+      contextHeader={context ? CONTEXT_HEADERS[context] : undefined}
     />
   );
 }

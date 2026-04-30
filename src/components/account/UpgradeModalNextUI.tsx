@@ -27,6 +27,7 @@ interface UpgradeModalNextUIProps {
   onClose: () => void;
   headline?: string;
   subline?: string;
+  contextHeader?: string;
 }
 
 const BENEFIT_SECTIONS = [
@@ -48,17 +49,17 @@ const BENEFIT_SECTIONS = [
   {
     title: "Compete",
     icon: Trophy,
-    items: ["Track rank by puzzle type", "Climb global rankings"],
+    items: ["Player Rating + leaderboard ranking", "Climb global rankings"],
   },
 ] as const;
 
 export default function UpgradeModalNextUI({
   annual, setAnnual, purchasing, result, errorMessage,
-  native, onPurchase, onRestore, onClose, headline, subline,
+  native, onPurchase, onRestore, onClose, headline, subline, contextHeader,
 }: UpgradeModalNextUIProps) {
   const ctaLabel = () => {
     if (purchasing) return "Opening…";
-    if (native) return "Subscribe on our website";
+    if (native) return "Subscribe at puzzlecrft.com →";
     return annual
       ? `Get Puzzlecraft+ · ${ANNUAL_PRICE}/year`
       : `Get Puzzlecraft+ · ${MONTHLY_PRICE}/month`;
@@ -82,6 +83,11 @@ export default function UpgradeModalNextUI({
         </button>
 
         <div className="px-6 pt-2 pb-6 space-y-5">
+          {contextHeader && (
+            <p className="text-center text-xs font-medium text-primary/80 mb-1 px-2">
+              {contextHeader}
+            </p>
+          )}
           {/* ── Header ── */}
           <div className="text-center pt-2">
             <div className="flex h-10 w-10 mx-auto mb-3 items-center justify-center rounded-xl bg-primary/8">
@@ -183,6 +189,18 @@ export default function UpgradeModalNextUI({
               {ctaLabel()}
             </button>
 
+            {native && (
+              <p className="text-center text-[11px] text-muted-foreground -mt-1">
+                Opens in your browser · Secure checkout
+              </p>
+            )}
+
+            <p className="text-center text-[11px] text-muted-foreground">
+              {native
+                ? "Cancel anytime · Billed via App Store"
+                : "Cancel anytime from account settings · Secure checkout"}
+            </p>
+
             <button onClick={onClose} className="w-full py-2 text-xs text-muted-foreground">
               Continue with free plan
             </button>
@@ -198,13 +216,6 @@ export default function UpgradeModalNextUI({
               <RefreshCw size={11} /> Restore purchases
             </button>
           )}
-
-          {/* ── Footer note ── */}
-          <p className="text-center text-[10px] text-muted-foreground leading-relaxed">
-            {native
-              ? "Cancel anytime in Settings → Apple ID."
-              : "Secure checkout via Stripe. Cancel anytime."}
-          </p>
         </div>
       </div>
     </>

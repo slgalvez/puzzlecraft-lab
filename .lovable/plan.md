@@ -1,59 +1,108 @@
-# Puzzlecraft+ Pre-TestFlight UX Fixes (Approved + 2 Safeguards)
 
-Six small, surgical fixes plus two reliability safeguards. No backend, no Stripe, no logic rewrites.
+# Puzzlecraft+ Paywall Copy & Context Updates
 
-## 1. Fix misleading "Check your email" after signup
-**File:** `src/pages/Account.tsx` (lines 361–384)
-- Drop the `signupSuccess` state branch entirely.
-- After successful `signUp`, set `tab = "login"`, prefill the email field, and fire `toast.success("Account created — you can sign in now")`.
-
-## 2. Success toast after Stripe checkout (with safeguards)
-**File:** `src/pages/Account.tsx` (signed-in branch)
-- Add `useEffect` reading `window.location.search` for `?subscribed=1`.
-- **Safeguard A (no replay):** guard the toast with `sessionStorage`:
-  ```ts
-  if (!sessionStorage.getItem("subscribed_toast_shown")) {
-    toast.success("You're now a Puzzlecraft+ member 🎉");
-    sessionStorage.setItem("subscribed_toast_shown", "1");
-  }
-  ```
-- **Safeguard B (settle delay):** wrap the refresh call:
-  ```ts
-  setTimeout(() => { refreshSubscription(); }, 800);
-  ```
-- After the effect fires, strip the param via `window.history.replaceState({}, "", "/account")`.
-
-## 3. Remove false "error" state during Stripe redirect
-**File:** `src/hooks/useSubscription.ts` (line 187)
-- Inside the `platform === "stripe"` branch, remove `setResult("error")` after `openStripeCheckout(...)`.
-- Leave `result` as `"idle"`. The `try/catch` still sets `"error"` on real failure.
-
-## 4. Distinguish Simulated vs Real Plus
-**A. Account page — `src/pages/Account.tsx` (line ~196 Plus card)**
-- Read `usePreviewMode()`. When `preview.active && preview.isPlus` and the user is NOT a real subscriber (no Stripe / admin_grant source), show the card with badge "Simulated Plus (Admin)" and a dashed amber border.
-- Real subscribers and real admin grants keep the existing "Active" / "Admin" badge unchanged.
-
-**B. Preview banner — `src/contexts/PreviewModeContext.tsx` (line ~166)**
-- Change the pill label from `"Plus"` → `"Simulated Plus"` when `isPlus` is true.
-- Style it with amber background tint so it's never confused with real entitlement.
-
-## 5. Confirm simulation never persists
-- Already true in `PreviewModeContext` (state is only React `useState`, no localStorage, no DB writes).
-- Add a brief contract comment at the top of `PreviewModeContext.tsx` documenting: "MUST never persist to localStorage or DB. Simulated state resets on refresh and on exitPreview()."
-
-## 6. Clean up `?subscribed=1` URL
-- Handled in #2 via `window.history.replaceState`.
+The original instructions referenced elements that don't exist in `UpgradeModal.tsx` because all paywall UI lives in `UpgradeModalNextUI.tsx`. Per your confirmation, changes are applied there and adapted to the actual structure.
 
 ## Files changed
-- `src/pages/Account.tsx` — signup flow, success toast/effect with sessionStorage guard + 800ms refresh delay, simulated-Plus label
-- `src/hooks/useSubscription.ts` — drop bogus `setResult("error")`
-- `src/contexts/PreviewModeContext.tsx` — banner label "Simulated Plus" + amber styling + contract comment
 
-## Verification
-- Sign up → no "check your email"; lands on Sign In tab with email prefilled and success toast.
-- Stripe success → `/account?subscribed=1` shows toast once, URL becomes `/account`, Plus card flips after ~800ms.
-- Navigating back to `/account` in same session → no duplicate toast.
-- Slow Stripe redirect on web → no error flash.
-- Admin in Preview Mode with Plus on → banner pill reads "Simulated Plus" in amber; Account card (when shown) reads "Simulated Plus (Admin)".
-- Refresh → simulation gone.
-- No `user_profiles` mutation during any of the above.
+- `src/components/account/UpgradeModalNextUI.tsx`
+- `src/components/account/UpgradeModal.tsx`
+
+## CHANGE 1 — Rating/leaderboard copy
+
+In `UpgradeModalNextUI.tsx` `BENEFIT_SECTIONS` → "Compete" group:
+
+- Replace `"Track rank by puzzle type"` → `"Player Rating + leaderboard ranking"`
+- Leave `"Climb global rankings"` as-is.
+
+## CHANGE 2 — Star social proof
+
+No "five-star / Loved by puzzle enthusiasts" block exists in either file. Skipped.
+
+## CHANGE 3 — Context prop
+
+In `UpgradeModal.tsx`:
+
+```ts
+type UpgradeContext =
+  | "difficulty" | "craft-limit" | "stats" | "replay" | "streak-shield" | undefined;
+
+const CONTEXT_HEADERS: Record<NonNullable<UpgradeContext>, string> = {
+  "difficulty":    "Extreme and Insane difficulty are Puzzlecraft+ only",
+  "craft-limit":   "You've used all 10 free crafts this month",
+  "stats":         "Full analytics are a Puzzlecraft+ feature",
+  "replay":        "Replaying past daily challenges requires Puzzlecraft+",
+  "streak-shield": "Streak Shield is a Puzzlecraft+ feature",
+};
+```
+
+- Add `context?: UpgradeContext` to `UpgradeModalProps`.
+- Destructure `context` in the function signature.
+- Pass `contextHeader={context ? CONTEXT_HEADERS[context] : undefined}` to `<UpgradeModalNextUI ... />`.
+
+In `UpgradeModalNextUI.tsx`:
+
+- Add `contextHeader?: string` to props interface.
+- Render inside the scrollable content `<div className="px-6 pt-2 pb-6 space-y-5">`, immediately before the Header block:
+
+```tsx
+{contextHeader && (
+  <p className="text-center text-xs font-medium text-primary/80 mb-1 px-2">
+    {contextHeader}
+  </p>
+)}
+```
+
+The existing `UpgradeTrigger` system (drives `headline`/`subline`) is left intact; `context` renders additively above the header.
+
+## CHANGE 4 — Native CTA copy
+
+In `ctaLabel()`: replace `"Subscribe on our website"` → `"Subscribe at puzzlecrft.com →"`.
+
+## CHANGE 5 — Trust/billing language
+
+Per your latest direction, the web copy is `"Cancel anytime from account settings · Secure checkout"` (no "Billed annually", since the user can pick monthly).
+
+Also flagging: `TRIAL_DAYS` in `src/lib/pricing.ts` is `0` and marked `@deprecated`. Using it in the native string would render `"0-day free trial · …"`. I'll drop the trial fragment from the native line so it reads cleanly and stays accurate.
+
+In `UpgradeModalNextUI.tsx`:
+
+1. Replace the existing bottom footer `<p className="text-center text-[10px] ...">` block (currently `"Cancel anytime in Settings → Apple ID."` / `"Secure checkout via Stripe. Cancel anytime."`) by moving a new platform-aware trust line directly under the CTA button:
+
+```tsx
+<p className="text-center text-[11px] text-muted-foreground">
+  {native
+    ? "Cancel anytime · Billed via App Store"
+    : "Cancel anytime from account settings · Secure checkout"}
+</p>
+```
+
+2. Immediately after the primary subscribe `</button>` (before "Continue with free plan"), add native-only secondary line:
+
+```tsx
+{native && (
+  <p className="text-center text-[11px] text-muted-foreground -mt-1">
+    Opens in your browser · Secure checkout
+  </p>
+)}
+```
+
+3. Remove the old bottom footer note (now superseded).
+
+4. No `TRIAL_DAYS` import added (kept clean since the value is 0/deprecated).
+
+## What is NOT changed
+
+- Plan toggle, success state, pre-launch state, "Coming Soon" branch in `UpgradeModal.tsx`.
+- Restore Purchases button, "Continue with free plan", drag handle, close button.
+- Pricing logic, purchase/restore handlers, error display.
+- Existing `TRIGGER_COPY` headline/subline system.
+
+## Deviations from literal instructions (called out)
+
+1. **Target file**: `UpgradeModalNextUI.tsx` for the visual changes; `context` prop threaded through `UpgradeModal.tsx`.
+2. **CHANGE 1**: Closest equivalent line replaced (`"Track rank by puzzle type"` → new copy).
+3. **CHANGE 2**: Skipped — no Star block exists.
+4. **CHANGE 5 (web)**: Updated per your latest message — `"Cancel anytime from account settings · Secure checkout"` (no "Billed annually").
+5. **CHANGE 5 (native)**: Trial fragment dropped because `TRIAL_DAYS = 0` (deprecated). Final native copy: `"Cancel anytime · Billed via App Store"`. Tell me if you'd rather restore a trial value in `pricing.ts` instead.
+6. Old bottom footer note replaced rather than left in place, to avoid duplicate trust copy.
