@@ -25,6 +25,7 @@ import {
   BarChart3, Trophy, HelpCircle, LogOut, ExternalLink,
 } from "lucide-react";
 import UpgradeModal from "@/components/account/UpgradeModal";
+import AdminNotificationsCard from "@/components/account/AdminNotificationsCard";
 import { hasPremiumAccess, shouldShowUpgradeCTA, usePremiumAccess, PUZZLECRAFT_PLUS_LAUNCHED } from "@/lib/premiumAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { syncLeaderboardRating } from "@/lib/leaderboardSync";
@@ -348,6 +349,8 @@ export default function AccountPage() {
               <ChevronRight size={14} className="text-muted-foreground" />
             </button>
           )}
+
+          {isAdmin && <AdminNotificationsCard />}
 
           {/* ── Navigation ── */}
           <div className="rounded-2xl border border-border/50 overflow-hidden">

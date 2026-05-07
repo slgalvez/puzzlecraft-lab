@@ -1,79 +1,79 @@
 ## Goal
-Add a "Report a Problem" button on the Help page that opens a small dialog, saves the report to a new `bug_reports` table, and pushes a notification to all admin push subscriptions.
 
-## 1. Database — `bug_reports` table (migration)
+Send a Web Push notification to the **main admin** (Supabase-auth account, `user_profiles.is_admin = true`) whenever a new bug report is submitted. Admin opts in from either the Account page or `/admin-bug-reports`.
 
-Columns:
-- `id uuid pk default gen_random_uuid()`
-- `user_id uuid null` — auth.uid() if signed in
-- `user_email text null` — captured server-side from auth or from optional contact field
-- `message text not null` (length 10–4000)
-- `route text null`
-- `user_agent text null`
-- `platform text null` (e.g. "web", "pwa", "ios-native")
-- `ip_address text null` — set from request headers in edge function
-- `status text not null default 'new'` (new | triaged | resolved)
-- `created_at timestamptz not null default now()`
+## Why a new table
 
-RLS:
-- Enable RLS.
-- `INSERT`: allow `anon` + `authenticated` (the edge function uses service role anyway, but we keep policy permissive enough so direct inserts could work if needed). Actually — since all writes go through the edge function with service role, set INSERT policy to deny for anon/authenticated and let service role bypass. Cleaner: **no client INSERT policy** → all writes via edge function.
-- `SELECT`: only `user_is_admin()`.
-- No UPDATE/DELETE for clients; admins can update via service-role tools later.
+The existing `push_subscriptions` table is keyed to `profiles.id` (the private/messaging system, custom-JWT auth). Main admin accounts live in `user_profiles` (Supabase auth) — different ID space. We need a parallel table.
 
-Index: `(created_at desc)`, `(status)`.
+## Database
 
-## 2. Edge function — `submit-bug-report` (verify_jwt = false)
+New migration creates `admin_push_subscriptions`:
+- `id`, `user_id` (uuid, references main user), `endpoint` (unique with user_id), `p256dh`, `auth`, `created_at`, `last_push_at`
+- RLS: only admins (`user_is_admin()`) can SELECT/INSERT/UPDATE/DELETE their own row. INSERT/UPDATE writes guarded by service-role in the edge function.
 
-Responsibilities:
-1. Parse + validate body with Zod: `message` (10–4000), optional `contactEmail` (email), `route`, `userAgent`, `platform`.
-2. Read `Authorization` header; if a valid Supabase JWT, resolve `user_id` + `email` via service-role admin API.
-3. Soft rate limit: count `bug_reports` rows in last 60 min where `ip_address = req-ip` (from `x-forwarded-for`); reject with 429 if `>= 10`. (Per project guidance, the backend lacks proper rate-limit primitives — this is the explicit user-requested ad-hoc check.)
-4. Insert row.
-5. Fire-and-forget invoke `send-push` (or replicate its logic) targeting all `push_subscriptions` whose `profile_id` belongs to a `user_profiles` row with `is_admin = true`. Payload: `{ title: "New bug report", body: <first 80 chars of message>, url: "/admin-bug-reports" }`. Failures here are swallowed and logged — submission still succeeds.
-6. Return `{ ok: true }` on success.
+## Edge function: `admin-push` (new, `verify_jwt = false`)
 
-CORS headers per standard pattern.
+Three actions, all require Supabase auth bearer token of an admin:
 
-## 3. Frontend — Help page additions
+1. `subscribe` — body: `{ endpoint, p256dh, auth }`. Validates caller is admin via `user_profiles.is_admin`, upserts row.
+2. `unsubscribe` — deletes the caller's rows (optionally for one endpoint).
+3. `test` — sends a test push to caller's subscriptions.
 
-`src/pages/Help.tsx` is currently a const arrow component. We will:
-- Convert to a regular function component (it already kind of is) and add internal state for the dialog open flag.
-- Render a "Help & Support" card just under the page heading (or just above the "How to Play" accordion) containing a single shadcn `Button` "Report a problem" with `Bug` icon.
-- New component `src/components/help/ReportProblemDialog.tsx` using shadcn `Dialog`:
-  - Textarea: "What went wrong?" (required, 10–4000 chars; show char counter at 3500+).
-  - Optional input: "Email (optional)" — auto-filled from `useUserAccount` if signed in.
-  - Read-only meta line: "Page: <pathname>" (small muted text) + "Device: <short UA>".
-  - Submit button "Send report" — disabled while submitting or message <10 chars.
-  - On submit: call `supabase.functions.invoke('submit-bug-report', { body })`.
-  - On success: replace dialog body with a centered check + "Thanks — your report was sent." and auto-close after 1.8s. Toast `sonner.success`.
-  - On error: keep form, show inline rose text "Couldn't send report. Please try again." and re-enable button.
+Reuses the VAPID keypair + RFC 8291 encryption from `send-push/index.ts` (extract shared helpers inline — keep it self-contained, no shared module).
 
-Auto-captured client side and sent in body:
-- `route`: `window.location.pathname + window.location.search`
-- `userAgent`: `navigator.userAgent` (truncated to 500 chars)
-- `platform`: derived — `Capacitor.isNativePlatform?.()` → `"ios-native"`, else `window.matchMedia('(display-mode: standalone)').matches` → `"pwa"`, else `"web"`.
+## Edge function update: `submit-bug-report`
 
-## 4. Admin notification
+After a successful insert, server-to-server fire-and-forget:
+- Look up all admin subscriptions: `select endpoint, p256dh, auth, user_id from admin_push_subscriptions inner join user_profiles on user_profiles.id = user_id where is_admin = true`.
+- For each, send Web Push with payload:
+  ```
+  { title: "New bug report", body: <first 80 chars>, url: "/admin-bug-reports", tag: "bug-report" }
+  ```
+- 410/404 responses prune the row.
+- Failures are logged, never block the user response.
 
-Reuse the existing `send-push` edge function. The new function fetches admin push subscriptions and calls `send-push` (or directly sends via the same VAPID flow). To avoid duplicating push logic, prefer a server-to-server `fetch` to `${SUPABASE_URL}/functions/v1/send-push` with service-role auth.
+## Frontend
 
-Out of scope for this task: building an `/admin-bug-reports` list UI. The push payload links to `/admin-bug-reports` so a future page slot is reserved, but that page is not part of this change.
+**New hook: `useAdminPush.ts`**
+- `isSupported` — checks `Notification`, `serviceWorker`, `PushManager`.
+- `permission`, `isSubscribed` — derived state.
+- `subscribe()` — requests permission, registers SW (reuse existing one), `pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: VAPID_PUBLIC_KEY })`, posts to `admin-push?action=subscribe`.
+- `unsubscribe()` — unsubscribes locally + posts to `admin-push?action=unsubscribe`.
+- `sendTest()` — calls `admin-push?action=test`.
 
-## 5. Files touched / created
+VAPID public key constant lives in the hook (same key used by `send-push`).
 
-- migration: create `bug_reports` table + RLS.
-- new: `supabase/functions/submit-bug-report/index.ts`.
-- new: `src/components/help/ReportProblemDialog.tsx`.
-- edited: `src/pages/Help.tsx` (add header CTA + dialog mount, ~15 lines).
+**Account page (`src/pages/Account.tsx`)**
+- Add admin-only section "Admin notifications" (rendered only when `account.isAdmin`):
+  - Toggle "Bug report alerts"
+  - "Send test notification" button
+  - One-line explainer + permission status.
 
-No changes to existing Help layout beyond adding the CTA + dialog.
+**Admin Bug Reports page (`src/pages/AdminBugReports.tsx`)**
+- Header banner above the list, only when `isSupported && !isSubscribed`:
+  - "Get push alerts for new bug reports" + Enable button.
+- Hides once subscribed.
 
-## Verification checklist
-1. Help page renders new "Report a problem" button.
-2. Dialog opens, validates min length, captures route + UA + platform.
-3. Signed-in submit stores `user_id` + email; anonymous submit works with optional email.
-4. Row appears in `bug_reports`.
-5. Admin device with active push subscription receives a notification.
-6. Success and failure copy match spec.
-7. 11th submission from same IP within an hour returns the failure copy (rate-limit ok).
+## Service worker
+
+Confirm the existing service worker (used by private push) handles `push` events generically — payload's `url` drives navigation on click. If yes, reuse. If it's scoped to private routes only, extend the click handler to allow any in-origin path.
+
+## Files
+
+- New migration: create `admin_push_subscriptions` + RLS
+- New: `supabase/functions/admin-push/index.ts`
+- Edit: `supabase/functions/submit-bug-report/index.ts` — broadcast to admins
+- New: `src/hooks/useAdminPush.ts`
+- Edit: `src/pages/Account.tsx` — admin notifications card
+- Edit: `src/pages/AdminBugReports.tsx` — enable banner
+- Edit (if needed): existing service worker to handle generic push payload
+
+## Verification
+
+1. Admin visits Account → enables "Bug report alerts" → grants browser permission.
+2. "Send test" delivers a notification.
+3. Anyone (signed-in or anon) submits a bug report from /help → admin receives push within seconds.
+4. Tapping push opens `/admin-bug-reports`.
+5. Non-admins see no UI; non-admin tokens are rejected by the edge function.
+6. Unsubscribe removes rows and stops alerts.

@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2, RefreshCw, Bug } from "lucide-react";
+import { ArrowLeft, Loader2, RefreshCw, Bug, Bell } from "lucide-react";
 import { toast } from "sonner";
+import { useAdminPush } from "@/hooks/useAdminPush";
 
 interface BugReport {
   id: string;
@@ -118,6 +119,8 @@ export default function AdminBugReports() {
           <span className="text-sm text-muted-foreground ml-auto">{filtered.length} of {reports.length}</span>
         </div>
 
+        <PushEnableBanner />
+
         <div className="flex flex-col sm:flex-row gap-2">
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
             <SelectTrigger className="sm:w-40"><SelectValue /></SelectTrigger>
@@ -191,3 +194,28 @@ export default function AdminBugReports() {
     </Layout>
   );
 }
+
+function PushEnableBanner() {
+  const { isSupported, isSubscribed, busy, subscribe } = useAdminPush();
+  if (!isSupported || isSubscribed) return null;
+  return (
+    <div className="rounded-lg border border-border bg-muted/40 p-3 flex items-center gap-3">
+      <Bell className="h-4 w-4 text-primary shrink-0" />
+      <div className="text-sm flex-1">
+        Get push alerts when a new bug report comes in.
+      </div>
+      <Button
+        size="sm"
+        onClick={async () => {
+          const r = await subscribe();
+          if (r.ok) toast.success("Push alerts enabled");
+          else toast.error(r.error || "Could not enable alerts");
+        }}
+        disabled={busy}
+      >
+        Enable
+      </Button>
+    </div>
+  );
+}
+
