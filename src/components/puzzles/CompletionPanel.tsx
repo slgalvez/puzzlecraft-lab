@@ -106,11 +106,15 @@ const CompletionPanel = ({
   const personalBest = usePersonalBest(category, difficulty, time, assisted);
   const streak = useMemo(() => getDailyStreak(), []);
 
-  const score = useMemo(() => {
+  const latestRecord = useMemo(() => {
     const records = getSolveRecords().filter((r) => r.solveTime >= 10);
-    if (!records.length) return null;
-    return computeSolveScore(records[0]);
+    return records[0] ?? null;
   }, []);
+
+  const score = useMemo(() => {
+    if (!latestRecord) return null;
+    return computeSolveScore(latestRecord);
+  }, [latestRecord]);
 
   const isNewBest = personalBest?.isNewBest === true;
 
