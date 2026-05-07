@@ -43,7 +43,7 @@ export default function AccountPage() {
   const {
     account, signIn, signUp, signOut,
     subscribed, subscriptionEnd, openCustomerPortal,
-    entitlementSource, refreshSubscription,
+    entitlementSource, refreshSubscription, subscriptionPriceId,
   } = useUserAccount();
   const { isPremium: premiumAccess, showUpgradeCTA: showUpgrade } = usePremiumAccess();
   const preview = usePreviewMode();
