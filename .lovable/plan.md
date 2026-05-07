@@ -1,18 +1,46 @@
-## Goal
-Show the provisional ranking card on `/stats` for Plus users with fewer than 5 solves, so they see "X more solves to confirm your rank" and progress pips instead of a blank/empty Player Profile area.
+## Plan
 
-## Root cause
-`Stats.tsx` imports `ProvisionalRatingCard` but never renders it. The custom "Player Profile" card (lines 946–1026) shows for Plus users regardless of provisional state, with no provisional messaging.
+Fix the Stats ranking-card gate so Plus test accounts with fewer than 5 qualifying solves can actually see the temporary ranking card.
 
-## Change (single file: `src/pages/Stats.tsx`)
+### What I found
 
-In the LEFT COLUMN, just above the existing "UNIFIED PLAYER PROFILE CARD" block (line 945):
+- The card was added only for `!ratingInfo.hasNoData && ratingInfo.isProvisional`.
+- But the rating engine marks users with fewer than 5 qualifying solves as `hasNoData: true` and `isProvisional: false`.
+- So the current condition can only show the card for 5–9 solves, not for the “under X puzzles solved” state you’re testing.
+- The existing `ProvisionalRatingCard` already has a no-data/early-solves state, but Stats blocks it before it can render.
 
-1. Render `<ProvisionalRatingCard info={ratingInfo} peakRating={peakRating} leaderboardRank={myLeaderboardEntry?.rank ?? null} />` when:
-   - `showGeneral && isPlus`
-   - `!ratingInfo.hasNoData`
-   - `ratingInfo.isProvisional` is true
+### Changes to make
 
-2. Update the existing custom Player Profile card condition to additionally require `!ratingInfo.isProvisional`, so the two never stack.
+1. In `src/pages/Stats.tsx`, replace the provisional-card condition with a Plus-only early-ranking condition:
+   - show on the general Stats view
+   - require Plus access
+   - show while the user is not leaderboard-qualified (`!ratingInfo.onLeaderboard`)
+   - allow both `hasNoData` and provisional states
 
-Plus-only gating matches the existing Player Profile card. No data-flow changes needed.
+2. Keep the confirmed Player Profile card hidden until leaderboard/rank data is ready:
+   - only render it when `ratingInfo.onLeaderboard` is true
+   - this prevents stacking or showing the wrong card for under-10-solve users
+
+3. Pass the existing `ratingInfo` into `ProvisionalRatingCard` unchanged:
+   - for 0–4 solves it will show the starter/early ranking state
+   - for 5–9 solves it will show the provisional rating/progress state
+   - for 10+ solves the confirmed Player Profile card takes over
+
+### Technical details
+
+Current failing gate:
+```tsx
+showGeneral && isPlus && !ratingInfo.hasNoData && ratingInfo.isProvisional
+```
+
+Planned gate:
+```tsx
+showGeneral && isPlus && !ratingInfo.onLeaderboard
+```
+
+Confirmed card gate becomes:
+```tsx
+showGeneral && isPlus && localRating && ratingInfo.onLeaderboard
+```
+
+No backend or data-flow changes are needed.
