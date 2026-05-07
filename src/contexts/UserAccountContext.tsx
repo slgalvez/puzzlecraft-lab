@@ -274,18 +274,27 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
     password: string,
     displayName?: string,
   ): Promise<{ error: string | null }> => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { display_name: displayName || email.split("@")[0] },
-        // FIX: use canonical web URL, not window.location.origin.
-        // Inside Capacitor, origin = "capacitor://localhost" which Supabase
-        // can't redirect back to from a confirmation email link.
         emailRedirectTo: `${WEB_ORIGIN}/account`,
       },
     });
-    if (error) return { error: error.message };
+    if (error) {
+      const msg = error.message?.toLowerCase() ?? "";
+      if (msg.includes("password")) {
+        return { error: "Password must be at least 6 characters." };
+      }
+      return { error: error.message };
+    }
+    // If no session was returned (shouldn't happen with auto-confirm on),
+    // sign in immediately to guarantee the user is logged in.
+    if (!data.session) {
+      const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInErr) return { error: signInErr.message };
+    }
     return { error: null };
   }, []);
 
