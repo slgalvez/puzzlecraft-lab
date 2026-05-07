@@ -138,9 +138,33 @@ export default function AdminFailedLogins() {
   return (
     <PrivateLayout title="Failed Login Attempts">
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <ShieldAlert className="h-4 w-4" />
-          <span>Showing last 100 failed attempts. Polls every 10s.</span>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <ShieldAlert className="h-4 w-4" />
+            <span>Showing last 100 failed attempts. Polls every 10s.</span>
+          </div>
+          {attempts.length > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="outline" className="h-8 text-xs gap-1 text-destructive hover:text-destructive">
+                  <Trash2 className="h-3 w-3" />
+                  Clear all
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Clear all failed login attempts?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This deletes every recorded failed login attempt. IP blocks are not affected. This cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleClearAll}>Clear all</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
 
         {loading ? (
