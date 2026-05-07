@@ -125,10 +125,10 @@ Deno.serve(async (req) => {
         tag: "bug-report",
         url: "/admin-bug-reports",
       });
-      const { sendWebPush } = await import("../admin-push/index.ts");
+      const { sendWebPush: _ignore } = { sendWebPush: sendAdminWebPush };
       await Promise.all(subs.map(async (s) => {
         try {
-          const r = await sendWebPush(s.endpoint, s.p256dh, s.auth, payload);
+          const r = await sendAdminWebPush(s.endpoint, s.p256dh, s.auth, payload);
           if (!r.ok && (r.status === 404 || r.status === 410)) {
             await admin.from("admin_push_subscriptions").delete()
               .eq("user_id", s.user_id).eq("endpoint", s.endpoint);
