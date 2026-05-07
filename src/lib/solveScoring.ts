@@ -88,6 +88,47 @@ export function computeSolveScore(record: SolveRecord): number {
   return Math.round(score);
 }
 
+// ── Score breakdown (for post-solve UI) ────────────────────────────────────
+
+export interface ScoreBreakdown {
+  expectedTime: number;
+  speedFactor: number;
+  trueMistakes: number;
+  accuracyFactor: number;
+  hintFactor: number;
+  difficultyMult: number;
+  insaneBonus: number;   // 1.0 or 1.05
+  score: number;
+}
+
+export function computeScoreBreakdown(record: SolveRecord): ScoreBreakdown | null {
+  if (record.solveTime < 10) return null;
+  const difficultyMult = DIFFICULTY_MULT[record.difficulty] ?? 1.0;
+  const expectedTime   = EXPECTED_TIMES[record.puzzleType]?.[record.difficulty] ?? 300;
+  const speedFactor    = clamp(expectedTime / record.solveTime, 0.6, 1.4);
+  const mistakes       = trueMistakes(record);
+  const accuracyFactor = clamp(1 - mistakes * 0.05, 0.7, 1.0);
+  const hintFactor     =
+    record.hintsUsed === 0 ? 1.0 :
+    record.hintsUsed === 1 ? 0.9 :
+    record.hintsUsed === 2 ? 0.8 : 0.7;
+  const insaneBonus =
+    record.difficulty === "insane" && record.hintsUsed === 0 && mistakes <= 1 ? 1.05 : 1.0;
+  const score = Math.round(
+    1000 * difficultyMult * speedFactor * accuracyFactor * hintFactor * insaneBonus
+  );
+  return {
+    expectedTime,
+    speedFactor,
+    trueMistakes: mistakes,
+    accuracyFactor,
+    hintFactor,
+    difficultyMult,
+    insaneBonus,
+    score,
+  };
+}
+
 // ── Rating windows ─────────────────────────────────────────────────────────
 
 const RATING_WINDOW           = 25;

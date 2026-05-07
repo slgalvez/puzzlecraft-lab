@@ -1,32 +1,28 @@
-## Plan: Recalibrate rating so easy puzzles can't reach Skilled
+## Plan: Post-solve score breakdown
 
-**Root issue.** Easy word-search caps at `1000 × 0.7 × 1.4 = 980`, which crosses the Skilled threshold (850). With the Skilled gate at only 8 solves, 10 fast easies = Skilled @ 980. We'll lower easy/medium difficulty multipliers and raise solve gates so tiers feel earned.
+Add a small inline breakdown beneath the existing score in the post-solve panel that shows speed, accuracy, and hint factors and how each multiplied your score for this puzzle type.
 
-### Changes (single file: `src/lib/solveScoring.ts`)
+### Changes
 
-1. **Lower easy/medium difficulty multipliers**
-   - `easy: 0.7 → 0.5` (max possible score with all bonuses ≈ 700 → caps inside Casual)
-   - `medium: 1.0 → 0.85` (max ≈ 1190 → low Skilled)
-   - `hard: 1.4` unchanged (max ≈ 1960 → Expert reachable)
-   - `extreme: 1.9`, `insane: 2.8` unchanged
+1. **`src/lib/solveScoring.ts`** — export `computeScoreBreakdown(record)` returning the inputs to the existing `computeSolveScore` formula:
+   - `expectedTime` (from `EXPECTED_TIMES[type][difficulty]`)
+   - `speedFactor` (`expected / solveTime`, clamped 0.6–1.4)
+   - `accuracyFactor` (`1 − mistakes × 0.05`, clamped 0.7–1.0) and `trueMistakes`
+   - `hintFactor` (1.0 / 0.9 / 0.8 / 0.7)
+   - `difficultyMult` and final `score`
+   - This reuses the same constants the score already uses; no scoring math changes.
 
-2. **Raise solve-count gates** in `TIER_MIN_SOLVES`
-   - Casual: 3 → 5
-   - Skilled: 8 → 12
-   - Advanced: 18 → 25
-   - Expert: 30 → 50
+2. **`src/components/puzzles/ScoreBreakdown.tsx`** (new, ~80 lines) — compact card with three rows:
+   - Speed — `1:23 vs 2:00 expected · ×1.27`
+   - Accuracy — `2 mistakes · ×0.90` (or "Clean ✓ · ×1.00")
+   - Hints — `0 hints · ×1.00` (or "1 hint · ×0.90")
+   - Footer: `Base 1000 × Easy 0.50 = Score 573` style summary
+   - Each multiplier color-coded (emerald > 1.0, muted = 1.0, rose < 1.0).
+   - No collapsible — keep it always visible but visually quiet (small text, mono numbers, single rounded-lg muted block).
 
-3. **No threshold changes.** Tier rating thresholds (650/850/1300/1650) remain — they're already prominently shown to users and the difficulty-mult fix already handles the easy-puzzle issue.
-
-### Resulting tier ceilings (perfect solve, all bonuses)
-
-| Difficulty | Max score | Tier ceiling |
-|---|---|---|
-| Easy    | ~700  | Casual |
-| Medium  | ~1190 | low Skilled |
-| Hard    | ~1960 | Expert reachable |
-| Extreme | ~2660 | Expert |
-| Insane  | ~4116 | Expert |
+3. **`src/components/puzzles/CompletionPanel.tsx`** — render `<ScoreBreakdown record={latestRecord} />` directly below the score line (inside the header block), only when `score != null && !assisted`. Use the same `getSolveRecords()[0]` already fetched for `score`.
 
 ### Out of scope
-No DB / leaderboard schema changes. Existing stored ratings will naturally re-average as users solve more puzzles (25-solve rolling window).
+- No changes to `DailyPostSolve.tsx` or `CompletionSheet.tsx` (they reuse `CompletionPanel` content).
+- No new design tokens — uses existing semantic colors.
+- No DB or rating changes.

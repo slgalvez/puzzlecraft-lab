@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import { buildSolveShareText } from "@/lib/shareText";
 import { executeShare } from "@/lib/shareUtils";
+import { ScoreBreakdown } from "./ScoreBreakdown";
 
 interface Props {
   time: number;
@@ -105,11 +106,15 @@ const CompletionPanel = ({
   const personalBest = usePersonalBest(category, difficulty, time, assisted);
   const streak = useMemo(() => getDailyStreak(), []);
 
-  const score = useMemo(() => {
+  const latestRecord = useMemo(() => {
     const records = getSolveRecords().filter((r) => r.solveTime >= 10);
-    if (!records.length) return null;
-    return computeSolveScore(records[0]);
+    return records[0] ?? null;
   }, []);
+
+  const score = useMemo(() => {
+    if (!latestRecord) return null;
+    return computeSolveScore(latestRecord);
+  }, [latestRecord]);
 
   const isNewBest = personalBest?.isNewBest === true;
 
@@ -335,6 +340,15 @@ const CompletionPanel = ({
               </span>
             )}
           </div>
+
+          {latestRecord && !assisted && (
+            <div className={cn(
+              "mt-3 transition-all duration-700",
+              statsVisible ? "opacity-100" : "opacity-0",
+            )}>
+              <ScoreBreakdown record={latestRecord} />
+            </div>
+          )}
         </div>
 
         {/* Rating delta */}
