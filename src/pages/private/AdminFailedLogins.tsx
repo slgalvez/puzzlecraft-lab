@@ -14,7 +14,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldAlert, ShieldOff, Shield } from "lucide-react";
+import { ShieldAlert, ShieldOff, Shield, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface FailedAttempt {
   id: string;
@@ -69,6 +80,29 @@ export default function AdminFailedLogins() {
     }
   };
 
+  const handleClear = async (id: string) => {
+    if (!token) return;
+    try {
+      await invokeMessaging("clear-failed-login", token, { id });
+      setAttempts((prev) => prev.filter((a) => a.id !== id));
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Error", description: "Could not clear attempt", variant: "destructive" });
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (!token) return;
+    try {
+      await invokeMessaging("clear-all-failed-logins", token);
+      toast({ title: "Cleared", description: "All failed login attempts removed" });
+      setAttempts([]);
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Error", description: "Could not clear attempts", variant: "destructive" });
+    }
+  };
+
   const handleUnblock = async (ip: string) => {
     if (!token) return;
     try {
@@ -104,9 +138,33 @@ export default function AdminFailedLogins() {
   return (
     <PrivateLayout title="Failed Login Attempts">
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <ShieldAlert className="h-4 w-4" />
-          <span>Showing last 100 failed attempts. Polls every 10s.</span>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <ShieldAlert className="h-4 w-4" />
+            <span>Showing last 100 failed attempts. Polls every 10s.</span>
+          </div>
+          {attempts.length > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="outline" className="h-8 text-xs gap-1 text-destructive hover:text-destructive">
+                  <Trash2 className="h-3 w-3" />
+                  Clear all
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Clear all failed login attempts?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This deletes every recorded failed login attempt. IP blocks are not affected. This cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleClearAll}>Clear all</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
 
         {loading ? (
@@ -149,27 +207,38 @@ export default function AdminFailedLogins() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      {a.is_blocked ? (
+                      <div className="flex items-center justify-end gap-1">
+                        {a.is_blocked ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs gap-1"
+                            onClick={() => handleUnblock(a.ip_address)}
+                          >
+                            <ShieldOff className="h-3 w-3" />
+                            Unblock
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs gap-1 text-destructive hover:text-destructive"
+                            onClick={() => handleBlock(a.ip_address)}
+                          >
+                            <Shield className="h-3 w-3" />
+                            Block
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 text-xs gap-1"
-                          onClick={() => handleUnblock(a.ip_address)}
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleClear(a.id)}
+                          title="Clear this attempt"
                         >
-                          <ShieldOff className="h-3 w-3" />
-                          Unblock
+                          <Trash2 className="h-3 w-3" />
                         </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs gap-1 text-destructive hover:text-destructive"
-                          onClick={() => handleBlock(a.ip_address)}
-                        >
-                          <Shield className="h-3 w-3" />
-                          Block
-                        </Button>
-                      )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

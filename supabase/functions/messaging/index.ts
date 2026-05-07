@@ -1351,6 +1351,34 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // ─── ADMIN: CLEAR FAILED LOGIN (single) ───
+    if (action === "clear-failed-login") {
+      if (!isAdmin) return err("Access denied");
+      const { id } = body;
+      if (!id || typeof id !== "string") return err("Missing id", 400);
+
+      const { error: delErr } = await sb
+        .from("failed_login_attempts")
+        .delete()
+        .eq("id", id);
+
+      if (delErr) return err("Could not clear attempt");
+      return json({ ok: true });
+    }
+
+    // ─── ADMIN: CLEAR ALL FAILED LOGINS ───
+    if (action === "clear-all-failed-logins") {
+      if (!isAdmin) return err("Access denied");
+
+      const { error: delErr } = await sb
+        .from("failed_login_attempts")
+        .delete()
+        .not("id", "is", null);
+
+      if (delErr) return err("Could not clear attempts");
+      return json({ ok: true });
+    }
+
     // ─── START CALL ───
     if (action === "start-call") {
       const { conversation_id } = body;

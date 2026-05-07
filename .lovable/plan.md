@@ -1,24 +1,19 @@
-## Admin: Delete user accounts
+## Goal
+Allow admin to clear failed login attempts in `/p/failed-logins` — both individually (per row) and all at once.
 
-### 1. Edge function `admin-delete-user` (new)
-- `verify_jwt = false`; validate caller's JWT in code via `getClaims()`.
-- Confirm caller is admin: query `user_profiles.is_admin` for `claims.sub`.
-- Validate body `{ user_id: uuid }` (Zod), reject if equals caller (no self-delete).
-- Use service-role client to:
-  1. Delete from `leaderboard_entries`, `type_leaderboard_entries`, `daily_scores` where `user_id = target`.
-  2. Delete from `user_progress`, `admin_push_subscriptions`, `friend_requests` (sender or receiver), `friendships` (a or b), `bug_reports` (user_id), `user_profiles`.
-  3. Finally `supabase.auth.admin.deleteUser(target)` — cascades any remaining auth rows.
-- Return `{ ok: true }` or `{ error }` with CORS headers.
+## Backend (`supabase/functions/messaging/index.ts`)
+Add two new admin-gated actions next to the existing failed-login handlers:
 
-### 2. Admin Analytics UI (`src/pages/AdminAnalytics.tsx`)
-- Add a Trash icon button at end of each user row (next to the existing Eye link).
-- Click opens a shadcn `AlertDialog` confirming: "Delete <name>? This permanently removes their account, leaderboard entries, and progress."
-- On confirm: call `supabase.functions.invoke("admin-delete-user", { body: { user_id } })`, on success remove row from local `users` state + toast "User deleted".
-- Disable the button on the caller's own row.
+- `clear-failed-login` — body `{ id: string }`. Admin-only. Deletes one row from `failed_login_attempts` by id.
+- `clear-all-failed-logins` — admin-only. Deletes all rows from `failed_login_attempts`.
 
-### Out of scope
-- No bulk delete, no soft-delete/recovery, no audit log table (server logs sufficient).
+Both return `{ ok: true }` and use the same `isAdmin` guard pattern already used by `list-failed-logins` / `block-ip`.
 
-### Files
-- new: `supabase/functions/admin-delete-user/index.ts`
-- edited: `src/pages/AdminAnalytics.tsx`
+## Frontend (`src/pages/private/AdminFailedLogins.tsx`)
+- Add a "Clear all" button in the header row (next to the polling status text), with an AlertDialog confirmation. On confirm, call `clear-all-failed-logins` and refresh.
+- Add a small trash/X icon button per row in the Action column (alongside the existing Block/Unblock button). On click, call `clear-failed-login` with the row id and refresh. No confirm for individual clears (low-stakes, easy to redo).
+- Toasts on success/error; reuse `SessionExpiredError` handling already in the file.
+
+## Out of scope
+- No schema changes (table already exists, no RLS exposure since access is via edge function with service role).
+- No changes to IP blocklist behavior — clearing an attempt does not unblock the IP.
