@@ -30,6 +30,7 @@ import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminViewAsStats from "./pages/AdminViewAsStats";
 import AdminHomepagePreview from "./pages/AdminHomepagePreview";
 import AdminPremiumEmails from "./pages/AdminPremiumEmails";
+import AdminBugReports from "./pages/AdminBugReports";
 import Milestones from "./pages/Milestones";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
