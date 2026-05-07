@@ -1,108 +1,63 @@
+# Fix: Stuck-locked subscription + plan switching
 
-# Puzzlecraft+ Paywall Copy & Context Updates
+## What's broken
 
-The original instructions referenced elements that don't exist in `UpgradeModal.tsx` because all paywall UI lives in `UpgradeModalNextUI.tsx`. Per your confirmation, changes are applied there and adapted to the actual structure.
+1. Your Stripe subscription is **active** (`sub_1TUWKy…`, $2.99/mo) but your `user_profiles` row was never updated, so the app still shows the upgrade badge and locked features.
+2. The `stripe-webhook` function has **never been invoked** — no logs, no `webhook_events` rows. The webhook endpoint in Stripe isn't reaching us (either not configured, or `STRIPE_WEBHOOK_SECRET` doesn't match).
+3. There's no in-app way to switch Monthly ↔ Annual once subscribed.
 
-## Files changed
+## Plan
 
-- `src/components/account/UpgradeModalNextUI.tsx`
-- `src/components/account/UpgradeModal.tsx`
+### Part A — Make subscription detection self-healing (primary fix)
 
-## CHANGE 1 — Rating/leaderboard copy
+Today, `check-subscription` only reads our DB. If the webhook misses, the user is stuck forever even though they paid. Fix this by having `check-subscription` reconcile against Stripe directly when the DB looks unsubscribed.
 
-In `UpgradeModalNextUI.tsx` `BENEFIT_SECTIONS` → "Compete" group:
+Update `supabase/functions/check-subscription/index.ts`:
+- After the existing DB check, if `subscribed=false` and `subscription_platform != 'admin_grant'`, query Stripe:
+  - `stripe.customers.list({ email: user.email, limit: 1 })`
+  - If a customer exists, `stripe.subscriptions.list({ customer, status: 'active', limit: 1 })`
+  - If an active sub is found, **update `user_profiles`** with `subscribed=true`, `stripe_customer_id`, `subscription_platform='stripe'`, `subscription_expires_at = current_period_end`, and return `subscribed: true`.
+- This makes the system self-healing — no more user stuck after a missed webhook.
 
-- Replace `"Track rank by puzzle type"` → `"Player Rating + leaderboard ranking"`
-- Leave `"Climb global rankings"` as-is.
+### Part B — Heal your current account immediately
 
-## CHANGE 2 — Star social proof
+After the function is updated, your next page load will reconcile and unlock everything. No DB migration needed; the function will write the correct row.
 
-No "five-star / Loved by puzzle enthusiasts" block exists in either file. Skipped.
+### Part C — Surface the webhook configuration issue
 
-## CHANGE 3 — Context prop
+Add a one-line note to `SUBSCRIPTION_ARCHITECTURE.md` explaining how to verify the webhook endpoint is set in Stripe Dashboard → Developers → Webhooks, pointing at:
+`https://nkfxdupsbxgbclsgseez.supabase.co/functions/v1/stripe-webhook`
+listening for `checkout.session.completed`, `invoice.paid`, `customer.subscription.deleted`, `invoice.payment_failed`, with `STRIPE_WEBHOOK_SECRET` matching that endpoint's signing secret.
 
-In `UpgradeModal.tsx`:
+(I won't try to configure Stripe Dashboard from code — that's a one-click step you do in Stripe.)
 
-```ts
-type UpgradeContext =
-  | "difficulty" | "craft-limit" | "stats" | "replay" | "streak-shield" | undefined;
+### Part D — In-app plan switcher (Monthly ↔ Annual)
 
-const CONTEXT_HEADERS: Record<NonNullable<UpgradeContext>, string> = {
-  "difficulty":    "Extreme and Insane difficulty are Puzzlecraft+ only",
-  "craft-limit":   "You've used all 10 free crafts this month",
-  "stats":         "Full analytics are a Puzzlecraft+ feature",
-  "replay":        "Replaying past daily challenges requires Puzzlecraft+",
-  "streak-shield": "Streak Shield is a Puzzlecraft+ feature",
-};
-```
+Inside `src/pages/Account.tsx`, when the user is already subscribed via Stripe (not admin_grant, not Apple), show a small "Change plan" affordance under the subscription status card with two options:
+- Switch to Annual ($19.99/yr) — only shown if currently monthly
+- Switch to Monthly ($2.99/mo) — only shown if currently annual
 
-- Add `context?: UpgradeContext` to `UpgradeModalProps`.
-- Destructure `context` in the function signature.
-- Pass `contextHeader={context ? CONTEXT_HEADERS[context] : undefined}` to `<UpgradeModalNextUI ... />`.
+This calls a new edge function `change-subscription-plan` that:
+- Looks up the active subscription for the authenticated user
+- Calls `stripe.subscriptions.update(sub_id, { items: [{ id: <existing item id>, price: <new price id> }], proration_behavior: 'create_prorations' })`
+- Returns success; the front end then calls `refreshSubscription()`.
 
-In `UpgradeModalNextUI.tsx`:
+Keep the existing **Manage subscription** button (opens Stripe Customer Portal) for cancel/payment-method/invoices.
 
-- Add `contextHeader?: string` to props interface.
-- Render inside the scrollable content `<div className="px-6 pt-2 pb-6 space-y-5">`, immediately before the Header block:
+## Technical details
 
-```tsx
-{contextHeader && (
-  <p className="text-center text-xs font-medium text-primary/80 mb-1 px-2">
-    {contextHeader}
-  </p>
-)}
-```
+- Files changed:
+  - `supabase/functions/check-subscription/index.ts` — add Stripe reconciliation fallback + DB write.
+  - `supabase/functions/change-subscription-plan/index.ts` — NEW.
+  - `supabase/config.toml` — leave default (`verify_jwt = true`) for `change-subscription-plan` so only authenticated users can switch.
+  - `src/pages/Account.tsx` — add "Change plan" UI below the active-subscription card.
+  - `SUBSCRIPTION_ARCHITECTURE.md` — short note on webhook setup.
+- Price IDs to use (already in code):
+  - Monthly: `price_1TDHYZI2mQ3QaWmEly0lqHqQ`
+  - Annual:  `price_1TMDohI2mQ3QaWmEMXCAR3FH`
+- The reconciliation call in `check-subscription` only fires when the DB says unsubscribed, so it's not on the hot path for already-subscribed users.
 
-The existing `UpgradeTrigger` system (drives `headline`/`subline`) is left intact; `context` renders additively above the header.
+## What this won't do
 
-## CHANGE 4 — Native CTA copy
-
-In `ctaLabel()`: replace `"Subscribe on our website"` → `"Subscribe at puzzlecrft.com →"`.
-
-## CHANGE 5 — Trust/billing language
-
-Per your latest direction, the web copy is `"Cancel anytime from account settings · Secure checkout"` (no "Billed annually", since the user can pick monthly).
-
-Also flagging: `TRIAL_DAYS` in `src/lib/pricing.ts` is `0` and marked `@deprecated`. Using it in the native string would render `"0-day free trial · …"`. I'll drop the trial fragment from the native line so it reads cleanly and stays accurate.
-
-In `UpgradeModalNextUI.tsx`:
-
-1. Replace the existing bottom footer `<p className="text-center text-[10px] ...">` block (currently `"Cancel anytime in Settings → Apple ID."` / `"Secure checkout via Stripe. Cancel anytime."`) by moving a new platform-aware trust line directly under the CTA button:
-
-```tsx
-<p className="text-center text-[11px] text-muted-foreground">
-  {native
-    ? "Cancel anytime · Billed via App Store"
-    : "Cancel anytime from account settings · Secure checkout"}
-</p>
-```
-
-2. Immediately after the primary subscribe `</button>` (before "Continue with free plan"), add native-only secondary line:
-
-```tsx
-{native && (
-  <p className="text-center text-[11px] text-muted-foreground -mt-1">
-    Opens in your browser · Secure checkout
-  </p>
-)}
-```
-
-3. Remove the old bottom footer note (now superseded).
-
-4. No `TRIAL_DAYS` import added (kept clean since the value is 0/deprecated).
-
-## What is NOT changed
-
-- Plan toggle, success state, pre-launch state, "Coming Soon" branch in `UpgradeModal.tsx`.
-- Restore Purchases button, "Continue with free plan", drag handle, close button.
-- Pricing logic, purchase/restore handlers, error display.
-- Existing `TRIGGER_COPY` headline/subline system.
-
-## Deviations from literal instructions (called out)
-
-1. **Target file**: `UpgradeModalNextUI.tsx` for the visual changes; `context` prop threaded through `UpgradeModal.tsx`.
-2. **CHANGE 1**: Closest equivalent line replaced (`"Track rank by puzzle type"` → new copy).
-3. **CHANGE 2**: Skipped — no Star block exists.
-4. **CHANGE 5 (web)**: Updated per your latest message — `"Cancel anytime from account settings · Secure checkout"` (no "Billed annually").
-5. **CHANGE 5 (native)**: Trial fragment dropped because `TRIAL_DAYS = 0` (deprecated). Final native copy: `"Cancel anytime · Billed via App Store"`. Tell me if you'd rather restore a trial value in `pricing.ts` instead.
-6. Old bottom footer note replaced rather than left in place, to avoid duplicate trust copy.
+- Won't auto-fix your Stripe webhook endpoint — you'll still want to verify that in the Stripe Dashboard so future signups don't depend on the polling fallback.
+- Won't add Apple IAP plan switching (native flow, separate work).
