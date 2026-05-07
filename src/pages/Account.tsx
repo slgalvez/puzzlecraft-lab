@@ -349,6 +349,8 @@ export default function AccountPage() {
             </button>
           )}
 
+          {isAdmin && <AdminNotificationsCard />}
+
           {/* ── Navigation ── */}
           <div className="rounded-2xl border border-border/50 overflow-hidden">
             {[
