@@ -182,6 +182,7 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
   const [pendingUserId,setPendingUserId]= useState<string | null>(null);
   const [subscribed,   setSubscribed]   = useState(false);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
+  const [subscriptionPriceId, setSubscriptionPriceId] = useState<string | null>(null);
   const [checkingSubscription, setCheckingSubscription] = useState(false);
   const [entitlementSource, setEntitlementSource] = useState<string | null>(null);
 
@@ -193,6 +194,7 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
         setSubscribed(!!data.subscribed);
         setSubscriptionEnd(data.subscription_end ?? null);
         setEntitlementSource(data.source ?? null);
+        setSubscriptionPriceId(data.price_id ?? null);
       }
     } catch {}
     finally { setCheckingSubscription(false); }
