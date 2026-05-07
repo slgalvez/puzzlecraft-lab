@@ -30,6 +30,7 @@ import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminViewAsStats from "./pages/AdminViewAsStats";
 import AdminHomepagePreview from "./pages/AdminHomepagePreview";
 import AdminPremiumEmails from "./pages/AdminPremiumEmails";
+import AdminBugReports from "./pages/AdminBugReports";
 import Milestones from "./pages/Milestones";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -150,6 +151,7 @@ function PublicRoutes() {
              <Route path="/admin/premium-emails" element={<AdminPremiumEmails />} />
              <Route path="/admin-analytics" element={<AdminAnalytics />} />
              <Route path="/admin-view-as-stats" element={<AdminViewAsStats />} />
+             <Route path="/admin-bug-reports" element={<AdminBugReports />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
           </Routes>
