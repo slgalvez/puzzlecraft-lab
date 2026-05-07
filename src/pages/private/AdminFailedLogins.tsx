@@ -240,17 +240,6 @@ export default function AdminFailedLogins() {
                         </Button>
                       </div>
                     </TableCell>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs gap-1 text-destructive hover:text-destructive"
-                          onClick={() => handleBlock(a.ip_address)}
-                        >
-                          <Shield className="h-3 w-3" />
-                          Block
-                        </Button>
-                      )}
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
