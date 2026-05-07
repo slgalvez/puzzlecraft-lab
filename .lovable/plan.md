@@ -1,24 +1,18 @@
 ## Goal
-Reduce visual weight of the "Switch to Annual / Monthly" button on `/account` so it feels like a subtle secondary affordance, not a primary CTA equal to "Manage Subscription".
+Show the provisional ranking card on `/stats` for Plus users with fewer than 5 solves, so they see "X more solves to confirm your rank" and progress pips instead of a blank/empty Player Profile area.
 
-## Changes (single file: `src/pages/Account.tsx`, ~lines 285–310)
+## Root cause
+`Stats.tsx` imports `ProvisionalRatingCard` but never renders it. The custom "Player Profile" card (lines 946–1026) shows for Plus users regardless of provisional state, with no provisional messaging.
 
-Replace the full-width outline `Button` for plan switching with a minimal text link:
+## Change (single file: `src/pages/Stats.tsx`)
 
-- Remove `variant="outline"`, `size="sm"`, and `className="w-full"`.
-- Use `variant="link"` (or a plain `<button>`) with:
-  - `text-xs text-muted-foreground hover:text-foreground`
-  - `underline-offset-4 hover:underline`
-  - No background, no border, no full-width.
-- Shorten copy:
-  - Monthly → Annual: `Switch to annual · save 44%`
-  - Annual → Monthly: `Switch to monthly`
-- While switching: `Switching…` (unchanged).
-- Place it right-aligned (or left-aligned) under the "Manage Subscription" button, separated by a small gap, so "Manage Subscription" remains the visually primary control.
+In the LEFT COLUMN, just above the existing "UNIFIED PLAYER PROFILE CARD" block (line 945):
 
-No logic, no edge function, no context changes — purely presentational.
+1. Render `<ProvisionalRatingCard info={ratingInfo} peakRating={peakRating} leaderboardRank={myLeaderboardEntry?.rank ?? null} />` when:
+   - `showGeneral && isPlus`
+   - `!ratingInfo.hasNoData`
+   - `ratingInfo.isProvisional` is true
 
-## Out of scope
-- Pricing copy changes elsewhere
-- UpgradeModal styling
-- Any backend behavior
+2. Update the existing custom Player Profile card condition to additionally require `!ratingInfo.isProvisional`, so the two never stack.
+
+Plus-only gating matches the existing Player Profile card. No data-flow changes needed.

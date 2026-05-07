@@ -943,7 +943,16 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
           <div className="min-w-0 flex-1 space-y-6">
 
             {/* ── UNIFIED PLAYER PROFILE CARD (Plus only) ── */}
-            {showGeneral && isPlus && localRating && (() => {
+            {showGeneral && isPlus && !ratingInfo.hasNoData && ratingInfo.isProvisional && (
+              <ProvisionalRatingCard
+                info={ratingInfo}
+                peakRating={peakRating}
+                leaderboardRank={myLeaderboardEntry?.rank ?? null}
+                className="mb-2"
+              />
+            )}
+
+            {showGeneral && isPlus && localRating && !ratingInfo.isProvisional && (() => {
               return (
                 <div className={cn(
                   "rounded-2xl border p-5 sm:p-6 shadow-sm mb-2",
