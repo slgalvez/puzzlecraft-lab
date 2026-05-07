@@ -70,6 +70,8 @@ Deno.serve(async (req: Request) => {
       activeSubscription = false;
     }
 
+    let priceId: string | null = null;
+
     // ─── SELF-HEAL: reconcile against Stripe if DB says unsubscribed ───
     if (!activeSubscription && stripe && user.email && profile.subscription_platform !== "admin_grant") {
       try {
@@ -85,6 +87,7 @@ Deno.serve(async (req: Request) => {
             const sub = subs.data[0];
             const periodEnd = (sub as any).current_period_end as number | undefined;
             const newExpiresAt = periodEnd ? new Date(periodEnd * 1000).toISOString() : null;
+            priceId = sub.items.data[0]?.price?.id ?? null;
 
             await supabase
               .from("user_profiles")
@@ -104,6 +107,7 @@ Deno.serve(async (req: Request) => {
               subscription_end: newExpiresAt,
               platform: "stripe",
               source: "stripe",
+              price_id: priceId,
               reconciled: true,
             });
           }
@@ -113,11 +117,33 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // For active stripe subs, also fetch current price_id (cheap; one Stripe call)
+    if (activeSubscription && stripe && user.email && profile.subscription_platform === "stripe") {
+      try {
+        const customerId = profile.stripe_customer_id;
+        let subs;
+        if (customerId) {
+          subs = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 1 });
+        } else {
+          const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+          if (customers.data.length > 0) {
+            subs = await stripe.subscriptions.list({ customer: customers.data[0].id, status: "active", limit: 1 });
+          }
+        }
+        if (subs && subs.data.length > 0) {
+          priceId = subs.data[0].items.data[0]?.price?.id ?? null;
+        }
+      } catch (e) {
+        console.error("[check-subscription] price lookup failed:", e);
+      }
+    }
+
     return json({
       subscribed: activeSubscription,
       subscription_end: profile.subscription_expires_at ?? null,
       platform: profile.subscription_platform ?? null,
       source: activeSubscription ? (profile.subscription_platform || "stripe") : "none",
+      price_id: priceId,
     });
   } catch (err) {
     console.error("[check-subscription] Error:", err);
