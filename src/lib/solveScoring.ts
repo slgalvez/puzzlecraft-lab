@@ -22,8 +22,8 @@ import type { SolveRecord } from "./solveTracker";
 // ── Difficulty multipliers ─────────────────────────────────────────────────
 
 const DIFFICULTY_MULT: Record<Difficulty, number> = {
-  easy:    0.7,
-  medium:  1.0,
+  easy:    0.5,
+  medium:  0.85,
   hard:    1.4,
   extreme: 1.9,
   insane:  2.8,
@@ -133,10 +133,10 @@ const TIER_RATING_THRESHOLDS: Record<SkillTier, number> = {
 /** Minimum solve count needed to DISPLAY a tier (prevents 1-solve Expert). */
 export const TIER_MIN_SOLVES: Record<SkillTier, number> = {
   Beginner: 0,
-  Casual:   3,
-  Skilled:  8,
-  Advanced: 18,
-  Expert:   30,
+  Casual:   5,
+  Skilled:  12,
+  Advanced: 25,
+  Expert:   50,
 };
 
 const TIER_ORDER: SkillTier[] = ["Beginner", "Casual", "Skilled", "Advanced", "Expert"];
