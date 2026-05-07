@@ -270,6 +270,7 @@ export default function AccountPage() {
               )}
               {!isSimulatedPlus && entitlementSource === "stripe" && subscriptionEnd && (
                 <p className="text-[11px] text-muted-foreground mb-3">
+                  {isAnnual ? "Annual plan · " : isMonthly ? "Monthly plan · " : ""}
                   Renews {new Date(subscriptionEnd).toLocaleDateString(undefined, {
                     month: "long", day: "numeric", year: "numeric",
                   })}
@@ -281,16 +282,33 @@ export default function AccountPage() {
                 </p>
               )}
 
-              {/* Only show manage button for real Stripe subscribers */}
+              {/* Stripe subscribers: plan switch + manage */}
               {!isSimulatedPlus && entitlementSource === "stripe" && !isAdmin && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => openCustomerPortal()}
-                >
-                  Manage Subscription
-                </Button>
+                <div className="space-y-2">
+                  {(isMonthly || isAnnual) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      disabled={switchingPlan}
+                      onClick={() => handleSwitchPlan(isMonthly ? "annual" : "monthly")}
+                    >
+                      {switchingPlan
+                        ? "Switching…"
+                        : isMonthly
+                          ? "Switch to Annual ($19.99/yr · save 44%)"
+                          : "Switch to Monthly ($2.99/mo)"}
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => openCustomerPortal()}
+                  >
+                    Manage Subscription
+                  </Button>
+                </div>
               )}
             </div>
           )}
