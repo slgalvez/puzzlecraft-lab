@@ -2,7 +2,7 @@
  * Puzzlecraft+ Advanced Stats — premium-only sections.
  * Milestones → Accuracy → Performance by Type → Solve History
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getSolveRecords, getSolveSummary, getAllSolveRecordsIncludingDemo, getDemoSolveSummary, type SolveRecord } from "@/lib/solveTracker";
 import { CATEGORY_INFO, DIFFICULTY_LABELS, type PuzzleCategory, type Difficulty } from "@/lib/puzzleTypes";
 import { formatTime } from "@/hooks/usePuzzleTimer";
@@ -17,7 +17,7 @@ import {
 } from "@/lib/solveScoring";
 import { Target, BarChart3, CheckCircle, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { generateDemoSolves, clearDemoSolves, hasDemoData, generateDemoLeaderboard, clearDemoLeaderboard, hasDemoLeaderboard } from "@/lib/demoStats";
+import { generateDemoSolves, clearDemoSolves, hasDemoData, generateDemoLeaderboard, clearDemoLeaderboard, hasDemoLeaderboard, cleanupDemoFlagForNonAdmin } from "@/lib/demoStats";
 import { useUserAccount } from "@/contexts/UserAccountContext";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -76,7 +76,10 @@ export default function PremiumStats({ onDataChange, hideAdminControls = false, 
   const { account } = useUserAccount();
   const isAdmin = account?.isAdmin ?? false;
   const hasOverride = overrideSolveRecords != null;
-  const demoActive = useMemo(() => hasOverride ? false : hasDemoData(), [refreshKey, hasOverride]);
+  useEffect(() => {
+    if (!isAdmin) cleanupDemoFlagForNonAdmin();
+  }, [isAdmin]);
+  const demoActive = useMemo(() => hasOverride ? false : (isAdmin && hasDemoData()), [refreshKey, hasOverride, isAdmin]);
   const records = useMemo(() => {
     if (hasOverride) return overrideSolveRecords;
     return (isAdmin && demoActive) ? getAllSolveRecordsIncludingDemo() : getSolveRecords();
