@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2, RefreshCw, Bug } from "lucide-react";
+import { ArrowLeft, Loader2, RefreshCw, Bug, Bell } from "lucide-react";
 import { toast } from "sonner";
+import { useAdminPush } from "@/hooks/useAdminPush";
 
 interface BugReport {
   id: string;
