@@ -80,6 +80,29 @@ export default function AdminFailedLogins() {
     }
   };
 
+  const handleClear = async (id: string) => {
+    if (!token) return;
+    try {
+      await invokeMessaging("clear-failed-login", token, { id });
+      setAttempts((prev) => prev.filter((a) => a.id !== id));
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Error", description: "Could not clear attempt", variant: "destructive" });
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (!token) return;
+    try {
+      await invokeMessaging("clear-all-failed-logins", token);
+      toast({ title: "Cleared", description: "All failed login attempts removed" });
+      setAttempts([]);
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return handleSessionExpired();
+      toast({ title: "Error", description: "Could not clear attempts", variant: "destructive" });
+    }
+  };
+
   const handleUnblock = async (ip: string) => {
     if (!token) return;
     try {
