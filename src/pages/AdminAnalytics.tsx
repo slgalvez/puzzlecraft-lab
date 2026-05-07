@@ -7,8 +7,13 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   Users, Clock, Activity, TrendingUp,
-  ArrowLeft, RefreshCw, Download, Eye,
+  ArrowLeft, RefreshCw, Download, Eye, Trash2,
 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface UserRow {
   id: string;
