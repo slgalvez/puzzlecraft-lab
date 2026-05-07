@@ -111,5 +111,36 @@ Deno.serve(async (req) => {
     return json({ error: "Failed to save report" }, 500);
   }
 
+  // Fire-and-forget: notify admins
+  (async () => {
+    try {
+      const { data: subs } = await admin
+        .from("admin_push_subscriptions")
+        .select("endpoint, p256dh, auth, user_id");
+      if (!subs?.length) return;
+      const payload = JSON.stringify({
+        title: "New bug report",
+        body: message.slice(0, 80),
+        tag: "bug-report",
+        url: "/admin-bug-reports",
+      });
+      const { sendWebPush } = await import("../admin-push/index.ts");
+      await Promise.all(subs.map(async (s) => {
+        try {
+          const r = await sendWebPush(s.endpoint, s.p256dh, s.auth, payload);
+          if (!r.ok && (r.status === 404 || r.status === 410)) {
+            await admin.from("admin_push_subscriptions").delete()
+              .eq("user_id", s.user_id).eq("endpoint", s.endpoint);
+          }
+        } catch (e) {
+          console.error("admin push failed", e);
+        }
+      }));
+    } catch (e) {
+      console.error("admin notify error", e);
+    }
+  })();
+
   return json({ ok: true });
 });
+
