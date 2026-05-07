@@ -1,6 +1,10 @@
+import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import PuzzleIcon from "@/components/puzzles/PuzzleIcon";
+import { Button } from "@/components/ui/button";
+import { Bug } from "lucide-react";
+import ReportProblemDialog from "@/components/help/ReportProblemDialog";
 import type { PuzzleCategory } from "@/lib/puzzleTypes";
 
 const puzzleTypes: { type: PuzzleCategory; title: string; steps: string[]; tips: string[] }[] = [
@@ -133,13 +137,26 @@ const faqItems = [
   },
 ];
 
-const Help = () => (
+const Help = () => {
+  const [reportOpen, setReportOpen] = useState(false);
+  return (
   <Layout>
     <div className="container max-w-2xl py-12">
       <h1 className="font-display text-3xl font-bold text-foreground sm:text-4xl">Help</h1>
       <p className="mt-2 text-muted-foreground">
         Learn how to play each puzzle type and get answers to common questions.
       </p>
+
+      {/* Help & Support */}
+      <div className="mt-6 rounded-xl border bg-card p-4 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-foreground">Found a bug or something off?</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Let us know and we'll look into it.</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setReportOpen(true)} className="gap-1.5 shrink-0">
+          <Bug size={14} /> Report a problem
+        </Button>
+      </div>
 
       {/* How to Play */}
       <h2 className="mt-10 font-display text-xl font-semibold text-foreground">How to Play</h2>
@@ -192,7 +209,9 @@ const Help = () => (
         ))}
       </Accordion>
     </div>
+    <ReportProblemDialog open={reportOpen} onOpenChange={setReportOpen} />
   </Layout>
-);
+  );
+};
 
 export default Help;
