@@ -38,7 +38,7 @@ export default function AdminNotificationsCard() {
     setTesting(true);
     try {
       const r = await sendTest();
-      if (r.ok) toast.success(`Test sent (${r.sent ?? 0})`);
+      if (r.ok) toast.success(`Test sent (${("sent" in r && r.sent) || 0})`);
       else toast.error(r.error || "Test failed");
     } finally {
       setTesting(false);
