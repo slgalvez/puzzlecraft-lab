@@ -147,6 +147,7 @@ function PublicRoutes() {
             <Route path="/craft/play" element={<PlayCraftPuzzle />} />
             <Route path="/s/:id" element={<SharedCraftPuzzle />} />
             <Route path="/account" element={<Account />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/admin-preview" element={<AdminPreview />} />
             <Route path="/admin-preview/homepage" element={<AdminHomepagePreview />} />
              <Route path="/admin/premium-emails" element={<AdminPremiumEmails />} />
