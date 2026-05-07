@@ -71,10 +71,34 @@ export default function AccountPage() {
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  // (signup-success screen removed — auto-confirm is enabled, so we route directly to Sign In)
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
   const [nameSaving, setNameSaving] = useState(false);
+  const [switchingPlan, setSwitchingPlan] = useState(false);
+
+  const MONTHLY_PRICE_ID = "price_1TDHYZI2mQ3QaWmEly0lqHqQ";
+  const ANNUAL_PRICE_ID  = "price_1TMDohI2mQ3QaWmEMXCAR3FH";
+  const isAnnual  = subscriptionPriceId === ANNUAL_PRICE_ID;
+  const isMonthly = subscriptionPriceId === MONTHLY_PRICE_ID;
+
+  const handleSwitchPlan = async (target: "monthly" | "annual") => {
+    if (switchingPlan) return;
+    const label = target === "annual" ? "annual ($19.99/yr)" : "monthly ($2.99/mo)";
+    if (!window.confirm(`Switch to the ${label} plan? Stripe will prorate the difference.`)) return;
+    setSwitchingPlan(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("change-subscription-plan", {
+        body: { plan: target },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message || "Failed");
+      toast.success(`Switched to ${target === "annual" ? "Annual" : "Monthly"} plan`);
+      await refreshSubscription();
+    } catch (e: any) {
+      toast.error(e?.message || "Could not switch plan");
+    } finally {
+      setSwitchingPlan(false);
+    }
+  };
 
   // Rating — account-identity relevant (not a stats duplicate)
   const ratingInfo = useMemo(() => {
