@@ -257,14 +257,15 @@ export default function AdminAnalytics() {
           <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">Loading…</div>
         ) : (
           <div className="rounded-xl border overflow-hidden">
-            <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] gap-4 px-4 py-2.5 bg-secondary/50 border-b text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto_auto] gap-4 px-4 py-2.5 bg-secondary/50 border-b text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               <span>User</span>
               <span className="text-right">Solves</span>
               <span className="text-right">Rating</span>
               <span className="text-right">Last active</span>
               <span className="text-right">Joined</span>
               <span className="text-right">Plan</span>
-              <span className="text-right sr-only">Actions</span>
+              <span className="sr-only">View</span>
+              <span className="sr-only">Delete</span>
             </div>
 
             {filtered.length === 0 ? (
