@@ -285,21 +285,6 @@ export default function AccountPage() {
               {/* Stripe subscribers: plan switch + manage */}
               {!isSimulatedPlus && entitlementSource === "stripe" && !isAdmin && (
                 <div className="space-y-2">
-                  {(isMonthly || isAnnual) && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      disabled={switchingPlan}
-                      onClick={() => handleSwitchPlan(isMonthly ? "annual" : "monthly")}
-                    >
-                      {switchingPlan
-                        ? "Switching…"
-                        : isMonthly
-                          ? "Switch to Annual ($19.99/yr · save 44%)"
-                          : "Switch to Monthly ($2.99/mo)"}
-                    </Button>
-                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -308,6 +293,22 @@ export default function AccountPage() {
                   >
                     Manage Subscription
                   </Button>
+                  {(isMonthly || isAnnual) && (
+                    <div className="flex justify-center pt-1">
+                      <button
+                        type="button"
+                        disabled={switchingPlan}
+                        onClick={() => handleSwitchPlan(isMonthly ? "annual" : "monthly")}
+                        className="text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline disabled:opacity-50"
+                      >
+                        {switchingPlan
+                          ? "Switching…"
+                          : isMonthly
+                            ? "Switch to annual · save 44%"
+                            : "Switch to monthly"}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
