@@ -517,6 +517,7 @@ export default function AccountPage() {
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" className="pl-9 rounded-xl" required minLength={6} />
                     </div>
+                    <p className="text-[11px] text-muted-foreground">Use at least 6 characters.</p>
                   </div>
                   {error && <p className="text-xs text-destructive">{error}</p>}
                   <Button type="submit" className="w-full rounded-xl h-11 font-semibold" disabled={submitting}>
