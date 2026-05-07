@@ -194,3 +194,28 @@ export default function AdminBugReports() {
     </Layout>
   );
 }
+
+function PushEnableBanner() {
+  const { isSupported, isSubscribed, busy, subscribe } = useAdminPush();
+  if (!isSupported || isSubscribed) return null;
+  return (
+    <div className="rounded-lg border border-border bg-muted/40 p-3 flex items-center gap-3">
+      <Bell className="h-4 w-4 text-primary shrink-0" />
+      <div className="text-sm flex-1">
+        Get push alerts when a new bug report comes in.
+      </div>
+      <Button
+        size="sm"
+        onClick={async () => {
+          const r = await subscribe();
+          if (r.ok) toast.success("Push alerts enabled");
+          else toast.error(r.error || "Could not enable alerts");
+        }}
+        disabled={busy}
+      >
+        Enable
+      </Button>
+    </div>
+  );
+}
+
