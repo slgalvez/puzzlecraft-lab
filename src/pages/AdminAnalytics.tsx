@@ -97,6 +97,27 @@ export default function AdminAnalytics() {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"joined" | "activity" | "solves" | "rating">("joined");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [pendingDelete, setPendingDelete] = useState<UserRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { user_id: pendingDelete.id },
+      });
+      if (error) {
+        toast.error("Couldn't delete user. Please try again.");
+        return;
+      }
+      setUsers((prev) => prev.filter((u) => u.id !== pendingDelete.id));
+      toast.success("User deleted");
+      setPendingDelete(null);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     if (account && !account.isAdmin) navigate("/");
