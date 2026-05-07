@@ -427,16 +427,14 @@ export default function AccountPage() {
         if (res.error) setError(res.error);
         else navigate("/");
       } else {
-        if (password.length < 6) { setError("Password must be at least 6 characters"); setSubmitting(false); return; }
+        if (password.length < 6) { setError("Password must be at least 6 characters."); setSubmitting(false); return; }
         const res = await signUp(email, password, displayName || undefined);
         if (res.error) {
           setError(res.error);
         } else {
-          // Auto-confirm is enabled — no email verification needed.
-          // Switch to Sign In tab with email prefilled.
-          toast.success("Account created — you can sign in now");
+          toast.success("Account created — you're signed in");
           setPassword("");
-          setTab("login");
+          navigate("/");
         }
       }
     } finally {
