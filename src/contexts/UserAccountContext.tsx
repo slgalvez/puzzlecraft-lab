@@ -41,6 +41,7 @@ interface UserAccountContextType {
   resolveMerge: (strategy: "merge" | "keep-account") => Promise<void>;
   subscribed: boolean;
   subscriptionEnd: string | null;
+  subscriptionPriceId: string | null;
   checkingSubscription: boolean;
   refreshSubscription: () => Promise<void>;
   refreshAccount: () => Promise<void>;
