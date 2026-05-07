@@ -119,6 +119,8 @@ export default function AdminBugReports() {
           <span className="text-sm text-muted-foreground ml-auto">{filtered.length} of {reports.length}</span>
         </div>
 
+        <PushEnableBanner />
+
         <div className="flex flex-col sm:flex-row gap-2">
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
             <SelectTrigger className="sm:w-40"><SelectValue /></SelectTrigger>
