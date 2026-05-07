@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
       });
       let sent = 0;
       for (const s of subs) {
-        const r = await sendWebPush(s.endpoint, s.p256dh, s.auth, payload);
+        const r = await sendAdminWebPush(s.endpoint, s.p256dh, s.auth, payload);
         if (r.ok) sent++;
         else if (r.status === 404 || r.status === 410) {
           await sb.from("admin_push_subscriptions").delete()
