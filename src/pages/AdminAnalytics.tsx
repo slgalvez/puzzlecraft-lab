@@ -7,8 +7,13 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   Users, Clock, Activity, TrendingUp,
-  ArrowLeft, RefreshCw, Download, Eye,
+  ArrowLeft, RefreshCw, Download, Eye, Trash2,
 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface UserRow {
   id: string;
@@ -92,6 +97,27 @@ export default function AdminAnalytics() {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"joined" | "activity" | "solves" | "rating">("joined");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [pendingDelete, setPendingDelete] = useState<UserRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { user_id: pendingDelete.id },
+      });
+      if (error) {
+        toast.error("Couldn't delete user. Please try again.");
+        return;
+      }
+      setUsers((prev) => prev.filter((u) => u.id !== pendingDelete.id));
+      toast.success("User deleted");
+      setPendingDelete(null);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     if (account && !account.isAdmin) navigate("/");
@@ -231,14 +257,15 @@ export default function AdminAnalytics() {
           <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">Loading…</div>
         ) : (
           <div className="rounded-xl border overflow-hidden">
-            <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] gap-4 px-4 py-2.5 bg-secondary/50 border-b text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto_auto] gap-4 px-4 py-2.5 bg-secondary/50 border-b text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               <span>User</span>
               <span className="text-right">Solves</span>
               <span className="text-right">Rating</span>
               <span className="text-right">Last active</span>
               <span className="text-right">Joined</span>
               <span className="text-right">Plan</span>
-              <span className="text-right sr-only">Actions</span>
+              <span className="sr-only">View</span>
+              <span className="sr-only">Delete</span>
             </div>
 
             {filtered.length === 0 ? (
@@ -248,7 +275,7 @@ export default function AdminAnalytics() {
             ) : (
               <div className="divide-y divide-border/40 max-h-[560px] overflow-y-auto">
                 {filtered.map((user) => (
-                  <div key={user.id} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] gap-4 px-4 py-3 items-center hover:bg-secondary/20 transition-colors">
+                  <div key={user.id} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto_auto] gap-4 px-4 py-3 items-center hover:bg-secondary/20 transition-colors">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">
                         {user.displayName ?? "—"}
@@ -273,6 +300,15 @@ export default function AdminAnalytics() {
                     >
                       <Eye size={13} className="text-muted-foreground" />
                     </Link>
+                    <button
+                      type="button"
+                      onClick={() => setPendingDelete(user)}
+                      disabled={user.id === account?.id}
+                      className="flex items-center justify-center h-7 w-7 rounded-md hover:bg-destructive/10 transition-colors shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
+                      title={user.id === account?.id ? "You can't delete your own account" : "Delete user"}
+                    >
+                      <Trash2 size={13} className="text-destructive" />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -284,6 +320,27 @@ export default function AdminAnalytics() {
           </div>
         )}
       </div>
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => { if (!open && !deleting) setPendingDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {pendingDelete?.displayName ?? "user"}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the account, leaderboard entries, and all progress. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDelete(); }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }
