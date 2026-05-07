@@ -151,6 +151,7 @@ function PublicRoutes() {
              <Route path="/admin/premium-emails" element={<AdminPremiumEmails />} />
              <Route path="/admin-analytics" element={<AdminAnalytics />} />
              <Route path="/admin-view-as-stats" element={<AdminViewAsStats />} />
+             <Route path="/admin-bug-reports" element={<AdminBugReports />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
           </Routes>
