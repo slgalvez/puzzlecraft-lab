@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import UpgradeModal from "@/components/account/UpgradeModal";
 import { buildSolveShareText } from "@/lib/shareText";
 import { executeShare } from "@/lib/shareUtils";
+import { ScoreBreakdown } from "./ScoreBreakdown";
 
 interface Props {
   time: number;
