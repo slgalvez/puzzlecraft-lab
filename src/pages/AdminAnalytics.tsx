@@ -274,7 +274,7 @@ export default function AdminAnalytics() {
             ) : (
               <div className="divide-y divide-border/40 max-h-[560px] overflow-y-auto">
                 {filtered.map((user) => (
-                  <div key={user.id} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] gap-4 px-4 py-3 items-center hover:bg-secondary/20 transition-colors">
+                  <div key={user.id} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto_auto] gap-4 px-4 py-3 items-center hover:bg-secondary/20 transition-colors">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">
                         {user.displayName ?? "—"}
@@ -299,6 +299,15 @@ export default function AdminAnalytics() {
                     >
                       <Eye size={13} className="text-muted-foreground" />
                     </Link>
+                    <button
+                      type="button"
+                      onClick={() => setPendingDelete(user)}
+                      disabled={user.id === account?.id}
+                      className="flex items-center justify-center h-7 w-7 rounded-md hover:bg-destructive/10 transition-colors shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
+                      title={user.id === account?.id ? "You can't delete your own account" : "Delete user"}
+                    >
+                      <Trash2 size={13} className="text-destructive" />
+                    </button>
                   </div>
                 ))}
               </div>
