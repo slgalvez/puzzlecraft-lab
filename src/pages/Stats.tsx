@@ -851,8 +851,9 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
     return times.length > 0 ? Math.min(...times) : null;
   }, [filteredCompletions]);
 
-  // Empty state
-  if (stats.totalSolved === 0) {
+  // Empty state — Plus users still get the full Stats layout so the
+  // ProvisionalRatingCard can show its "Your ranking starts here" state.
+  if (stats.totalSolved === 0 && !isPlus) {
     return (
       <Layout>
         <div className="container py-6 md:py-10 max-w-2xl">
