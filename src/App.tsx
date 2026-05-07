@@ -24,6 +24,7 @@ import CraftPuzzle from "./pages/CraftPuzzle";
 import PlayCraftPuzzle from "./pages/PlayCraftPuzzle";
 import SharedCraftPuzzle from "./pages/SharedCraftPuzzle";
 import Account from "./pages/Account";
+import ResetPassword from "./pages/ResetPassword";
 import AdminPreview from "./pages/AdminPreview";
 
 import AdminAnalytics from "./pages/AdminAnalytics";
