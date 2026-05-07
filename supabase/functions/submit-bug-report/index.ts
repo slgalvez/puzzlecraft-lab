@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
         tag: "bug-report",
         url: "/admin-bug-reports",
       });
-      const { sendWebPush: _ignore } = { sendWebPush: sendAdminWebPush };
+      
       await Promise.all(subs.map(async (s) => {
         try {
           const r = await sendAdminWebPush(s.endpoint, s.p256dh, s.auth, payload);
