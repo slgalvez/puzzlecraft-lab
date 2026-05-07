@@ -607,6 +607,7 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const demoActive = !!(account?.isAdmin && hasDemoData() && !previewActive);
+  const { shieldCount } = useStreakShield();
 
   // STRICT 3-BRANCH SOURCE SELECTION — preview > viewAs > real (never merged)
   const stats = useMemo(() => {
@@ -1252,6 +1253,27 @@ const Stats = ({ viewAsMode = false }: StatsProps) => {
                     </div>
                   ))}
                 </div>
+                {!isViewAs && !previewActive && (
+                  <div className="px-4 pb-2 flex justify-center">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border/60 bg-muted/40 text-[11px] text-muted-foreground hover:text-foreground transition-colors min-h-[28px]"
+                          aria-label={`${shieldCount} streak ${shieldCount === 1 ? "shield" : "shields"} left`}
+                        >
+                          <Shield size={11} className="text-emerald-500/80" />
+                          <span>{shieldCount} {shieldCount === 1 ? "shield" : "shields"} left</span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[260px] text-xs leading-relaxed">
+                        Streak Shields protect your streak if you miss a day. One shield is automatically used when you miss a day and would lose your streak.
+                        <br /><br />
+                        Puzzlecraft+ members get a Streak Shield each month to help protect daily progress.
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                )}
                 <div className="px-4 pb-3">
                   <Button asChild variant="outline" size="sm" className="w-full gap-1.5 text-xs">
                     <Link to="/daily">Today's challenge <ArrowRight size={12} /></Link>
