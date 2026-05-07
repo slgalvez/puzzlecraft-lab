@@ -492,6 +492,24 @@ export default function AccountPage() {
                   <Button type="submit" className="w-full rounded-xl h-11 font-semibold" disabled={submitting}>
                     {submitting ? "Signing in…" : "Sign In"}
                   </Button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setError("");
+                      if (!email) { setError("Enter your email above, then tap Forgot password."); return; }
+                      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                        redirectTo: `${WEB_ORIGIN}/reset-password`,
+                      });
+                      if (error) {
+                        toast.error("Couldn't send reset email. Please try again.");
+                      } else {
+                        toast.success("Check your email for a password reset link");
+                      }
+                    }}
+                    className="block w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Forgot password?
+                  </button>
                 </form>
               </TabsContent>
 

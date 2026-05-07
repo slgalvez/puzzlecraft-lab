@@ -24,6 +24,7 @@ import CraftPuzzle from "./pages/CraftPuzzle";
 import PlayCraftPuzzle from "./pages/PlayCraftPuzzle";
 import SharedCraftPuzzle from "./pages/SharedCraftPuzzle";
 import Account from "./pages/Account";
+import ResetPassword from "./pages/ResetPassword";
 import AdminPreview from "./pages/AdminPreview";
 
 import AdminAnalytics from "./pages/AdminAnalytics";
@@ -146,6 +147,7 @@ function PublicRoutes() {
             <Route path="/craft/play" element={<PlayCraftPuzzle />} />
             <Route path="/s/:id" element={<SharedCraftPuzzle />} />
             <Route path="/account" element={<Account />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/admin-preview" element={<AdminPreview />} />
             <Route path="/admin-preview/homepage" element={<AdminHomepagePreview />} />
              <Route path="/admin/premium-emails" element={<AdminPremiumEmails />} />
