@@ -207,17 +207,39 @@ export default function AdminFailedLogins() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      {a.is_blocked ? (
+                      <div className="flex items-center justify-end gap-1">
+                        {a.is_blocked ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs gap-1"
+                            onClick={() => handleUnblock(a.ip_address)}
+                          >
+                            <ShieldOff className="h-3 w-3" />
+                            Unblock
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs gap-1 text-destructive hover:text-destructive"
+                            onClick={() => handleBlock(a.ip_address)}
+                          >
+                            <Shield className="h-3 w-3" />
+                            Block
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 text-xs gap-1"
-                          onClick={() => handleUnblock(a.ip_address)}
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleClear(a.id)}
+                          title="Clear this attempt"
                         >
-                          <ShieldOff className="h-3 w-3" />
-                          Unblock
+                          <Trash2 className="h-3 w-3" />
                         </Button>
-                      ) : (
+                      </div>
+                    </TableCell>
                         <Button
                           size="sm"
                           variant="ghost"
