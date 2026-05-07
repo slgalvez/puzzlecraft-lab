@@ -344,7 +344,7 @@ export function UserAccountProvider({ children }: { children: ReactNode }) {
     <UserAccountContext.Provider value={{
       account, loading, signUp, signIn, signOut,
       pendingMerge, resolveMerge,
-      subscribed, subscriptionEnd, checkingSubscription, refreshSubscription,
+      subscribed, subscriptionEnd, subscriptionPriceId, checkingSubscription, refreshSubscription,
       refreshAccount, startCheckout, openCustomerPortal, entitlementSource,
     }}>
       {children}
