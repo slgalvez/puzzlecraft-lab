@@ -340,6 +340,15 @@ const CompletionPanel = ({
               </span>
             )}
           </div>
+
+          {latestRecord && !assisted && (
+            <div className={cn(
+              "mt-3 transition-all duration-700",
+              statsVisible ? "opacity-100" : "opacity-0",
+            )}>
+              <ScoreBreakdown record={latestRecord} />
+            </div>
+          )}
         </div>
 
         {/* Rating delta */}
