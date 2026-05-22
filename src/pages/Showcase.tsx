@@ -217,6 +217,9 @@ export default function Showcase() {
 
   return (
     <div className="sc-root">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       {/* ── HERO ───────────────────────────────────────────────────────── */}
       <section className="sc-hero">
         <div className="sc-orb-hero" />
