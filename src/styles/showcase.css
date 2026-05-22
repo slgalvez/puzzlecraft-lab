@@ -1,0 +1,563 @@
+/**
+ * showcase.css
+ * src/styles/showcase.css
+ *
+ * Scoped styles for /showcase. All classes prefixed `sc-` to avoid
+ * collisions with the rest of the app. Pure CSS — no JS animation libs.
+ */
+
+.sc-root {
+  --sc-bg: #050505;
+  --sc-surface: #0e0e10;
+  --sc-text: #f5f1ea;
+  --sc-muted: #8a8580;
+  --sc-glow: #f97316;
+  --sc-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  background: var(--sc-bg);
+  color: var(--sc-text);
+  font-family: "DM Sans", sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Typography ─────────────────────────────────────────────────────────── */
+.sc-kicker {
+  font-family: "DM Sans", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--sc-muted);
+  margin-bottom: 24px;
+}
+
+.sc-title,
+.sc-hero-title,
+.sc-cta-title {
+  font-family: "Playfair Display", serif;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+  color: var(--sc-text);
+  margin: 0;
+}
+
+.sc-title { font-size: clamp(40px, 6vw, 72px); }
+.sc-hero-title { font-size: clamp(56px, 9vw, 120px); }
+.sc-cta-title { font-size: clamp(44px, 7vw, 88px); }
+
+.sc-hero-italic {
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.sc-sub,
+.sc-hero-sub {
+  font-size: clamp(15px, 1.4vw, 18px);
+  color: var(--sc-muted);
+  margin-top: 20px;
+  max-width: 38ch;
+  line-height: 1.5;
+}
+
+/* ── Orbs (soft depth) ──────────────────────────────────────────────────── */
+.sc-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.4s var(--sc-ease);
+}
+.sc-act.is-in .sc-orb { opacity: 1; }
+
+.sc-orb-a {
+  width: 520px; height: 520px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.05), transparent 70%);
+  top: -10%; left: -10%;
+}
+.sc-orb-b {
+  width: 420px; height: 420px;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.08), transparent 70%);
+  bottom: -15%; right: -10%;
+}
+.sc-orb-hero {
+  position: absolute;
+  width: 720px; height: 720px;
+  border-radius: 50%;
+  filter: blur(100px);
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.10), transparent 70%);
+  top: 30%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* ── Hero ───────────────────────────────────────────────────────────────── */
+.sc-hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px 120px;
+  overflow: hidden;
+}
+
+.sc-hero-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 1100px;
+  width: 100%;
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 1s var(--sc-ease), transform 1s var(--sc-ease);
+}
+.sc-hero-inner.is-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.sc-hero-kicker { margin-bottom: 32px; }
+.sc-hero-sub { margin: 24px auto 0; text-align: center; }
+
+.sc-hero-phone {
+  margin-top: 64px;
+  animation: sc-float 7s ease-in-out infinite alternate;
+}
+
+@keyframes sc-float {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-10px); }
+}
+
+/* Scroll hint */
+.sc-scroll-hint {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 48px;
+  background: linear-gradient(to bottom, transparent, var(--sc-muted), transparent);
+  opacity: 0.4;
+  animation: sc-hint 2.4s ease-in-out infinite;
+}
+@keyframes sc-hint {
+  0%, 100% { opacity: 0.2; }
+  50%      { opacity: 0.6; }
+}
+
+/* ── Acts ───────────────────────────────────────────────────────────────── */
+.sc-act {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 120px 24px;
+  overflow: hidden;
+}
+
+.sc-act-inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+  max-width: 1200px;
+  width: 100%;
+}
+
+.sc-act-right .sc-act-inner { direction: rtl; }
+.sc-act-right .sc-copy,
+.sc-act-right .sc-stage { direction: ltr; }
+
+.sc-copy {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.9s var(--sc-ease) 0.15s,
+              transform 0.9s var(--sc-ease) 0.15s;
+}
+.sc-stage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transform: translateY(36px);
+  transition: opacity 1s var(--sc-ease) 0.35s,
+              transform 1s var(--sc-ease) 0.35s;
+}
+.sc-act.is-in .sc-copy,
+.sc-act.is-in .sc-stage {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Phone frame ────────────────────────────────────────────────────────── */
+.sc-phone {
+  position: relative;
+  width: 280px;
+  transition: transform 1.2s var(--sc-ease);
+}
+
+.sc-phone-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 19;
+  background: linear-gradient(160deg, #1a1a1d, #0a0a0c);
+  border-radius: 38px;
+  padding: 10px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 40px 80px -20px rgba(0, 0, 0, 0.8),
+    0 0 60px rgba(249, 115, 22, 0.04);
+}
+
+.sc-phone-notch {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 22px;
+  background: #000;
+  border-radius: 12px;
+  z-index: 2;
+}
+
+.sc-phone-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #0a0a0c;
+  border-radius: 30px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Screen base ────────────────────────────────────────────────────────── */
+.sc-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 56px 18px 22px;
+  color: var(--sc-text);
+}
+
+.sc-screen-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sc-muted);
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.sc-screen-foot {
+  margin-top: auto;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--sc-muted);
+}
+
+/* ── Daily screen ───────────────────────────────────────────────────────── */
+.sc-daily-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-bottom: 20px;
+}
+.sc-daily-cell {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+.sc-daily-cell.is-done {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+.sc-daily-cell.is-today {
+  background: rgba(249, 115, 22, 0.18);
+  border-color: rgba(249, 115, 22, 0.45);
+  box-shadow: 0 0 18px rgba(249, 115, 22, 0.35);
+  animation: sc-today-pulse 2.4s ease-in-out infinite;
+}
+@keyframes sc-today-pulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(249, 115, 22, 0.25); }
+  50%      { box-shadow: 0 0 24px rgba(249, 115, 22, 0.55); }
+}
+
+/* ── Streak screen ──────────────────────────────────────────────────────── */
+.sc-streak {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.sc-flame {
+  position: relative;
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.sc-flame-glow {
+  position: absolute;
+  inset: -30px;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.35), transparent 60%);
+  filter: blur(20px);
+  animation: sc-flicker 3s ease-in-out infinite;
+}
+@keyframes sc-flicker {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.05); }
+}
+.sc-flame-num {
+  position: relative;
+  font-family: "Playfair Display", serif;
+  font-size: 80px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--sc-text);
+}
+.sc-flame-label {
+  position: relative;
+  margin-top: 10px;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sc-muted);
+}
+.sc-week {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 36px;
+  width: 100%;
+}
+.sc-week-day {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--sc-muted);
+  letter-spacing: 0.1em;
+}
+.sc-week-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.10);
+}
+.sc-week-dot.is-on {
+  background: var(--sc-glow);
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.55);
+}
+
+/* ── Solve screen ───────────────────────────────────────────────────────── */
+.sc-solve-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+}
+.sc-solve-cell {
+  aspect-ratio: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+}
+.sc-solve-cell.is-black {
+  background: #000;
+}
+.sc-glow-cell {
+  animation: sc-cell-glow 4.8s ease-in-out infinite;
+}
+@keyframes sc-cell-glow {
+  0%, 80%, 100% { background: rgba(255, 255, 255, 0.06); }
+  40%           { background: rgba(255, 255, 255, 0.14); }
+}
+
+/* ── Leaderboard screen ─────────────────────────────────────────────────── */
+.sc-lb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sc-lb-row {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  font-size: 12px;
+}
+.sc-lb-rank {
+  color: var(--sc-muted);
+  font-variant-numeric: tabular-nums;
+}
+.sc-lb-name { color: var(--sc-text); }
+.sc-lb-time {
+  color: var(--sc-muted);
+  font-variant-numeric: tabular-nums;
+}
+.sc-lb-row.is-you {
+  background: rgba(249, 115, 22, 0.10);
+  border-color: rgba(249, 115, 22, 0.35);
+  box-shadow: 0 0 18px rgba(249, 115, 22, 0.15);
+}
+.sc-lb-row.is-you .sc-lb-name,
+.sc-lb-row.is-you .sc-lb-time { color: var(--sc-text); }
+
+/* ── Share screen ───────────────────────────────────────────────────────── */
+.sc-share {
+  align-items: center;
+  justify-content: center;
+  padding: 56px 14px 22px;
+}
+.sc-share-card {
+  width: 100%;
+  aspect-ratio: 1;
+  background: linear-gradient(160deg, #16161a, #0a0a0c);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.7);
+}
+.sc-share-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  flex: 1;
+}
+.sc-share-px {
+  aspect-ratio: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+}
+.sc-share-px.is-lit {
+  background: rgba(249, 115, 22, 0.55);
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.4);
+}
+.sc-share-title {
+  font-family: "Playfair Display", serif;
+  font-size: 18px;
+  color: var(--sc-text);
+}
+.sc-share-sub {
+  margin-top: 2px;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sc-muted);
+}
+
+/* Layered phones in Share section */
+.sc-share-stack {
+  position: relative;
+  width: 340px;
+  height: 600px;
+}
+.sc-share-stack .sc-back-phone {
+  position: absolute;
+  top: 0;
+  left: -20px;
+  opacity: 0.55;
+  filter: blur(0.5px);
+}
+.sc-share-stack .sc-front-phone {
+  position: absolute;
+  top: 40px;
+  left: 70px;
+}
+
+/* ── CTA ────────────────────────────────────────────────────────────────── */
+.sc-cta {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 120px 24px;
+  background: radial-gradient(ellipse at center, #0a0a0c, #000 70%);
+}
+.sc-cta-inner {
+  text-align: center;
+  max-width: 720px;
+}
+.sc-cta-btn {
+  display: inline-block;
+  margin-top: 48px;
+  padding: 16px 56px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sc-text);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  text-decoration: none;
+  transition: all 0.5s var(--sc-ease);
+}
+.sc-cta-btn:hover {
+  border-color: rgba(249, 115, 22, 0.7);
+  box-shadow: 0 0 30px rgba(249, 115, 22, 0.25);
+  color: #fff;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .sc-act { padding: 80px 20px; min-height: auto; }
+  .sc-act-inner {
+    grid-template-columns: 1fr;
+    gap: 48px;
+    text-align: center;
+  }
+  .sc-act-right .sc-act-inner { direction: ltr; }
+  .sc-copy { display: flex; flex-direction: column; align-items: center; }
+  .sc-sub { margin-left: auto; margin-right: auto; }
+  .sc-phone { width: 220px; }
+  .sc-share-stack { width: 280px; height: 480px; }
+  .sc-share-stack .sc-back-phone { left: -10px; }
+  .sc-share-stack .sc-front-phone { left: 50px; top: 30px; }
+  .sc-hero { padding: 60px 20px 80px; }
+  .sc-hero-phone { margin-top: 48px; }
+  .sc-hero-phone .sc-phone { width: 240px; }
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .sc-hero-phone,
+  .sc-daily-cell.is-today,
+  .sc-flame-glow,
+  .sc-glow-cell,
+  .sc-scroll-hint {
+    animation: none !important;
+  }
+  .sc-hero-inner,
+  .sc-copy,
+  .sc-stage {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
