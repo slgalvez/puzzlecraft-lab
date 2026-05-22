@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import { HelmetProvider } from "react-helmet-async";
 import { registerSW } from "virtual:pwa-register";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { isNativeApp } from "./lib/appMode";
@@ -33,6 +34,8 @@ document.addEventListener("visibilitychange", () => {
 
 createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>
-    <App />
+    <HelmetProvider>
+      <App />
+    </HelmetProvider>
   </ErrorBoundary>
 );
