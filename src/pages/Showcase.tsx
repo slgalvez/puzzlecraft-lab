@@ -9,6 +9,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import "@/styles/showcase.css";
 
 // ── Reveal hook ──────────────────────────────────────────────────────────────
@@ -216,6 +217,9 @@ export default function Showcase() {
 
   return (
     <div className="sc-root">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       {/* ── HERO ───────────────────────────────────────────────────────── */}
       <section className="sc-hero">
         <div className="sc-orb-hero" />
