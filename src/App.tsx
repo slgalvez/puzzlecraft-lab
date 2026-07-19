@@ -27,6 +27,7 @@ import Account from "./pages/Account";
 import ResetPassword from "./pages/ResetPassword";
 import Showcase from "./pages/Showcase";
 import AdminPreview from "./pages/AdminPreview";
+import OAuthConsent from "./pages/OAuthConsent";
 
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminViewAsStats from "./pages/AdminViewAsStats";
@@ -196,6 +197,7 @@ const App = () => (
         <ScrollToTop />
         <Routes>
           {/* Main account system — public puzzle routes */}
+          <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
           <Route path="/*" element={<PublicRoutes />} />
           {/* Secret system — completely isolated auth (hidden in native app) */}
           {!isNativeApp() && <Route path="/p/*" element={<PrivateRoutes />} />}
