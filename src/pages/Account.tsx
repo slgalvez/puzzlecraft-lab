@@ -12,7 +12,7 @@
  */
 
 import { useState, useMemo, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useUserAccount } from "@/contexts/UserAccountContext";
 import { usePreviewMode } from "@/contexts/PreviewModeContext";
 import Layout from "@/components/layout/Layout";
@@ -40,6 +40,13 @@ const WEB_ORIGIN = "https://puzzlecraft-lab.lovable.app";
 
 export default function AccountPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // Same-origin relative next path (used by the OAuth consent route so users
+  // return to the pending authorization after sign-in / sign-up).
+  const rawNext = searchParams.get("next");
+  const nextPath =
+    rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
+  const postAuthDest = nextPath ?? "/";
   const native = isNativeApp();
   const {
     account, signIn, signUp, signOut,
@@ -425,7 +432,7 @@ export default function AccountPage() {
       if (tab === "login") {
         const res = await signIn(email, password);
         if (res.error) setError(res.error);
-        else navigate("/");
+        else navigate(postAuthDest);
       } else {
         if (password.length < 6) { setError("Password must be at least 6 characters."); setSubmitting(false); return; }
         const res = await signUp(email, password, displayName || undefined);
@@ -434,7 +441,7 @@ export default function AccountPage() {
         } else {
           toast.success("Account created — you're signed in");
           setPassword("");
-          navigate("/");
+          navigate(postAuthDest);
         }
       }
     } finally {
