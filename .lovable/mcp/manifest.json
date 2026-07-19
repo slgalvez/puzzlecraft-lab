@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "sdk_version": "0.23.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://nkfxdupsbxgbclsgseez.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "puzzlecraft-mcp",
+      "version": "0.1.0",
+      "title": "Puzzlecraft"
+    },
+    "tools": [
+      {
+        "name": "get_my_profile",
+        "title": "Get my Puzzlecraft profile",
+        "description": "Return the signed-in user's Puzzlecraft profile: display name, rating, skill tier, total solves, friend code, and Puzzlecraft+ status.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_my_stats",
+        "title": "Get my Puzzlecraft stats",
+        "description": "Return the signed-in user's per-puzzle-type rating breakdown from the type leaderboards (crossword, sudoku, nonogram, etc.).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_leaderboard",
+        "title": "Get Puzzlecraft leaderboard",
+        "description": "Return the top Puzzlecraft players by overall rating. Use `limit` (1-50, default 10) to control how many rows come back.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "How many top players to return. Default 10.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
